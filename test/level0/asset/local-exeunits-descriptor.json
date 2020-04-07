@@ -1,0 +1,13 @@
+[
+    {
+        "name": "wasmtime",
+        "path": "exe-unit",
+        "args": [
+            "-b", "wasmtime-exeunit",
+            "-c", "work/exe-unit-wd/cache/",
+            "-w", "work/exe-unit-wd/work/",
+            "-a", "asset/agreement.json",
+            "service-bus"
+        ]
+    }
+]
