@@ -1,0 +1,45 @@
+version: "3.3"
+
+services:
+    router:
+        image: yagna
+        build:
+            context: .
+            dockerfile: yagna.Dockerfile
+            args:
+                GITHUB_API_TOKEN: $GITHUB_API_TOKEN
+        entrypoint: /usr/bin/ya_sb_router
+        command: ["-l", "tcp://0.0.0.0:7477"]
+
+    mock-api:
+        image: golem-client-mock
+        ports:
+            - "5001:5001"
+
+    requestor_daemon:
+        image: yagna
+        entrypoint: /usr/bin/yagna
+        command: ["service", "run", "-d", "/"]
+        depends_on:
+            - router
+            - mock-api
+        env_file:
+            - .env
+        ports:
+            - "6000:6000"
+            - "6010:6010"
+
+    provider_daemon:
+        image: yagna
+        entrypoint: /usr/bin/yagna
+        command: ["service", "run", "-d", "/"]
+        depends_on:
+            - router
+            - mock-api
+        env_file:
+            - .env
+        ports:
+            - "6001:6000"
+            - "6011:6010"
+        environment:
+            - EXE_UNIT_PATH=/usr/lib/yagna/plugins/exe-unit
