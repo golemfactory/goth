@@ -18,5 +18,3 @@ ya-provider --activity-url "$YAGNA_ACTIVITY_URL" \
 	    --app-key "$APP_KEY" \
 	    --credit-address "$NODE_ID" \
 	    --market-url "$YAGNA_MARKET_URL"
-	    # --exe-unit-path ../asset/local-exeunits-descriptor.json
-

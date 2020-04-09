@@ -2,6 +2,7 @@
 
 See the [toplevel README.md](../README.md) for the description of the test scenario and artifacts.
 
+The convention is that scripts with the executable bit set should be run directly, and those without should be run using the `with_env.sh` wrapper (see examples below).
 
 *Note: I'm not sure which of the steps below belong to the **Setup** stage and which ones to the proper **Run** stage. Some adjustments may be required.*
 
@@ -63,8 +64,3 @@ Follow these steps to setup the test environment:
    ```
 
 6. Stop the network hub (as in **Setup**)
-
-
-
-
-
