@@ -8,9 +8,10 @@ import shutil
 import requests
 
 logging.basicConfig(
-    format='%(levelname)s\t%(asctime)s\t\t%(funcName)s\t\t%(message)s',
+    format='%(asctime)s %(levelname)-8s %(name)-35s %(message)s',
     level=logging.INFO
 )
+logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = 'GITHUB_API_TOKEN'
 PACKAGE_NAME = 'artifact.zip'
@@ -34,47 +35,54 @@ session.headers['Authorization'] = f'token {args.token}'
 
 def get_workflow(workflow_name: str) -> dict:
     url = f'{BASE_URL}/actions/workflows'
-    logging.info('fetching workflows. url=%s', url)
+    logger.info('fetching workflows. url=%s', url)
     response = session.get(f'{BASE_URL}/actions/workflows')
     response.raise_for_status()
 
     workflows = response.json()['workflows']
-    return next(filter(lambda w: w['name'] == workflow_name, workflows))
+    logger.debug('workflows=%s', workflows)
+    result = next(filter(lambda w: w['name'] == workflow_name, workflows))
+    logger.debug('result=%s', result)
+    return result
 
 def get_latest_run(workflow_id: str) -> dict:
     url = f'{BASE_URL}/actions/workflows/{workflow_id}/runs'
-    logging.info('fetching worflow runs. url=%s', url)
+    logger.info('fetching worflow runs. url=%s', url)
     response = session.get(url)
     response.raise_for_status()
 
-    runs = response.json()['workflow_runs']
-    latest_run = next(filter(
+    workflow_runs = response.json()['workflow_runs']
+    logger.debug('workflow_runs=%s', workflow_runs)
+    result = next(filter(
         lambda r: r['conclusion'] == 'success' and r['head_branch'] == BRANCH,
-        runs
+        workflow_runs
     ))
-    return latest_run
+    logger.debug('result=%s', result)
+    return result
 
 def download_artifact(artifacts_url: str, artifact_name: str):
-    logging.info('fetching artifacts. url=%s', artifacts_url)
+    logger.info('fetching artifacts. url=%s', artifacts_url)
     response = session.get(artifacts_url)
     response.raise_for_status()
-    artifacts = response.json()['artifacts']
-    artifact = next(filter(lambda a: a['name'] == artifact_name, artifacts))
 
-    logging.info('found matching artifact. artifact=%s', artifact)
+    artifacts = response.json()['artifacts']
+    logger.debug('artifacts=%s', artifacts)
+    artifact = next(filter(lambda a: a['name'] == artifact_name, artifacts))
+    logger.info('found matching artifact. artifact=%s', artifact)
+
     archive_url = artifact['archive_download_url']
     with session.get(archive_url, stream=True) as response:
         response.raise_for_status()
-        logging.info('downloading artifact. url=%s', archive_url)
+        logger.info('downloading artifact. url=%s', archive_url)
         with open(PACKAGE_NAME, 'wb') as fd:
             shutil.copyfileobj(response.raw, fd)
 
-    logging.info('extracting zip archive. path=%s', PACKAGE_NAME)
+    logger.info('extracting zip archive. path=%s', PACKAGE_NAME)
     shutil.unpack_archive(PACKAGE_NAME, format='zip')
-    logging.info('extracted package. path=%s', artifact_name)
+    logger.info('extracted package. path=%s', artifact_name)
 
 if __name__ == '__main__':
-    logging.info(
+    logger.info(
         'workflow_name=%s, artifact_name=%s', args.workflow, args.artifact)
 
     workflow = get_workflow(args.workflow)
