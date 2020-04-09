@@ -1,74 +1,70 @@
-# Wrapper scripts and low-level scripts
+# Unix scripts for Integration Scenario "0"
 
-Wrapper scripts can be used for conveniently setting up and running the test
-scenario on a single machine. Wrapper scripts are:
-```
-setup_nodes.sh
-start_daemons.sh
-start_apps.sh
-```
-
-Wrapper scripts call lower-level scripts that can be used in a more flexible
-setup, for example to run the provider and the requestor daemons and agents
-on separate machines, or in separate docker containers.
+See the [toplevel README.md](../README.md) for the description of the test scenario and artifacts.
 
 
-
-# Running the test scenario using wrapper scripts
+*Note: I'm not sure which of the steps below belong to the **Setup** stage and which ones to the proper **Run** stage. Some adjustments may be required.*
 
 
 ## Setup
 
-Run the `setup_nodes.sh` to create data directories for the
-provider and requestor daemons and to generate the node identities:
-```
-$ ./setup_nodes.sh
-```
+Follow these steps to setup the test environment:
 
-## Starting daemons
+1. Install `yagna` deb package (**TODO**: reference).
 
-Start the provider and requestor daemons:
-```
-$ ./start_daemons.sh
-```
+2. Build and start Market API Mock TestBed using the standard port `5001` (https://github.com/stranger80/golem-client-mock).
 
-## Running the agents
+3. Start the network hub:
+   ```
+   $ ./start_net_mk1_hub.sh &
+   ```
 
-Start the provider and requestor agents:
-```
-$ ./start_apps.sh
-```
+4. Setup the provider node:
+   ```
+   $ ./with_env.sh provider.env setup_node.sh
+   ```
+   This will create the data directory `provider_data` and create an
+   app key for the provider.
+
+5. Perform the same setup for the requestor node:
+   ```
+   $ ./with_env.sh requestor.env setup_node.sh
+   ```
+
+6. Stop the network hub:
+   ```
+   $ ./stop_net_mk1_hub.sh
+   ```
+
+
+## Run
+
+1. Start the network hub (as in **Setup**)
+
+2. Start the provider and the requestor daemons:
+   ```
+   $ ./with_env.sh provider.env start_daemon.sh &
+   $ ./with_env.sh requestor.env start_daemon.sh &
+   ```
+
+3. Start the provider and the requestor agents:
+   ```
+   $ ./start_provider.sh &
+   $ ./start_requestor.sh
+   ```
+
+4. Wait for the activity to complete and stop the agents:
+   __TODO__
+
+5. Stop the daemons:
+   ```
+   $ ./with_env.sh provider.env stop_daemon.sh
+   $ ./with_env.sh requestor.env stop_daemon.sh
+   ```
+
+6. Stop the network hub (as in **Setup**)
 
 
 
-# Using the low-level scripts 
 
-
-## Setting up the provider node
-
-1. Make sure the network hub is running. If not, start it with
-```
-$ ./start_net_mk1_hub.sh
-```
-
-2. Run `setup_node.sh` to create the data directory and generate node ID
-for the provider node:
-```
-$ ./setup_node.sh ./provider.env
-```
-
-3. Start the yagna daemon:
-```
-$ ./start_damon.sh ./provider.env
-```
-
-4. Create an app key for the provider agent:
-```
-$ ./create_key.sh provider.env
-```
-
-5, Run the provider app:
-```
-$ ./start_provider.sh provider.env
-```
 
