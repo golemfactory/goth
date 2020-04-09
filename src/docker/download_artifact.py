@@ -78,7 +78,10 @@ def download_artifact(artifacts_url: str, artifact_name: str):
             shutil.copyfileobj(response.raw, fd)
 
     logger.info('extracting zip archive. path=%s', PACKAGE_NAME)
-    shutil.unpack_archive(PACKAGE_NAME, format='zip')
+    try:
+        shutil.unpack_archive(PACKAGE_NAME, format='zip')
+    finally:
+        os.remove(PACKAGE_NAME)
     logger.info('extracted package. path=%s', artifact_name)
 
 if __name__ == '__main__':
