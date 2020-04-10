@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import shutil
+import tempfile
 
 import requests
 
@@ -14,7 +15,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = 'GITHUB_API_TOKEN'
-PACKAGE_NAME = 'artifact.zip'
 
 ARTIFACT_NAME = 'yagna.deb'
 BRANCH = 'master'
@@ -80,14 +80,10 @@ def download_artifact(artifacts_url: str, artifact_name: str):
     with session.get(archive_url, stream=True) as response:
         response.raise_for_status()
         logger.info('downloading artifact. url=%s', archive_url)
-        with open(PACKAGE_NAME, 'wb') as fd:
+        with tempfile.NamedTemporaryFile() as fd:
             shutil.copyfileobj(response.raw, fd)
-
-    logger.info('extracting zip archive. path=%s', PACKAGE_NAME)
-    try:
-        shutil.unpack_archive(PACKAGE_NAME, format='zip')
-    finally:
-        os.remove(PACKAGE_NAME)
+            logger.debug('extracting zip archive. path=%s', fd.name)
+            shutil.unpack_archive(fd.name, format='zip')
     logger.info('extracted package. path=%s', artifact_name)
 
 
