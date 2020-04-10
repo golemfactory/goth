@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = 'GITHUB_API_TOKEN'
 
-ARTIFACT_NAMES = ['yagna.deb', 'yagna_with_router.deb']
+ARTIFACT_NAMES = ['yagna_with_router.deb']
 BRANCH = 'master'
 REPO_OWNER = 'golemfactory'
 REPO_NAME = 'yagna'
