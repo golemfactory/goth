@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
+import typing
 
 import requests
 
@@ -16,17 +17,17 @@ logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = 'GITHUB_API_TOKEN'
 
-ARTIFACT_NAME = 'yagna.deb'
+ARTIFACT_NAMES = ['yagna.deb', 'yagna_with_router.deb']
 BRANCH = 'master'
 REPO_OWNER = 'golemfactory'
 REPO_NAME = 'yagna'
 WORKFLOW_NAME = 'Build .deb'
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-a', '--artifact', default=ARTIFACT_NAME)
 parser.add_argument('-b', '--branch', default=BRANCH)
 parser.add_argument('-t', '--token', default=os.environ[ENV_API_TOKEN])
 parser.add_argument('-w', '--workflow', default=WORKFLOW_NAME)
+parser.add_argument('artifacts', nargs='*', default=ARTIFACT_NAMES)
 args = parser.parse_args()
 
 BASE_URL = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}'
@@ -66,32 +67,34 @@ def get_latest_run(workflow_id: str) -> dict:
     return result
 
 
-def download_artifact(artifacts_url: str, artifact_name: str):
+def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
     logger.info('fetching artifacts. url=%s', artifacts_url)
     response = session.get(artifacts_url)
     response.raise_for_status()
 
     artifacts = response.json()['artifacts']
     logger.debug('artifacts=%s', artifacts)
-    artifact = next(filter(lambda a: a['name'] == artifact_name, artifacts))
-    logger.info('found matching artifact. artifact=%s', artifact)
+    for name in artifact_names:
+        artifact = next(filter(lambda a: a['name'] == name, artifacts), None)
+        if not artifact:
+            logger.warning('failed to find artifact. artifact_name=%s', name)
+            continue
 
-    archive_url = artifact['archive_download_url']
-    with session.get(archive_url, stream=True) as response:
-        response.raise_for_status()
-        logger.info('downloading artifact. url=%s', archive_url)
-        with tempfile.NamedTemporaryFile() as fd:
-            shutil.copyfileobj(response.raw, fd)
-            logger.debug('extracting zip archive. path=%s', fd.name)
-            shutil.unpack_archive(fd.name, format='zip')
-    logger.info('extracted package. path=%s', artifact_name)
+        logger.info('found matching artifact. artifact=%s', artifact)
+        archive_url = artifact['archive_download_url']
+        with session.get(archive_url, stream=True) as response:
+            response.raise_for_status()
+            logger.info('downloading artifact. url=%s', archive_url)
+            with tempfile.NamedTemporaryFile() as fd:
+                shutil.copyfileobj(response.raw, fd)
+                logger.debug('extracting zip archive. path=%s', fd.name)
+                shutil.unpack_archive(fd.name, format='zip')
+        logger.info('extracted package. path=%s', name)
 
 
 if __name__ == '__main__':
-    logger.info(
-        'workflow_name=%s, artifact_name=%s', args.workflow, args.artifact
-    )
+    logger.info('workflow=%s, artifacts=%s', args.workflow, args.artifacts)
 
     workflow = get_workflow(args.workflow)
     last_run = get_latest_run(workflow['id'])
-    download_artifact(last_run['artifacts_url'], args.artifact)
+    download_artifacts(last_run['artifacts_url'], args.artifacts)
