@@ -17,6 +17,9 @@ jobs:
         with:
           python-version: '3.7'
 
+      - name: Print python and pip version
+        run: python --version && pip --version
+
       - name: Install developer requirements
         run: pip install -r requirements-dev.txt
 
