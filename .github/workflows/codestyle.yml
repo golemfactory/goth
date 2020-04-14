@@ -9,6 +9,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Check if requirements are sorted properly
+        run: ls | grep '^requirements.*txt$' | LC_ALL=C xargs -I@ sort --ignore-case -c @
+
       - name: Configure python 3.7
         uses: actions/setup-python@v1
         with:
