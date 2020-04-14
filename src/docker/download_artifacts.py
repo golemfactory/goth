@@ -10,7 +10,8 @@ import typing
 import requests
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-35s %(message)s", level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)-35s %(message)s",
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,8 @@ def get_latest_run(workflow_id: str) -> dict:
     logger.debug("workflow_runs=%s", workflow_runs)
     result = next(
         filter(
-            lambda r: r["conclusion"] == "success" and r["head_branch"] == BRANCH,
+            lambda r: r["conclusion"] == "success"
+            and r["head_branch"] == BRANCH,
             workflow_runs,
         )
     )
