@@ -1,16 +1,25 @@
-name: Run codestyle
+name: codestyle
 on:
   push:
 jobs:
-  build:
-    name: Run black codestyle check
+  sort-requirements:
+    name: sort requirements
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Check if requirements are sorted properly
         run: ls | grep '^requirements.*txt$' | LC_ALL=C xargs -I@ sort --ignore-case -c @
+
+  black:
+    name: black
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Configure python 3.7
         uses: actions/setup-python@v1
