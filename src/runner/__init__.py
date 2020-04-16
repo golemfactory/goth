@@ -1,12 +1,15 @@
 import json
+import logging
 from typing import Dict
 
 from enum import Enum
 import docker
 from docker.models.containers import Container, ExecResult
 
-from runner.exceptions import ContainerNotFoundError
-from runner.helpers import parse_json_table, run_command
+from runner import command
+from runner.exceptions import CommandError, ContainerNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 class Role(Enum):
@@ -16,22 +19,54 @@ class Role(Enum):
 
 class TestScenario:
     def __init__(self):
+        self.keys: Dict[str, str] = {}
+        self.ids: Dict[str, str] = {}
         self.steps = [
-            (self.list_app_keys, Role.requestor),
             (self.create_app_key, Role.requestor),
-            (self.list_app_keys, Role.requestor),
+            (self.create_app_key, Role.provider),
+            (self.get_id, Role.requestor),
+            (self.get_id, Role.provider),
+            (self.start_provider, Role.provider),
+            (self.start_requestor, Role.requestor),
         ]
 
-    def list_app_keys(self, container: Container):
-        result = run_command(container, "yagna app-key list")
-        return parse_json_table(json.loads(result.output))
+    def get_id(self, container: Container) -> str:
+        ids = command.get_ids(container)
+        default_id = next(filter(lambda i: i["default"] == "X", ids))
+        address = default_id["address"]
+        self.ids[container.name] = address
+        return address
 
     def create_app_key(self, container: Container, key_name: str = "test-key") -> str:
-        result = run_command(container, f"yagna app-key create {key_name}")
-        return result.output.decode()
+        logger.info("attempting to create app-key. key_name=%s", key_name)
+        try:
+            key = command.create_app_key(container, key_name)
+        except CommandError as e:
+            if "UNIQUE constraint failed" in str(e):
+                logger.warning("app-key already exists. key_name=%s", key_name)
+                app_key: dict = next(
+                    filter(
+                        lambda k: k["name"] == key_name, command.get_app_keys(container)
+                    )
+                )
+                key = app_key["key"]
 
-    def scan_logs(self, container: Container, query: str):
-        for line in container.logs(stream=True, follow=True, tail=10):
+        logger.info("app-key=%s", key)
+        self.keys[container.name] = key
+        return key
+
+    def start_provider(self, container: Container):
+        logger.info("starting provider agent")
+        result = command.start_provider_agent(
+            container, self.keys[container.name], self.ids[container.name]
+        )
+        for line in result.output:
+            print(line.decode())
+
+    def start_requestor(self, container: Container):
+        logger.info("starting requestor agent")
+        result = command.start_requestor_agent(container, self.keys[container.name])
+        for line in result.output:
             print(line.decode())
 
 
@@ -58,6 +93,8 @@ class TestRunner:
     def run(self, scenario: TestScenario):
         self.containers = self.get_containers()
         for step, role in scenario.steps:
-            print(f"running step: {step}")
+            logger.debug(f"running step: {step}")
             result = step(container=self.containers[role.name])
-            print(result)
+
+        print(scenario.keys)
+        print(scenario.ids)
