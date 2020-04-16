@@ -36,7 +36,10 @@ def start_provider_agent(container: Container, app_key: str, address: str):
 
 
 def start_requestor_agent(container: Container, app_key: str):
-    return container.exec_run(f"ya-requestor --app-key {app_key}", stream=True)
+    return container.exec_run(
+        f"ya-requestor --app-key {app_key} --exe-script /asset/exe_script.json",
+        stream=True,
+    )
 
 
 def run_command(container: Container, cmd: str, **kwargs):

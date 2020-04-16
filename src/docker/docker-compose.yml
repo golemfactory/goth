@@ -16,7 +16,7 @@ services:
         ports:
             - "5001:5001"
 
-    requestor_daemon:
+    requestor:
         image: yagna
         entrypoint: /usr/bin/yagna
         command: ["service", "run", "-d", "/"]
@@ -28,8 +28,10 @@ services:
         ports:
             - "6000:6000"
             - "6010:6010"
+        volumes:
+            - "./asset:/asset"
 
-    provider_daemon:
+    provider:
         image: yagna
         entrypoint: /usr/bin/yagna
         command: ["service", "run", "-d", "/"]
@@ -42,4 +44,6 @@ services:
             - "6001:6000"
             - "6011:6010"
         environment:
-            - EXE_UNIT_PATH=/usr/lib/yagna/plugins/exe-unit
+            - EXE_UNIT_PATH=/asset/local-exeunits-descriptor.json
+        volumes:
+            - "./asset:/asset"

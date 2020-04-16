@@ -95,6 +95,3 @@ class TestRunner:
         for step, role in scenario.steps:
             logger.debug(f"running step: {step}")
             result = step(container=self.containers[role.name])
-
-        print(scenario.keys)
-        print(scenario.ids)
