@@ -1,5 +1,6 @@
 import json
 import logging
+from threading import Thread
 from typing import Dict
 
 from enum import Enum
@@ -57,11 +58,15 @@ class TestScenario:
 
     def start_provider(self, container: Container):
         logger.info("starting provider agent")
-        result = command.start_provider_agent(
-            container, self.keys[container.name], self.ids[container.name]
-        )
-        for line in result.output:
-            print(line.decode())
+
+        def follow_logs(container):
+            result = command.start_provider_agent(
+                container, self.keys[container.name], self.ids[container.name]
+            )
+            for line in result.output:
+                print(line.decode())
+
+        Thread(target=follow_logs, args=(container,)).start()
 
     def start_requestor(self, container: Container):
         logger.info("starting requestor agent")
