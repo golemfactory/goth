@@ -1,6 +1,8 @@
 name: codestyle
 on:
   push:
+    master
+  pull_request:
 jobs:
   sort-requirements:
     name: sort requirements
