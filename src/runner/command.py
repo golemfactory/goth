@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 from docker.models.containers import Container, ExecResult
 
-from runner.exceptions import CommandError
+from src.runner.exceptions import CommandError
 
 logger = logging.getLogger(__name__)
 

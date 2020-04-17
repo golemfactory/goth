@@ -7,8 +7,8 @@ from enum import Enum
 import docker
 from docker.models.containers import Container, ExecResult
 
-from runner import command
-from runner.exceptions import CommandError, ContainerNotFoundError
+from src.runner import command
+from src.runner.exceptions import CommandError, ContainerNotFoundError
 
 logger = logging.getLogger(__name__)
 

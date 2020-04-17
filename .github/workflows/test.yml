@@ -18,7 +18,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Prepare assets for level0
+        run: mkdir -p src/docker/asset && cp -r test/level0/asset/* src/docker/asset/.
+
       - name: Build the docker-compose stack
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
         run: docker-compose -f src/docker/docker-compose.yml up -d
 
       - name: Configure python 3.7
@@ -39,12 +44,10 @@ jobs:
         run: pip freeze
 
       - name: Sleep
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '60s'
+        run: sleep 60
 
       - name: Check running containers
         run: docker ps
 
       - name: Run test suite
-        run: python -m pytest test/level0 -svx --log_cli_level=DEBUG
+        run: python -m pytest test/level0 -svx --log-cli-level=DEBUG
