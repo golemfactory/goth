@@ -5,3 +5,7 @@ class CommandError(Exception):
 
 class ContainerNotFoundError(Exception):
     pass
+
+
+class TimeoutError(Exception):
+    pass

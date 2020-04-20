@@ -3,19 +3,14 @@ import logging
 from threading import Thread
 from typing import Dict
 
-from enum import Enum
 import docker
 from docker.models.containers import Container, ExecResult
 
 from runner import command
 from runner.exceptions import CommandError, ContainerNotFoundError
+from runner.node import Node, Role
 
 logger = logging.getLogger(__name__)
-
-
-class Role(Enum):
-    requestor = 0
-    provider = 1
 
 
 class TestScenario:
@@ -31,46 +26,44 @@ class TestScenario:
             (self.start_requestor, Role.requestor),
         ]
 
-    def get_id(self, container: Container) -> str:
-        ids = command.get_ids(container)
+    def get_id(self, node: Node) -> str:
+        ids = node.cli.get_ids()
         default_id = next(filter(lambda i: i["default"] == "X", ids))
         address = default_id["address"]
-        self.ids[container.name] = address
+        self.ids[node.name] = address
         return address
 
-    def create_app_key(self, container: Container, key_name: str = "test-key") -> str:
+    def create_app_key(self, node: Node, key_name: str = "test-key") -> str:
         logger.info("attempting to create app-key. key_name=%s", key_name)
         try:
-            key = command.create_app_key(container, key_name)
+            key = node.cli.create_app_key(key_name)
         except CommandError as e:
             if "UNIQUE constraint failed" in str(e):
                 logger.warning("app-key already exists. key_name=%s", key_name)
                 app_key: dict = next(
-                    filter(
-                        lambda k: k["name"] == key_name, command.get_app_keys(container)
-                    )
+                    filter(lambda k: k["name"] == key_name, node.cli.get_app_keys())
                 )
                 key = app_key["key"]
 
         logger.info("app-key=%s", key)
-        self.keys[container.name] = key
+        self.keys[node.name] = key
         return key
 
-    def start_provider(self, container: Container):
+    def start_provider(self, node: Node):
         logger.info("starting provider agent")
 
-        def follow_logs(container):
-            result = command.start_provider_agent(
-                container, self.keys[container.name], self.ids[container.name]
+        def follow_logs(node):
+            result = node.cli.start_provider_agent(
+                self.keys[node.name], self.ids[node.name]
             )
             for line in result.output:
                 print(line.decode())
 
-        Thread(target=follow_logs, args=(container,)).start()
+        Thread(target=follow_logs, args=(node,)).start()
 
-    def start_requestor(self, container: Container):
+    def start_requestor(self, node: Node):
         logger.info("starting requestor agent")
-        result = command.start_requestor_agent(container, self.keys[container.name])
+        result = node.cli.start_requestor_agent(self.keys[node.name])
         for line in result.output:
             print(line.decode())
 
@@ -78,25 +71,25 @@ class TestScenario:
 class TestRunner:
     def __init__(self):
         self.docker_client = docker.from_env()
-        self.containers = {}
+        self.nodes = {}
 
-    def get_containers(self) -> Dict[str, Container]:
+    def get_nodes(self) -> Dict[str, Node]:
         result = {}
         for role in Role:
-            result[role.name] = self.get_container(role.name)
+            result[role.name] = self.get_node(role)
 
         return result
 
-    def get_container(self, name: str) -> Container:
+    def get_node(self, role: Role) -> Node:
         container = next(
-            filter(lambda c: name in c.name, self.docker_client.containers.list())
+            filter(lambda c: role.name in c.name, self.docker_client.containers.list())
         )
         if not container:
             raise ContainerNotFoundError()
-        return container
+        return Node(container, role)
 
     def run(self, scenario: TestScenario):
-        self.containers = self.get_containers()
+        self.nodes = self.get_nodes()
         for step, role in scenario.steps:
             logger.debug(f"running step: {step}")
-            result = step(container=self.containers[role.name])
+            result = step(node=self.nodes[role.name])
