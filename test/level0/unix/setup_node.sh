@@ -8,7 +8,12 @@
 mkdir "$DATA_DIR"
 
 # Start the yagna daemon in the background
-DAEMON_LOG=$(mktemp -p . "daemon_XXXX.log")
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  DAEMON_LOG=$(mktemp -t "./daemon_XXXX.log")
+else
+  DAEMON_LOG=$(mktemp -p . "daemon_XXXX.log")
+fi
 sh ./start_daemon.sh 2> $DAEMON_LOG &
 
 # Observe daemon's stderr
