@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from threading import Thread
 from typing import Dict
 
@@ -15,57 +16,58 @@ logger = logging.getLogger(__name__)
 
 class TestScenario:
     def __init__(self):
-        self.keys: Dict[str, str] = {}
-        self.ids: Dict[str, str] = {}
         self.steps = [
             (self.create_app_key, Role.requestor),
             (self.create_app_key, Role.provider),
-            (self.get_id, Role.requestor),
-            (self.get_id, Role.provider),
             (self.start_provider, Role.provider),
             (self.start_requestor, Role.requestor),
+            (self.wait_for_proposal_accepted, Role.provider),
+            (self.wait_for_agreement_approved, Role.provider),
+            (self.wait_for_exeunit_started, Role.provider),
+            (self.wait_for_exeunit_finished, Role.provider),
         ]
 
-    def get_id(self, node: Node) -> str:
-        ids = node.cli.get_ids()
-        default_id = next(filter(lambda i: i["default"] == "X", ids))
-        address = default_id["address"]
-        self.ids[node.name] = address
-        return address
-
-    def create_app_key(self, node: Node, key_name: str = "test-key") -> str:
+    def create_app_key(self, node: Node, key_name: str = "test-key"):
         logger.info("attempting to create app-key. key_name=%s", key_name)
-        try:
-            key = node.cli.create_app_key(key_name)
-        except CommandError as e:
-            if "UNIQUE constraint failed" in str(e):
-                logger.warning("app-key already exists. key_name=%s", key_name)
-                app_key: dict = next(
-                    filter(lambda k: k["name"] == key_name, node.cli.get_app_keys())
-                )
-                key = app_key["key"]
-
+        key = node.create_app_key(key_name)
         logger.info("app-key=%s", key)
-        self.keys[node.name] = key
-        return key
 
     def start_provider(self, node: Node):
         logger.info("starting provider agent")
-
-        def follow_logs(node):
-            result = node.cli.start_provider_agent(
-                self.keys[node.name], self.ids[node.name]
-            )
-            for line in result.output:
-                print(line.decode())
-
-        Thread(target=follow_logs, args=(node,)).start()
+        node.start_provider_agent()
+        node.agent_logs.wait_for_pattern(re.compile("^(.+)Subscribed offer.(.+)$"))
 
     def start_requestor(self, node: Node):
         logger.info("starting requestor agent")
-        result = node.cli.start_requestor_agent(self.keys[node.name])
-        for line in result.output:
-            print(line.decode())
+        node.start_requestor_agent()
+
+    def wait_for_proposal_accepted(self, node: Node):
+        logger.info("waiting for proposal to be accepted")
+        match = node.agent_logs.wait_for_pattern(
+            re.compile("^(.+)decided to: AcceptProposal$")
+        )
+        logger.info("proposal accepted")
+
+    def wait_for_agreement_approved(self, node: Node):
+        logger.info("waiting for agreement to be approved")
+        match = node.agent_logs.wait_for_pattern(
+            re.compile("^(.+)decided to: ApproveAgreement$")
+        )
+        logger.info("agreement approved")
+
+    def wait_for_exeunit_started(self, node: Node):
+        logger.info("waiting for exe-unit to start")
+        match = node.agent_logs.wait_for_pattern(re.compile("^\[ExeUnit\](.+)Started$"))
+        logger.info("exe-unit started: %s", match.group(0))
+
+    def wait_for_exeunit_finished(self, node: Node):
+        logger.info("waiting for exe-unit to finish")
+        match = node.agent_logs.wait_for_pattern(
+            re.compile(
+                "^(.+)ExeUnit process exited with status Finished - exit code: 0(.+)$"
+            )
+        )
+        logger.info("exe-unit finished: %s", match.group(0))
 
 
 class TestRunner:

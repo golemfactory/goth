@@ -43,21 +43,6 @@ class YagnaCli:
         result = self._run_json_cmd(f"yagna app-key create {key_name}")
         return json.loads(result.output)
 
-    def scan_logs(self, query: str):
-        for line in self.container.logs(stream=True, follow=True, tail=10):
-            print(line.decode())
-
-    def start_provider_agent(self, app_key: str, address: str):
-        return self.container.exec_run(
-            f"ya-provider --app-key {app_key} --credit-address {address}", stream=True,
-        )
-
-    def start_requestor_agent(self, app_key: str):
-        return self.container.exec_run(
-            f"ya-requestor --app-key {app_key} --exe-script /asset/exe_script.json",
-            stream=True,
-        )
-
     def run_command(self, cmd: str, **kwargs):
         result: ExecResult = self.container.exec_run(cmd, **kwargs)
         if result.exit_code != 0:
