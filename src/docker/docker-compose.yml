@@ -12,7 +12,7 @@ services:
         command: ["-l", "tcp://0.0.0.0:7477"]
 
     mock-api:
-        image: golemfactory/golem-client-mock:0.1.1
+        image: golemfactory/golem-client-mock:0.1.2
         ports:
             - "5001:5001"
 

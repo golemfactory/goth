@@ -1,5 +1,7 @@
 import json
 import logging
+import pytest
+import time
 from threading import Thread
 from typing import Dict
 
@@ -11,6 +13,9 @@ from src.runner import command
 from src.runner.exceptions import CommandError, ContainerNotFoundError
 
 logger = logging.getLogger(__name__)
+
+exception_raised = False
+test_finished = False
 
 
 class Role(Enum):
@@ -29,7 +34,9 @@ class TestScenario:
             (self.get_id, Role.provider),
             (self.start_provider, Role.provider),
             (self.start_requestor, Role.requestor),
+            (self.wait_for_invoice, Role.provider),
         ]
+        self.exception_raised = False
 
     def get_id(self, container: Container) -> str:
         ids = command.get_ids(container)
@@ -59,20 +66,73 @@ class TestScenario:
     def start_provider(self, container: Container):
         logger.info("starting provider agent")
 
-        def follow_logs(container):
+        def follow_logs():
+            global exception_raised
+            global test_finished
             result = command.start_provider_agent(
                 container, self.keys[container.name], self.ids[container.name]
             )
-            for line in result.output:
-                print(line.decode())
+            while result.exit_code is None:
+                for line in result.output:
+                    str_line = line.decode()
+                    #logger.info(str_line)
+                    if 'ERROR' in str_line:
+                        print('ERROR')
+                        exception_raised = True
+                        raise Exception("ERROR")
+                    if exception_raised or test_finished:
+                        raise Exception('STOPPED')
+                time.sleep(1.)
+            logger.info("provider follow ended")
 
-        Thread(target=follow_logs, args=(container,)).start()
+        self.provider_thread = Thread(target=follow_logs)
+        self.provider_thread.start()
 
     def start_requestor(self, container: Container):
         logger.info("starting requestor agent")
-        result = command.start_requestor_agent(container, self.keys[container.name])
-        for line in result.output:
-            print(line.decode())
+
+        def follow_logs():
+            global exception_raised
+            global test_finished
+            result = command.start_requestor_agent(container, self.keys[container.name])
+            logger.info("follow_logs requestor agent")
+            logger.info(result)
+            while result.exit_code is None:
+                for line in result.output:
+                    str_line = line.decode()
+                    logger.info(str_line)
+                    if 'ERROR' in str_line:
+                        print('ERROR')
+                        exception_raised = True
+                        raise Exception("ERROR")
+                    elif 'yay!' in str_line:
+                        test_finished = True
+                        return
+                    if exception_raised:
+                        raise Exception('STOPPED')
+                time.sleep(1.)
+            container.reload()
+            logger.info("requestor follow ended. exit_code=%r", result.exit_code)
+
+        self.requestor_thread = Thread(target=follow_logs)
+        self.requestor_thread.start()
+
+    def wait_for_invoice(self, container: Container):
+        global exception_raised
+        global test_finished
+        while not test_finished:
+            logger.debug('tick')
+            time.sleep(10.)
+            if exception_raised:
+                self._clean_threads()
+                raise Exception("TEST FAILED")
+        self._clean_threads()
+
+    def _clean_threads(self):
+        self.provider_thread.join()
+        self.requestor_thread.join()
+
+
 
 
 class TestRunner:
@@ -88,6 +148,7 @@ class TestRunner:
         return result
 
     def get_container(self, name: str) -> Container:
+        logger.debug('get_container()')
         container = next(
             filter(lambda c: name in c.name, self.docker_client.containers.list())
         )
@@ -96,6 +157,7 @@ class TestRunner:
         return container
 
     def run(self, scenario: TestScenario):
+        logger.debug('run()')
         self.containers = self.get_containers()
         for step, role in scenario.steps:
             logger.debug(f"running step: {step}")
