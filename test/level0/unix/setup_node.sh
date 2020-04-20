@@ -4,12 +4,11 @@
 # Network hub must be running on $CENTRAL_NET_HOST.
 
 # Create data directory
-[ ! -e "$DATA_DIR" ] || rm -r "$DATA_DIR"
+[[ ! -e "$DATA_DIR" ]] || rm -r "$DATA_DIR"
 mkdir "$DATA_DIR"
 
 # Start the yagna daemon in the background
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "$OSTYPE" = "darwin"* ]]; then
   DAEMON_LOG=$(mktemp -t "./daemon_XXXX.log")
 else
   DAEMON_LOG=$(mktemp -p . "daemon_XXXX.log")
