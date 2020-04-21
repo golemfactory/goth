@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
     router:
-        image: yagna
+        image: yagna:21.04
         build:
             context: .
             dockerfile: yagna.Dockerfile
@@ -17,7 +17,7 @@ services:
             - "5001:5001"
 
     requestor:
-        image: yagna
+        image: yagna:21.04
         entrypoint: /usr/bin/yagna
         command: ["service", "run", "-d", "/"]
         depends_on:
@@ -32,7 +32,7 @@ services:
             - "./asset:/asset"
 
     provider:
-        image: yagna
+        image: yagna:21.04
         entrypoint: /usr/bin/yagna
         command: ["service", "run", "-d", "/"]
         depends_on:
@@ -43,3 +43,5 @@ services:
         ports:
             - "6001:6000"
             - "6011:6010"
+        volumes:
+            - "./asset/presets.json:/presets.json"

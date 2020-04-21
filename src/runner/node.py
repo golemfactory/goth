@@ -35,7 +35,7 @@ class LogBuffer:
         return None
 
     def wait_for_pattern(
-        self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=60)
+        self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
     ) -> Match[str]:
         deadline = datetime.now() + timeout
 
@@ -52,10 +52,12 @@ class LogBuffer:
         raise TimeoutError()
 
     def _buffer_input(self):
-        for line in self.in_stream:
-            line = line.decode()
-            self._buffer.append(line)
-            self._tail.put(line)
+        for chunk in self.in_stream:
+            chunk = chunk.decode()
+            for line in chunk.splitlines():
+                print(line)
+                self._tail.put(line)
+                self._buffer.append(line)
 
 
 class Role(Enum):
@@ -100,9 +102,9 @@ class Node:
                 key = app_key["key"]
         return key
 
-    def start_provider_agent(self):
+    def start_provider_agent(self, node_name: str, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider --app-key {self.app_key} --credit-address {self.address}",
+            f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {node_name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(log_stream.output)
