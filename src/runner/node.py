@@ -8,8 +8,8 @@ from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
 
 from docker.models.containers import Container, ExecResult
 
-from runner.command import YagnaCli
-from runner.exceptions import CommandError, TimeoutError
+from src.runner.cli import YagnaCli
+from src.runner.exceptions import CommandError, TimeoutError
 
 
 class LogBuffer:

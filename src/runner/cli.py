@@ -1,12 +1,9 @@
 import json
-import logging
 from typing import List, Optional, Tuple
 
 from docker.models.containers import Container, ExecResult
 
-from runner.exceptions import CommandError
-
-logger = logging.getLogger(__name__)
+from src.runner.exceptions import CommandError
 
 
 def _parse_json_table(output_dict: dict) -> List[dict]:
