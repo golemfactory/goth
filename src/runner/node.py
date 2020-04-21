@@ -35,7 +35,7 @@ class LogBuffer:
         return None
 
     def wait_for_pattern(
-        self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
+        self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=60)
     ) -> Match[str]:
         deadline = datetime.now() + timeout
 
