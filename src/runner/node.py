@@ -1,6 +1,7 @@
 from collections import deque
 from datetime import datetime, timedelta
 from enum import Enum
+import logging
 from queue import Empty, Queue
 from threading import Lock, Thread
 from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
@@ -9,6 +10,9 @@ from docker.models.containers import Container, ExecResult
 
 from src.runner.cli import YagnaCli
 from src.runner.exceptions import CommandError, TimeoutError
+
+
+logger = logging.getLogger(__name__)
 
 
 class LogBuffer:
@@ -56,7 +60,7 @@ class LogBuffer:
         for chunk in self.in_stream:
             chunk = chunk.decode()
             for line in chunk.splitlines():
-                print(line)
+                logger.info(line)
                 # If _tail is full this will block until there's space available
                 self._tail.put(line)
 
