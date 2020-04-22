@@ -2,7 +2,7 @@ from collections import deque
 from datetime import datetime, timedelta
 from enum import Enum
 from queue import Empty, Queue
-from threading import Thread
+from threading import Lock, Thread
 from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
 
 from docker.models.containers import Container, ExecResult
@@ -18,13 +18,17 @@ class LogBuffer:
         self._tail: Queue = Queue(maxsize=10)
         self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._buffer_thread.start()
+        self._lock = Lock()
 
     def clear_buffer(self):
         self._buffer.clear()
 
     def search_for_pattern(self, pattern: Pattern[str]) -> Optional[Match[str]]:
+        with self._lock:
+            history = self._buffer.copy()
+
         # Reverse to search latest logs first
-        for line in reversed(self._buffer.copy()):
+        for line in reversed(history):
             match = pattern.match(line)
             if match:
                 return match
@@ -53,8 +57,11 @@ class LogBuffer:
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 print(line)
+                # If _tail is full this will block until there's space available
                 self._tail.put(line)
-                self._buffer.append(line)
+
+                with self._lock:
+                    self._buffer.append(line)
 
 
 class Role(Enum):
