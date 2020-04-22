@@ -47,7 +47,7 @@ def get_workflow(workflow_name: str) -> dict:
     return result
 
 
-def get_latest_run(workflow_id: str) -> dict:
+def get_latest_run(workflow_id: str, branch: str) -> dict:
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
     logger.info("fetching worflow runs. url=%s", url)
     response = session.get(url)
@@ -57,7 +57,7 @@ def get_latest_run(workflow_id: str) -> dict:
     logger.debug("workflow_runs=%s", workflow_runs)
     result = next(
         filter(
-            lambda r: r["conclusion"] == "success" and r["head_branch"] == BRANCH,
+            lambda r: r["conclusion"] == "success" and r["head_branch"] == branch,
             workflow_runs,
         )
     )
@@ -94,5 +94,5 @@ if __name__ == "__main__":
     logger.info("workflow=%s, artifacts=%s", args.workflow, args.artifacts)
 
     workflow = get_workflow(args.workflow)
-    last_run = get_latest_run(workflow["id"])
+    last_run = get_latest_run(workflow["id"], args.branch)
     download_artifacts(last_run["artifacts_url"], args.artifacts)
