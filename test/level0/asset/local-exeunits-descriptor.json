@@ -1,7 +1,0 @@
-[
-    {
-        "name": "wasmtime",
-        "supervisor-path": "/usr/lib/yagna/plugins/exe-unit",
-        "runtime-path": "/usr/lib/yagna/plugins/wasmtime-exeunit"
-    }
-]
