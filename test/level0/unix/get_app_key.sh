@@ -1,5 +1,9 @@
-# Note: this depends on the specific output format from `yagna app-key list`
-yagna app-key list \
-    | grep "$KEY_NAME" \
-    | sed -e 's/\s*│\s*/ /g' -e 's/^ //' \
-    | cut -d ' ' -f2
+# Get app key from the yagna daemon
+
+SCRIPT="\
+import json, sys; \
+j = json.load(sys.stdin); \
+print(j['values'][0][1])"
+
+yagna app-key list --json \
+    | python3 -c "$SCRIPT"

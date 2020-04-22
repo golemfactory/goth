@@ -1,4 +1,9 @@
 # Get node id from the yagna daemon
-# Note: this may easily break if the output format of `yagna id show` changes
-yagna id show \
-    | grep -Po '(?<=nodeId: )0x[0-9a-f]{40}'
+
+SCRIPT="\
+import json, sys; \
+j = json.load(sys.stdin); \
+print(j['Ok']['nodeId'])"
+
+yagna id show --json \
+    | python3 -c "$SCRIPT"
