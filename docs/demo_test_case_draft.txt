@@ -1,0 +1,136 @@
+	# This is a draft Yagna PoC Demo test scenario, as indicated in https://github.com/golemfactory/yagna/issues/104
+    
+    # 1. REQUESTOR and PROVIDER - start the test network, install probes
+
+	...
+
+    requestor = RequestorProbe(requestorUrl)
+	provider = ProviderProbe(providerUrl)
+    
+	# 2. PROVIDER - creates offer (included in the setup step)
+	
+	# 3. REQUESTOR
+	
+	# Payment Init...
+	requestor.cli.payment.init(...)
+	
+	# allocation (1 GNT, for 1hr, no deposit)
+	requestor.payment.create_allocation(1, getdate()+1hr, false)
+	
+	# create Demand (and subscribe)
+    demand = Demand(
+        properties = {
+			"golem.srv.comp.wasm.task_package": 
+				"hash://sha3:38D951E2BD2408D95D8D5E5068A69C60C8238FA45DB8BC841DC0BD50:http://34.244.4.185:8000/rust-wasi-tutorial.zip"
+		},
+        constraints = "(&
+			(golem.inf.mem.gib>0.5)
+			(golem.inf.storage.gib>1)
+			(golem.com.pricing.model=linear)
+		)"
+    );
+
+    subscriptionId = requestor.market.subscribe(demand)
+
+	# receive offer proposals with provider IDs
+
+    offerProposal = requestor.market.collect(subscriptionId).firstOrDefault() // to be replaced by requestor.events.waitUntil(OfferProposalEvent)
+
+    assertTrue(offerProposal != null)
+    assertEqual(offerProposal.issuerId, provider.nodeId)
+
+	# send counter proposals
+
+	demandProposal = Proposal(
+		properties = demand.properties,
+		constraints = demand.constraints,
+		prevProposalId = offerProposal.id
+	)
+	
+	demandProposalId = requestor.market.create_proposal_demand(demandProposal)
+	
+    offerProposal = requestor.market.collect(subscriptionId).firstOrDefault() // to be replaced by requestor.events.waitUntil(OfferProposalEvent)
+
+    assertTrue(offerProposal != null)
+    assertEqual(offerProposal.issuerId, provider.nodeId)
+    assertEqual(offerProposal.prevProposalId, demandProposalId)
+	
+	# 4. PROVIDER
+	
+	# ...done by Provider Agent
+	
+	# 5. REQUESTOR
+	
+	# Create Agreement
+	agreementId = requestor.market.createAgreement(offerProposal.id)
+	
+	requestor.market.confirmAgreement(agreementId)
+	
+	# wait for agreement approval
+	
+	# 6. Provider
+	
+	# ... Approve done by Provider Agent
+	
+	# 7. REQUESTOR
+	
+	approvalResponse = requestor.market.waitForApproval(agreementId) # to be replaced by requestor.events.waitUntil(AgreementAcceptedEvent)
+	
+    assertEqual(Accepted, approvalResponse)
+	
+	# Create Activity
+	activityId = requestor.activity.createActivity(agreementId)
+	
+	# i. PROVIDER
+	
+	provider.event.waitFor(LogEvent, event => event matches "ExeUnit start log regexp")
+	
+	# ii. REQUESTOR
+
+    exeScript = ExeScript(
+        [
+            ExeCommand( Command.Deploy ),
+            ExeCommand( Command.Start ),
+            ExeCommand( Command.Transfer, ["gft://localfile", "container:/input/input_file"] ),
+            ExeCommand( Command.Run, ["arg1", "arg2"] ),
+            ExeCommand( Command.Transfer, ["container:/output/output_file", "gft://result" ] ),
+        ]
+    )
+
+    batchId = requestor.activity.exec(exeScript)
+
+ 	# iii. EXE UNIT
+	
+    provider.events.waitUntil(LogEvent, event => event.message matches "Exe Unit spawn regexp")
+	
+    provider.events.waitUntil(LogEvent, event => event.message matches "Exe Unit finished regexp")
+
+	# iv. REQUESTOR
+
+	loop
+	{
+		exeResult = requestor.activity.getExecBatchResult(batchId) # to be replaced by requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
+
+        assertTrue(exeResult.result = OK)
+	}
+	while(exeResult.isBatchFinished = false)
+
+	requestor.activity.destroyActivity(activityId)
+	
+	# v. PROVIDER
+	
+    provider.events.waitUntil(LogEvent, event => event.message matches "DestroyActivity regexp")
+	
+	# 8. REQUESTOR
+	
+	invoiceEvent = requestor.payment.getRequestorInvoiceEvents() # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
+
+	assertEqual(invoiceEvent.agreementId, agreementId)
+	
+	requestor.payment.acceptInvoice(invoiceEvent.invoiceId)
+	
+	# 9. PROVIDER
+
+    provider.events.waitUntil(LogEvent, event => event.message matches "Payment received regexp")
+
+	# ... and maybe we can assert some balance change on etherscan???
