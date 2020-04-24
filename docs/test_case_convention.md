@@ -3,6 +3,8 @@
 This article is to illustrate a proposed convention for the Test Harness framework which would allow low level interaction with Golem APIs, but at the same time provide a reasonable level of test case readability.
 
 ```
+    # ...use the docker instrumentation utils to spin up the test network of selected topology...
+
     requestor = RequestorProbe(requestorUrl)
     
     # Perform Market negotiation
