@@ -139,7 +139,7 @@ class CallTrace:
             # is equal to `Property` does not work here (why?):
             elem_type = type(elem)
             same_module = (
-                Property.__module__ == elem_type.__module
+                Property.__module__ == elem_type.__module__
                 or Property.__module__.endswith("." + elem_type.__module__)
             )
             if same_module and elem_type.__name__ == Property.__name__:
