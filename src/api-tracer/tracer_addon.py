@@ -129,6 +129,7 @@ class CallTrace:
             )
         )
         self.call_logger.handlers = [log_handler]
+        self.call_logger.propagate = False
 
     def load_properties(self, module_name: str) -> None:
         """Load property functions from a module"""
