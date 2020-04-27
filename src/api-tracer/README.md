@@ -84,7 +84,10 @@ The agents communicate with their daemons via API Tracer using ports 16000 and 1
 
 This way, each of the six ports exposed by the API Tracer uniquely identifies the callee and the caller.
 
+<p align="center">
+<img src="./api-tracer.svg">
 
-![](./api-tracer.svg)
+Level 0 Test Scenario architecture with API Calls Tracer
+</p>
 
 Internally, the API tracer consists of an `nginx` process and an `mitmproxy` process. The former handles HTTP requests on ports 15001 &ndash; 15004, 16000 and 16001, adds `X-Caller` and `X-Callee` headers to each request, based on the port number, and passes the requests to `mitmproxy`'s port 9000. `mitmproxy` uses our custom add-on modules to register HTTP requests and responses and forward the requests to appropriate daemons or the Golem Mock Client.
