@@ -12,6 +12,10 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
+# `mitmproxy` adds ugly prefix to add-on module names
+logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
+
+
 PORT_MAPPING = {
     15001: (5001, "RequestorDaemon", "Market"),
     15002: (5001, "RequestorAgent", "Market"),
@@ -34,11 +38,6 @@ class RouterAddon:
     - routes the request to the appropriate callee, based on the request port.
     """
 
-    logger: logging.Logger
-
-    def __init__(self):
-        self.logger = logging.getLogger("Router")
-
     def request(self, flow: HTTPFlow):
         """Route the request and set `X-Caller` and `X-Callee` headers"""
         req = flow.request
@@ -53,14 +52,18 @@ class RouterAddon:
                 req.port = dest_port
                 req.headers[CALLER_HEADER] = caller
                 req.headers[CALLEE_HEADER] = callee
-                self.logger.debug(
-                    f"Route message: {original_port} ({caller}) "
-                    f"-> {req.port} ({callee})"
+                logger.debug(
+                    "Route message: %d (%s) -> %d (%s)",
+                    original_port,
+                    caller,
+                    req.port,
+                    callee,
                 )
             else:
                 raise ValueError(f"Invalid port in 'X-Http-Host': {http_host}")
         except Exception as ex:
-            print(f"Invalid headers: {ex.args[0]}")
+            logger.error("Invalid headers: %s", ex.args[0])
 
 
+# This is used by mitmproxy to install add-ons
 addons = [RouterAddon()]

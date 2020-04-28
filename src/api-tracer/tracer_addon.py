@@ -21,6 +21,21 @@ logging.basicConfig(
     level=logging.DEBUG,
 )
 
+# `mitmproxy` adds ugly prefix to add-on module names
+logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
+
+# Setup call logging to "calls.log" file
+call_logger = logging.getLogger("api_calls")
+_log_handler = logging.FileHandler("calls.log", mode="w")
+_log_handler.setFormatter(
+    logging.Formatter(
+        "%(asctime)s %(num)-4s %(status)-15s %(caller)-15s -> "
+        "%(callee)-16s %(method)-6s %(path)s"
+    )
+)
+call_logger.handlers = [_log_handler]
+call_logger.propagate = False
+
 
 class APICall:
     """
@@ -73,7 +88,7 @@ class Property:
     label: str
 
     # Function that check whether this property holds for a given sequence
-    check: Callable[[Sequence[APICall], logging.Logger], bool]
+    check: Callable[[Sequence[APICall]], bool]
 
     def __init__(self, func):
         self.label = func.__name__
@@ -109,32 +124,16 @@ class CallTrace:
     # Each property is stored with a label that is used in log messages
     properties: List[Tuple[str, Property]]
 
-    logger: logging.Logger
-    call_logger: logging.Logger
-
     def __init__(self):
         self.calls = []
         self.incoming = queue.Queue()
         self.properties = []
         self.worker = threading.Thread(target=self._run, daemon=True)
-        self.logger = logging.getLogger("CallTracer")
-
-        # Setup call logging to "calls.log" file
-        self.call_logger = logging.getLogger("Calls")
-        log_handler = logging.FileHandler("calls.log", mode="w")
-        log_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(num)-4s %(status)-5s %(caller)-15s -> "
-                "%(callee)-16s %(method)-6s %(path)s"
-            )
-        )
-        self.call_logger.handlers = [log_handler]
-        self.call_logger.propagate = False
 
     def load_properties(self, module_name: str) -> None:
         """Load property functions from a module"""
-        self.logger.info(f"Loading properties from {module_name}")
         mod = importlib.import_module(module_name)
+        prev_loaded = len(self.properties)
         for _, elem in mod.__dict__.items():
             # This test is lame, but simply checking if `type(elem)`
             # is equal to `Property` does not work here (why?):
@@ -145,12 +144,16 @@ class CallTrace:
             )
             if same_module and elem_type.__name__ == Property.__name__:
                 self.properties.append(elem)
-        self.logger.info(f"{len(self.properties)} properties loaded")
+        logger.info(
+            "Loaded %d properties from '%s'",
+            len(self.properties) - prev_loaded,
+            module_name,
+        )
 
     def start(self) -> None:
         """Start tracing API calls"""
         self.worker.start()
-        self.logger.info("Tracing started")
+        logger.info("Tracing started")
 
     def add(self, flow: HTTPFlow) -> None:
         """Register a new HTTP request/response/error"""
@@ -181,12 +184,18 @@ class CallTrace:
                 call.error = flow.error
                 call.response = flow.response
 
-            status = (
-                "sent" if call.in_progress else "error" if call.failed else "ok"
-            )
-            self.logger.info(f"{call}:\t{status}")
-            self.call_logger.info(
-                f"{call}:\t{status}",
+            if call.in_progress:
+                status = "in progress"
+            elif not call.failed:
+                status = f"completed ({call.response.status_code})"
+            else:
+                status = f"failed"
+            logger.info("%s:\t%s", call, status)
+
+            call_logger.info(
+                "%s:\t%s",
+                call,
+                status,
                 extra={
                     "num": num,
                     "caller": call.caller,
@@ -214,9 +223,9 @@ class CallTrace:
 
     def _check_properties(self) -> None:
         for prop in self.properties:
-            if not prop.check(self.calls, self.logger):
+            if not prop.check(self.calls):
                 index = len(self.calls)
-                self.logger.warning(f"Property {prop.label} failed at {index}")
+                logger.warning("Property '%s' failed at %d", prop.label, index)
 
 
 class TracerAddon:

@@ -1,15 +1,18 @@
 """Module with properties to be checked for the Level 0 test scenario"""
-from logging import Logger
+import logging
 from typing import Sequence
 
 from tracer_addon import CallTrace, APICall, trace_property
 
-# A property is a function that takes a sequence of API calls and a logger
-# object and returns `bool`, decorated with `@trace_property` decorator
 
+logger = logging.getLogger(__name__)
+
+
+# A property is a function that takes a sequence of API calls and returns 
+# `bool`, decorated with `@trace_property` decorator
 
 @trace_property
-def delete_activity(calls: Sequence[APICall], logger: Logger) -> bool:
+def delete_activity(calls: Sequence[APICall]) -> bool:
     """
     Check that each DeleteActivity(activityId) operation is preceded by
     CreateActivity(...) operation that returns this activiyId
@@ -32,7 +35,7 @@ def delete_activity(calls: Sequence[APICall], logger: Logger) -> bool:
 
     # Properties may also log messages (could be useful for debugging)
     logger.debug(
-        f"Checking 'delete_actitity' property for activity {activity_id}"
+        "Checking 'delete_actitity' property for activity %s", activity_id
     )
 
     # Look for ActivityCreate calls returning `activity_id`
