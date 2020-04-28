@@ -166,7 +166,7 @@ class CallTrace:
 
     def _run(self) -> None:
         """
-        Run the thread that adds incomming requests/responses/errors
+        Run the thread that adds incoming requests/responses/errors
         to the trace and checks the properties
         """
         while True:
