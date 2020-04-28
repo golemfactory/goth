@@ -15,10 +15,11 @@ class LogBuffer:
     def __init__(self, in_stream: Iterator[bytes]):
         self.in_stream = in_stream
         self._buffer: Deque[str] = deque()
-        self._tail: Queue = Queue(maxsize=10)
         self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
-        self._buffer_thread.start()
         self._lock = Lock()
+        self._tail: Queue = Queue(maxsize=10)
+
+        self._buffer_thread.start()
 
     def clear_buffer(self):
         self._buffer.clear()

@@ -80,11 +80,11 @@ def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
 
         logger.info("found matching artifact. artifact=%s", artifact)
         archive_url = artifact["archive_download_url"]
-        with session.get(archive_url, stream=True) as response:
+        with session.get(archive_url) as response:
             response.raise_for_status()
             logger.info("downloading artifact. url=%s", archive_url)
             with tempfile.NamedTemporaryFile() as fd:
-                shutil.copyfileobj(response.raw, fd)
+                fd.write(response.content)
                 logger.debug("extracting zip archive. path=%s", fd.name)
                 shutil.unpack_archive(fd.name, format="zip")
         logger.info("extracted package. path=%s", name)
