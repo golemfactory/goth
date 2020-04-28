@@ -122,7 +122,7 @@ class CallTrace:
 
     # List of properties that have to be checked for each new call
     # Each property is stored with a label that is used in log messages
-    properties: List[Tuple[str, Property]]
+    properties: List[Property]
 
     def __init__(self):
         self.calls = []
@@ -263,4 +263,5 @@ class TracerAddon:
         self.trace.add(flow)
 
 
+# This is used by mitmproxy to install add-ons
 addons = [TracerAddon()]
