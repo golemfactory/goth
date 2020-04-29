@@ -23,23 +23,23 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "simple",},
-        "file": {
+        "file_runner": {
             "class": "logging.FileHandler",
             "formatter": "date",
             "filename": BASE_LOG_DIR / "runner.log",
             "encoding": "utf-8",
         },
-        "file_agent": {
+        "file_agents": {
             "class": "logging.FileHandler",
             "formatter": "none",
-            "filename": BASE_LOG_DIR / "agent.log",
+            "filename": BASE_LOG_DIR / "agents.log",
             "encoding": "utf-8",
         },
     },
     "loggers": {
         "src.runner": {"handlers": ["console"], "propagate": False,},
-        "src.runner.node": {"handlers": ["file_agent"], "propagate": False,},
-        "src.runner.scenario": {"handlers": ["file"]},
+        "src.runner.node": {"handlers": ["file_agents"], "propagate": False,},
+        "src.runner.scenario": {"handlers": ["file_runner"]},
     },
 }
 
