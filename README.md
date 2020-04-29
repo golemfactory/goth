@@ -47,12 +47,13 @@ To generate a new token, go to your account's [developer settings](https://githu
 
 Once your token is generated, create an environment variable named `GITHUB_API_TOKEN` and store the token as its value. This environment variable will need to be available in the terminal from which you run `docker-compose`.
 
-#### Starting a Docker Compose network
-Having the GitHub API token available in your environment, navigate to this project's `src/docker` directory and run the below command:
+#### Starting the Docker Compose network
+Having the GitHub API token available in your environment, navigate to this project's `test/level0/unix` directory and run the following script:
 ```
-docker-compose up
+./run_docker_network.sh
 ```
 
+This script takes care of copying the appropriate assets to Docker's build context (and cleaning them up later on), as well as running test network itself.
 If everything is correctly configured you should see Docker pulling and building images followed by logs from the containers in the network.
 
 #### Running the integration tests
