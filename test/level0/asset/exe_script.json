@@ -12,7 +12,7 @@
   },
   {"run": {
     "entry_point": "rust-wasi-tutorial",
-    "args": ["input/file_in", "output/file_cp"]
+    "args": ["/input/file_in", "/output/file_cp"]
   }},
   {
     "transfer": {

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 
-ARTIFACT_NAMES = ["yagna_with_router.deb"]
+ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
 BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
@@ -47,7 +47,7 @@ def get_workflow(workflow_name: str) -> dict:
     return result
 
 
-def get_latest_run(workflow_id: str) -> dict:
+def get_latest_run(workflow_id: str, branch: str) -> dict:
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
     logger.info("fetching worflow runs. url=%s", url)
     response = session.get(url)
@@ -57,7 +57,7 @@ def get_latest_run(workflow_id: str) -> dict:
     logger.debug("workflow_runs=%s", workflow_runs)
     result = next(
         filter(
-            lambda r: r["conclusion"] == "success" and r["head_branch"] == BRANCH,
+            lambda r: r["conclusion"] == "success" and r["head_branch"] == branch,
             workflow_runs,
         )
     )
@@ -80,11 +80,11 @@ def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
 
         logger.info("found matching artifact. artifact=%s", artifact)
         archive_url = artifact["archive_download_url"]
-        with session.get(archive_url, stream=True) as response:
+        with session.get(archive_url) as response:
             response.raise_for_status()
             logger.info("downloading artifact. url=%s", archive_url)
             with tempfile.NamedTemporaryFile() as fd:
-                shutil.copyfileobj(response.raw, fd)
+                fd.write(response.content)
                 logger.debug("extracting zip archive. path=%s", fd.name)
                 shutil.unpack_archive(fd.name, format="zip")
         logger.info("extracted package. path=%s", name)
@@ -94,5 +94,5 @@ if __name__ == "__main__":
     logger.info("workflow=%s, artifacts=%s", args.workflow, args.artifacts)
 
     workflow = get_workflow(args.workflow)
-    last_run = get_latest_run(workflow["id"])
+    last_run = get_latest_run(workflow["id"], args.branch)
     download_artifacts(last_run["artifacts_url"], args.artifacts)
