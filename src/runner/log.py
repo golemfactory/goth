@@ -1,36 +1,33 @@
 import logging
 import logging.config
 from pathlib import Path
+import time
 
-BASE_LOG_DIR = Path("/tmp/yagna_integration/")
+BASE_LOG_DIR = Path("/tmp/yagna-tests/")
+
+
+class UTCFormatter(logging.Formatter):
+    converter = time.gmtime
 
 
 LOGGING_CONFIG = {
     "version": 1,
     "formatters": {
         "none": {"format": "%(message)s"},
-        "console": {"format": "%(levelname)-8s [%(name)-35s] %(message)s"},
+        "simple": {"format": "%(levelname)-8s [%(name)-30s] %(message)s"},
         "date": {
-            "format": "%(asctime)s %(levelname)-8s %(name)-35s %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "()": UTCFormatter,
+            "format": "%(asctime)s %(levelname)-8s %(name)-30s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S%z",
         },
     },
     "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "console",
-            "stream": "ext://sys.stdout",
-        },
+        "console": {"class": "logging.StreamHandler", "formatter": "simple",},
         "file": {
             "class": "logging.FileHandler",
             "formatter": "date",
-            "filename": BASE_LOG_DIR / "integration.log",
+            "filename": BASE_LOG_DIR / "runner.log",
             "encoding": "utf-8",
-        },
-        "console_agent": {
-            "class": "logging.StreamHandler",
-            "formatter": "none",
-            "stream": "ext://sys.stdout",
         },
         "file_agent": {
             "class": "logging.FileHandler",
@@ -40,11 +37,9 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "": {"level": "INFO", "handlers": ["console", "file",],},
-        "src.runner.node": {
-            "level": "INFO",
-            "handlers": ["console_agent", "file_agent"],
-        },
+        "src.runner": {"handlers": ["console"], "propagate": False,},
+        "src.runner.node": {"handlers": ["file_agent"], "propagate": False,},
+        "src.runner.scenario": {"handlers": ["file"]},
     },
 }
 

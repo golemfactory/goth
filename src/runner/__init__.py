@@ -6,9 +6,6 @@ import docker
 from src.runner.exceptions import ContainerNotFoundError
 from src.runner.node import Node, Role
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-35s %(message)s", level=logging.INFO,
-)
 logger = logging.getLogger(__name__)
 
 
