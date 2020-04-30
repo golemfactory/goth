@@ -1,9 +1,10 @@
 import logging
 import logging.config
 from pathlib import Path
+import tempfile
 import time
 
-BASE_LOG_DIR = Path("/tmp/yagna-tests/")
+BASE_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
 
 
 class UTCFormatter(logging.Formatter):
