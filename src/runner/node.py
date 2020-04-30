@@ -16,12 +16,21 @@ logger = logging.getLogger(__name__)
 
 
 class LogBuffer:
-    def __init__(self, in_stream: Iterator[bytes]):
+
+    in_stream: Iterator[bytes]
+    logger: logging.Logger
+
+    def __init__(
+        self, in_stream: Iterator[bytes], logger: logging.Logger, tail_len: int = 10,
+    ):
         self.in_stream = in_stream
-        self._buffer: Deque[str] = deque()
+        self.logger = logger
+
+        self._buffer: List[str] = []
         self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._lock = Lock()
-        self._tail: Queue = Queue(maxsize=10)
+        # With maxlen=n, deque stores the last n items added
+        self._tail: Deque[str] = deque(maxlen=tail_len)
 
         self._buffer_thread.start()
 
@@ -46,14 +55,11 @@ class LogBuffer:
         deadline = datetime.now() + timeout
 
         while deadline >= datetime.now():
-            try:
-                line = self._tail.get(timeout=timeout.seconds)
-            except Empty:
-                raise TimeoutError()
-
-            match = pattern.match(line)
-            if match:
-                return match
+            if len(self._tail) > 0:
+                # By using popleft tail works as a FIFO queue
+                match = pattern.match(self._tail.popleft())
+                if match:
+                    return match
 
         raise TimeoutError()
 
@@ -62,8 +68,7 @@ class LogBuffer:
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 logger.info(line)
-                # If _tail is full this will block until there's space available
-                self._tail.put(line)
+                self._tail.append(line)
 
                 with self._lock:
                     self._buffer.append(line)
@@ -78,7 +83,7 @@ class Node:
     def __init__(self, container: Container, role: Role):
         self.container = container
         self.cli = YagnaCli(container)
-        self.logs = LogBuffer(container.logs(stream=True, follow=True))
+        self.logs = LogBuffer(container.logs(stream=True, follow=True), logger)
         self.role = role
 
         self.agent_logs: LogBuffer
@@ -116,11 +121,11 @@ class Node:
             f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {node_name} {preset_name}",
             stream=True,
         )
-        self.agent_logs = LogBuffer(log_stream.output)
+        self.agent_logs = LogBuffer(log_stream.output, logger)
 
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
             f"ya-requestor --app-key {self.app_key} --exe-script /asset/exe_script.json",
             stream=True,
         )
-        self.agent_logs = LogBuffer(log_stream.output)
+        self.agent_logs = LogBuffer(log_stream.output, logger)
