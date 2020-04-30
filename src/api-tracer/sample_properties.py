@@ -8,8 +8,9 @@ from tracer_addon import CallTrace, APICall, trace_property
 logger = logging.getLogger(__name__)
 
 
-# A property is a function that takes a sequence of API calls and returns 
+# A property is a function that takes a sequence of API calls and returns
 # `bool`, decorated with `@trace_property` decorator
+
 
 @trace_property
 def delete_activity(calls: Sequence[APICall]) -> bool:
@@ -34,9 +35,7 @@ def delete_activity(calls: Sequence[APICall]) -> bool:
     activity_id = path.rsplit("/", 1)[-1]
 
     # Properties may also log messages (could be useful for debugging)
-    logger.debug(
-        "Checking 'delete_actitity' property for activity %s", activity_id
-    )
+    logger.debug("Checking 'delete_actitity' property for activity %s", activity_id)
 
     # Look for ActivityCreate calls returning `activity_id`
     activity_create_calls = (

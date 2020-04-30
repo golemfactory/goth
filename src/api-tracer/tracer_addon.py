@@ -17,8 +17,7 @@ from router_addon import CALLER_HEADER, CALLEE_HEADER
 
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s",
-    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
 )
 
 # `mitmproxy` adds ugly prefix to add-on module names
