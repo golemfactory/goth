@@ -29,16 +29,9 @@ LOGGING_CONFIG = {
             "filename": BASE_LOG_DIR / "runner.log",
             "encoding": "utf-8",
         },
-        "file_agents": {
-            "class": "logging.FileHandler",
-            "formatter": "none",
-            "filename": BASE_LOG_DIR / "agents.log",
-            "encoding": "utf-8",
-        },
     },
     "loggers": {
         "src.runner": {"handlers": ["console"], "propagate": False,},
-        "src.runner.node": {"handlers": ["file_agents"], "propagate": False,},
         "src.runner.scenario": {"handlers": ["file_runner"]},
     },
 }
@@ -47,3 +40,16 @@ LOGGING_CONFIG = {
 def configure_logging():
     BASE_LOG_DIR.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
+
+
+def get_file_logger(file_name: str):
+    """ Create a new logger that will output to a .log file with no formatting applied. """
+    handler = logging.FileHandler(BASE_LOG_DIR / f"{file_name}.log", encoding="utf-8")
+    formatter = logging.Formatter(fmt="%(message)s")
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(file_name)
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    return logger

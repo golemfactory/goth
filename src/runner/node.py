@@ -10,6 +10,7 @@ from docker.models.containers import Container, ExecResult
 
 from src.runner.cli import YagnaCli
 from src.runner.exceptions import CommandError, TimeoutError
+from src.runner.log import get_file_logger
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,7 @@ class LogBuffer:
         for chunk in self.in_stream:
             chunk = chunk.decode()
             for line in chunk.splitlines():
-                logger.info(line)
+                self.logger.info(line)
                 self._tail.append(line)
 
                 with self._lock:
@@ -83,7 +84,9 @@ class Node:
     def __init__(self, container: Container, role: Role):
         self.container = container
         self.cli = YagnaCli(container)
-        self.logs = LogBuffer(container.logs(stream=True, follow=True), logger)
+        self.logs = LogBuffer(
+            container.logs(stream=True, follow=True), get_file_logger(self.name)
+        )
         self.role = role
 
         self.agent_logs: LogBuffer
@@ -121,11 +124,15 @@ class Node:
             f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {node_name} {preset_name}",
             stream=True,
         )
-        self.agent_logs = LogBuffer(log_stream.output, logger)
+        self.agent_logs = LogBuffer(
+            log_stream.output, get_file_logger(f"{self.name}_agent")
+        )
 
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
             f"ya-requestor --app-key {self.app_key} --exe-script /asset/exe_script.json",
             stream=True,
         )
-        self.agent_logs = LogBuffer(log_stream.output, logger)
+        self.agent_logs = LogBuffer(
+            log_stream.output, get_file_logger(f"{self.name}_agent")
+        )
