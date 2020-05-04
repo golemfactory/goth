@@ -22,8 +22,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--content-type", default=CONTENT_TYPE)
 parser.add_argument("-o", "--output", default="release.deb")
 parser.add_argument("-r", "--repo", default=REPO_NAME)
-parser.add_argument("-t", "--token", default=os.environ[ENV_API_TOKEN])
+parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
 args = parser.parse_args()
+
+if not args.token:
+    raise ValueError("GitHub token was not provided.")
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
