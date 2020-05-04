@@ -1,12 +1,20 @@
 #!/bin/sh
 # Start the provider agent
+export AGENT=1
 
 NODE_ID=$(./with_env.sh provider.env ./get_node_id.sh)
 APP_KEY=$(./with_env.sh provider.env ./get_app_key.sh)
 
+echo "Node ID: $NODE_ID"
+echo "App key: $APP_KEY"
+
 set -o allexport
 . ./provider.env
 set +o allexport
+
+echo "YAGNA_ACTIVITY_URL: $YAGNA_ACTIVITY_URL" > /dev/stderr
+echo "YAGNA_MARKET_URL: $YAGNA_MARKET_URL" > /dev/stderr
+
 
 # The file `presets.json` is required in the current dir.
 [ -f "./presets.json" ] || cp ../asset/presets.json .
