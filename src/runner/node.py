@@ -21,17 +21,15 @@ class LogBuffer:
     in_stream: Iterator[bytes]
     logger: logging.Logger
 
-    def __init__(
-        self, in_stream: Iterator[bytes], logger: logging.Logger, tail_len: int = 10,
-    ):
+    def __init__(self, in_stream: Iterator[bytes], logger: logging.Logger):
         self.in_stream = in_stream
         self.logger = logger
 
         self._buffer: List[str] = []
+        # Index of last line read from the buffer using `wait_for_pattern`
+        self._last_read: int = -1
         self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._lock = Lock()
-        # With maxlen=n, deque stores the last n items added
-        self._tail: Deque[str] = deque(maxlen=tail_len)
 
         self._buffer_thread.start()
 
@@ -56,9 +54,11 @@ class LogBuffer:
         deadline = datetime.now() + timeout
 
         while deadline >= datetime.now():
-            if len(self._tail) > 0:
-                # By using popleft tail works as a FIFO queue
-                match = pattern.match(self._tail.popleft())
+            # Check if there are new lines available in the buffer
+            if len(self._buffer) > self._last_read + 1:
+                self._last_read += 1
+                next_line = self._buffer[self._last_read]
+                match = pattern.match(next_line)
                 if match:
                     return match
 
@@ -69,7 +69,6 @@ class LogBuffer:
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 self.logger.info(line)
-                self._tail.append(line)
 
                 with self._lock:
                     self._buffer.append(line)
