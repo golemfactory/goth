@@ -4,7 +4,7 @@ ARG GITHUB_API_TOKEN
 COPY ./download_artifacts.py ./download_release.py ./
 RUN pip install requests \
     && ./download_artifacts.py -t ${GITHUB_API_TOKEN} \
-    && ./download_release.py -t ${GITHUB_API_TOKEN} -o ya-runtime-wasi.deb
+    && ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
 
 FROM ubuntu:20.04
 COPY --from=downloader /yagna.deb /ya-sb-router.deb ya-runtime-wasi.deb ./

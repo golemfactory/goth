@@ -16,15 +16,17 @@ ENV_API_TOKEN = "GITHUB_API_TOKEN"
 
 CONTENT_TYPE = "application/vnd.debian.binary-package"
 REPO_OWNER = "golemfactory"
-REPO_NAME = "ya-runtime-wasi"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--content-type", default=CONTENT_TYPE)
-parser.add_argument("-o", "--output", default="release.deb")
-parser.add_argument("-r", "--repo", default=REPO_NAME)
+parser.add_argument(
+    "-o", "--output", help="Name of the output file. Default: {repo_name}.deb."
+)
 parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
+parser.add_argument("repo", help="Name of the git repository to be used.")
 args = parser.parse_args()
 
+args.output = args.output or f"{args.repo}.deb"
 if not args.token:
     raise ValueError("GitHub token was not provided.")
 
