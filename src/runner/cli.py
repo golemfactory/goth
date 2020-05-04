@@ -81,6 +81,14 @@ class Identity(NamedTuple):
     address: str
 
 
+class AppKeyInfo(NamedTuple):
+    name: str
+    key: str
+    id: str
+    role: str
+    created: str
+
+
 class Payments(NamedTuple):
     accepted: float
     confirmed: float
@@ -119,7 +127,11 @@ class YagnaCli(CliWrapper):
             result["nodeId"]
         )
 
-    def id_show(self, data_dir: str = "", alias: str = "") -> Identity:
+    def id_show(
+        self, 
+        data_dir: str = "", 
+        alias: str = ""
+    ) -> Optional[Identity]:
         """Return the output of `yagna id show`"""
         args = ["id", "show"]
         if data_dir:
@@ -128,12 +140,14 @@ class YagnaCli(CliWrapper):
             args.append(alias)
         output = self._run_json_cmd(*args)
         result = _unwrap_ok_err_json(output)
-        return Identity(
-            result["alias"],
-            result["isDefault"],
-            result["isLocked"],
-            result["nodeId"]
-        )
+        if result is not None:
+            return Identity(
+                result["alias"],
+                result["isDefault"],
+                result["isLocked"],
+                result["nodeId"]
+            )
+        return None
 
     def id_list(self, data_dir: str = "") -> Sequence[Identity]:
         """Return the output of `yagna id list`"""
@@ -166,11 +180,40 @@ class YagnaCli(CliWrapper):
         if identity:
             args.extend(["--id", identity])
         if data_dir:
-            args.extend(["--data_dir", data_dir])
+            args.extend(["-d", data_dir])
         output = self._run_json_cmd(*args)
         assert isinstance(output, str)
         return output
 
+    def app_key_drop(
+        self,
+        name: str,
+        identity: str = "",
+        data_dir: str = ""
+    ) -> str:
+        """Remove an app-key with given name; return the command's output""" 
+        args = ["app-key", "drop", name]
+        if identity:
+            args.extend(["--id", identity])
+        if data_dir:
+            args.extend(["-d", data_dir])
+        return self.run_command(*args)
+
+    def app_key_list(
+        self,
+        identity: str = "",
+        data_dir: str = ""
+    ) -> Sequence[AppKeyInfo]:
+        args = ["app-key", "list"]
+        if identity:
+            args.extend(["--id", identity])
+        if data_dir:
+            args.extend(["-d", data_dir])
+        output = self._run_json_cmd(*args)
+        return [
+            AppKeyInfo(**info)
+            for info in _parse_json_table(output)
+        ]
 
     # `yagna payment` subcommand
 
@@ -219,16 +262,6 @@ class YagnaCli(CliWrapper):
             reserved=float(output["reserved"])
         )
 
-    # legacy methods
-
-    def get_app_keys(self):
-        result = self._run_json_cmd("app-key", "list")
-        return _parse_json_table(json.loads(result.output))
-
-    def create_app_key(self, key_name: str) -> str:
-        result = self._run_json_cmd("app-key", "create", key_name)
-        return json.loads(result.output)
-
     def _run_json_cmd(self, *args) -> Any:
         if "--json" not in args:
             args = args + ("--json",)
@@ -267,22 +300,23 @@ if __name__ == "__main__":
         id = cli.id_create()
         assert id.is_default is False
         assert id.alias is None
-        addr1 = id.address
-        print("Created ID:", addr1)
+        alt_addr = id.address
+        print("Created ID:", alt_addr)
 
         # with alias
         id = cli.id_create(alias="id-alias")
         assert id.is_default is False
         assert id.alias == "id-alias"
-        addr2 = id.address
-        print("Created ID:", addr2)
+        alias_addr = id.address
+        assert alias_addr != alt_addr
+        print("Created ID:", alias_addr)
 
         # the same alias again, should fail
         try:
             id = cli.id_create(alias="id-alias")
             assert False
         except CommandError as ce:
-            print("Crreate ID failed:", ce)
+            print("id create failed:", ce)
             assert "UNIQUE constraint failed: identity.alias" in ce.args[0]
         
         # with a wrong data dir
@@ -296,27 +330,29 @@ if __name__ == "__main__":
         # id show
 
         # show default ID
-        id = cli.id_show()
-        assert id.is_default is True
-        print("Default ID:", id.address)
+        id_ = cli.id_show()
+        assert id_ is not None and id_.is_default is True
+        default_addr = id_.address
+        print("default address:", default_addr)
 
         # show id by alias
-        id = cli.id_show(alias=addr1)
-        assert id.is_default is False
-        assert id.alias is None
-        assert id.address == addr1
+        id_ = cli.id_show(alias=alt_addr)
+        assert id_ is not None and id_.is_default is False
+        assert id_.alias is None
+        assert id_.address == alt_addr
 
-        id = cli.id_show(alias="id-alias")
-        assert id.is_default is False
-        assert id.alias == "id-alias"
-        assert id.address == addr2
+        id_ = cli.id_show(alias="id-alias")
+        assert id_ is not None and id_.is_default is False
+        assert id_.alias == "id-alias"
+        assert id_.address == alias_addr
 
         # nonexistent alias
-        # res = cli.id_show(alias="unknown")
- 
+        id_ = cli.id_show(alias="unknown-alias")
+        assert id_ is None
+
         # wrong data dir
         try:
-            id = cli.id_show(data_dir="xyz")
+            cli.id_show(data_dir="xyz")
             assert False
         except CommandError as ce:
             print("id show failed:", ce)
@@ -334,6 +370,48 @@ if __name__ == "__main__":
         key2 = cli.app_key_create("key2")
         print("new app-key:", key2)
         assert key1 != key2
+
+        try:
+            cli.app_key_create("key1")
+        except CommandError as ce:
+            print("app-key create failed:", ce)
+
+        key3 = cli.app_key_create("key3", role="manager")
+        print("new app-key:", key3)
+
+        key4 = cli.app_key_create("key4", identity=alias_addr)
+        
+        key5 = cli.app_key_create("key5", identity="id-alias")
+
+        try:
+            cli.app_key_create("key6", identity="fake")
+            assert False
+        except CommandError as ce:
+            assert "Identity not found" in ce.args[0]
+
+        try:
+            cli.app_key_create("key7", data_dir="xyz")
+            assert False
+        except CommandError as ce:
+            assert 'given data dir "xyz" does not exist' in ce.args[0]
+
+        # key list
+        keys = cli.app_key_list()
+        assert {info.key for info in keys} == {key1, key2, key3, key4, key5}
+        assert any(info.id == alias_addr for info in keys)
+        assert any(info.id != alias_addr for info in keys)
+
+        keys = cli.app_key_list(identity=alias_addr)
+        assert all(info.id == alias_addr for info in keys)
+
+        try:
+            cli.app_key_list(data_dir="xyz")
+            assert False
+        except CommandError as ce:
+            assert 'given data dir "xyz" does not exist' in ce.args[0]
+
+        for key in keys:
+            cli.app_key_drop(key.name, identity=default_addr)
 
 
         # payment init

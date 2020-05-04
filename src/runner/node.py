@@ -114,15 +114,14 @@ class Node:
     @property
     def address(self) -> Optional[str]:
         """ returns address from id marked as default """
-        ids = self.cli.get_ids()
-        default_id = next(filter(lambda i: i["default"] == "X", ids))
-        return default_id["address"] if default_id else None
+        identity = self.cli.id_show()
+        return identity.address if identity else None
 
     @property
     def app_key(self) -> Optional[str]:
         """ returns first app key on the list """
-        keys = self.cli.get_app_keys()
-        return keys[0]["key"] if keys else None
+        keys = self.cli.app_key_list()
+        return keys[0].key if keys else None
 
     @property
     def name(self) -> str:
@@ -130,13 +129,16 @@ class Node:
 
     def create_app_key(self, key_name: str) -> str:
         try:
-            key = self.cli.create_app_key(key_name)
+            key = self.cli.app_key_create(key_name)
         except CommandError as e:
             if "UNIQUE constraint failed" in str(e):
-                app_key: dict = next(
-                    filter(lambda k: k["name"] == key_name, self.cli.get_app_keys())
+                app_key = next(
+                    filter(
+                        lambda k: k.name == key_name, 
+                        self.cli.app_key_list()
+                    )
                 )
-                key = app_key["key"]
+                key = app_key.key
         return key
 
     def start_provider_agent(self, node_name: str, preset_name: str):
