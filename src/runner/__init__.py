@@ -4,8 +4,10 @@ from typing import Dict
 import docker
 
 from src.runner.exceptions import ContainerNotFoundError
+from src.runner.log import configure_logging
 from src.runner.node import Node, Role
 
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
