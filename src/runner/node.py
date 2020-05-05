@@ -36,10 +36,22 @@ class LogBuffer:
 
     def clear_buffer(self):
         self._buffer.clear()
+        self._last_read = -1
 
-    def search_for_pattern(self, pattern: Pattern[str]) -> Optional[Match[str]]:
+    def search_for_pattern(
+        self, pattern: Pattern[str], entire_buffer: bool = False
+    ) -> Optional[Match[str]]:
+        """ Search the buffer for a line matching the given pattern.
+            By default, this searches only the lines which haven't been read yet.
+            :param bool entire_buffer: when True, the entire available buffer will be searched.
+            :return: Match[str] object if a matching line is found, None otherwise. """
         with self._lock:
             history = self._buffer.copy()
+
+        if not entire_buffer:
+            # This will yield an empty list if there are no unread lines
+            history = history[self._last_read + 1 :]
+        self._last_read = len(self._buffer) - 1
 
         # Reverse to search latest logs first
         for line in reversed(history):
@@ -52,6 +64,11 @@ class LogBuffer:
     def wait_for_pattern(
         self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
     ) -> Match[str]:
+        """ Blocking call which waits for a matching line to appear in the buffer.
+            This tests all the unread lines in the buffer before waiting for
+            new lines to appear.
+            :param timedelta timeout: the maximum time to wait for a matching line.
+            :raises TimeoutError: if the timeout is reached with no match."""
         deadline = datetime.now() + timeout
 
         while deadline >= datetime.now():
