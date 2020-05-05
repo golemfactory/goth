@@ -4,11 +4,10 @@ from typing import Dict
 import docker
 
 from src.runner.exceptions import ContainerNotFoundError
+from src.runner.log import configure_logging
 from src.runner.node import Node, Role
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-35s %(message)s", level=logging.INFO,
-)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 

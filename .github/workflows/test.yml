@@ -51,3 +51,10 @@ jobs:
 
       - name: Run test suite
         run: python -m pytest test/level0 -svx --log-cli-level=DEBUG
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: test-logs
+          path: /tmp/yagna-tests
