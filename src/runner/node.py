@@ -4,6 +4,7 @@ from enum import Enum
 import logging
 from queue import Empty, Queue
 from threading import Lock, Thread
+import time
 from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
 
 from docker.models.containers import Container, ExecResult
@@ -61,6 +62,9 @@ class LogBuffer:
                 match = pattern.match(next_line)
                 if match:
                     return match
+            else:
+                # Prevent busy waiting
+                time.sleep(0.1)
 
         raise TimeoutError()
 
