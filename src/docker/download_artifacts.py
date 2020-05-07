@@ -10,7 +10,7 @@ import typing
 import requests
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-35s %(message)s", level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)-30s %(message)s", level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,16 @@ WORKFLOW_NAME = "Build .deb"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--branch", default=BRANCH)
-parser.add_argument("-t", "--token", default=os.environ[ENV_API_TOKEN])
+parser.add_argument("-r", "--repo", default=REPO_NAME)
+parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
 parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
 parser.add_argument("artifacts", nargs="*", default=ARTIFACT_NAMES)
 args = parser.parse_args()
 
-BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
+if not args.token:
+    raise ValueError("GitHub token was not provided.")
+
+BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
 session.headers["Authorization"] = f"token {args.token}"
 
@@ -37,7 +41,7 @@ session.headers["Authorization"] = f"token {args.token}"
 def get_workflow(workflow_name: str) -> dict:
     url = f"{BASE_URL}/actions/workflows"
     logger.info("fetching workflows. url=%s", url)
-    response = session.get(f"{BASE_URL}/actions/workflows")
+    response = session.get(url)
     response.raise_for_status()
 
     workflows = response.json()["workflows"]
