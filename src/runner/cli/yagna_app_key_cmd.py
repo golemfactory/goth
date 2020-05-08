@@ -2,7 +2,8 @@
 
 from typing import NamedTuple, Sequence
 
-from .base import DockerJSONCommandRunner, parse_json_table
+from .base import parse_json_table
+from .typing import CommandRunner
 
 
 class AppKeyInfo(NamedTuple):
@@ -19,7 +20,7 @@ class YagnaAppKeyMixin:
     """A mixin class that adds support for `<yagna-cmd> app-key` commands"""
 
     def app_key_create(
-        self: DockerJSONCommandRunner,
+        self: CommandRunner,
         name: str,
         role: str = "",
         identity: str = "",
@@ -41,10 +42,7 @@ class YagnaAppKeyMixin:
         return output
 
     def app_key_drop(
-        self: DockerJSONCommandRunner,
-        name: str,
-        identity: str = "",
-        data_dir: str = "",
+        self: CommandRunner, name: str, identity: str = "", data_dir: str = "",
     ) -> str:
         """Run `<cmd> app-key drop <name>` with optional extra args.
         Return the command's output.
@@ -58,7 +56,7 @@ class YagnaAppKeyMixin:
         return self.run_command(*args)
 
     def app_key_list(
-        self: DockerJSONCommandRunner, identity: str = "", data_dir: str = ""
+        self: CommandRunner, identity: str = "", data_dir: str = ""
     ) -> Sequence[AppKeyInfo]:
         """Run `<cmd> app-key list` with optional extra args.
         Return the list of `AppKeyInfo`s parsed from the command's output.

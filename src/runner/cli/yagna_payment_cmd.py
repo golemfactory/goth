@@ -2,7 +2,7 @@
 
 from typing import NamedTuple
 
-from .base import DockerJSONCommandRunner
+from .typing import CommandRunner
 
 
 class Payments(NamedTuple):
@@ -27,7 +27,7 @@ class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands"""
 
     def payment_init(
-        self: DockerJSONCommandRunner,
+        self: CommandRunner,
         requestor_mode: bool = False,
         provider_mode: bool = False,
         data_dir: str = "",
@@ -49,7 +49,7 @@ class YagnaPaymentMixin:
         return self.run_command(*args)
 
     def payment_status(
-        self: DockerJSONCommandRunner, data_dir: str = "", identity: str = ""
+        self: CommandRunner, data_dir: str = "", identity: str = ""
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
         Parse the command's output as a `PatmentStatus` and return it.

@@ -2,7 +2,8 @@
 
 from typing import NamedTuple, Optional, Sequence
 
-from .base import DockerJSONCommandRunner, parse_json_table, unwrap_ok_err_json
+from .base import parse_json_table, unwrap_ok_err_json
+from .typing import CommandRunner
 
 
 class Identity(NamedTuple):
@@ -17,9 +18,7 @@ class Identity(NamedTuple):
 class YagnaIdMixin:
     """A mixin class that adds support for `<yagna-cmd> id` commands"""
 
-    def id_create(
-        self: DockerJSONCommandRunner, data_dir: str = "", alias: str = ""
-    ) -> Identity:
+    def id_create(self: CommandRunner, data_dir: str = "", alias: str = "") -> Identity:
         """Run `<yagna-cmd> id create` command."""
 
         args = ["id", "create", "--no-password"]
@@ -34,7 +33,7 @@ class YagnaIdMixin:
         )
 
     def id_show(
-        self: DockerJSONCommandRunner, data_dir: str = "", alias: str = ""
+        self: CommandRunner, data_dir: str = "", alias: str = ""
     ) -> Optional[Identity]:
         """Return the output of `<yagna-cmd> id show`."""
 
@@ -54,9 +53,7 @@ class YagnaIdMixin:
             )
         return None
 
-    def id_list(
-        self: DockerJSONCommandRunner, data_dir: str = ""
-    ) -> Sequence[Identity]:
+    def id_list(self: CommandRunner, data_dir: str = "") -> Sequence[Identity]:
         """Return the output of `<yagna-cmd> id list`."""
 
         args = ["id", "list"]
