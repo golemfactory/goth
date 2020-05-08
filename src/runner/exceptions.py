@@ -3,9 +3,5 @@ class CommandError(Exception):
         super().__init__(message)
 
 
-class ContainerNotFoundError(Exception):
-    pass
-
-
 class TimeoutError(Exception):
     pass
