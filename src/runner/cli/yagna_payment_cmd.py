@@ -27,11 +27,11 @@ class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands"""
 
     def payment_init(
-            self: DockerJSONCommandRunner,
-            requestor_mode: bool = False,
-            provider_mode: bool = False,
-            data_dir: str = "",
-            identity: str = "",
+        self: DockerJSONCommandRunner,
+        requestor_mode: bool = False,
+        provider_mode: bool = False,
+        data_dir: str = "",
+        identity: str = "",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
         Return the command's output.
@@ -49,9 +49,7 @@ class YagnaPaymentMixin:
         return self.run_command(*args)
 
     def payment_status(
-            self: DockerJSONCommandRunner,
-            data_dir: str = "",
-            identity: str = ""
+        self: DockerJSONCommandRunner, data_dir: str = "", identity: str = ""
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
         Parse the command's output as a `PatmentStatus` and return it.
@@ -65,13 +63,11 @@ class YagnaPaymentMixin:
         output = self.run_json_command(*args)
         return PaymentStatus(
             amount=float(output["amount"]),
-            incoming=Payments(**{
-                key: float(value)
-                for key, value in output["incoming"].items()
-            }),
-            outgoing=Payments(**{
-                key: float(value)
-                for key, value in output["outgoing"].items()
-            }),
-            reserved=float(output["reserved"])
+            incoming=Payments(
+                **{key: float(value) for key, value in output["incoming"].items()}
+            ),
+            outgoing=Payments(
+                **{key: float(value) for key, value in output["outgoing"].items()}
+            ),
+            reserved=float(output["reserved"]),
         )

@@ -19,11 +19,11 @@ class YagnaAppKeyMixin:
     """A mixin class that adds support for `<yagna-cmd> app-key` commands"""
 
     def app_key_create(
-            self: DockerJSONCommandRunner,
-            name: str,
-            role: str = "",
-            identity: str = "",
-            data_dir: str = ""
+        self: DockerJSONCommandRunner,
+        name: str,
+        role: str = "",
+        identity: str = "",
+        data_dir: str = "",
     ) -> str:
         """"Run `<cmd> app-key create <name>` with optional extra args.
         Return the application key parsed from the command's output.
@@ -41,10 +41,10 @@ class YagnaAppKeyMixin:
         return output
 
     def app_key_drop(
-            self: DockerJSONCommandRunner,
-            name: str,
-            identity: str = "",
-            data_dir: str = ""
+        self: DockerJSONCommandRunner,
+        name: str,
+        identity: str = "",
+        data_dir: str = "",
     ) -> str:
         """Run `<cmd> app-key drop <name>` with optional extra args.
         Return the command's output.
@@ -58,9 +58,7 @@ class YagnaAppKeyMixin:
         return self.run_command(*args)
 
     def app_key_list(
-            self: DockerJSONCommandRunner,
-            identity: str = "",
-            data_dir: str = ""
+        self: DockerJSONCommandRunner, identity: str = "", data_dir: str = ""
     ) -> Sequence[AppKeyInfo]:
         """Run `<cmd> app-key list` with optional extra args.
         Return the list of `AppKeyInfo`s parsed from the command's output.
@@ -72,7 +70,4 @@ class YagnaAppKeyMixin:
         if data_dir:
             args.extend(["-d", data_dir])
         output = self.run_json_command(*args)
-        return [
-            AppKeyInfo(**info)
-            for info in parse_json_table(output)
-        ]
+        return [AppKeyInfo(**info) for info in parse_json_table(output)]

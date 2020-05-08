@@ -31,8 +31,7 @@ class DockerCommandRunner:
         return result.output
 
     def run_command_no_throw(self, *cmd_args, **kwargs) -> ExecResult:
-        """Run the command with `cmd_args`. Return its `ExecResult`.
-        """
+        """Run the command with `cmd_args`; return its `ExecResult`."""
 
         cmd_line = f"{self.command} {' '.join(cmd_args)}"
         logger.debug("[%s] command: '%s'", self.container.name, cmd_line)

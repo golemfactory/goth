@@ -9,10 +9,7 @@ from .yagna_payment_cmd import YagnaPaymentMixin
 
 
 class YagnaDockerCli(
-        DockerJSONCommandRunner,
-        YagnaAppKeyMixin,
-        YagnaIdMixin,
-        YagnaPaymentMixin
+    DockerJSONCommandRunner, YagnaAppKeyMixin, YagnaIdMixin, YagnaPaymentMixin
 ):
     """A class for running the `yagna` command inside a docker container"""
 

@@ -18,9 +18,7 @@ class YagnaIdMixin:
     """A mixin class that adds support for `<yagna-cmd> id` commands"""
 
     def id_create(
-            self: DockerJSONCommandRunner,
-            data_dir: str = "",
-            alias: str = ""
+        self: DockerJSONCommandRunner, data_dir: str = "", alias: str = ""
     ) -> Identity:
         """Run `<yagna-cmd> id create` command."""
 
@@ -32,16 +30,11 @@ class YagnaIdMixin:
         output = self.run_json_command(*args)
         result = unwrap_ok_err_json(output)
         return Identity(
-            result["alias"],
-            result["isDefault"],
-            result["isLocked"],
-            result["nodeId"]
+            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"],
         )
 
     def id_show(
-            self: DockerJSONCommandRunner,
-            data_dir: str = "",
-            alias: str = ""
+        self: DockerJSONCommandRunner, data_dir: str = "", alias: str = ""
     ) -> Optional[Identity]:
         """Return the output of `<yagna-cmd> id show`."""
 
@@ -57,13 +50,12 @@ class YagnaIdMixin:
                 result["alias"],
                 result["isDefault"],
                 result["isLocked"],
-                result["nodeId"]
+                result["nodeId"],
             )
         return None
 
     def id_list(
-            self: DockerJSONCommandRunner,
-            data_dir: str = ""
+        self: DockerJSONCommandRunner, data_dir: str = ""
     ) -> Sequence[Identity]:
         """Return the output of `<yagna-cmd> id list`."""
 
@@ -72,11 +64,6 @@ class YagnaIdMixin:
             args.extend(["-d", data_dir])
         output = self.run_json_command(*args)
         return [
-            Identity(
-                r["alias"],
-                r["default"] == "X",
-                r["locked"] == "X",
-                r["address"]
-            )
+            Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"],)
             for r in parse_json_table(output)
         ]

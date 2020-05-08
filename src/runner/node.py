@@ -133,10 +133,7 @@ class Node:
         except CommandError as e:
             if "UNIQUE constraint failed" in str(e):
                 app_key = next(
-                    filter(
-                        lambda k: k.name == key_name, 
-                        self.cli.app_key_list()
-                    )
+                    filter(lambda k: k.name == key_name, self.cli.app_key_list())
                 )
                 key = app_key.key
         return key
