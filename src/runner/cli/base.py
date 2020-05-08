@@ -1,5 +1,4 @@
-"""Classes for running commands in a docker container and some utility functions
-"""
+"""Classes for running commands in a docker container and some utility functions"""
 
 import json
 import logging

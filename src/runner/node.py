@@ -9,7 +9,7 @@ from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
 
 from docker.models.containers import Container, ExecResult
 
-from src.runner.cli import YagnaCli
+from src.runner.cli import Cli
 from src.runner.exceptions import CommandError, TimeoutError
 from src.runner.log import get_file_logger
 
@@ -103,7 +103,7 @@ class Role(Enum):
 class Node:
     def __init__(self, container: Container, role: Role):
         self.container = container
-        self.cli = YagnaCli(container)
+        self.cli = Cli(container).yagna
         self.logs = LogBuffer(
             container.logs(stream=True, follow=True), get_file_logger(self.name)
         )
