@@ -55,5 +55,5 @@ class YagnaContainer:
             network=self.NETWORK_NAME,
             ports=self.ports,
             volumes=self.volumes,
-            remove=True,
+            auto_remove=auto_remove,
         )

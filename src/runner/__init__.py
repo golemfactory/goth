@@ -41,6 +41,12 @@ class Runner:
 
     def run(self, scenario):
         self.run_nodes()
-        for step, role in scenario.steps:
-            logger.debug(f"running step: {step}")
-            result = step(node=self.nodes[role.name])
+
+        try:
+            for step, role in scenario.steps:
+                logger.debug("running step. role=%s, step=%s", role, step)
+                step(node=self.nodes[role.name])
+        finally:
+            for node in self.nodes.values():
+                logger.info("removing container. name=%s", node.name)
+                node.container.remove(force=True)
