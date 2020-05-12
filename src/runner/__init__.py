@@ -1,6 +1,8 @@
+from collections import defaultdict
+from itertools import chain
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import DefaultDict, Dict, List
 
 import docker
 
@@ -20,33 +22,36 @@ class Runner:
     docker_client: docker.DockerClient
 
     # Nodes used for the test run, identified by their role names
-    nodes: Dict[str, Node]
+    nodes: DefaultDict[Role, List[Node]]
 
     def __init__(self, assets_path: Path):
         self.assets_path = assets_path
         self.docker_client = docker.from_env()
-        self.nodes = {}
+        self.nodes = defaultdict(list)
 
-    def run_nodes(self):
-        for role in Role:
-            container = YagnaContainer(
-                self.docker_client,
-                role.name,
-                {
-                    str(self.assets_path): "/asset",
-                    f"{self.assets_path}/presets.json": "/presets.json",
-                },
-            )
-            self.nodes[role.name] = Node(container.run(), role)
+    def run_nodes(self, scenario):
+        for role, count in scenario.nodes.items():
+            for c in range(count):
+                container = YagnaContainer(
+                    client=self.docker_client,
+                    name=role.name,
+                    volumes={
+                        str(self.assets_path): "/asset",
+                        f"{self.assets_path}/presets.json": "/presets.json",
+                    },
+                    ordinal=c + 1,
+                )
+                self.nodes[role].append(Node(container.run(), role))
 
     def run(self, scenario):
-        self.run_nodes()
+        self.run_nodes(scenario)
 
         try:
             for step, role in scenario.steps:
                 logger.debug("running step. role=%s, step=%s", role, step)
-                step(node=self.nodes[role.name])
+                for node in self.nodes[role]:
+                    step(node=node)
         finally:
-            for node in self.nodes.values():
+            for node in chain.from_iterable(self.nodes.values()):
                 logger.info("removing container. name=%s", node.name)
                 node.container.remove(force=True)

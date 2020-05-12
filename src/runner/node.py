@@ -111,6 +111,9 @@ class Node:
 
         self.agent_logs: LogBuffer
 
+    def __str__(self):
+        return self.name
+
     @property
     def address(self) -> Optional[str]:
         """ returns address from id marked as default """
@@ -139,9 +142,9 @@ class Node:
                 key = app_key["key"]
         return key
 
-    def start_provider_agent(self, node_name: str, preset_name: str):
+    def start_provider_agent(self, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {node_name} {preset_name}",
+            f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {self.name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(

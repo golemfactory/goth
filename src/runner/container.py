@@ -1,4 +1,3 @@
-from collections import defaultdict
 from enum import Enum
 from typing import DefaultDict, Dict
 
@@ -23,26 +22,37 @@ class YagnaContainer:
     IMAGE_NAME = "yagna"
     NETWORK_NAME = "docker_default"
 
-    # Keeps track of ordinals for containers with the same names, e.g. multiple providers
-    ordinals: DefaultDict[str, int] = defaultdict(int)
+    # Keeps track of assigned ports on the Docker host
+    port_offset = 0
 
-    def __init__(self, client: docker.DockerClient, name: str, volumes: Dict[str, str]):
+    def __init__(
+        self,
+        client: docker.DockerClient,
+        name: str,
+        volumes: Dict[str, str],
+        ordinal: int = 1,
+    ):
         self.client = client
 
-        port_offset = YagnaContainer.ordinals[name] + sum(
-            YagnaContainer.ordinals.values()
-        )
         self.ports = {
-            YagnaContainer.HTTP_PORT: YagnaContainer.HTTP_PORT + port_offset,
-            YagnaContainer.BUS_PORT: YagnaContainer.BUS_PORT + port_offset,
+            YagnaContainer.HTTP_PORT: YagnaContainer.host_http_port(),
+            YagnaContainer.BUS_PORT: YagnaContainer.host_bus_port(),
         }
 
         self.volumes: Dict[str, dict] = {}
         for host_path, cont_path in volumes.items():
             self.volumes[host_path] = {"bind": cont_path, "mode": "ro"}
 
-        YagnaContainer.ordinals[name] += 1
-        self.name = f"yagna_{name}_{YagnaContainer.ordinals[name]}"
+        self.name = f"yagna_{name}_{ordinal}"
+        YagnaContainer.port_offset += 1
+
+    @classmethod
+    def host_http_port(cls):
+        return cls.HTTP_PORT + cls.port_offset
+
+    @classmethod
+    def host_bus_port(cls):
+        return cls.BUS_PORT + cls.port_offset
 
     def run(self, auto_remove: bool = True) -> Container:
         return self.client.containers.run(
