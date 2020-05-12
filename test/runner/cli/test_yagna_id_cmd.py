@@ -3,7 +3,7 @@
 from src.runner.cli import Cli
 from src.runner.exceptions import CommandError
 
-from conftest import yagna_daemon_running
+from .conftest import yagna_daemon_running
 
 # For fixtures:
 # pylint: disable = redefined-outer-name

@@ -5,7 +5,7 @@ import time
 import pytest
 
 from src.runner.cli import Cli
-from conftest import yagna_daemon_running
+from .conftest import yagna_daemon_running
 
 
 def test_payment_init(yagna_container):
@@ -55,7 +55,9 @@ def test_payment_init_requestor_mode(yagna_container):
     with yagna_daemon_running(yagna_container):
 
         default_identity = yagna.id_show()
-        yagna.payment_init(requestor_mode=True, address=default_identity.address)
+        yagna.payment_init(
+            requestor_mode=True, address=default_identity.address
+        )
 
 
 def test_payment_status(yagna_container):
@@ -65,6 +67,8 @@ def test_payment_status(yagna_container):
 
     with yagna_daemon_running(yagna_container):
 
+        # The test fails if we call `payment init` too fast
+        time.sleep(3.0)
         status = yagna.payment_status()
         assert status
 
