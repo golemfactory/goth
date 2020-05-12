@@ -127,4 +127,8 @@ def test_id_list_many(yagna_container):
         yet_another_identity = yagna.id_create(alias="id-alias")
 
         ids = yagna.id_list()
-        assert set(ids) == {default_identity, another_identity, yet_another_identity}
+        assert set(ids) == {
+            default_identity,
+            another_identity,
+            yet_another_identity,
+        }

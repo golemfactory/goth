@@ -51,6 +51,8 @@ def yagna_daemon_running(container, data_dir=None):
 
     logger.debug("Yagna daemon started, data dir: %s", data_dir)
 
+    time.sleep(1.0)
+
     result = container.exec_run("ps x")
     if result.exit_code != 0:
         raise CommandError(f"Cannot run `ps x`: {result.output}")

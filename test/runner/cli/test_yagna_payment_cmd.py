@@ -55,9 +55,7 @@ def test_payment_init_requestor_mode(yagna_container):
     with yagna_daemon_running(yagna_container):
 
         default_identity = yagna.id_show()
-        yagna.payment_init(
-            requestor_mode=True, address=default_identity.address
-        )
+        yagna.payment_init(requestor_mode=True, address=default_identity.address)
 
 
 def test_payment_status(yagna_container):
