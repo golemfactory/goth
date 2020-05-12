@@ -1,6 +1,6 @@
 """Type definitions for type-checking mixin classes with mypy (and no other purpose)"""
 
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
