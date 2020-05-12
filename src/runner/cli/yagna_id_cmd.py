@@ -2,7 +2,7 @@
 
 from typing import NamedTuple, Optional, Sequence
 
-from .base import parse_json_table, unwrap_ok_err_json
+from .base import make_args, parse_json_table, unwrap_ok_err_json
 from .typing import CommandRunner
 
 
@@ -21,11 +21,7 @@ class YagnaIdMixin:
     def id_create(self: CommandRunner, data_dir: str = "", alias: str = "") -> Identity:
         """Run `<yagna-cmd> id create` command."""
 
-        args = ["id", "create", "--no-password"]
-        if data_dir:
-            args.extend(["-d", data_dir])
-        if alias:
-            args.append(alias)
+        args = make_args("id", "create", "--no-password", alias, data_dir=data_dir)
         output = self.run_json_command(*args)
         result = unwrap_ok_err_json(output)
         return Identity(
@@ -33,15 +29,11 @@ class YagnaIdMixin:
         )
 
     def id_show(
-        self: CommandRunner, data_dir: str = "", alias: str = ""
+        self: CommandRunner, data_dir: str = "", alias_or_addr: str = ""
     ) -> Optional[Identity]:
         """Return the output of `<yagna-cmd> id show`."""
 
-        args = ["id", "show"]
-        if data_dir:
-            args.extend(["-d", data_dir])
-        if alias:
-            args.append(alias)
+        args = make_args("id", "show", alias_or_addr, data_dir=data_dir)
         output = self.run_json_command(*args)
         result = unwrap_ok_err_json(output)
         if result is not None:
@@ -56,9 +48,7 @@ class YagnaIdMixin:
     def id_list(self: CommandRunner, data_dir: str = "") -> Sequence[Identity]:
         """Return the output of `<yagna-cmd> id list`."""
 
-        args = ["id", "list"]
-        if data_dir:
-            args.extend(["-d", data_dir])
+        args = make_args("id", "list", data_dir=data_dir)
         output = self.run_json_command(*args)
         return [
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"],)

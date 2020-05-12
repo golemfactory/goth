@@ -2,6 +2,7 @@
 
 from typing import NamedTuple
 
+from .base import make_args
 from .typing import CommandRunner
 
 
@@ -31,35 +32,27 @@ class YagnaPaymentMixin:
         requestor_mode: bool = False,
         provider_mode: bool = False,
         data_dir: str = "",
-        identity: str = "",
+        address: str = "",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
         Return the command's output.
         """
 
-        args = ["payment", "init"]
+        args = make_args("payment", "init", address, data_dir=data_dir)
         if requestor_mode:
             args.append("-r")
         if provider_mode:
             args.append("-p")
-        if data_dir:
-            args.extend(["-d", data_dir])
-        if identity:
-            args.append(identity)
         return self.run_command(*args)
 
     def payment_status(
-        self: CommandRunner, data_dir: str = "", identity: str = ""
+        self: CommandRunner, data_dir: str = "", address: str = ""
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
         Parse the command's output as a `PatmentStatus` and return it.
         """
 
-        args = ["payment", "status"]
-        if data_dir:
-            args.extend(["-d", data_dir])
-        if identity:
-            args.append(identity)
+        args = make_args("payment", "status", address, data_dir=data_dir)
         output = self.run_json_command(*args)
         return PaymentStatus(
             amount=float(output["amount"]),
