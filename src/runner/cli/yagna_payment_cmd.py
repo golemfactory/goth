@@ -1,12 +1,14 @@
 """Implementation of `yagna payment` subcommands"""
 
-from typing import NamedTuple
+from dataclasses import dataclass
+from typing import Any, Dict
 
 from .base import make_args
 from .typing import CommandRunner
 
 
-class Payments(NamedTuple):
+@dataclass(frozen=True)
+class Payments:
     """Information about payment amounts"""
 
     accepted: float
@@ -15,7 +17,8 @@ class Payments(NamedTuple):
     requested: float
 
 
-class PaymentStatus(NamedTuple):
+@dataclass(frozen=True)
+class PaymentStatus:
     """Information about payment status"""
 
     amount: float
@@ -53,7 +56,7 @@ class YagnaPaymentMixin:
         """
 
         args = make_args("payment", "status", address, data_dir=data_dir)
-        output = self.run_json_command(*args)
+        output = self.run_json_command(Dict[str, Any], *args)
         return PaymentStatus(
             amount=float(output["amount"]),
             incoming=Payments(

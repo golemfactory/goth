@@ -1,12 +1,14 @@
 """Implementation of `yagna app-key` subcommands"""
 
-from typing import NamedTuple, Sequence
+from dataclasses import dataclass
+from typing import Any, Dict, Sequence
 
 from .base import make_args, parse_json_table
 from .typing import CommandRunner
 
 
-class AppKeyInfo(NamedTuple):
+@dataclass(frozen=True)
+class AppKeyInfo:
     """Information about an application key"""
 
     name: str
@@ -33,8 +35,7 @@ class YagnaAppKeyMixin:
         args = make_args(
             "app-key", "create", name, role=role, id=alias_or_addr, data_dir=data_dir
         )
-        output = self.run_json_command(*args)
-        assert isinstance(output, str)
+        output = self.run_json_command(str, *args)
         return output
 
     def app_key_drop(
@@ -55,7 +56,7 @@ class YagnaAppKeyMixin:
         """
 
         args = make_args("app-key", "list", id=address, data_dir=data_dir)
-        output = self.run_json_command(*args)
+        output = self.run_json_command(Dict[str, Any], *args)
         return [
             AppKeyInfo(
                 name=info["name"],

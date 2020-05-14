@@ -3,7 +3,7 @@
 import json
 import logging
 import shlex
-from typing import Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Type, TypeVar
 
 from docker.models.containers import Container, ExecResult
 
@@ -39,10 +39,13 @@ class DockerCommandRunner:
         return self.container.exec_run(cmd_line)
 
 
+T = TypeVar("T")
+
+
 class DockerJSONCommandRunner(DockerCommandRunner):
     """Adds method for running commands with `--json` flag."""
 
-    def run_json_command(self, *cmd_args) -> Any:
+    def run_json_command(self, ty: Type[T], *cmd_args) -> T:
         """Add `--json` flag to command arguments and run the command.
         Parse the command output as JSON and return it.
         """
@@ -50,7 +53,10 @@ class DockerJSONCommandRunner(DockerCommandRunner):
         if "--json" not in cmd_args:
             cmd_args = *cmd_args, "--json"
         output = self.run_command(*cmd_args)
-        return json.loads(output)
+        obj = json.loads(output)
+        if isinstance(obj, ty):
+            return obj
+        raise CommandError(f"Expected a {ty} but command returned {obj}")
 
 
 def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:
@@ -64,7 +70,7 @@ def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:
     return cmd_args
 
 
-def parse_json_table(output_dict: dict) -> List[dict]:
+def parse_json_table(output_dict: dict) -> List[Dict[str, str]]:
     """Parse a table in JSON format as returned by some `yagna` subcommands."""
 
     headers: Optional[list] = output_dict.get("headers")
@@ -84,7 +90,10 @@ def parse_json_table(output_dict: dict) -> List[dict]:
     return result
 
 
-def unwrap_ok_err_json(output_dict: dict) -> dict:
+U = TypeVar("U")
+
+
+def unwrap_ok_err_json(output_dict: Dict[str, U]) -> U:
     """Parse `{ "Ok": <result>, "Err": <error>}` JSON; return `<result>`
     or raise `CommandError(<error>)`.
     """
