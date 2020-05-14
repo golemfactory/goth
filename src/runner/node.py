@@ -139,7 +139,7 @@ class Node:
 
     def start_provider_agent(self, node_name: str, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider run --app-key {self.app_key} --credit-address {self.address} --node-name {node_name} {preset_name}",
+            f"ya-provider run --app-key {self.app_key} --node-name {node_name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(
