@@ -60,7 +60,7 @@ def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:
     cmd_args.extend([shlex.quote(arg) for arg in args if arg])
     for key, value in opt_args.items():
         if value:
-            cmd_args.extend([f"--{key}", shlex.quote(value)])
+            cmd_args.extend([f"--{key}", shlex.quote(str(value))])
     return cmd_args
 
 
