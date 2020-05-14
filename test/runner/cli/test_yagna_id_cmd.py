@@ -1,5 +1,7 @@
 """Tests for the `runner.cli.yagna_id_cmd` module"""
 
+import pytest
+
 from src.runner.cli import Cli
 from src.runner.exceptions import CommandError
 
@@ -49,11 +51,8 @@ def test_id_create_same_alias_fails(yagna_container):
 
         yagna.id_create(alias="id-alias")
 
-        try:
+        with pytest.raises(CommandError):
             yagna.id_create(alias="id-alias")
-            assert False
-        except CommandError:
-            pass
 
 
 def test_id_show(yagna_container):
