@@ -3,6 +3,10 @@ class CommandError(Exception):
         super().__init__(message)
 
 
+class KeyAlreadyExistsError(CommandError):
+    pass
+
+
 class ContainerNotFoundError(Exception):
     pass
 

@@ -5,6 +5,7 @@ from typing import Dict, Sequence
 
 from src.runner.cli.base import make_args, parse_json_table
 from src.runner.cli.typing import CommandRunner
+from src.runner.exceptions import CommandError, KeyAlreadyExistsError
 
 
 @dataclass(frozen=True)
@@ -35,8 +36,13 @@ class YagnaAppKeyMixin:
         args = make_args(
             "app-key", "create", name, role=role, id=alias_or_addr, data_dir=data_dir
         )
-        output = self.run_json_command(str, *args)
-        return output
+        try:
+            output = self.run_json_command(str, *args)
+            return output
+        except CommandError as ce:
+            if "UNIQUE constraint failed: app_key.name" in str(ce):
+                raise KeyAlreadyExistsError(name)
+            raise ce
 
     def app_key_drop(
         self: CommandRunner, name: str, address: str = "", data_dir: str = "",

@@ -1,7 +1,7 @@
 """Tests for the `runner.cli.yagna_app_key_cmd` module"""
 
 from src.runner.cli import Cli
-from src.runner.exceptions import CommandError
+from src.runner.exceptions import CommandError, KeyAlreadyExistsError
 
 from .conftest import yagna_daemon_running
 
@@ -59,8 +59,8 @@ def test_app_key_create_duplicate_name_fails(yagna_container):
         try:
             yagna.app_key_create("test key")
             assert False
-        except CommandError:
-            pass
+        except KeyAlreadyExistsError as err:
+            assert err.args[0] == "test key"
 
 
 def test_app_key_create_duplicate_name_fails_2(yagna_container):
@@ -80,8 +80,8 @@ def test_app_key_create_duplicate_name_fails_2(yagna_container):
         try:
             yagna.app_key_create("test key", alias_or_addr="alias-2")
             assert False
-        except CommandError:
-            pass
+        except KeyAlreadyExistsError as err:
+            assert err.args[0] == "test key"
 
 
 def test_app_key_create_unknown_address_fails(yagna_container):

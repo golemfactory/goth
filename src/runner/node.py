@@ -10,7 +10,7 @@ from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
 from docker.models.containers import Container, ExecResult
 
 from src.runner.cli import Cli
-from src.runner.exceptions import CommandError, TimeoutError
+from src.runner.exceptions import CommandError, KeyAlreadyExistsError, TimeoutError
 from src.runner.log import get_file_logger
 
 
@@ -130,12 +130,11 @@ class Node:
     def create_app_key(self, key_name: str) -> str:
         try:
             key = self.cli.app_key_create(key_name)
-        except CommandError as e:
-            if "UNIQUE constraint failed" in str(e):
-                app_key = next(
-                    filter(lambda k: k.name == key_name, self.cli.app_key_list())
-                )
-                key = app_key.key
+        except KeyAlreadyExistsError as e:
+            app_key = next(
+                filter(lambda k: k.name == key_name, self.cli.app_key_list())
+            )
+            key = app_key.key
         return key
 
     def start_provider_agent(self, node_name: str, preset_name: str):
