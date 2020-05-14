@@ -45,7 +45,7 @@ T = TypeVar("T")
 class DockerJSONCommandRunner(DockerCommandRunner):
     """Adds method for running commands with `--json` flag."""
 
-    def run_json_command(self, ty: Type[T], *cmd_args) -> T:
+    def run_json_command(self, result_type: Type[T], *cmd_args) -> T:
         """Add `--json` flag to command arguments and run the command.
         Parse the command output as JSON and return it.
         """
@@ -54,9 +54,11 @@ class DockerJSONCommandRunner(DockerCommandRunner):
             cmd_args = *cmd_args, "--json"
         output = self.run_command(*cmd_args)
         obj = json.loads(output)
-        if isinstance(obj, ty):
+        if isinstance(obj, result_type):
             return obj
-        raise CommandError(f"Expected a {ty} but command returned {obj}")
+        raise CommandError(
+            f"Expected a {result_type.__name__} but command returned: {obj}"
+        )
 
 
 def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:

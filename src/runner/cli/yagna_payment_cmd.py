@@ -1,10 +1,10 @@
 """Implementation of `yagna payment` subcommands"""
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Dict
 
-from .base import make_args
-from .typing import CommandRunner
+from src.runner.cli.base import make_args
+from src.runner.cli.typing import CommandRunner
 
 
 @dataclass(frozen=True)
@@ -56,7 +56,7 @@ class YagnaPaymentMixin:
         """
 
         args = make_args("payment", "status", address, data_dir=data_dir)
-        output = self.run_json_command(Dict[str, Any], *args)
+        output = self.run_json_command(Dict, *args)
         return PaymentStatus(
             amount=float(output["amount"]),
             incoming=Payments(

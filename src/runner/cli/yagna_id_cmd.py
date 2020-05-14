@@ -1,10 +1,10 @@
 """Implementation of `yagna id` subcommands"""
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
-from .base import make_args, parse_json_table, unwrap_ok_err_json
-from .typing import CommandRunner
+from src.runner.cli.base import make_args, parse_json_table, unwrap_ok_err_json
+from src.runner.cli.typing import CommandRunner
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class YagnaIdMixin:
         """Run `<yagna-cmd> id create` command."""
 
         args = make_args("id", "create", "--no-password", alias, data_dir=data_dir)
-        output = self.run_json_command(Dict[str, Any], *args)
+        output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
         return Identity(
             result["alias"], result["isDefault"], result["isLocked"], result["nodeId"],
@@ -36,7 +36,7 @@ class YagnaIdMixin:
         """Return the output of `<yagna-cmd> id show`."""
 
         args = make_args("id", "show", alias_or_addr, data_dir=data_dir)
-        output = self.run_json_command(Dict[str, Any], *args)
+        output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
         if result is not None:
             return Identity(
@@ -51,7 +51,7 @@ class YagnaIdMixin:
         """Return the output of `<yagna-cmd> id list`."""
 
         args = make_args("id", "list", data_dir=data_dir)
-        output = self.run_json_command(Dict[str, Any], *args)
+        output = self.run_json_command(Dict, *args)
         return [
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"],)
             for r in parse_json_table(output)
