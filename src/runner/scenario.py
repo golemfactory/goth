@@ -41,12 +41,10 @@ class Scenario(abc.ABC):
 
 
 class Level0Scenario(Scenario):
-    @property
-    def nodes(self):
-        return {
-            Role.requestor: 1,
-            Role.provider: 2,
-        }
+    nodes = {
+        Role.requestor: 1,
+        Role.provider: 2,
+    }
 
     @property
     def steps(self):
