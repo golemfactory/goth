@@ -50,7 +50,7 @@ jobs:
         run: docker ps
 
       - name: Run test suite
-        run: python -m pytest test/level0 -svx --log-cli-level=DEBUG
+        run: python -m pytest test/level0 -svx --log-cli-level=DEBUG --assets-path test/level0/asset
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2

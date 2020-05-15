@@ -1,11 +1,9 @@
-from collections import deque
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
-from queue import Empty, Queue
 from threading import Lock, Thread
 import time
-from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
+from typing import Iterator, List, Match, Optional, Pattern
 
 from docker.models.containers import Container, ExecResult
 
@@ -111,6 +109,9 @@ class Node:
 
         self.agent_logs: LogBuffer
 
+    def __str__(self):
+        return self.name
+
     @property
     def address(self) -> Optional[str]:
         """ returns address from id marked as default """
@@ -137,9 +138,9 @@ class Node:
             key = app_key.key
         return key
 
-    def start_provider_agent(self, node_name: str, preset_name: str):
+    def start_provider_agent(self, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider run --app-key {self.app_key} --node-name {node_name} {preset_name}",
+            f"ya-provider run --app-key {self.app_key} --node-name {self.name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(
