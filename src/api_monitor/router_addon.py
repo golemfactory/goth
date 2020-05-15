@@ -1,7 +1,7 @@
-"""
-Mitmproxy addon that routes API calls and adds caller and callee
+"""Mitmproxy addon that routes API calls and adds caller and callee
 information to request headers
 """
+
 import logging
 
 from mitmproxy.http import HTTPFlow
@@ -37,6 +37,7 @@ class RouterAddon:
     - routes the request to the appropriate callee, based on the request port.
     """
 
+    # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow):
         """Route the request and set `X-Caller` and `X-Callee` headers"""
         req = flow.request
@@ -60,7 +61,7 @@ class RouterAddon:
                 )
             else:
                 raise ValueError(f"Invalid port in 'X-Http-Host': {http_host}")
-        except Exception as ex:
+        except (KeyError, ValueError) as ex:
             logger.error("Invalid headers: %s", ex.args[0])
 
 

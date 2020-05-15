@@ -1,7 +1,4 @@
-# we're working on:
-# - Python wrappers for yagna APIs which will be used for creating mock requestors (and perhaps providers, if we ever need it)
-# - Python code for programmatically starting yagna nodes in docker containers and running tests scripts
-# - Framework for writing (temporal) assertions to be run during tests
+"""Coroutine-based implementation of temporal assertions"""
 
 import asyncio
 import logging
@@ -14,15 +11,17 @@ logger = logging.getLogger(__name__)
 
 
 class TemporalAssertionError(AssertionError):
-    ...
+    """Thrown by temporal assertions on failure"""
 
 
 E = TypeVar("E")
 
 
-class EventSource(Generic[E], Protocol, AsyncIterable[E]):
+class EventSource(Protocol, AsyncIterable[E]):
+    """A protocol used by assertion functions to observe a stream of events"""
 
     history: Sequence[E]
+    """A sequence of past events, the last element is the most recent event"""
 
 
 class Assertion(Generic[E]):
@@ -52,8 +51,7 @@ class Assertion(Generic[E]):
     def __init__(self, history: Sequence[E], func: Callable, *args: Any):
         self.history = history
         self.name = (
-            f"{func.__module__}.{func.__name__}"
-            f"({', '.join(str(a) for a in args)})"
+            f"{func.__module__}.{func.__name__}" f"({', '.join(str(a) for a in args)})"
         )
         self._task = asyncio.create_task(func(*args, self))
         self._end_of_events = False
@@ -61,11 +59,7 @@ class Assertion(Generic[E]):
         self._processed = asyncio.Event()
 
     def __str__(self):
-        status = (
-            "accepted" if self.accepted
-            else "failed" if self.failed
-            else "ongoing"
-        )
+        status = "accepted" if self.accepted else "failed" if self.failed else "ongoing"
         return f"Assertion '{self.name}' ({status})"
 
     @property
@@ -128,83 +122,3 @@ class Assertion(Generic[E]):
 
             finally:
                 self._processed.set()
-
-
-
-if __name__ == "__main__":
-
-
-    async def always_less_than(n, events):
-
-        async for e in events:
-            if e >= n:
-                raise TemporalAssertionError(f"{e} >= {n}")
-
-        return True
-
-
-    async def expect_number(n, events):
-
-        async for e in events:
-            if e == n:
-                return e
-
-        raise TemporalAssertionError(f"Expected {n}")
-
-
-    async def wait_for_double(n, events):
-
-        k = await expect_number(n, events)
-        return await expect_number(k * 2, events)
-
-
-    async def wait_for_sum(s, events):
-
-        async for _ in events:
-            if sum(events.history) >= s:
-                return True 
-
-        raise TemporalAssertionError(f"Expected sum {s}")
-    
-    
-    async def main():
-
-        history = []
-
-        assertions = [
-            Assertion(history, wait_for_double, 5),
-            Assertion(history, wait_for_double, 15),
-            Assertion(history, wait_for_double, 100),
-            Assertion(history, wait_for_sum, 30)
-        ]
-
-        for e in range(1, 20):
-
-            history.append(e)
-
-            print(f"Main: sending {e} to assertions")
-
-            for a in assertions:
-                if not a.done:
-                    await a.process_event()
-                    if a.accepted:
-                        print(f"Assertion {a} satisfied, result: {a.result}")
-                    elif a.failed:
-                        print(f"Assertion {a} failed, result: {a.result}")
-
-        print("At end:")
-
-        for a in assertions:
-            if not a.done:
-                await a.end_events()
-                if a.accepted:
-                    print(f"Assertion {a} satisfied, result: {a.result}")
-                elif a.failed:
-                    print(f"Assertion {a} failed, result: {a.result}")
-                else:
-                    print(f"Error: assertion {a} not finished yet")
-
-        print("Finished.")
-
-
-    asyncio.run(main())
