@@ -7,8 +7,8 @@ from typing import Iterator, List, Match, Optional, Pattern
 
 from docker.models.containers import Container, ExecResult
 
-from src.runner.cli import YagnaCli
-from src.runner.exceptions import CommandError, TimeoutError
+from src.runner.cli import Cli
+from src.runner.exceptions import CommandError, KeyAlreadyExistsError, TimeoutError
 from src.runner.log import get_file_logger
 
 
@@ -101,7 +101,7 @@ class Role(Enum):
 class Node:
     def __init__(self, container: Container, role: Role):
         self.container = container
-        self.cli = YagnaCli(container)
+        self.cli = Cli(container).yagna
         self.logs = LogBuffer(
             container.logs(stream=True, follow=True), get_file_logger(self.name)
         )
@@ -115,15 +115,14 @@ class Node:
     @property
     def address(self) -> Optional[str]:
         """ returns address from id marked as default """
-        ids = self.cli.get_ids()
-        default_id = next(filter(lambda i: i["default"] == "X", ids))
-        return default_id["address"] if default_id else None
+        identity = self.cli.id_show()
+        return identity.address if identity else None
 
     @property
     def app_key(self) -> Optional[str]:
         """ returns first app key on the list """
-        keys = self.cli.get_app_keys()
-        return keys[0]["key"] if keys else None
+        keys = self.cli.app_key_list()
+        return keys[0].key if keys else None
 
     @property
     def name(self) -> str:
@@ -131,18 +130,17 @@ class Node:
 
     def create_app_key(self, key_name: str) -> str:
         try:
-            key = self.cli.create_app_key(key_name)
-        except CommandError as e:
-            if "UNIQUE constraint failed" in str(e):
-                app_key: dict = next(
-                    filter(lambda k: k["name"] == key_name, self.cli.get_app_keys())
-                )
-                key = app_key["key"]
+            key = self.cli.app_key_create(key_name)
+        except KeyAlreadyExistsError as e:
+            app_key = next(
+                filter(lambda k: k.name == key_name, self.cli.app_key_list())
+            )
+            key = app_key.key
         return key
 
     def start_provider_agent(self, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider run --app-key {self.app_key} ----node-name {self.name} {preset_name}",
+            f"ya-provider run --app-key {self.app_key} --node-name {self.name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(
