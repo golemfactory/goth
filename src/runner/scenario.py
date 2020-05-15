@@ -15,7 +15,6 @@ class Scenario(abc.ABC):
         """ Defines what nodes should be started before the test scenario is run.
             Keys in the dictionary are node roles, values are counts of instances
             to be started. """
-        pass
 
     @property
     @abc.abstractmethod
@@ -23,7 +22,6 @@ class Scenario(abc.ABC):
         """ List of steps to be executed as part of this test scenario. A single entry
             in the list is a tuple in which the first element is the function to be called
             and the second element specifies which nodes to run the function on. """
-        pass
 
     def create_app_key(self, node: Node, key_name: str = "test-key"):
         logger.info("attempting to create app-key. key_name=%s", key_name)

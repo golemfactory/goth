@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import DefaultDict, Dict
+from typing import Dict
 
 from docker.models.containers import Container
 import docker

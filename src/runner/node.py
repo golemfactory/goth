@@ -1,11 +1,9 @@
-from collections import deque
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
-from queue import Empty, Queue
 from threading import Lock, Thread
 import time
-from typing import Deque, Iterator, List, Match, Optional, Pattern, Tuple
+from typing import Iterator, List, Match, Optional, Pattern
 
 from docker.models.containers import Container, ExecResult
 

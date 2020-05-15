@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import chain
 import logging
 from pathlib import Path
-from typing import DefaultDict, Dict, List
+from typing import Dict, List
 
 import docker
 
@@ -22,7 +22,7 @@ class Runner:
     docker_client: docker.DockerClient
 
     # Nodes used for the test run, identified by their role names
-    nodes: DefaultDict[Role, List[Node]]
+    nodes: Dict[Role, List[Node]]
 
     def __init__(self, assets_path: Path):
         self.assets_path = assets_path
