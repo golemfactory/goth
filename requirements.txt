@@ -1,8 +1,8 @@
 
-./model/activity
-./model/market
-./model/payment
 docker==4.2.0
+file://./model/activity#egg=openapi_activity_client
+file://./model/market#egg=openapi_market_client
+file://./model/payment#egg=openapi_payment_client
 mitmproxy>=5.1,<6.0
 pytest-asyncio==0.12.0
 pytest==5.4.2
