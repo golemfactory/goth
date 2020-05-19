@@ -90,8 +90,6 @@ class Allocation(object):
         :param allocation_id: The allocation_id of this Allocation.  # noqa: E501
         :type: str
         """
-        if self.local_vars_configuration.client_side_validation and allocation_id is None:  # noqa: E501
-            raise ValueError("Invalid value for `allocation_id`, must not be `None`")  # noqa: E501
 
         self._allocation_id = allocation_id
 
