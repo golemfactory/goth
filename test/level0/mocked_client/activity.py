@@ -8,14 +8,15 @@ from openapi_activity_client import (
     Configuration,
     RequestorControlApi,
     RequestorStateApi,
-    ExeScriptRequest
+    ExeScriptRequest,
 )
+
 
 def level0_activity(agreement_id):
     # INIT
-    config = Configuration(host=os.environ['YAGNA_API_URL'] + "/activity-api/v1")
-    config.api_key['Authorization'] = os.environ['APP_KEY']
-    config.api_key_prefix['Authorization'] = 'Bearer'
+    config = Configuration(host=os.environ["YAGNA_API_URL"] + "/activity-api/v1")
+    config.api_key["Authorization"] = os.environ["APP_KEY"]
+    config.api_key_prefix["Authorization"] = "Bearer"
 
     api_client = ApiClient(config)
     req_api = RequestorControlApi(api_client)
@@ -25,27 +26,26 @@ def level0_activity(agreement_id):
     # Create Activity
     activity_id = req_api.create_activity(agreement_id)
     print(f"created activity. id={activity_id}")
-    #activity_id = activity_id.replace('-', '')
-    #print(f"cleaned id from -. id={activity_id}")
-
+    # activity_id = activity_id.replace('-', '')
+    # print(f"cleaned id from -. id={activity_id}")
 
     state = state_api.get_activity_state(activity_id)
     print(f"state. result={state}")
     # i. PROVIDER
 
-    #provider.event.waitFor(LogEvent, event => event matches "ExeUnit start log regexp")
-    time.sleep(2.)
+    # provider.event.waitFor(LogEvent, event => event matches "ExeUnit start log regexp")
+    time.sleep(2.0)
     # ii. REQUESTOR
 
     my_path = os.path.abspath(os.path.dirname(__file__))
-    exe_script_txt = Path(my_path + '/../asset/exe_script.json').read_text()
+    exe_script_txt = Path(my_path + "/../asset/exe_script.json").read_text()
 
     print(f"exe_script read. contents={exe_script_txt}")
 
     batch_id = req_api.call_exec(activity_id, ExeScriptRequest(exe_script_txt))
     print(f"exe_script executed. batch_id={batch_id}")
 
-    #time.sleep(5.)
+    # time.sleep(5.)
 
     commands_cnt = len(json.loads(exe_script_txt))
     state = state_api.get_activity_state(activity_id)
@@ -54,10 +54,12 @@ def level0_activity(agreement_id):
     print(f"poll batch results. result={results}")
 
     while len(results) < commands_cnt:
-        time.sleep(1.)
+        time.sleep(1.0)
         state = state_api.get_activity_state(activity_id)
         print(f"state. result={state}")
-        results = req_api.get_exec_batch_results(activity_id, batch_id) # to be replaced by requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
+        results = req_api.get_exec_batch_results(
+            activity_id, batch_id
+        )  # to be replaced by requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
         print(f"poll batch results. result={results}")
 
     req_api.destroy_activity(activity_id)

@@ -9,12 +9,13 @@ from openapi_payment_client import (
     Allocation,
 )
 
+
 def level0_payment(agreement_id):
     # INIT
     config = Configuration.get_default_copy()
     config.host = f"{os.environ['YAGNA_API_URL']}/payment-api/v1"
-    config.api_key['Authorization'] = os.environ['APP_KEY']
-    config.api_key_prefix['Authorization'] = 'Bearer'
+    config.api_key["Authorization"] = os.environ["APP_KEY"]
+    config.api_key_prefix["Authorization"] = "Bearer"
 
     req_api = RequestorApi(ApiClient(config))
     print(f"Init completed, connected to {config.host}")
@@ -26,11 +27,14 @@ def level0_payment(agreement_id):
     invoice_events = []
     while len(invoice_events) == 0:
         time.sleep(2.0)
-        invoice_events = req_api.get_received_invoices() # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
+        invoice_events = (
+            req_api.get_received_invoices()
+        )  # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
         print(f"Gathered invoice_event {invoice_events}")
-        invoice_events = list(filter(lambda x: x.agreement_id == agreement_id, invoice_events))
+        invoice_events = list(
+            filter(lambda x: x.agreement_id == agreement_id, invoice_events)
+        )
         print(f"filtered invoice_event {invoice_events}")
-
 
     invoice_event = invoice_events[0]
 
@@ -45,13 +49,13 @@ def level0_payment(agreement_id):
 
     acceptance = Acceptance(
         total_amount_accepted=invoice_event.amount,
-        allocation_id=allocation_result.allocation_id
+        allocation_id=allocation_result.allocation_id,
     )
     req_api.accept_invoice(invoice_event.invoice_id, acceptance)
     print(f"Accepted invoice. id={invoice_event.invoice_id}")
 
     # 9. PROVIDER
 
-    #provider.events.waitUntil(LogEvent, event => event.message matches "Payment received regexp")
+    # provider.events.waitUntil(LogEvent, event => event.message matches "Payment received regexp")
 
     # ... and maybe we can assert some balance change on etherscan???
