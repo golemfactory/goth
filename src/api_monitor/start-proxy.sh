@@ -14,5 +14,5 @@ echo "Starting mitmproxy..."
 mitmdump --mode reverse:"http://127.0.0.1" \
     --listen-port 9000 \
     -s ./router_addon.py \
-    -s ./tracer_addon.py \
-    --set properties=sample_properties
+    -s ./monitor_addon.py \
+    --set assertions=level0_assertions

@@ -90,7 +90,7 @@ class APIMonitor:
     assertion_funcs: List[Callable]  # Assertion[APIEvent]]
 
     def __init__(self):
-        self.calls = []
+        self.events = []
         self.incoming = queue.Queue()
         self.assertion_funcs = []
         self.worker = threading.Thread(
@@ -99,8 +99,8 @@ class APIMonitor:
             daemon=True,
         )
 
-    def load_properties(self, module_name: str) -> None:
-        """Load property functions from a module"""
+    def load_assertions(self, module_name: str) -> None:
+        """Load assertion functions from a module"""
         mod = importlib.import_module(module_name)
         self.assertion_funcs.extend(mod.__dict__["TEMPORAL_ASSERTIONS"])
 
@@ -119,7 +119,7 @@ class APIMonitor:
 
     def __len__(self) -> int:
         """Return the number of registered calls"""
-        return len(self.calls)
+        return len(self.events)
 
     def _instantiate_assertions(self) -> List[Assertion[APIEvent]]:
         """Create assertion objects from assertion functions.
@@ -196,15 +196,15 @@ class TracerAddon:
         """Load module with property functions"""
 
         loader.add_option(
-            name="properties",
+            name="assertions",
             typespec=Optional[str],
             default=None,
-            help="A file with the properties to check",
+            help="A file with the assertions to check",
         )
         mitmproxy.ctx.options.process_deferred()
-        props_path = mitmproxy.ctx.options.properties
-        if props_path is not None:
-            self.monitor.load_properties(props_path)
+        assertions_module = mitmproxy.ctx.options.assertions
+        if assertions_module is not None:
+            self.monitor.load_assertions(assertions_module)
         self.monitor.start()
 
     def request(self, flow: HTTPFlow) -> None:

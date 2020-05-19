@@ -2,7 +2,7 @@
 import abc
 import json
 import re
-from typing import Optional
+from typing import Any, Optional, Type
 
 from mitmproxy.flow import Error
 from mitmproxy.http import HTTPRequest, HTTPResponse
@@ -68,17 +68,19 @@ class APIError(APIEvent):
 
 
 def _match_event(
-    event: APIEvent,
-    event_class: type,
+    event: Any,
+    event_class: Type[APIEvent],
     method: Optional[str] = None,
     path_regex: Optional[str] = None,
 ) -> bool:
 
+    request: HTTPRequest
     if isinstance(event, APICall):
         request = event.request
-    else:
-        assert isinstance(event, (APIResult, APIError))
+    elif isinstance(event, (APIResult, APIError)):
         request = event.call.request
+    else:
+        return False
 
     return (
         isinstance(event, event_class)
@@ -87,19 +89,19 @@ def _match_event(
     )
 
 
-def is_import_key_call(event: APIEvent) -> bool:
+def is_import_key_call(event: Any) -> bool:
     """Check if `event` is a call of ImportKey operation."""
 
     return _match_event(event, APICall, "POST", "^/admin/import-key$")
 
 
-def is_create_agreement_call(event: APIEvent) -> bool:
+def is_create_agreement_call(event: Any) -> bool:
     """Check if `event` is a call of CreateAgreement operation."""
 
     return _match_event(event, APICall, "POST", "^/market-api/v1/agreements$")
 
 
-def is_collect_demands_call(event: APIEvent, sub_id: str = "") -> bool:
+def is_collect_demands_call(event: Any, sub_id: str = "") -> bool:
     """Check if `event` is a call of CollectDemants operation."""
 
     sub_id_re = sub_id if sub_id else "[^/]+"
@@ -108,19 +110,19 @@ def is_collect_demands_call(event: APIEvent, sub_id: str = "") -> bool:
     )
 
 
-def is_subscribe_offer_call(event: APIEvent) -> bool:
+def is_subscribe_offer_call(event: Any) -> bool:
     """Check if `event` is a call of SubscribeOffer operation."""
 
     return _match_event(event, APICall, "POST", "^/market-api/v1/offers$")
 
 
-def is_subscribe_offer_response(event: APIEvent) -> bool:
+def is_subscribe_offer_response(event: Any) -> bool:
     """Check if `event` is a response of SubscribeOffer operation."""
 
     return _match_event(event, APIResult, "POST", "^/market-api/v1/offers$")
 
 
-def get_response_json(event: APIEvent):
+def get_response_json(event: Any):
     """If `event` is a response then parse and return the included JSON.
     Otherwise return `None`."""
 
@@ -130,7 +132,7 @@ def get_response_json(event: APIEvent):
     return None
 
 
-def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
+def get_activity_id_from_create_response(event: Any) -> Optional[str]:
     """If `event` is a response to CreateActivity operation then return the activity ID
     included in the response. Otherwise return `None`."""
 
@@ -144,7 +146,7 @@ def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
     return None
 
 
-def get_activity_id_from_delete_call(event: APIEvent) -> Optional[str]:
+def get_activity_id_from_delete_call(event: Any) -> Optional[str]:
     """If `event` is a call of DeleteActivity then return the included activity ID.
     Otherwise return `None`.
     """

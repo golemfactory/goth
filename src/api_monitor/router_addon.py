@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
 
 
 PORT_MAPPING = {
-    15001: (5001, "RequestorDaemon", "Market"),
-    15002: (5001, "RequestorAgent", "Market"),
-    16000: (6000, "RequestorAgent", "RequestorDaemon"),
-    15003: (5001, "ProviderDaemon", "Market"),
-    15004: (5001, "ProviderAgent", "Market"),
-    16001: (6001, "ProviderAgent", "ProviderDaemon"),
+    15001: ("mock-api", 5001, "RequestorDaemon", "Market"),
+    15002: ("mock-api", 5001, "RequestorAgent", "Market"),
+    16000: (None, 6000, "RequestorAgent", "RequestorDaemon"),
+    15003: ("mock-api", 5001, "ProviderDaemon", "Market"),
+    15004: ("mock-api", 5001, "ProviderAgent", "Market"),
+    16001: (None, 6000, "ProviderAgent", "ProviderDaemon"),
 }
 
 CALLER_HEADER = "X-Caller"
@@ -46,16 +46,23 @@ class RouterAddon:
             # original_port may be used to distinguish clients accessing
             # the same API and to route the message to the appropriate
             # upstream API server
+            original_host = http_host[: http_host.rindex(":")]
             original_port = int(http_host[http_host.rindex(":") + 1 :])
             if original_port in PORT_MAPPING:
-                dest_port, caller, callee = PORT_MAPPING[original_port]
+                dest_host, dest_port, caller, callee = PORT_MAPPING[original_port]
+                if dest_host is not None:
+                    req.host = dest_host
+                else:
+                    req.host = req.headers["X-Remote-Addr"]
                 req.port = dest_port
                 req.headers[CALLER_HEADER] = caller
                 req.headers[CALLEE_HEADER] = callee
                 logger.debug(
-                    "Route message: %d (%s) -> %d (%s)",
+                    "Route message: %s:%d (%s) -> %s:%d (%s)",
+                    original_host,
                     original_port,
                     caller,
+                    req.host,
                     req.port,
                     callee,
                 )
