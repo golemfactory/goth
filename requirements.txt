@@ -3,3 +3,6 @@ mitmproxy>=5.1,<6.0
 pytest-asyncio==0.12.0
 pytest==5.4.2
 transitions==0.8.1
+./model/activity
+./model/market
+./model/payment

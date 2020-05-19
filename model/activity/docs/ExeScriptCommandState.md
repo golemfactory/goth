@@ -1,0 +1,12 @@
+# ExeScriptCommandState
+
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**command** | **str** |  | 
+**progress** | **str** |  | [optional] 
+**params** | **list[str]** |  | [optional] 
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+
