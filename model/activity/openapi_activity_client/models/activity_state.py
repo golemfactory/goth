@@ -55,7 +55,10 @@ class ActivityState(object):
         self._error_message = None
         self.discriminator = None
 
-        self.state = state
+        # TODO: Why doesnt list get parsed? [State, None] is the value of state.. Implement StatePair
+
+        print(state.split("'")[1])
+        self.state = state.split("'")[1]
         if reason is not None:
             self.reason = reason
         if error_message is not None:
