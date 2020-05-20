@@ -17,7 +17,7 @@ class Role(Enum):
     provider = 1
 
 
-class Node:
+class Probe:
     def __init__(self, container: Container, role: Role):
         self.container = container
         self.cli = Cli(container).yagna

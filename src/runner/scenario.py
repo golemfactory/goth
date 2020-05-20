@@ -1,7 +1,7 @@
 import abc
 from typing import Callable, Dict, List, Tuple
 
-from src.runner.node import Role
+from src.runner.probe import Role
 
 
 class Scenario(abc.ABC):
