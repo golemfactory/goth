@@ -16,7 +16,7 @@ class TestLevel1:
 
         topology = [
             { "Req1", Requestor, {"SOME_ENV_VARIABLE", "some value"} },
-            { "Req2", Requestor, }, ## do no start this node upfront (build probe, but allow to start later)
+            { "Req2", Requestor, }, ## do not start this node upfront (build probe, but allow to start later)
             { "ProvA", Provider, },  ## Provider A
             { "ProvB", Provider, },  ## Provider B
         ]
@@ -38,17 +38,17 @@ class TestLevel1:
                                     ## and attaches the probes' even streams to AssertExecutor
 
         test_env \
-            .nodes("Prov*") \
+            .probes("Prov*") \
             .start_all()        ## Get all nodes starting with "Prov" and start them
 
-        req1 = test_env.probes[1] ## Reuqestor node probe
-        req2 = test_env.probes[2] 
+        req1 = test_env.probes["Req1"] ## Reuqestor node probe
+        req2 = test_env.probes["Req2"] 
         
         req1.start() ## start the node at required time
         req2.start() ## start the node at required time
         req1.start() ## start the node at required time
 
-        prov_a = test_env.probes[3] ## Provider A
+        prov_a = test_env.probes["ProvA"] ## Provider A
 
         prov_a.events   ## refer to event stream from this particular node
 
@@ -66,12 +66,12 @@ class TestLevel1:
                 "golem.srv.comp.wasm.task_package": 
                     "hash://sha3:38D951E2BD2408D95D8D5E5068A69C60C8238FA45DB8BC841DC0BD50:http://34.244.4.185:8000/rust-wasi-tutorial.zip"
             },
-            constraints = "(&
-                (golem.inf.mem.gib>0.5)
-                (golem.inf.storage.gib>1)
-                (golem.com.pricing.model=linear)
+            constraints = "(& \
+                (golem.inf.mem.gib>0.5) \
+                (golem.inf.storage.gib>1) \
+                (golem.com.pricing.model=linear) \
             )"
-        );
+        )
 
         subscriptionId = req1.market.subscribe(demand)
 
