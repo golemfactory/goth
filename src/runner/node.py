@@ -1,96 +1,15 @@
-from datetime import datetime, timedelta
 from enum import Enum
 import logging
-from threading import Lock, Thread
-import time
-from typing import Iterator, List, Match, Optional, Pattern
+from typing import Optional
 
-from docker.models.containers import Container, ExecResult
+from docker.models.containers import Container
 
 from src.runner.cli import Cli
-from src.runner.exceptions import CommandError, KeyAlreadyExistsError, TimeoutError
-from src.runner.log import get_file_logger
+from src.runner.exceptions import KeyAlreadyExistsError
+from src.runner.log import get_file_logger, LogBuffer
 
 
 logger = logging.getLogger(__name__)
-
-
-class LogBuffer:
-
-    in_stream: Iterator[bytes]
-    logger: logging.Logger
-
-    def __init__(self, in_stream: Iterator[bytes], logger: logging.Logger):
-        self.in_stream = in_stream
-        self.logger = logger
-
-        self._buffer: List[str] = []
-        # Index of last line read from the buffer using `wait_for_pattern`
-        self._last_read: int = -1
-        self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
-        self._lock = Lock()
-
-        self._buffer_thread.start()
-
-    def clear_buffer(self):
-        self._buffer.clear()
-        self._last_read = -1
-
-    def search_for_pattern(
-        self, pattern: Pattern[str], entire_buffer: bool = False
-    ) -> Optional[Match[str]]:
-        """ Search the buffer for a line matching the given pattern.
-            By default, this searches only the lines which haven't been read yet.
-            :param bool entire_buffer: when True, the entire available buffer will be searched.
-            :return: Match[str] object if a matching line is found, None otherwise. """
-        with self._lock:
-            history = self._buffer.copy()
-
-        if not entire_buffer:
-            # This will yield an empty list if there are no unread lines
-            history = history[self._last_read + 1 :]
-        self._last_read = len(self._buffer) - 1
-
-        # Reverse to search latest logs first
-        for line in reversed(history):
-            match = pattern.match(line)
-            if match:
-                return match
-
-        return None
-
-    def wait_for_pattern(
-        self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
-    ) -> Match[str]:
-        """ Blocking call which waits for a matching line to appear in the buffer.
-            This tests all the unread lines in the buffer before waiting for
-            new lines to appear.
-            :param timedelta timeout: the maximum time to wait for a matching line.
-            :raises TimeoutError: if the timeout is reached with no match."""
-        deadline = datetime.now() + timeout
-
-        while deadline >= datetime.now():
-            # Check if there are new lines available in the buffer
-            if len(self._buffer) > self._last_read + 1:
-                self._last_read += 1
-                next_line = self._buffer[self._last_read]
-                match = pattern.match(next_line)
-                if match:
-                    return match
-            else:
-                # Prevent busy waiting
-                time.sleep(0.1)
-
-        raise TimeoutError()
-
-    def _buffer_input(self):
-        for chunk in self.in_stream:
-            chunk = chunk.decode()
-            for line in chunk.splitlines():
-                self.logger.info(line)
-
-                with self._lock:
-                    self._buffer.append(line)
 
 
 class Role(Enum):
@@ -131,7 +50,7 @@ class Node:
     def create_app_key(self, key_name: str) -> str:
         try:
             key = self.cli.app_key_create(key_name)
-        except KeyAlreadyExistsError as e:
+        except KeyAlreadyExistsError:
             app_key = next(
                 filter(lambda k: k.name == key_name, self.cli.app_key_list())
             )
