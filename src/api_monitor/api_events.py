@@ -11,7 +11,12 @@ from router_addon import CALLER_HEADER, CALLEE_HEADER
 
 
 class APIEvent(abc.ABC):
-    """Abstract superclass of all API events"""
+    """Abstract superclass of API event classes"""
+
+    @property
+    @abc.abstractmethod
+    def timestamp(self) -> float:
+        """Return event's time"""
 
 
 class APICall(APIEvent):
@@ -23,6 +28,10 @@ class APICall(APIEvent):
     def __init__(self, number: int, request: HTTPRequest):
         self.number = number
         self.request = request
+
+    @property
+    def timestamp(self) -> float:
+        return self.request.timestamp_start
 
     @property
     def caller(self) -> Optional[str]:
@@ -51,6 +60,10 @@ class APIResult(APIEvent):
         self.call = call
         self.response = response
 
+    @property
+    def timestamp(self) -> float:
+        return self.response.timestamp_start
+
 
 class APIError(APIEvent):
     """Represents an error when making an API call or sending a response"""
@@ -65,6 +78,10 @@ class APIError(APIEvent):
         self.call = call
         self.error = error
         self.reponse = response
+
+    @property
+    def timestamp(self) -> float:
+        return self.error.timestamp
 
 
 def _match_event(
