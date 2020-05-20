@@ -1,23 +1,16 @@
-from typing import Callable, Optional, Sequence, Set, Tuple
+from typing import Optional, Sequence
 
-from api_events import APICall, APIError, APIEvent, APIResult
-import api_events as api
+from src.api_monitor.api_events import APIEvent
+import src.api_monitor.api_events as api
 
-from assertions import logger, AssertionFunction, EventStream, TemporalAssertionError
-from api_monitor import APIorTimerEvent, TimerEvent
-
-
-APIEvents = EventStream[APIorTimerEvent]
-
-
-async def assert_no_api_errors(stream: APIEvents) -> bool:
-
-    async for e in stream:
-
-        if isinstance(e, APIError):
-            raise TemporalAssertionError("API error occurred")
-
-    return True
+from src.assertions import AssertionFunction, TemporalAssertionError, logger
+from src.assertions.operators import eventually
+from src.api_monitor.common_assertions import (
+    APIEvents,
+    assert_no_api_errors,
+    assert_clock_ticks,
+    assert_every_call_gets_response,
+)
 
 
 async def assert_first_call_is_import_key(stream: APIEvents) -> bool:
@@ -42,25 +35,6 @@ async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
     raise TemporalAssertionError("subscribeOffer not called")
 
 
-async def assert_every_call_gets_response(stream: APIEvents) -> bool:
-
-    calls_in_progress: Set[APICall] = set()
-
-    async for e in stream:
-
-        if isinstance(e, APICall):
-            calls_in_progress.add(e)
-        elif isinstance(e, APIResult):
-            assert e.call in calls_in_progress
-            calls_in_progress.remove(e.call)
-
-    if calls_in_progress:
-        a_call = calls_in_progress.pop()
-        raise TemporalAssertionError(f"call got no response: {a_call}")
-
-    return True
-
-
 # This is formally an assertion but it never fails:
 async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEvent]:
     """Wait for a response to a `subscribeOffer` call. Return the response event
@@ -70,24 +44,7 @@ async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEv
     async for e in stream:
 
         if api.is_subscribe_offer_response(e):
-            return e
-
-    return None
-
-
-async def eventually(
-    events: APIEvents,
-    predicate: Callable[[APIEvent], bool],
-    deadline: Optional[float] = None,
-) -> Optional[APIEvent]:
-    """Ensure `predicate` is satisfied for some event occurring before `deadline`."""
-
-    async for e in events:
-
-        if deadline is not None and e.timestamp > deadline:
-            raise TemporalAssertionError(f"Timeout: time = {e.timestamp} > {deadline}")
-
-        if isinstance(e, APIEvent) and predicate(e):
+            assert isinstance(e, APIEvent)
             return e
 
     return None
@@ -123,26 +80,6 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
             deadline = e.timestamp + interval
 
     return True
-
-
-async def assert_clock_ticks(stream: APIEvents) -> bool:
-    """Assert at least one timer event occurred and the distance between
-    any event the last timer event is less than 1.5s"""
-
-    last_timer_event = None
-
-    async for e in stream:
-
-        if last_timer_event is not None and e.timestamp > last_timer_event + 1.5:
-            raise TemporalAssertionError()
-
-        if isinstance(e, TimerEvent):
-            logger.debug("tick.")
-            last_timer_event = e.timestamp
-
-    if last_timer_event is None:
-        raise TemporalAssertionError("No timer events")
-
 
 
 TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [

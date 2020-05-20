@@ -9,59 +9,14 @@ import queue
 import threading
 import time
 from dataclasses import dataclass
-from typing import Callable, List, Optional, Union
+from typing import Callable, Generic, List, Optional, TypeVar, Union
 
-from api_events import APICall, APIError, APIEvent, APIResult
-from assertions import Assertion
-from assertions import logger as assertions_logger
-
+import src.assertions as assertions
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
 )
-
-# `mitmproxy` adds ugly prefix to add-on module names
-logger = logging.getLogger(__name__)  #  .replace("__mitmproxy_script__.", ""))
-
-# Setup call logging to "calls.log" file
-call_logger = logging.getLogger("api_calls")
-_log_handler = logging.FileHandler("calls.log", mode="w")
-_log_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s %(num)-4s %(status)-15s %(caller)-15s -> "
-        "%(callee)-16s %(method)-6s %(path)s"
-    )
-)
-call_logger.handlers = [_log_handler]
-call_logger.propagate = False
-
-
-def _log_event(event: APIEvent) -> None:
-    if isinstance(event, APICall):
-        status = "in progress"
-        call = event
-    elif isinstance(event, APIResult):
-        status = f"completed ({event.response.status_code})"
-        call = event.call
-    elif isinstance(event, APIError):
-        status = "failed"
-        call = event.call
-
-    logger.info("%s:\t%s", call, status)
-
-    call_logger.info(
-        "%s:\t%s",
-        event,
-        status,
-        extra={
-            "num": call.number,
-            "caller": call.caller,
-            "callee": call.callee,
-            "method": call.request.method,
-            "path": call.request.path,
-            "status": status,
-        },
-    )
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -70,16 +25,15 @@ class TimerEvent:
 
     timestamp: float
 
-    # def __init__(self, timestamp: float) -> None:
-    #     self.timestamp = timestamp
+
+E = TypeVar("E")
+
+EventOrTimer = Union[E, TimerEvent]
+
+Assertion = assertions.Assertion[EventOrTimer]
 
 
-APIorTimerEvent = Union[APIEvent, TimerEvent]
-
-APIAssertion = Assertion[Union[APIEvent, TimerEvent]]  # APIorTimerEvent]
-
-
-class APIMonitor:
+class EventMonitor(Generic[E]):
     """
     Represents a sequence of API calls and a set of properties
     that the sequence has to satisfy.
@@ -91,10 +45,10 @@ class APIMonitor:
     """
 
     # List of API calls registered so far
-    events: List[APIEvent]
+    events: List[E]
 
     # Calls to register are taken from this queue
-    incoming: "queue.Queue[Optional[APIorTimerEvent]]"
+    incoming: "queue.Queue[Optional[EventOrTimer]]"
 
     # List of assertion functions to be instantiated by the worker thread
     assertion_funcs: List[Callable]  # Assertion[APIEvent]]
@@ -131,7 +85,7 @@ class APIMonitor:
         timer_thread.start()
         logger.info("Tracing started")
 
-    def add(self, event: APIorTimerEvent) -> None:
+    def add(self, event: EventOrTimer) -> None:
         """Register a new HTTP request/response/error"""
         self.incoming.put(event)
 
@@ -150,18 +104,18 @@ class APIMonitor:
             time.sleep(1.0)
             self.add(TimerEvent(time.time()))
 
-    def _instantiate_assertions(self) -> List[APIAssertion]:
+    def _instantiate_assertions(self) -> List[Assertion]:
         """Create assertion objects from assertion functions.
 
         Note: this must be done in the same thread that runs the asyncio loop.
         """
-        assertions = []
+        asserts = []
         for func in self.assertion_funcs:
-            a: APIAssertion = Assertion(self.events, func)
+            a: Assertion = assertions.Assertion(self.events, func)
             logger.debug("Created assertion '%s'", a.name)
-            assertions.append(a)
+            asserts.append(a)
 
-        return assertions
+        return asserts
 
     async def _run_worker(self) -> None:
         """
@@ -170,33 +124,32 @@ class APIMonitor:
         """
         logger.info("Assertions thread started")
 
-        assertions = self._instantiate_assertions()
+        asserts = self._instantiate_assertions()
 
         # Run the main assertions loop
         while not self.events_ended:
 
             event = self.incoming.get()
 
-            if isinstance(event, APIEvent):
+            if event is not None and not isinstance(event, TimerEvent):
                 self.events.append(event)
-                _log_event(event)
 
-            assertions = await self._check_assertions(assertions, event)
+            asserts = await self._check_assertions(asserts, event)
 
             if event is None:
                 # `None` is used to signal the end of events
                 self.events_ended = True
 
     async def _check_assertions(
-        self, assertions: List[APIAssertion], event: Optional[APIorTimerEvent] = None
-    ) -> List[APIAssertion]:
+        self, asserts: List[Assertion], event: Optional[EventOrTimer] = None
+    ) -> List[Assertion]:
 
         active = []
         event_descr = (
             f"event #{len(self.events)}" if event is not None else "all events"
         )
 
-        for a in assertions:
+        for a in asserts:
 
             if event is not None:
                 await a.process_event(event)
@@ -204,10 +157,13 @@ class APIMonitor:
                 a.end_events()
 
             if a.accepted:
-                assertions_logger.debug("Satisfied after %s: %s", event_descr, a.name)
+                assertions.logger.info(
+                    "Assertion `%s` satisfied after %s", a.name, event_descr
+                )
             elif a.failed:
-                assertions_logger.debug("Failed after %s: %s", event_descr, a.name)
-                raise AssertionError(f"Assertion '{a.name}' failed: {a.result}")
+                assertions.logger.error(
+                    "Assertion `%s` failed after %s: %s", a.name, event_descr, a.result
+                )
             else:
                 active.append(a)
 

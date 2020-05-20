@@ -7,7 +7,7 @@ from typing import Any, Optional, Type
 from mitmproxy.flow import Error
 from mitmproxy.http import HTTPRequest, HTTPResponse
 
-from router_addon import CALLER_HEADER, CALLEE_HEADER
+from src.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
 
 
 class APIEvent(abc.ABC):

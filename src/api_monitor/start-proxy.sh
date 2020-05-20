@@ -10,6 +10,9 @@ fi
 
 trap "nginx -p . -c ./nginx.conf -s stop" KILL
 
+SCRIPT_DIR=$(dirname $0)
+export PYTHONPATH=$SCRIPT_DIR/../..:$PYTHONPATH
+
 echo "Starting mitmproxy..."
 mitmdump --mode reverse:"http://127.0.0.1" \
     --listen-port 9000 \
