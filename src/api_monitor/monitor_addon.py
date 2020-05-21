@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Optional
 
-import mitmproxy
+import mitmproxy.ctx
 from mitmproxy.http import HTTPFlow, HTTPRequest
 
 from src.api_monitor.api_events import APIEvent, APICall, APIResult, APIError
@@ -64,7 +64,7 @@ def _log_event(event: APIEvent) -> None:
 class MonitorAddon:
     """This add-on keeps track of API calls"""
 
-    monitor: EventMonitor
+    monitor: EventMonitor[APIEvent]
     pending_calls: Dict[HTTPRequest, APICall]
     num_calls: int
 
@@ -73,7 +73,7 @@ class MonitorAddon:
         self.pending_calls = {}
         self.num_calls = 0
 
-    def load(self, loader):
+    def load(self, loader) -> None:
         """Load module with property functions"""
 
         loader.add_option(
@@ -100,7 +100,7 @@ class MonitorAddon:
         self.pending_calls[flow.request] = call
         self._register_event(call)
 
-    def response(self, flow: HTTPFlow):
+    def response(self, flow: HTTPFlow) -> None:
         """Register a response"""
 
         call = self.pending_calls.get(flow.request)
@@ -112,7 +112,7 @@ class MonitorAddon:
         else:
             logger.error("Received response for unregistered call: %s", flow)
 
-    def error(self, flow: HTTPFlow):
+    def error(self, flow: HTTPFlow) -> None:
         """Register an error"""
 
         call = self.pending_calls.get(flow.request)

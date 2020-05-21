@@ -3,7 +3,7 @@ from typing import Callable, Optional, Set, Union
 
 from src.api_monitor.api_events import APIEvent, APICall, APIError, APIResult
 
-from src.assertions import EventStream, TemporalAssertionError, logger
+from src.assertions import EventStream, TemporalAssertionError
 from src.assertions.monitor import TimerEvent
 
 APIEvents = EventStream[Union[APIEvent, TimerEvent]]
