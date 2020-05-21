@@ -1,6 +1,7 @@
+"""Assertions related to API calls in LEvel 0 test scenario"""
 from typing import Optional, Sequence
 
-from src.api_monitor.api_events import APIEvent
+from src.api_monitor.api_events import APIEvent, APICall
 import src.api_monitor.api_events as api
 
 from src.assertions import AssertionFunction, TemporalAssertionError, logger
@@ -14,22 +15,24 @@ from src.api_monitor.common_assertions import (
 
 
 async def assert_first_call_is_import_key(stream: APIEvents) -> bool:
+    """Assert that the first API call is for the `importKey` opertation."""
 
-    async for _ in stream:
+    async for e in stream:
 
-        if stream.past_events:
-            if api.is_import_key_call(stream.past_events[0]):
+        if isinstance(e, APICall):
+            if api.is_import_key_call(e):
                 return True
-            raise TemporalAssertionError(str(stream.past_events[0]))
+            raise TemporalAssertionError(str(e))
 
     return False
 
 
 async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
+    """Assert that eventually `subscribeOffer` is called."""
 
     async for e in stream:
 
-        if isinstance(e, APIEvent) and api.is_subscribe_offer_call(e):
+        if api.is_subscribe_offer_call(e):
             return True
 
     raise TemporalAssertionError("subscribeOffer not called")
@@ -50,8 +53,8 @@ async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEv
     return None
 
 
-# A relatively complex assertion specifying the behaviour of the provider agent
 async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bool:
+    """Assertion describing call patterns for the provider agent."""
 
     # 1. Make sure subscribeOffer is called
     await assert_eventually_subscribe_offer_called(stream)

@@ -4,12 +4,20 @@ that the sequence of calls satifies given properties
 """
 from __future__ import annotations
 import logging
+import threading
+import time
 from typing import Dict, Optional
 
 import mitmproxy.ctx
 from mitmproxy.http import HTTPFlow, HTTPRequest
 
-from src.api_monitor.api_events import APIEvent, APICall, APIResult, APIError
+from src.api_monitor.api_events import (
+    APIEvent,
+    APIClockTick,
+    APICall,
+    APIResult,
+    APIError,
+)
 from src.assertions.monitor import EventMonitor
 
 
@@ -87,6 +95,19 @@ class MonitorAddon:
         if assertions_module is not None:
             self.monitor.load_assertions(assertions_module)
         self.monitor.start()
+
+        timer_thread = threading.Thread(
+            target=self._timer, name="Timer thread", daemon=True
+        )
+        timer_thread.start()
+
+    def _timer(self) -> None:
+        """Periodically emit `APIClockTick` event"""
+
+        logger.debug("Timer thread started")
+        while not self.monitor.events_ended:
+            self.monitor.add(APIClockTick())
+            time.sleep(1.0)
 
     def _register_event(self, event: APIEvent) -> None:
         _log_event(event)

@@ -1,6 +1,7 @@
 """This module defines `APIMonitor` class that registers API calls and checks
 whether temporal assertions are satisfied.
 """
+
 from __future__ import annotations
 import asyncio
 import importlib
@@ -68,12 +69,7 @@ class EventMonitor(Generic[E]):
             name="AssertionsThread",
             daemon=True,
         )
-        # timer_thread = threading.Thread(
-        #    target=self._timer_events, name="TimerThread", daemon=True
-        # )
-
         worker_thread.start()
-        # timer_thread.start()
         logger.info("Tracing started")
 
     def add(self, event: E) -> None:
@@ -94,12 +90,6 @@ class EventMonitor(Generic[E]):
         """Return the number of registered calls"""
         return len(self.events)
 
-    # def _timer_events(self) -> None:
-
-    #     while not self.events_ended:
-    #         time.sleep(1.0)
-    #         self.add(ClockTick(time.time()))
-
     def _instantiate_assertions(self) -> List[Assertion[E]]:
         """Create assertion objects from assertion functions.
 
@@ -114,10 +104,10 @@ class EventMonitor(Generic[E]):
         return assertions
 
     async def _run_worker(self) -> None:
+        """Run the thread that adds incoming requests/responses/errors
+        to the trace and checks the properties.
         """
-        Run the thread that adds incoming requests/responses/errors
-        to the trace and checks the properties
-        """
+
         logger.info("Assertions thread started")
 
         assertions = self._instantiate_assertions()

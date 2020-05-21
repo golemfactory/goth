@@ -1,15 +1,22 @@
 """Common assertions related to API calls"""
-from typing import Callable, Optional, Set, Union
+from typing import Set
 
-from src.api_monitor.api_events import APIEvent, APICall, APIError, APIResult
+from src.api_monitor.api_events import (
+    APIEvent,
+    APIClockTick,
+    APICall,
+    APIError,
+    APIResult,
+)
 
 from src.assertions import EventStream, TemporalAssertionError
-from src.assertions.monitor import TimerEvent
 
-APIEvents = EventStream[Union[APIEvent, TimerEvent]]
+
+APIEvents = EventStream[APIEvent]
 
 
 async def assert_no_api_errors(stream: APIEvents) -> bool:
+    """Assert that no instance of `APIError` event ever occurs."""
 
     async for e in stream:
 
@@ -30,7 +37,7 @@ async def assert_clock_ticks(stream: APIEvents) -> bool:
         if last_timer_event is not None and e.timestamp > last_timer_event + 1.5:
             raise TemporalAssertionError()
 
-        if isinstance(e, TimerEvent):
+        if isinstance(e, APIClockTick):
             last_timer_event = e.timestamp
 
     if last_timer_event is None:
@@ -40,6 +47,9 @@ async def assert_clock_ticks(stream: APIEvents) -> bool:
 
 
 async def assert_every_call_gets_response(stream: APIEvents) -> bool:
+    """Assert that for every `APICall` event there will eventually occur
+    a corresponding `APIResult` event.
+    """
 
     calls_in_progress: Set[APICall] = set()
 

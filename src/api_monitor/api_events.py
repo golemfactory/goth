@@ -2,6 +2,7 @@
 import abc
 import json
 import re
+import time
 from typing import Any, Optional, Type
 
 from mitmproxy.flow import Error
@@ -17,6 +18,17 @@ class APIEvent(abc.ABC):
     @abc.abstractmethod
     def timestamp(self) -> float:
         """Return event's time"""
+
+
+class APIClockTick(APIEvent):
+    """A dummy event representing clock ticks, used for timeouts in API monitor"""
+
+    def __init__(self, timestamp: Optional[float] = None):
+        self._timestamp = timestamp or time.time()
+
+    @property
+    def timestamp(self) -> float:
+        return self._timestamp
 
 
 class APICall(APIEvent):
