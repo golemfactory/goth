@@ -1,40 +1,34 @@
-from dataclasses import dataclass
 import time
 
 from src.assertions import EventStream
 from src.assertions.monitor import EventMonitor
 
 
-@dataclass(frozen=True)
-class NumEvent:
-    data: int
-
-
-Events = EventStream[NumEvent]
+# Events are just integers
+Events = EventStream[int]
 
 
 async def assert_all_positive(stream: Events) -> None:
 
     async for e in stream:
-        if e.data <= 0:
-            raise AssertionError(f"{e.data} < 0")
+        if e <= 0:
+            raise AssertionError(f"{e} < 0")
 
 
 async def assert_increasing(stream: Events) -> None:
 
-    async for _ in stream:
-        # stream.past_events[-1] is the most recent `NumEvent`
+    async for e in stream:
+        # stream.past_events[-1] is `e`, stream.past_events[-2] is the previous event
         if len(stream.past_events) >= 2:
-            current_number = stream.past_events[-1].data
-            previous_number = stream.past_events[-2].data
-            if previous_number >= current_number:
-                raise AssertionError(f"{previous_number} >= {current_number}")
+            prev = stream.past_events[-2]
+            if prev >= e:
+                raise AssertionError(f"{prev} >= {e}")
 
 
 async def assert_eventually_five(stream: Events) -> None:
 
     async for e in stream:
-        if e.data == 5:
+        if e == 5:
             return  # success!
 
     raise AssertionError("Events ended")
@@ -43,8 +37,8 @@ async def assert_eventually_five(stream: Events) -> None:
 async def assert_eventually_even(stream: Events) -> int:
 
     async for e in stream:
-        if e.data % 2 == 0:
-            return e.data
+        if e % 2 == 0:
+            return e
 
     raise AssertionError("Events ended")
 
@@ -52,8 +46,8 @@ async def assert_eventually_even(stream: Events) -> int:
 async def assert_eventually_greater(n: int, stream: Events) -> int:
 
     async for e in stream:
-        if e.data > n:
-            return e.data
+        if e > n:
+            return e
 
     raise AssertionError("Events ended")
 
@@ -68,7 +62,7 @@ async def assert_fancy_property(stream: Events) -> int:
 
 def test_monitor():
 
-    monitor: EventMonitor[NumEvent] = EventMonitor()
+    monitor: EventMonitor[int] = EventMonitor()
     monitor.add_assertions(
         [
             assert_all_positive,
@@ -81,7 +75,7 @@ def test_monitor():
 
     # Feed events
     for n in [1, 3, 4, 5, 6, 7, 8, 9, 10]:
-        monitor.add(NumEvent(n))
+        monitor.add(n)
         time.sleep(0.3)
 
     monitor.stop()
