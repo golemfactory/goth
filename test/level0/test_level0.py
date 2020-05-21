@@ -1,19 +1,51 @@
 import logging
 from pathlib import Path
 import re
+from string import Template
 
 from src.runner import Runner
-from src.runner.probe import Probe, Role
+from src.runner.probe import Probe, NodeConfig, Role
 from src.runner.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
+ENVIRONMENT = {
+    "YAGNA_BUS_PORT": "6010",
+    "YAGNA_HTTP_PORT": "6000",
+    "CENTRAL_NET_HOST": "router:7477",
+    "GSB_URL": "tcp://0.0.0.0:6010",
+    "YAGNA_MARKET_URL": "http://mock-api:5001/market-api/v1/",
+    "YAGNA_API_URL": "http://0.0.0.0:6000",
+    "YAGNA_ACTIVITY_URL": "http://127.0.0.1:6000/activity-api/v1/",
+}
+
+VOLUMES = {
+    Template("$assets_path"): "/asset",
+    Template("$assets_path/presets.json"): "/presets.json",
+}
+
 
 class Level0Scenario(Scenario):
-    nodes = {
-        Role.requestor: 1,
-        Role.provider: 2,
-    }
+    topology = [
+        NodeConfig(
+            name="requestor",
+            role=Role.requestor,
+            environment=ENVIRONMENT,
+            volumes=VOLUMES,
+        ),
+        NodeConfig(
+            name="provider_1",
+            role=Role.provider,
+            environment=ENVIRONMENT,
+            volumes=VOLUMES,
+        ),
+        NodeConfig(
+            name="provider_2",
+            role=Role.provider,
+            environment=ENVIRONMENT,
+            volumes=VOLUMES,
+        ),
+    ]
 
     @property
     def steps(self):

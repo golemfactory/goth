@@ -1,10 +1,13 @@
+from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from typing import Optional
+from string import Template
+from typing import Dict, Optional
 
-from docker.models.containers import Container
+from docker import DockerClient
 
 from src.runner.cli import Cli
+from src.runner.container import YagnaContainer
 from src.runner.exceptions import KeyAlreadyExistsError
 from src.runner.log import get_file_logger, LogBuffer
 
@@ -17,14 +20,20 @@ class Role(Enum):
     provider = 1
 
 
+@dataclass
+class NodeConfig:
+    name: str
+    role: Role
+    assets_path: str = ""
+    environment: Dict[str, str] = field(default_factory=dict)
+    volumes: Dict[Template, str] = field(default_factory=dict)
+
+
 class Probe:
-    def __init__(self, container: Container, role: Role):
-        self.container = container
-        self.cli = Cli(container).yagna
-        self.logs = LogBuffer(
-            container.logs(stream=True, follow=True), get_file_logger(self.name)
-        )
-        self.role = role
+    def __init__(self, client: DockerClient, config: NodeConfig):
+        self.container = YagnaContainer(client, config)
+        self.cli = Cli(self.container).yagna
+        self.role = config.role
 
         self.agent_logs: LogBuffer
 
