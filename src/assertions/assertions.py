@@ -9,7 +9,6 @@ from typing import (
     AsyncIterator,
     Callable,
     Coroutine,
-    Optional,
     Sequence,
     TypeVar,
 )
@@ -21,15 +20,8 @@ class TemporalAssertionError(AssertionError):
     """Thrown by temporal assertions on failure"""
 
 
-class HasTimestamp(Protocol):
-    """A protocol for objects with `timestamp` property"""
-
-    @property
-    def timestamp(self) -> float:
-        """Return time at which this event occurred"""
-
-
-E = TypeVar("E", bound=HasTimestamp)
+E = TypeVar("E")
+"""Type variable for the type of events"""
 
 
 class EventStream(Protocol, AsyncIterable[E]):
@@ -49,13 +41,10 @@ class Assertion(AsyncIterable[E]):
     """A class for executing assertion coroutines"""
 
     past_events: Sequence[E]
-    """A sequence to which subsequent events are added"""
-
-    current_event: Optional[E]
-    """Most recent event"""
+    """See `EventStream`"""
 
     events_ended: bool
-    """A flag that signals that there will be no more events"""
+    """See `EventStream`"""
 
     name: str
     """Assertion name for logging etc."""
@@ -111,19 +100,18 @@ class Assertion(AsyncIterable[E]):
             return self._task.result()
         return None
 
-    async def process_event(self, event: Optional[E]) -> None:
-        """Notify the assertion about a new event, wait until it's processed."""
+    async def update_events(self, events_ended: bool = False) -> None:
+        """Notify the assertion that a new event has been added."""
 
-        self.current_event = event
+        if self.events_ended:
+            raise AssertionError("Event stream already ended")
+        self.events_ended = events_ended
+
+        # This will allow the assertion function to resume execution
         self._ready.set()
+        # Here we wait until the assertion function yields control
         await self._processed.wait()
         self._processed.clear()
-
-    async def end_events(self) -> None:
-        """Signal the end of events, wait for the assertion to react."""
-
-        self.events_ended = True
-        await self.process_event(None)
 
     async def __aiter__(self) -> AsyncIterator[E]:
         """Return a generator of events, to be used in assertion coroutines."""
@@ -138,8 +126,8 @@ class Assertion(AsyncIterable[E]):
                     # this will end `async for ...` loop on this aync generator
                     return
 
-                assert self.current_event is not None
-                yield self.current_event
+                assert self.past_events
+                yield self.past_events[-1]
 
             finally:
                 self._processed.set()

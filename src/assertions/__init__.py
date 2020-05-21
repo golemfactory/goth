@@ -4,7 +4,6 @@ from src.assertions.assertions import (
     Assertion,
     AssertionFunction,
     EventStream,
-    HasTimestamp,
     TemporalAssertionError,
 )
 
