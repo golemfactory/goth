@@ -41,20 +41,29 @@ Docker Compose is a separate binary which needs to be available on your system i
 ### Running the test network
 
 #### Getting a GitHub API token
-In the current setup, the Yagna Docker image is built locally when the test network is first started. Since Yagna is not (yet) publicly available, cloning its repository from GitHub requires having appropriate access rights. Therefore, before building the Docker image we need to obtain a GitHub API token with rights to clone the Yagna repository.
+In the current setup, the Yagna Docker image is built locally when the test network is first started. To install the Yagna binary in the Docker image, a .deb package is downloaded from GitHub Actions. Since access to this package is currently restricted, before building the Docker image we need to obtain a GitHub API token with appropriate rights.
 
 To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens) and generate a new token (giving it the `repo` OAuth scope is enough).
 
 Once your token is generated, create an environment variable named `GITHUB_API_TOKEN` and store the token as its value. This environment variable will need to be available in the terminal from which you run `docker-compose`.
 
 #### Starting the Docker Compose network
-Having the GitHub API token available in your environment, navigate to this project's `test/level0/unix` directory and run the following script:
+Having the GitHub API token available in your environment, navigate to this project's root directory and run the following command:
 ```
-./run_docker_network.sh
+docker-compose -f src/docker/docker-compose.yml up -d
 ```
 
-This script takes care of copying the appropriate assets to Docker's build context (and cleaning them up later on), as well as running test network itself.
-If everything is correctly configured you should see Docker pulling and building images followed by logs from the containers in the network.
+This command starts the network defined by the `.yml` file in detached mode (running in the background). If everything is correctly configured you should see log output about building the Yagna Docker image. Once the network is up, you can verify it by checking the currently active docker containers:
+```
+docker ps
+```
+
+Assuming you have no other Docker containers currently running, the output of this command should look similar to this:
+```
+CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                    NAMES
+1735fd81d742        golemfactory/golem-client-mock:0.1.2   "dotnet GolemClientM…"   5 seconds ago       Up 2 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
+9127e534e86b        yagna                                  "/usr/bin/ya_sb_rout…"   5 seconds ago       Up 3 seconds                                 docker_router_1
+```
 
 #### Running the integration tests
 With the Yagna test network running locally we can now launch the integration tests. To do so, navigate to the project's root directory and run:
