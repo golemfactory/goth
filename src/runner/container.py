@@ -1,7 +1,9 @@
-from typing import Dict, List, Optional, TYPE_CHECKING
+from enum import Enum
+from typing import Callable, Dict, List, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 from docker.models.containers import Container
+from transitions import Machine
 
 from src.runner.log import get_file_logger, LogBuffer
 
@@ -9,16 +11,31 @@ if TYPE_CHECKING:
     from src.runner.probe import NodeConfig
 
 
+class State(Enum):
+    created = 0
+    started = 1
+    stopped = 2
+    removed = 3
+
+
 class DockerContainer:
+    DEFAULT_NETWORK = "docker_default"
 
     command: List[str]
     entrypoint: str
     image: str
+    logs: Optional[LogBuffer]
     name: str
     network: str
 
+    state: State
+    run: Callable
+    stop: Callable
+    start: Callable
+    remove: Callable
+
     _client: DockerClient
-    _container: Optional[Container]
+    _container: Container
 
     def __init__(
         self,
@@ -27,7 +44,7 @@ class DockerContainer:
         entrypoint: str,
         image: str,
         name: str,
-        network: str = "docker_default",
+        network: str = DEFAULT_NETWORK,
     ):
         self._client = client
         self.command = command
@@ -36,7 +53,22 @@ class DockerContainer:
         self.name = name
         self.network = network
 
-    def run(self, **kwargs) -> LogBuffer:
+        self.machine = Machine(
+            self,
+            states=State,
+            transitions=[
+                {
+                    "trigger": "run",
+                    "source": State.created,
+                    "dest": State.started,
+                    "before": self._run,
+                },
+            ],
+            initial=State.created,
+            auto_transitions=False,
+        )
+
+    def _run(self, **kwargs):
         self._container = self._client.containers.run(
             self.image,
             entrypoint=self.entrypoint,
@@ -47,15 +79,28 @@ class DockerContainer:
             **kwargs,
         )
 
-        return LogBuffer(
+        self.logs = LogBuffer(
             self._container.logs(stream=True, follow=True), get_file_logger(self.name)
+        )
+
+        self.machine.add_transition(
+            "stop",
+            source=State.started,
+            dest=State.stopped,
+            before=self._container.stop,
+        )
+        self.machine.add_transition(
+            "start",
+            source=State.stopped,
+            dest=State.started,
+            before=self._container.start,
+        )
+        self.machine.add_transition(
+            "remove", source="*", dest=State.removed, before=self._container.remove,
         )
 
     def exec_run(self, *args, **kwargs):
         return self._container.exec_run(*args, **kwargs)
-
-    def remove(self, **kwargs):
-        return self._container.remove(**kwargs)
 
 
 class YagnaContainer(DockerContainer):
@@ -63,15 +108,13 @@ class YagnaContainer(DockerContainer):
     HTTP_PORT = 6000
     COMMAND = ["service", "run", "-d", "/"]
     ENTRYPOINT = "/usr/bin/yagna"
-    IMAGE_NAME = "yagna"
+    IMAGE = "yagna"
 
     # Keeps track of assigned ports on the Docker host
     port_offset = 0
 
     def __init__(self, client: DockerClient, config: "NodeConfig"):
-        super().__init__(
-            client, self.COMMAND, self.ENTRYPOINT, self.IMAGE_NAME, config.name
-        )
+        super().__init__(client, self.COMMAND, self.ENTRYPOINT, self.IMAGE, config.name)
 
         self.environment = []
         for key, value in config.environment.items():
@@ -95,8 +138,8 @@ class YagnaContainer(DockerContainer):
     def host_bus_port(cls):
         return cls.BUS_PORT + cls.port_offset
 
-    def run(self, **kwargs) -> LogBuffer:
-        return super().run(
+    def _run(self, **kwargs):
+        return super()._run(
             environment=self.environment,
             ports=self.ports,
             volumes=self.volumes,
