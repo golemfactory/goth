@@ -28,6 +28,7 @@ def docker_container(docker_client):
         entrypoint=GENERIC_ENTRYPOINT,
         image=GENERIC_IMAGE,
         name=GENERIC_NAME,
+        log_to_file=False,
     )
 
 
@@ -42,7 +43,6 @@ def yagna_container(docker_client):
 
 def test_container_create(docker_container, docker_client):
     assert docker_container.state is State.created
-    assert isinstance(docker_container.logs, LogBuffer)
     docker_client.containers.create.assert_called_once_with(
         GENERIC_IMAGE,
         entrypoint=GENERIC_ENTRYPOINT,
@@ -51,6 +51,14 @@ def test_container_create(docker_container, docker_client):
         detach=True,
         network=DockerContainer.DEFAULT_NETWORK,
     )
+
+
+def test_container_start(docker_container):
+    docker_container.start()
+
+    assert isinstance(docker_container.logs, LogBuffer)
+    assert docker_container.state is State.started
+    docker_container._container.start.assert_called_once()
 
 
 def test_container_stop(docker_container):
@@ -64,19 +72,10 @@ def test_container_stop(docker_container):
         docker_container.stop()
 
 
-def test_container_start(docker_container):
-    docker_container.start()
-    docker_container.stop()
-
-    docker_container.start()
-
-    assert docker_container.state is State.started
-    assert docker_container._container.start.call_count == 2
-
-
 def test_container_remove(docker_container):
     docker_container.remove()
 
+    assert docker_container.state is State.removed
     docker_container._container.remove.assert_called_once()
     with pytest.raises(transitions.MachineError, match=r"Can't trigger event start.*"):
         docker_container.start()

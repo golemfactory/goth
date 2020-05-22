@@ -53,10 +53,12 @@ class DockerContainer:
     stop: Callable
     """ Stop a running container. Internally, this calls `Container.stop` with any kwargs
         passed here being forwarded to that function. """
+
     start: Callable
     """ Start a container which is either created or stopped.
         Internally, this calls `Container.start` with any kwargs passed here being
         forwarded to that function. """
+
     remove: Callable
     """ Remove a container. This puts this `DockerContainer` in its final state `State.removed`.
         Internally, this calls `Container.remove` with any kwargs passed here being
@@ -73,6 +75,7 @@ class DockerContainer:
         image: str,
         name: str,
         network: str = DEFAULT_NETWORK,
+        log_to_file: bool = True,
         **kwargs,
     ):
         self._client = client
@@ -81,6 +84,7 @@ class DockerContainer:
         self.image = image
         self.name = name
         self.network = network
+        self.log_to_file = log_to_file
 
         self._container = self._client.containers.create(
             self.image,
@@ -101,7 +105,7 @@ class DockerContainer:
                     "trigger": "start",
                     "source": [State.created, State.stopped],
                     "dest": State.started,
-                    "before": self._container.start,
+                    "before": self._start,
                 },
                 {
                     "trigger": "stop",
@@ -120,9 +124,13 @@ class DockerContainer:
             auto_transitions=False,
         )
 
-        self.logs = LogBuffer(
-            self._container.logs(stream=True, follow=True), get_file_logger(self.name)
-        )
+    def _start(self, **kwargs):
+        self._container.start(**kwargs)
+        if self.log_to_file:
+            self.logs = LogBuffer(
+                self._container.logs(stream=True, follow=True),
+                get_file_logger(self.name),
+            )
 
     def exec_run(self, *args, **kwargs):
         """ Proxy to `Container.exec_run`. """
@@ -160,7 +168,7 @@ class YagnaContainer(DockerContainer):
             as a placeholder to be used for substitution.  The values are container
             paths to be used as mount points. """
 
-    def __init__(self, client: DockerClient, config: Config):
+    def __init__(self, client: DockerClient, config: Config, **kwargs):
         self.environment = []
         for key, value in config.environment.items():
             self.environment.append(f"{key}={value}")
@@ -184,6 +192,7 @@ class YagnaContainer(DockerContainer):
             environment=self.environment,
             ports=self.ports,
             volumes=self.volumes,
+            **kwargs,
         )
 
     @classmethod

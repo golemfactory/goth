@@ -27,7 +27,7 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "console": {"class": "logging.StreamHandler", "formatter": "simple",},
-        "file_runner": {
+        "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
             "filename": BASE_LOG_DIR / "runner.log",
@@ -36,8 +36,7 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "src.runner": {"handlers": ["console"], "propagate": False},
-        "src.runner.scenario": {"handlers": ["file_runner"]},
-        "test_level0": {"handlers": ["console"], "propagate": False},
+        "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
     },
 }
 

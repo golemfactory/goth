@@ -14,7 +14,7 @@ def yagna_container():
 
     client = docker.from_env()
     config = YagnaContainer.Config(name="cli_test_container", role=Role.provider)
-    container = YagnaContainer(client, config)
+    container = YagnaContainer(client, config, log_to_file=False)
     container.start()
 
     yield container
