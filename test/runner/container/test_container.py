@@ -6,7 +6,6 @@ import transitions
 
 from src.runner.container import DockerContainer, State, YagnaContainer
 from src.runner.log import LogBuffer
-from src.runner.probe import NodeConfig
 
 GENERIC_COMMAND = ["cmd_name", "-f", "flag_value"]
 GENERIC_ENTRYPOINT = "/usr/bin/binary_name"
@@ -34,7 +33,7 @@ def docker_container(docker_client):
 
 @pytest.fixture
 def yagna_container(docker_client):
-    config = MagicMock(spec=NodeConfig)
+    config = MagicMock(spec=YagnaContainer.Config)
     config.name = YAGNA_CONTAINER_NAME
     config.environment = {}
     config.volumes = {}

@@ -1,4 +1,6 @@
+from dataclasses import dataclass, field
 from enum import Enum
+from string import Template
 from typing import Callable, Dict, List, Optional, TYPE_CHECKING
 
 from docker import DockerClient
@@ -8,7 +10,7 @@ from transitions import Machine
 from src.runner.log import get_file_logger, LogBuffer
 
 if TYPE_CHECKING:
-    from src.runner.probe import NodeConfig
+    from src.runner.probe import Role
 
 
 class State(Enum):
@@ -108,7 +110,15 @@ class YagnaContainer(DockerContainer):
     # Keeps track of assigned ports on the Docker host
     port_offset = 0
 
-    def __init__(self, client: DockerClient, config: "NodeConfig"):
+    @dataclass
+    class Config:
+        name: str
+        role: "Role"
+        assets_path: str = ""
+        environment: Dict[str, str] = field(default_factory=dict)
+        volumes: Dict[Template, str] = field(default_factory=dict)
+
+    def __init__(self, client: DockerClient, config: Config):
         self.environment = []
         for key, value in config.environment.items():
             self.environment.append(f"{key}={value}")

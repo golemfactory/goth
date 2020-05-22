@@ -4,7 +4,8 @@ import re
 from string import Template
 
 from src.runner import Runner
-from src.runner.probe import Probe, NodeConfig, Role
+from src.runner.container import YagnaContainer
+from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
 logger = logging.getLogger(__name__)
@@ -27,19 +28,19 @@ VOLUMES = {
 
 class Level0Scenario(Scenario):
     topology = [
-        NodeConfig(
+        YagnaContainer.Config(
             name="requestor",
             role=Role.requestor,
             environment=ENVIRONMENT,
             volumes=VOLUMES,
         ),
-        NodeConfig(
+        YagnaContainer.Config(
             name="provider_1",
             role=Role.provider,
             environment=ENVIRONMENT,
             volumes=VOLUMES,
         ),
-        NodeConfig(
+        YagnaContainer.Config(
             name="provider_2",
             role=Role.provider,
             environment=ENVIRONMENT,

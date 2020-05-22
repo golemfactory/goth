@@ -1,7 +1,8 @@
 import abc
 from typing import Callable, List, Tuple
 
-from src.runner.probe import NodeConfig, Role
+from src.runner.container import YagnaContainer
+from src.runner.probe import Role
 
 
 class Scenario(abc.ABC):
@@ -14,5 +15,5 @@ class Scenario(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def topology(self) -> List[NodeConfig]:
+    def topology(self) -> List[YagnaContainer.Config]:
         """ TODO Topology docstring """

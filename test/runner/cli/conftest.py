@@ -5,7 +5,7 @@ import pytest
 
 from src.runner.container import YagnaContainer
 from src.runner.exceptions import CommandError
-from src.runner.probe import NodeConfig, Role
+from src.runner.probe import Role
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def yagna_container():
     """A fixture for starting and terminating a container using the `yagna` image"""
 
     client = docker.from_env()
-    config = NodeConfig(name="cli_test_container", role=Role.provider)
+    config = YagnaContainer.Config(name="cli_test_container", role=Role.provider)
     container = YagnaContainer(client, config)
     container.start()
 

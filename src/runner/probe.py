@@ -1,8 +1,6 @@
-from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from string import Template
-from typing import Dict, Optional
+from typing import Optional
 
 from docker import DockerClient
 
@@ -20,17 +18,8 @@ class Role(Enum):
     provider = 1
 
 
-@dataclass
-class NodeConfig:
-    name: str
-    role: Role
-    assets_path: str = ""
-    environment: Dict[str, str] = field(default_factory=dict)
-    volumes: Dict[Template, str] = field(default_factory=dict)
-
-
 class Probe:
-    def __init__(self, client: DockerClient, config: NodeConfig):
+    def __init__(self, client: DockerClient, config: YagnaContainer.Config):
         self.container = YagnaContainer(client, config)
         self.cli = Cli(self.container).yagna
         self.role = config.role
