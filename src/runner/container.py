@@ -29,7 +29,6 @@ class DockerContainer:
     network: str
 
     state: State
-    run: Callable
     stop: Callable
     start: Callable
     remove: Callable
@@ -45,6 +44,7 @@ class DockerContainer:
         image: str,
         name: str,
         network: str = DEFAULT_NETWORK,
+        **kwargs,
     ):
         self._client = client
         self.command = command
@@ -53,23 +53,7 @@ class DockerContainer:
         self.name = name
         self.network = network
 
-        self.machine = Machine(
-            self,
-            states=State,
-            transitions=[
-                {
-                    "trigger": "run",
-                    "source": State.created,
-                    "dest": State.started,
-                    "before": self._run,
-                },
-            ],
-            initial=State.created,
-            auto_transitions=False,
-        )
-
-    def _run(self, **kwargs):
-        self._container = self._client.containers.run(
+        self._container = self._client.containers.create(
             self.image,
             entrypoint=self.entrypoint,
             command=self.command,
@@ -79,24 +63,35 @@ class DockerContainer:
             **kwargs,
         )
 
-        self.logs = LogBuffer(
-            self._container.logs(stream=True, follow=True), get_file_logger(self.name)
+        self.machine = Machine(
+            self,
+            states=State,
+            transitions=[
+                {
+                    "trigger": "start",
+                    "source": [State.created, State.stopped],
+                    "dest": State.started,
+                    "before": self._container.start,
+                },
+                {
+                    "trigger": "stop",
+                    "source": State.started,
+                    "dest": State.stopped,
+                    "before": self._container.stop,
+                },
+                {
+                    "trigger": "remove",
+                    "source": "*",
+                    "dest": State.removed,
+                    "before": self._container.remove,
+                },
+            ],
+            initial=State.created,
+            auto_transitions=False,
         )
 
-        self.machine.add_transition(
-            "stop",
-            source=State.started,
-            dest=State.stopped,
-            before=self._container.stop,
-        )
-        self.machine.add_transition(
-            "start",
-            source=State.stopped,
-            dest=State.started,
-            before=self._container.start,
-        )
-        self.machine.add_transition(
-            "remove", source="*", dest=State.removed, before=self._container.remove,
+        self.logs = LogBuffer(
+            self._container.logs(stream=True, follow=True), get_file_logger(self.name)
         )
 
     def exec_run(self, *args, **kwargs):
@@ -114,8 +109,6 @@ class YagnaContainer(DockerContainer):
     port_offset = 0
 
     def __init__(self, client: DockerClient, config: "NodeConfig"):
-        super().__init__(client, self.COMMAND, self.ENTRYPOINT, self.IMAGE, config.name)
-
         self.environment = []
         for key, value in config.environment.items():
             self.environment.append(f"{key}={value}")
@@ -130,6 +123,17 @@ class YagnaContainer(DockerContainer):
 
         YagnaContainer.port_offset += 1
 
+        super().__init__(
+            client,
+            self.COMMAND,
+            self.ENTRYPOINT,
+            self.IMAGE,
+            config.name,
+            environment=self.environment,
+            ports=self.ports,
+            volumes=self.volumes,
+        )
+
     @classmethod
     def host_http_port(cls):
         return cls.HTTP_PORT + cls.port_offset
@@ -137,11 +141,3 @@ class YagnaContainer(DockerContainer):
     @classmethod
     def host_bus_port(cls):
         return cls.BUS_PORT + cls.port_offset
-
-    def _run(self, **kwargs):
-        return super()._run(
-            environment=self.environment,
-            ports=self.ports,
-            volumes=self.volumes,
-            **kwargs,
-        )

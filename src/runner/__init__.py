@@ -31,7 +31,7 @@ class Runner:
             config.assets_path = self.assets_path
             probe = Probe(docker_client, config)
             self.probes[config.role].append(probe)
-            probe.container.run()
+            probe.container.start()
 
     def run(self, scenario):
         self.run_nodes(scenario)

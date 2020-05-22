@@ -41,14 +41,10 @@ def yagna_container(docker_client):
     return YagnaContainer(docker_client, config)
 
 
-def test_container_run(docker_container, docker_client):
+def test_container_create(docker_container, docker_client):
     assert docker_container.state is State.created
-
-    docker_container.run()
-
-    assert docker_container.state is State.started
     assert isinstance(docker_container.logs, LogBuffer)
-    docker_client.containers.run.assert_called_once_with(
+    docker_client.containers.create.assert_called_once_with(
         GENERIC_IMAGE,
         entrypoint=GENERIC_ENTRYPOINT,
         command=GENERIC_COMMAND,
@@ -59,26 +55,27 @@ def test_container_run(docker_container, docker_client):
 
 
 def test_container_stop(docker_container):
-    docker_container.run()
+    docker_container.start()
 
     docker_container.stop()
+
+    assert docker_container.state is State.stopped
     docker_container._container.stop.assert_called_once()
-    with pytest.raises(transitions.MachineError, match=r"Can't trigger event run.*"):
-        docker_container.run()
+    with pytest.raises(transitions.MachineError, match=r"Can't trigger event stop.*"):
+        docker_container.stop()
 
 
 def test_container_start(docker_container):
-    docker_container.run()
+    docker_container.start()
     docker_container.stop()
 
     docker_container.start()
 
-    docker_container._container.start.assert_called_once()
+    assert docker_container.state is State.started
+    assert docker_container._container.start.call_count == 2
 
 
 def test_container_remove(docker_container):
-    docker_container.run()
-
     docker_container.remove()
 
     docker_container._container.remove.assert_called_once()
@@ -86,13 +83,9 @@ def test_container_remove(docker_container):
         docker_container.start()
 
 
-def test_yagna_container_run(yagna_container, docker_client):
+def test_yagna_container_create(yagna_container, docker_client):
     assert yagna_container.state is State.created
-
-    yagna_container.run()
-
-    assert yagna_container.state is State.started
-    docker_client.containers.run.assert_called_once_with(
+    docker_client.containers.create.assert_called_once_with(
         YagnaContainer.IMAGE,
         entrypoint=YagnaContainer.ENTRYPOINT,
         command=YagnaContainer.COMMAND,
