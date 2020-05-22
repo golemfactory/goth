@@ -1,4 +1,5 @@
-"""This module defines `APIMonitor` class that registers API calls and checks
+"""
+This module defines an event monitor class that registers events and checks
 whether temporal assertions are satisfied.
 """
 
@@ -8,18 +9,14 @@ import importlib
 import logging
 import queue
 import threading
-from typing import Callable, Generic, List, Optional, Sequence, TypeVar
+from typing import Generic, List, Optional, Sequence
 
-from src.assertions import Assertion, logger as assertions_logger
+from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
 )
 logger = logging.getLogger(__name__)
-
-
-E = TypeVar("E")
-"""Type of events"""
 
 
 class EventMonitor(Generic[E]):
@@ -30,7 +27,7 @@ class EventMonitor(Generic[E]):
     """
 
     _events: List[E]
-    """List of API calls registered so far"""
+    """List of events registered so far"""
 
     _worker_thread: threading.Thread
     """A worker thread that registers events and checks assertions"""
@@ -41,7 +38,7 @@ class EventMonitor(Generic[E]):
     assertions: List[Assertion[E]]
     """List of all assertions (including the satisfied or failed ones)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._events = []
         self._incoming = queue.Queue()
         self.assertions = []
@@ -51,15 +48,15 @@ class EventMonitor(Generic[E]):
             daemon=True,
         )
 
-    def add_assertions(self, assertion_funcs: List[Callable]) -> None:
-        """Add a list of assertion functions to this monitor"""
+    def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
+        """Add a list of assertion functions to this monitor."""
 
         self.assertions.extend(
             Assertion(self._events, func) for func in assertion_funcs
         )
 
     def load_assertions(self, module_name: str) -> None:
-        """Load assertion functions from a module"""
+        """Load assertion functions from a module."""
 
         # We cannot instantiate `Assertion` objects here, since they will be
         # running in an asyncio event loop associated with another thread
@@ -71,17 +68,17 @@ class EventMonitor(Generic[E]):
         self.add_assertions(mod.__dict__["TEMPORAL_ASSERTIONS"])
 
     def start(self) -> None:
-        """Start tracing events"""
+        """Start tracing events."""
 
         self.worker_thread.start()
 
     def add_event(self, event: E) -> None:
-        """Register a new HTTP request/response/error"""
+        """Register a new event."""
 
         self._incoming.put(event)
 
     def stop(self) -> None:
-        """Stop tracing events"""
+        """Stop tracing events."""
 
         # This will eventually terminate the worker thread:
         self._incoming.put(None)
@@ -91,12 +88,12 @@ class EventMonitor(Generic[E]):
         self.stop()
 
     def __len__(self) -> int:
-        """Return the number of registered events"""
+        """Return the number of registered events."""
 
         return len(self._events)
 
     async def _run_worker(self) -> None:
-        """In a loop, register the incoming events and check the assertions"""
+        """In a loop, register the incoming events and check the assertions."""
 
         for a in self.assertions:
             logger.debug("Starting assertion '%s'", a.name)

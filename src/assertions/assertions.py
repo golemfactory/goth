@@ -26,7 +26,7 @@ E = TypeVar("E")
 
 
 class EventStream(Protocol, AsyncIterable[E]):
-    """A protocol used by assertion functions to observe a stream of events"""
+    """A protocol for streams of events of type `E` used by assertion functions"""
 
     past_events: Sequence[E]
     """A sequence of past events, the last element is the most recent event"""
@@ -35,7 +35,7 @@ class EventStream(Protocol, AsyncIterable[E]):
     """`True` iff there will be no more events"""
 
 
-AssertionFunction = Callable[[EventStream], Coroutine]
+AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
 class Assertion(AsyncIterable[E]):
@@ -50,17 +50,17 @@ class Assertion(AsyncIterable[E]):
     name: str
     """Assertion name for logging etc"""
 
-    _func: AssertionFunction
+    _func: Optional[AssertionFunction]
     """A coroutine function that is executed for this assertion"""
 
     _task: Optional[asyncio.Task]
     """A task in which the assertion coroutine runs"""
 
     _ready: Optional[asyncio.Event]
-    """An event objects used for synchronising the client and the assertion coroutine"""
+    """An event object used for synchronising the client and the assertion coroutine"""
 
     _processed: Optional[asyncio.Event]
-    """An event objects used for synchronising the client and the assertion coroutine"""
+    """An event object used for synchronising the client and the assertion coroutine"""
 
     def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
         self.past_events = events
@@ -77,6 +77,7 @@ class Assertion(AsyncIterable[E]):
     async def start(self) -> None:
         """Create asyncio task that runs this assertion."""
 
+        assert self._func is not None
         self._task = asyncio.create_task(self._func(self))
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
@@ -115,7 +116,8 @@ class Assertion(AsyncIterable[E]):
 
     @property
     def result(self) -> Any:
-        """Return either a value returned by this assertion on success, an exception
+        """
+        Return either a value returned by this assertion on success, an exception
         thrown on failure, or `None` if the assertion haven't finished yet.
         """
 

@@ -3,6 +3,7 @@ import logging
 from src.assertions.assertions import (
     Assertion,
     AssertionFunction,
+    E,
     EventStream,
     TemporalAssertionError,
 )
