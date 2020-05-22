@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 from docker import DockerClient
 import pytest
@@ -92,10 +92,7 @@ def test_yagna_container_create(yagna_container, docker_client):
         name=YAGNA_CONTAINER_NAME,
         environment=[],
         network=DockerContainer.DEFAULT_NETWORK,
-        ports={
-            YagnaContainer.HTTP_PORT: YagnaContainer.HTTP_PORT,
-            YagnaContainer.BUS_PORT: YagnaContainer.BUS_PORT,
-        },
+        ports=ANY,
         volumes={},
         detach=True,
     )
