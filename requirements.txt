@@ -1,4 +1,4 @@
 docker
-mitmproxy>=5.1,<6,0
+mitmproxy>=5.1,<6.0
 pytest
 pytest-asyncio
