@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class State(Enum):
+    """ Represents states that a Docker container may be in. """
+
     created = 0
     started = 1
     stopped = 2
@@ -21,19 +23,44 @@ class State(Enum):
 
 
 class DockerContainer:
+    """ A wrapper around `Container` which includes a state machine (from `transitions`)
+        to keep track of a container's lifecycle. """
+
     DEFAULT_NETWORK = "docker_default"
 
     command: List[str]
-    entrypoint: str
-    image: str
-    logs: Optional[LogBuffer]
-    name: str
-    network: str
+    """ Arguments passed to this container's `command` """
 
+    entrypoint: str
+    """ The binary to be run by this container once started """
+
+    image: str
+    """ Name of the image to be used for creating this container """
+
+    logs: Optional[LogBuffer]
+    """ Log buffer for the logs from this container's `entrypoint` """
+
+    name: str
+    """ Name to be assigned to this container """
+
+    network: str
+    """ Name of the Docker network to be joined once the container is started """
+
+    # This section lists the members which will be added at runtime by `transitions`
     state: State
+    """ Current state of this container """
+
     stop: Callable
+    """ Stop a running container. Internally, this calls `Container.stop` with any kwargs
+        passed here being forwarded to that function. """
     start: Callable
+    """ Start a container which is either created or stopped.
+        Internally, this calls `Container.start` with any kwargs passed here being
+        forwarded to that function. """
     remove: Callable
+    """ Remove a container. This puts this `DockerContainer` in its final state `State.removed`.
+        Internally, this calls `Container.remove` with any kwargs passed here being
+        forwarded to that function. """
 
     _client: DockerClient
     _container: Container
@@ -65,6 +92,7 @@ class DockerContainer:
             **kwargs,
         )
 
+        # Initialise the state machine and define allowed transitions
         self.machine = Machine(
             self,
             states=State,
@@ -97,6 +125,7 @@ class DockerContainer:
         )
 
     def exec_run(self, *args, **kwargs):
+        """ Proxy to `Container.exec_run`. """
         return self._container.exec_run(*args, **kwargs)
 
 
@@ -108,15 +137,28 @@ class YagnaContainer(DockerContainer):
     IMAGE = "yagna"
 
     # Keeps track of assigned ports on the Docker host
-    port_offset = 0
+    _port_offset = 0
 
     @dataclass
     class Config:
+        """ Configuration to be used for creating a new `YagnaContainer`. """
+
         name: str
+        """ Name to be used for this container, must be unique """
+
         role: "Role"
+
         assets_path: str = ""
+        """ Path to the assets directory. This will be used in templates from `volumes` """
+
         environment: Dict[str, str] = field(default_factory=dict)
+        """ Environment variables to be set for this container """
+
         volumes: Dict[Template, str] = field(default_factory=dict)
+        """ Volumes to be mounted in the container. Keys are paths on the host machine,
+            represented by `Template`s. These templates may include `assets_path`
+            as a placeholder to be used for substitution.  The values are container
+            paths to be used as mount points. """
 
     def __init__(self, client: DockerClient, config: Config):
         self.environment = []
@@ -131,7 +173,7 @@ class YagnaContainer(DockerContainer):
             host_path = host_template.substitute(assets_path=config.assets_path)
             self.volumes[host_path] = {"bind": mount_path, "mode": "ro"}
 
-        YagnaContainer.port_offset += 1
+        YagnaContainer._port_offset += 1
 
         super().__init__(
             client,
@@ -146,8 +188,8 @@ class YagnaContainer(DockerContainer):
 
     @classmethod
     def host_http_port(cls):
-        return cls.HTTP_PORT + cls.port_offset
+        return cls.HTTP_PORT + cls._port_offset
 
     @classmethod
     def host_bus_port(cls):
-        return cls.BUS_PORT + cls.port_offset
+        return cls.BUS_PORT + cls._port_offset

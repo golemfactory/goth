@@ -61,6 +61,9 @@ def get_file_logger(file_name: str):
 
 
 class LogBuffer:
+    """ Buffers logs coming from `in_stream`. Consecutive values are interpreted as lines
+        by splitting them on the new line character. Internally, it uses a daemon thread
+        to read the stream and add lines to the buffer. """
 
     in_stream: Iterator[bytes]
     logger: logging.Logger

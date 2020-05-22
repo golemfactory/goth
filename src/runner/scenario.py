@@ -16,4 +16,5 @@ class Scenario(abc.ABC):
     @property
     @abc.abstractmethod
     def topology(self) -> List[YagnaContainer.Config]:
-        """ TODO Topology docstring """
+        """ List of container configurations to be used by the test runner when creating
+            Docker containers for this scenario. """
