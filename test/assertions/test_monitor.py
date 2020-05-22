@@ -1,5 +1,3 @@
-import time
-
 from src.assertions import EventStream
 from src.assertions.monitor import EventMonitor
 
@@ -74,8 +72,16 @@ def test_monitor():
     monitor.start()
 
     # Feed events
-    for n in [1, 3, 4, 5, 6, 7, 8, 9, 10]:
-        monitor.add(n)
-        time.sleep(0.3)
+    for n in [1, 3, 4, 6, 7, 8, 9, 10]:
+        monitor.add_event(n)
 
     monitor.stop()
+
+    fancy_assertions = [
+        a for a in monitor.satisfied if a.name.endswith(".assert_fancy_property")
+    ]
+    assert len(fancy_assertions) == 1
+    assert fancy_assertions[0].result == 9
+
+    assert len(monitor.failed) == 1
+    assert monitor.failed[0].name.endswith(".assert_eventually_five")
