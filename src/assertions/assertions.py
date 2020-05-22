@@ -50,17 +50,20 @@ class Assertion(AsyncIterable[E]):
     name: str
     """Assertion name for logging etc"""
 
+    _func: AssertionFunction
+    """A coroutine function that is executed for this assertion"""
+
     _task: Optional[asyncio.Task]
     """A task in which the assertion coroutine runs"""
 
     _ready: Optional[asyncio.Event]
+    """An event objects used for synchronising the client and the assertion coroutine"""
 
     _processed: Optional[asyncio.Event]
     """An event objects used for synchronising the client and the assertion coroutine"""
 
     def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
         self.past_events = events
-        self.current_event = None
         self.events_ended = False
         self.name = f"{func.__module__}.{func.__name__}"
         self._func = func
@@ -77,7 +80,7 @@ class Assertion(AsyncIterable[E]):
         self._task = asyncio.create_task(self._func(self))
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
-        # This will 
+        # This will ensure the task starts executing
         await asyncio.sleep(0.001)
 
     def __str__(self) -> str:
@@ -136,7 +139,7 @@ class Assertion(AsyncIterable[E]):
             raise asyncio.InvalidStateError("Assertion not started")
 
         if self.done:
-            raise asyncio.InvalidStateError("Assertion has stopped")
+            raise asyncio.InvalidStateError("Assertion has finished")
 
         # This will allow the assertion function to resume execution
         self._ready.set()

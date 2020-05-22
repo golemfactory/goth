@@ -9,8 +9,7 @@ Events = EventStream[int]
 async def assert_all_positive(stream: Events) -> None:
 
     async for e in stream:
-        if e <= 0:
-            raise AssertionError(f"{e} < 0")
+        assert e > 0
 
 
 async def assert_increasing(stream: Events) -> None:
@@ -19,8 +18,7 @@ async def assert_increasing(stream: Events) -> None:
         # stream.past_events[-1] is `e`, stream.past_events[-2] is the previous event
         if len(stream.past_events) >= 2:
             prev = stream.past_events[-2]
-            if prev >= e:
-                raise AssertionError(f"{prev} >= {e}")
+            assert prev < e
 
 
 async def assert_eventually_five(stream: Events) -> None:
@@ -29,7 +27,7 @@ async def assert_eventually_five(stream: Events) -> None:
         if e == 5:
             return  # success!
 
-    raise AssertionError("Events ended")
+    assert False, "Events ended"
 
 
 async def assert_eventually_even(stream: Events) -> int:
@@ -38,7 +36,7 @@ async def assert_eventually_even(stream: Events) -> int:
         if e % 2 == 0:
             return e
 
-    raise AssertionError("Events ended")
+    assert False, "Events ended"
 
 
 async def assert_eventually_greater(n: int, stream: Events) -> int:
@@ -47,7 +45,7 @@ async def assert_eventually_greater(n: int, stream: Events) -> int:
         if e > n:
             return e
 
-    raise AssertionError("Events ended")
+    assert False, "Events ended"
 
 
 async def assert_fancy_property(stream: Events) -> int:
@@ -71,17 +69,13 @@ def test_monitor():
     )
     monitor.start()
 
-    # Feed events
-    for n in [1, 3, 4, 6, 7, 8, 9, 10]:
+    for n in [1, 3, 4, 6, 3, 8, 9, 10]:
         monitor.add_event(n)
 
     monitor.stop()
 
-    fancy_assertions = [
-        a for a in monitor.satisfied if a.name.endswith(".assert_fancy_property")
-    ]
-    assert len(fancy_assertions) == 1
-    assert fancy_assertions[0].result == 9
+    failed = {a.name.rsplit(".", 1)[-1] for a in monitor.failed}
+    assert failed == {"assert_increasing", "assert_eventually_five"}
 
-    assert len(monitor.failed) == 1
-    assert monitor.failed[0].name.endswith(".assert_eventually_five")
+    satisfied = {a.name.rsplit(".", 1)[-1] for a in monitor.satisfied}
+    assert satisfied == {"assert_all_positive", "assert_fancy_property"}
