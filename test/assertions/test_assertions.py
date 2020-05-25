@@ -32,7 +32,25 @@ async def test_assertion_accept_immediately():
         return 43
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    task = assertion.start()
+    await task
+    assert assertion.done
+    assert assertion.accepted
+    assert assertion.result == 43
+
+
+@pytest.mark.asyncio
+async def test_assertion_accept_with_delay():
+
+    events = []
+
+    async def func(_stream):
+        await asyncio.sleep(0.2)
+        return 43
+
+    assertion = Assertion(events, func)
+    task = assertion.start()
+    await task
     assert assertion.done
     assert assertion.accepted
     assert assertion.result == 43
@@ -47,7 +65,11 @@ async def test_assertion_fail_immediately():
         raise AssertionError()
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    task = assertion.start()
+    # We do `await` here which causes the exception thrown inside the assertion
+    # to be re-thrown:
+    with pytest.raises(AssertionError):
+        await task
     assert assertion.done
     assert assertion.failed
 
@@ -62,11 +84,27 @@ async def test_assertion_consumes_one():
             return e
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
     events.append(2)
     await assertion.update_events()
     assert assertion.accepted
     assert assertion.result == 2
+
+
+@pytest.mark.asyncio
+async def test_assertion_fails_on_event():
+
+    events = [1]
+
+    async def func(stream):
+        async for _ in stream:
+            assert False, "No events expected"
+
+    assertion = Assertion(events, func)
+    assertion.start()
+    await assertion.update_events()
+    assert assertion.failed
+    assert isinstance(assertion.result, AssertionError)
 
 
 @pytest.mark.asyncio
@@ -84,8 +122,7 @@ async def test_assertion_consumes_three():
                 return sum
 
     assertion = Assertion(events, func)
-    await assertion.start()
-
+    assertion.start()
     events.append(1)
     await assertion.update_events()
     assert not assertion.done
@@ -101,24 +138,6 @@ async def test_assertion_consumes_three():
 
 
 @pytest.mark.asyncio
-async def test_assertion_raises_when_done():
-
-    events = [1]
-
-    async def func(stream):
-        async for _ in stream:
-            return
-
-    assertion = Assertion(events, func)
-    await assertion.start()
-    await assertion.update_events()
-    assert assertion.done
-
-    with pytest.raises(asyncio.InvalidStateError):
-        await assertion.update_events()
-
-
-@pytest.mark.asyncio
 async def test_assertion_end_events():
 
     events = []
@@ -129,7 +148,7 @@ async def test_assertion_end_events():
         return 44
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
     assert not assertion.done
 
     await assertion.update_events(events_ended=True)
@@ -148,7 +167,7 @@ async def test_assertion_end_events_raises():
         raise AssertionError("Events expected")
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
     assert not assertion.done
 
     await assertion.update_events(events_ended=True)
@@ -168,7 +187,7 @@ async def test_assertion_consumes_all():
         return _events
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
 
     for n in range(10):
         events.append(n)
@@ -194,7 +213,7 @@ async def test_events_ended_set():
         assert stream.events_ended
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
     await assertion.update_events()
     await assertion.update_events()
     await assertion.update_events(events_ended=True)
@@ -217,6 +236,33 @@ async def test_events_ended_not_set():
         assert not stream.events_ended
 
     assertion = Assertion(events, func)
-    await assertion.start()
+    assertion.start()
     await assertion.update_events()
     assert assertion.done
+
+
+@pytest.mark.asyncio
+async def test_past_events():
+
+    events = []
+
+    async def func(stream):
+
+        _events = []
+
+        async for e in stream:
+            _events.append(e)
+            assert _events == stream.past_events
+
+        return _events
+
+    assertion = Assertion(events, func)
+    assertion.start()
+
+    for n in range(3, 0, -1):
+        events.append(n)
+        await assertion.update_events()
+    await assertion.update_events(events_ended=True)
+
+    assert assertion.accepted
+    assert assertion.result == [3, 2, 1]

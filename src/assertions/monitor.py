@@ -97,7 +97,7 @@ class EventMonitor(Generic[E]):
 
         for a in self.assertions:
             logger.debug("Starting assertion '%s'", a.name)
-            await a.start()
+            a.start()
 
         events_ended = False
 

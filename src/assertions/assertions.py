@@ -74,15 +74,14 @@ class Assertion(AsyncIterable[E]):
         self._ready = None
         self._processed = None
 
-    async def start(self) -> None:
+    def start(self) -> asyncio.Task:
         """Create asyncio task that runs this assertion."""
 
         assert self._func is not None
         self._task = asyncio.create_task(self._func(self))
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
-        # This will ensure the task starts executing
-        await asyncio.sleep(0.001)
+        return self._task
 
     def __str__(self) -> str:
         status = "accepted" if self.accepted else "failed" if self.failed else "ongoing"
@@ -141,7 +140,7 @@ class Assertion(AsyncIterable[E]):
             raise asyncio.InvalidStateError("Assertion not started")
 
         if self.done:
-            raise asyncio.InvalidStateError("Assertion has finished")
+            return
 
         # This will allow the assertion function to resume execution
         self._ready.set()
