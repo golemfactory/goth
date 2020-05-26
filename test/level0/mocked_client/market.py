@@ -37,7 +37,7 @@ def level0_market():
         constraints="(&(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)(golem.com.pricing.model=linear))",
     )
     subscription_id = req_api.subscribe_demand(demand)
-    print(f"Substribe completed, subscription_id={subscription_id}")
+    print(f"Subscribe completed, subscription_id={subscription_id}")
     time.sleep(2.0)  # TODO: collect_offers should wait
     # COLLECT OFFERS
 
