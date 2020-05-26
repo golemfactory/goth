@@ -1,3 +1,5 @@
+import pytest
+
 from src.assertions import EventStream
 from src.assertions.monitor import EventMonitor
 
@@ -56,7 +58,7 @@ async def assert_fancy_property(stream: Events) -> int:
     return m
 
 
-def test_monitor():
+def test_assertions():
 
     monitor: EventMonitor[int] = EventMonitor()
     monitor.add_assertions(
@@ -79,3 +81,24 @@ def test_monitor():
 
     satisfied = {a.name.rsplit(".", 1)[-1] for a in monitor.satisfied}
     assert satisfied == {"assert_all_positive", "assert_fancy_property"}
+
+
+def test_not_started_raises_on_add_event():
+    """Test whether `add_event()` invoked before starting the monitor raises error."""
+
+    monitor: EventMonitor[int] = EventMonitor()
+
+    with pytest.raises(RuntimeError):
+        monitor.add_event(1)
+
+
+def test_stopped_raises_on_add_event():
+    """Test whether `add_event()` invoked after stopping the monitor raises error."""
+
+    monitor: EventMonitor[int] = EventMonitor()
+
+    monitor.start()
+    monitor.stop()
+
+    with pytest.raises(RuntimeError):
+        monitor.add_event(1)
