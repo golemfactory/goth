@@ -26,8 +26,6 @@ def level0_activity(agreement_id):
     # Create Activity
     activity_id = req_api.create_activity(agreement_id)
     print(f"created activity. id={activity_id}")
-    # activity_id = activity_id.replace('-', '')
-    # print(f"cleaned id from -. id={activity_id}")
 
     state = state_api.get_activity_state(activity_id)
     print(f"state. result={state}")

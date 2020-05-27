@@ -39,19 +39,24 @@ def level0_market():
     subscription_id = req_api.subscribe_demand(demand)
     print(f"Subscribe completed, subscription_id={subscription_id}")
     time.sleep(2.0)  # TODO: collect_offers should wait
+
     # COLLECT OFFERS
+    def _wait_on_proposal(subscription_id):
+        proposal = None
+        while proposal is None:
+            result_offers = req_api.collect_offers(subscription_id)
+            print(f"collect_offers({subscription_id}). proposal={result_offers}")
+            if result_offers:
+                proposal = result_offers[0].proposal
+            else:
+                print(f"Waiting on proposal... {result_offers}")
+                time.sleep(1.0)
+        return proposal
 
-    offerProposal = None
-    while offerProposal is None:
-        result_offers = req_api.collect_offers(subscription_id)
-        if len(result_offers):
-            offerProposal = result_offers[0].proposal
-        else:
-            print(f"Waiting on proposal... {result_offers}")
-            time.sleep(1.0)
-
+    offerProposal = _wait_on_proposal(subscription_id)
     print(f"Collected offer proposal. proposal={offerProposal}")
 
+    # Prepare counter proposal
     proposal = Proposal(
         constraints=demand.constraints,
         properties=demand.properties,
@@ -68,19 +73,10 @@ def level0_market():
     time.sleep(2.0)
 
     # Collect counter proposal reply
-
-    counterProposal = None
-    while counterProposal is None:
-        result_offers = req_api.collect_offers(subscription_id)
-        print(f"result_offers. proposal={result_offers}")
-        if len(result_offers):
-            counterProposal = result_offers[0].proposal
-        else:
-            print(f"Waiting on proposal... {result_offers}")
-            time.sleep(1.0)
-
+    counterProposal = _wait_on_proposal(subscription_id)
     print(f"Collected offer proposal. proposal={counterProposal}")
 
+    # Create agreement proposal
     valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
     print(f"valid_to={valid_to}")
     agreement_proposal = AgreementProposal(
