@@ -31,4 +31,3 @@ networks:
             driver: default
             config:
                 - subnet: 34.244.0.0/16
-  
