@@ -32,7 +32,6 @@ ya-provider --exe-unit-path "$EXE_UNIT_PATH" \
 	    run \
 	    --activity-url "$YAGNA_ACTIVITY_URL" \
 	    --app-key "$APP_KEY" \
-	    --credit-address "$NODE_ID" \
 	    --market-url "$YAGNA_MARKET_URL" \
 	    --node-name test-provider \
 	    "$PRESET_NAME"
