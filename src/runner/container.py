@@ -14,12 +14,11 @@ class YagnaContainer:
         "YAGNA_HTTP_PORT=6000",
         "CENTRAL_NET_HOST=router:7477",
         "GSB_URL=tcp://0.0.0.0:6010",
-        "YAGNA_MARKET_URL=http://mock-api:5001/market-api/v1/",
         "YAGNA_API_URL=http://0.0.0.0:6000",
         "YAGNA_ACTIVITY_URL=http://127.0.0.1:6000/activity-api/v1/",
     ]
     IMAGE_NAME = "yagna"
-    NETWORK_NAME = "docker_default"
+    NETWORK_NAME = "docker_test_network"
 
     # Keeps track of assigned ports on the Docker host
     port_offset = 0
