@@ -1,6 +1,7 @@
 version: "3.3"
 
 services:
+
     router:
         image: yagna
         build:
@@ -10,8 +11,23 @@ services:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
         entrypoint: /usr/bin/ya_sb_router
         command: ["-l", "tcp://0.0.0.0:7477"]
+        networks:
+            - test_network
 
     mock-api:
         image: golemfactory/golem-client-mock:0.1.2
+        environment:
+            - ASPNETCORE_URLS=http://*:8080
         ports:
-            - "5001:5001"
+            - "8080:8080"
+        networks:
+            test_network:
+                ipv4_address: 34.244.4.185
+
+networks:
+
+    test_network:
+        ipam:
+            driver: default
+            config:
+                - subnet: 34.244.0.0/16
