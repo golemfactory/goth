@@ -28,8 +28,8 @@ class DockerCommandRunner:
 
         result = self.run_command_no_throw(*cmd_args)
         # Command's stdout or stderr may be None
-        cmd_stderr = result.output[1].decode() if result.output[1] is not None else ""
-        cmd_stdout = result.output[0].decode() if result.output[0] is not None else ""
+        cmd_stderr = result.output[1].decode() if result.output[1] else ""
+        cmd_stdout = result.output[0].decode() if result.output[0] else ""
         if result.exit_code != 0:
             raise CommandError(cmd_stderr)
         return cmd_stdout, cmd_stderr
