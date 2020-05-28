@@ -10,11 +10,12 @@ from src.runner.exceptions import CommandError
 
 
 @pytest.mark.parametrize(
-    "command, expected_stdout, expected_stderr", [
+    "command, expected_stdout, expected_stderr",
+    [
         ("echo STDOUT; echo STDERR >&2", "STDOUT\n", "STDERR\n"),
         ("echo STDOUT", "STDOUT\n", ""),
-        ("echo STDERR >&2", "", "STDERR\n")
-    ]
+        ("echo STDERR >&2", "", "STDERR\n"),
+    ],
 )
 def test_output_demultiplexing(
     yagna_container, command, expected_stdout, expected_stderr
