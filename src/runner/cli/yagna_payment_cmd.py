@@ -46,7 +46,7 @@ class YagnaPaymentMixin:
             args.append("-r")
         if provider_mode:
             args.append("-p")
-        return self.run_command(*args)
+        return self.run_command(*args)[0]
 
     def payment_status(
         self: CommandRunner, data_dir: str = "", address: str = ""

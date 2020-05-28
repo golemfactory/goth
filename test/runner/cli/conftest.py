@@ -29,8 +29,7 @@ def yagna_container():
     yield container
 
     # Cleanup code run when the fixture goes out of scope
-    container.stop()
-    container.remove()
+    container.remove(force=True)
     logger.info("Yagna container removed")
 
 
