@@ -22,8 +22,9 @@ class DockerCommandRunner:
         self.command = command
 
     def run_command(self, *cmd_args: str) -> Tuple[str, str]:
-        """Run the command with `cmd_args`. Return its output on success,
-        raise `CommandError` on error.
+        """Run the command with `cmd_args`. Return a pair of strings containing
+        the standard output and standard error of the command on success, or raise
+        `CommandError` on error.
         """
 
         result = self.run_command_no_throw(*cmd_args)
