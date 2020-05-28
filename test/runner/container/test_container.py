@@ -5,7 +5,6 @@ import pytest
 import transitions
 
 from src.runner.container import DockerContainer, State, YagnaContainer
-from src.runner.log import LogBuffer
 
 GENERIC_COMMAND = ["cmd_name", "-f", "flag_value"]
 GENERIC_ENTRYPOINT = "/usr/bin/binary_name"
@@ -56,7 +55,6 @@ def test_container_create(docker_container, docker_client):
 def test_container_start(docker_container):
     docker_container.start()
 
-    assert isinstance(docker_container.logs, LogBuffer)
     assert docker_container.state is State.started
     docker_container._container.start.assert_called_once()
 
