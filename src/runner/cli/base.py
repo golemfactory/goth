@@ -21,22 +21,26 @@ class DockerCommandRunner:
         self.container = container
         self.command = command
 
-    def run_command(self, *cmd_args) -> str:
-        """Run the command with `cmd_args`. Return its output on success,
-        raise `CommandError` on error.
+    def run_command(self, *cmd_args: str) -> Tuple[str, str]:
+        """Run the command with `cmd_args`. Return a pair of strings containing
+        the standard output and standard error of the command on success, or raise
+        `CommandError` on error.
         """
 
         result = self.run_command_no_throw(*cmd_args)
+        # Command's stdout or stderr may be None
+        cmd_stderr = result.output[1].decode() if result.output[1] else ""
+        cmd_stdout = result.output[0].decode() if result.output[0] else ""
         if result.exit_code != 0:
-            raise CommandError(result.output.decode())
-        return result.output
+            raise CommandError(cmd_stderr)
+        return cmd_stdout, cmd_stderr
 
-    def run_command_no_throw(self, *cmd_args) -> ExecResult:
+    def run_command_no_throw(self, *cmd_args: str) -> ExecResult:
         """Run the command with `cmd_args`; return its `ExecResult`."""
 
         cmd_line = f"{self.command} {' '.join(cmd_args)}"
         logger.debug("[%s] command: '%s'", self.container.name, cmd_line)
-        return self.container.exec_run(cmd_line)
+        return self.container.exec_run(cmd_line, demux=True)
 
 
 T = TypeVar("T")
@@ -45,15 +49,15 @@ T = TypeVar("T")
 class DockerJSONCommandRunner(DockerCommandRunner):
     """Adds method for running commands with `--json` flag."""
 
-    def run_json_command(self, result_type: Type[T], *cmd_args) -> T:
+    def run_json_command(self, result_type: Type[T], *cmd_args: str) -> T:
         """Add `--json` flag to command arguments and run the command.
         Parse the command output as JSON and return it.
         """
 
         if "--json" not in cmd_args:
             cmd_args = *cmd_args, "--json"
-        output = self.run_command(*cmd_args)
-        obj = json.loads(output)
+        cmd_stdout, _ = self.run_command(*cmd_args)
+        obj = json.loads(cmd_stdout)
         if isinstance(obj, result_type):
             return obj
         raise CommandError(
