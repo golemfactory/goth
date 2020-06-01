@@ -52,7 +52,7 @@ class YagnaAppKeyMixin:
         """
 
         args = make_args("app-key", "drop", name, id=address, data_dir=data_dir)
-        return self.run_command(*args)
+        return self.run_command(*args)[0]
 
     def app_key_list(
         self: CommandRunner, address: str = "", data_dir: str = ""
