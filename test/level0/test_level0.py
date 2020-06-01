@@ -11,13 +11,12 @@ from src.runner.scenario import Scenario
 logger = logging.getLogger(__name__)
 
 ENVIRONMENT = {
-    "YAGNA_BUS_PORT": "6010",
-    "YAGNA_HTTP_PORT": "6000",
+    "CENTRAL_MARKET_URL": "http://mock-api:5001/market-api/v1/",
     "CENTRAL_NET_HOST": "router:7477",
     "GSB_URL": "tcp://0.0.0.0:6010",
-    "YAGNA_MARKET_URL": "http://mock-api:5001/market-api/v1/",
     "YAGNA_API_URL": "http://0.0.0.0:6000",
-    "YAGNA_ACTIVITY_URL": "http://127.0.0.1:6000/activity-api/v1/",
+    "YAGNA_BUS_PORT": "6010",
+    "YAGNA_HTTP_PORT": "6000",
 }
 
 VOLUMES = {
