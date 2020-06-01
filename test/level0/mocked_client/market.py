@@ -16,10 +16,8 @@ from openapi_market_client import (
 
 def level0_market():
     # INIT
-    config = Configuration(host=os.environ["MARKET_URL_BASE"] + "/market-api/v1")
-
-    config.api_key["Authorization"] = os.environ["APP_KEY"]
-    config.api_key_prefix["Authorization"] = "Bearer"
+    config = Configuration(host=f"{os.environ['MARKET_URL_BASE']}/market-api/v1")
+    config.access_token = os.environ["APP_KEY"]
 
     req_api = RequestorApi(ApiClient(config))
     print(f"Init completed, connected to {config.host}")

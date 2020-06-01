@@ -14,9 +14,8 @@ from openapi_activity_client import (
 
 def level0_activity(agreement_id):
     # INIT
-    config = Configuration(host=os.environ["YAGNA_API_URL"] + "/activity-api/v1")
-    config.api_key["Authorization"] = os.environ["APP_KEY"]
-    config.api_key_prefix["Authorization"] = "Bearer"
+    config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/activity-api/v1")
+    config.access_token = os.environ["APP_KEY"]
 
     api_client = ApiClient(config)
     req_api = RequestorControlApi(api_client)

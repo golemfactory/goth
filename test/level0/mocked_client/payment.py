@@ -12,10 +12,8 @@ from openapi_payment_client import (
 
 def level0_payment(agreement_id):
     # INIT
-    config = Configuration.get_default_copy()
-    config.host = f"{os.environ['YAGNA_API_URL']}/payment-api/v1"
-    config.api_key["Authorization"] = os.environ["APP_KEY"]
-    config.api_key_prefix["Authorization"] = "Bearer"
+    config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/payment-api/v1")
+    config.access_token = os.environ["APP_KEY"]
 
     req_api = RequestorApi(ApiClient(config))
     print(f"Init completed, connected to {config.host}")
