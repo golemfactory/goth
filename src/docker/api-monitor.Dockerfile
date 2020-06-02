@@ -1,11 +1,7 @@
-FROM python:3.7.7-alpine3.11
-
-RUN apk add --no-cache gcc g++ libffi-dev linux-headers musl-dev openssl-dev python-dev
+FROM mitmproxy/mitmproxy:5.1.1
 
 RUN apk add --no-cache nginx \
     && mkdir -p /run/nginx
-
-RUN pip install mitmproxy==5.1.1
 
 COPY src/assertions /src/assertions
 
