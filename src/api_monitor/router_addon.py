@@ -8,22 +8,16 @@ from mitmproxy.http import HTTPFlow
 
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
+    format="[%(asctime)s %(levelname)s %(name)s] %(message)s", level=logging.INFO
 )
 
 # `mitmproxy` adds ugly prefix to add-on module names
 logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
 
 
-PORT_MAPPING = {
-    # proxy port:  (dest host, dest port, src name, dest name)
-    15001: ("mock-api", 5001, "RequestorDaemon", "Market"),
-    15002: ("mock-api", 5001, "RequestorAgent", "Market"),
-    16000: (None, 6000, "RequestorAgent", "RequestorDaemon"),
-    15003: ("mock-api", 5001, "ProviderDaemon", "Market"),
-    15004: ("mock-api", 5001, "ProviderAgent", "Market"),
-    16001: (None, 6000, "ProviderAgent", "ProviderDaemon"),
-}
+API_PORT = 5001
+API_HOST = "mock-api"
+YAGNA_PORT = 6000
 
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
@@ -40,36 +34,47 @@ class RouterAddon:
     # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow) -> None:
         """Route the request and set `X-Caller` and `X-Callee` headers."""
+
         req = flow.request
+
         try:
-            http_host = req.headers["X-Http-Host"]
-            # original_port may be used to distinguish clients accessing
-            # the same API and to route the message to the appropriate
-            # upstream API server
-            original_host = http_host[: http_host.rindex(":")]
-            original_port = int(http_host[http_host.rindex(":") + 1 :])
-            if original_port in PORT_MAPPING:
-                dest_host, dest_port, caller, callee = PORT_MAPPING[original_port]
-                if dest_host is not None:
-                    req.host = dest_host
-                else:
-                    req.host = req.headers["X-Remote-Addr"]
-                req.port = dest_port
-                req.headers[CALLER_HEADER] = caller
-                req.headers[CALLEE_HEADER] = callee
-                logger.debug(
-                    "Route message: %s:%d (%s) -> %s:%d (%s)",
-                    original_host,
-                    original_port,
-                    caller,
-                    req.host,
-                    req.port,
-                    callee,
-                )
+            server_addr = req.headers["X-Server-Addr"]
+            server_port = int(req.headers["X-Server-Port"])
+            remote_addr = req.headers["X-Remote-Addr"]
+            node_num = remote_addr.rsplit(".", 1)[-1]
+
+            if server_port == API_PORT:
+                # It's a yagna daemon calling the mock API
+                req.host = API_HOST
+                req.port = API_PORT
+                req.headers[CALLER_HEADER] = f"Daemon-{node_num}"
+                req.headers[CALLEE_HEADER] = "MarketAPI"
+
+            elif server_port == YAGNA_PORT:
+                # It's an agent calling a yagna daemon
+                req.host = remote_addr
+                req.port = YAGNA_PORT
+                req.headers[CALLER_HEADER] = f"Agent-{node_num}"
+                req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
+
             else:
-                raise ValueError(f"Invalid port in 'X-Http-Host': {http_host}")
+                flow.kill()
+                raise ValueError(f"Invalid server port: {server_port}")
+
+            logger.debug(
+                "(%s) %s:%d -> %s:%d (%s): %s",
+                req.headers[CALLER_HEADER],
+                server_addr,
+                server_port,
+                req.host,
+                req.port,
+                req.headers[CALLEE_HEADER],
+                req.path,
+            )
+
         except (KeyError, ValueError) as ex:
-            logger.error("Invalid headers: %s", ex.args[0])
+            logger.error("Invalid request: %s", ex.args[0])
+            logger.error("Headers: %s", req.headers)
 
 
 # This is used by mitmproxy to install add-ons
