@@ -12,9 +12,8 @@ from typing import (
     Optional,
     Sequence,
     TypeVar,
+    TYPE_CHECKING,
 )
-
-from typing_extensions import Protocol
 
 
 class TemporalAssertionError(AssertionError):
@@ -25,14 +24,23 @@ E = TypeVar("E")
 """Type variable for the type of events"""
 
 
-class EventStream(Protocol, AsyncIterable[E]):
-    """A protocol for streams of events of type `E` used by assertion functions"""
+if TYPE_CHECKING:
 
-    past_events: Sequence[E]
-    """A sequence of past events, the last element is the most recent event"""
+    from typing_extensions import Protocol
 
-    events_ended: bool
-    """`True` iff there will be no more events"""
+    class EventStream(Protocol, AsyncIterable[E]):
+        """A protocol for streams of events of type `E` used by assertion functions"""
+
+        past_events: Sequence[E]
+        """A sequence of past events, the last element is the most recent event"""
+
+        events_ended: bool
+        """`True` iff there will be no more events"""
+
+
+else:
+
+    EventStream = AsyncIterable
 
 
 AssertionFunction = Callable[[EventStream[E]], Coroutine]
