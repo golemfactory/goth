@@ -4,13 +4,13 @@ import re
 from string import Template
 
 from src.runner import Runner
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from src.runner.container.yagna import YagnaContainerConfig
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
-ENVIRONMENT = {
+ENVIRONMENT_NO_PROXY = {
     "CENTRAL_MARKET_URL": "http://mock-api:5001/market-api/v1/",
     "CENTRAL_NET_HOST": "router:7477",
     "GSB_URL": "tcp://0.0.0.0:6010",
@@ -19,6 +19,18 @@ ENVIRONMENT = {
     "YAGNA_HTTP_PORT": "6000",
 }
 
+ENVIRONMENT_WITH_PROXY = ENVIRONMENT_NO_PROXY.copy()
+ENVIRONMENT_WITH_PROXY.update(
+    {
+        # Environment vars used by daemons:
+        "CENTRAL_MARKET_URL": "http://proxy:5001/market-api/v1/",
+        # Environment vars used by agents:
+        "YAGNA_MARKET_URL": "http://proxy:6000/market-api/v1/",
+        "YAGNA_ACTIVITY_URL": "http://proxy:6000/activity-api/v1/",
+        "YAGNA_PAYMENT_URL": "http://proxy:6000/payment-api/v1/",
+    }
+)
+
 VOLUMES = {
     Template("$assets_path"): "/asset",
     Template("$assets_path/presets.json"): "/presets.json",
@@ -26,26 +38,36 @@ VOLUMES = {
 
 
 class Level0Scenario(Scenario):
-    topology = [
-        YagnaContainerConfig(
-            name="requestor",
-            role=Role.requestor,
-            environment=ENVIRONMENT,
-            volumes=VOLUMES,
-        ),
-        YagnaContainerConfig(
-            name="provider_1",
-            role=Role.provider,
-            environment=ENVIRONMENT,
-            volumes=VOLUMES,
-        ),
-        YagnaContainerConfig(
-            name="provider_2",
-            role=Role.provider,
-            environment=ENVIRONMENT,
-            volumes=VOLUMES,
-        ),
-    ]
+
+    use_proxy: bool
+    """Whether to set up environment vars so that API calls are made through proxy"""
+
+    def __init__(self, use_proxy=True):
+        self.use_proxy = use_proxy
+
+    @property
+    def topology(self):
+        environment = ENVIRONMENT_WITH_PROXY if self.use_proxy else ENVIRONMENT_NO_PROXY
+        return [
+            YagnaContainerConfig(
+                name="requestor",
+                role=Role.requestor,
+                environment=environment,
+                volumes=VOLUMES,
+            ),
+            YagnaContainerConfig(
+                name="provider_1",
+                role=Role.provider,
+                environment=environment,
+                volumes=VOLUMES,
+            ),
+            YagnaContainerConfig(
+                name="provider_2",
+                role=Role.provider,
+                environment=environment,
+                volumes=VOLUMES,
+            ),
+        ]
 
     @property
     def steps(self):
@@ -115,4 +137,4 @@ class Level0Scenario(Scenario):
 
 class TestLevel0:
     def test_level0(self, assets_path: Path):
-        Runner(assets_path).run(Level0Scenario())
+        Runner(assets_path).run(Level0Scenario(use_proxy=True))
