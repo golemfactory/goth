@@ -5,7 +5,7 @@ from typing import Optional
 from docker import DockerClient
 
 from src.runner.cli import Cli
-from src.runner.container import YagnaContainer
+from src.runner.container.yagna import YagnaContainer
 from src.runner.exceptions import KeyAlreadyExistsError
 from src.runner.log import get_file_logger, LogBuffer
 

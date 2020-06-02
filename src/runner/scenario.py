@@ -1,7 +1,7 @@
 import abc
 from typing import Callable, List, Tuple
 
-from src.runner.container import YagnaContainer
+from src.runner.container.yagna import YagnaContainer
 from src.runner.probe import Role
 
 

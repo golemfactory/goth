@@ -3,7 +3,7 @@
 import docker
 import pytest
 
-from src.runner.container import YagnaContainer
+from src.runner.container.yagna import YagnaContainer
 from src.runner.exceptions import CommandError
 from src.runner.probe import Role
 
