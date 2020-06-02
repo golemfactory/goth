@@ -57,7 +57,8 @@ class Probe:
 
     def start_provider_agent(self, preset_name: str):
         log_stream = self.container.exec_run(
-            f"ya-provider run --app-key {self.app_key} --node-name {self.name} {preset_name}",
+            f"ya-provider run"
+            f" --app-key {self.app_key} --node-name {self.name} {preset_name}",
             stream=True,
         )
         self.agent_logs = LogBuffer(
@@ -66,7 +67,8 @@ class Probe:
 
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
-            f"ya-requestor --app-key {self.app_key} --exe-script /asset/exe_script.json",
+            f"ya-requestor"
+            f" --app-key {self.app_key} --exe-script /asset/exe_script.json",
             stream=True,
         )
         self.agent_logs = LogBuffer(

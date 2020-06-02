@@ -60,9 +60,9 @@ class DockerContainer:
         forwarded to that function. """
 
     remove: Callable
-    """ Remove a container. This puts this `DockerContainer` in its final state `State.removed`.
-        Internally, this calls `Container.remove` with any kwargs passed here being
-        forwarded to that function. """
+    """ Remove a container. This puts this `DockerContainer` in its final state
+        `State.dead`. Internally, this calls `Container.remove` with any kwargs
+        passed here being forwarded to that function. """
 
     _client: DockerClient
     _container: Container
