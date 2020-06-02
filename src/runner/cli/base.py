@@ -3,11 +3,14 @@
 import json
 import logging
 import shlex
-from typing import Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Dict, List, Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 
-from docker.models.containers import Container, ExecResult
+from docker.models.containers import ExecResult
 
 from src.runner.exceptions import CommandError
+
+if TYPE_CHECKING:
+    from src.runner.container import DockerContainer
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +20,7 @@ logger.setLevel(logging.DEBUG)
 class DockerCommandRunner:
     """A wrapper for executing a command in a docker container"""
 
-    def __init__(self, container: Container, command: str):
+    def __init__(self, container: "DockerContainer", command: str):
         self.container = container
         self.command = command
 

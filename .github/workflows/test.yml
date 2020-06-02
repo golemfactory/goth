@@ -11,15 +11,12 @@ on:
 
 jobs:
   level0:
-    name: level0
+    name: Run integration tests (level 0)
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Prepare assets for level0
-        run: mkdir -p src/docker/asset && cp -r test/level0/asset/* src/docker/asset/.
 
       - name: Build the docker-compose stack
         env:
@@ -44,10 +41,13 @@ jobs:
         run: pip freeze
 
       - name: Sleep
-        run: sleep 60
+        run: sleep 10
 
       - name: Check running containers
         run: docker ps
+
+      - name: Run unit tests
+        run: python -m pytest test/runner -svx
 
       - name: Run test suite
         run: python -m pytest test/level0 -svx --log-cli-level=DEBUG --assets-path test/level0/asset
