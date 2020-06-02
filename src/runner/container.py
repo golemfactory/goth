@@ -185,9 +185,7 @@ class YagnaContainer(DockerContainer):
             paths to be used as mount points. """
 
     def __init__(self, client: DockerClient, config: Config, **kwargs):
-        self.environment = []
-        for key, value in config.environment.items():
-            self.environment.append(f"{key}={value}")
+        self.environment = config.environment
         self.ports = {
             YagnaContainer.HTTP_PORT: YagnaContainer.host_http_port(),
             YagnaContainer.BUS_PORT: YagnaContainer.host_bus_port(),
