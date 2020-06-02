@@ -17,9 +17,12 @@ class State(Enum):
     """ Represents states that a Docker container may be in. """
 
     created = 0
-    started = 1
-    stopped = 2
-    removed = 3
+    running = 1
+    restarting = 2
+    removing = 3
+    paused = 4
+    exited = 5
+    dead = 6
 
 
 class DockerContainer:
@@ -47,9 +50,6 @@ class DockerContainer:
     """ Name of the Docker network to be joined once the container is started """
 
     # This section lists the members which will be added at runtime by `transitions`
-    state: State
-    """ Current state of this container """
-
     stop: Callable
     """ Stop a running container. Internally, this calls `Container.stop` with any kwargs
         passed here being forwarded to that function. """
@@ -66,6 +66,7 @@ class DockerContainer:
 
     _client: DockerClient
     _container: Container
+    _state: State
 
     def __init__(
         self,
@@ -97,32 +98,45 @@ class DockerContainer:
         )
 
         # Initialise the state machine and define allowed transitions
+        self._state = State.created
         self.machine = Machine(
             self,
             states=State,
             transitions=[
                 {
                     "trigger": "start",
-                    "source": [State.created, State.stopped],
-                    "dest": State.started,
+                    "source": [State.created, State.exited],
+                    "dest": State.running,
                     "before": self._start,
                 },
                 {
                     "trigger": "stop",
-                    "source": State.started,
-                    "dest": State.stopped,
+                    "source": [State.running, State.paused, State.restarting],
+                    "dest": State.exited,
                     "before": self._container.stop,
                 },
                 {
                     "trigger": "remove",
                     "source": "*",
-                    "dest": State.removed,
+                    "dest": State.dead,
                     "before": self._container.remove,
                 },
             ],
             initial=State.created,
-            auto_transitions=False,
+            model_attribute="_state",  # name of the field under which state is stored
+            prepare_event="_update_state",  # function to run before each transition
+            auto_transitions=False,  # do not generate transition functions
         )
+
+    @property
+    def state(self) -> State:
+        """ Current state of this container as reported by the Docker daemon """
+        self._update_state()
+        return self._state
+
+    def exec_run(self, *args, **kwargs):
+        """ Proxy to `Container.exec_run`. """
+        return self._container.exec_run(*args, **kwargs)
 
     def _start(self, **kwargs):
         self._container.start(**kwargs)
@@ -132,9 +146,11 @@ class DockerContainer:
                 get_file_logger(self.name),
             )
 
-    def exec_run(self, *args, **kwargs):
-        """ Proxy to `Container.exec_run`. """
-        return self._container.exec_run(*args, **kwargs)
+    def _update_state(self, *_args, **_kwargs):
+        """ Update the state machine based on data obtained from the Docker daemon
+            by reloading the inner `Container` object. """
+        self._container.reload()
+        self.machine.set_state(State[self._container.status])
 
 
 class YagnaContainer(DockerContainer):
