@@ -103,7 +103,7 @@ def test_yagna_container_create(yagna_container, mock_docker_client):
         entrypoint=YagnaContainer.ENTRYPOINT,
         command=YagnaContainer.COMMAND,
         name=YAGNA_CONTAINER_NAME,
-        environment=[],
+        environment={},
         network=DockerContainer.DEFAULT_NETWORK,
         ports=ANY,
         volumes={},
