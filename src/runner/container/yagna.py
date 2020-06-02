@@ -10,6 +10,28 @@ if TYPE_CHECKING:
     from src.runner.probe import Role
 
 
+@dataclass
+class YagnaContainerConfig:
+    """ Configuration to be used for creating a new `YagnaContainer`. """
+
+    name: str
+    """ Name to be used for this container, must be unique """
+
+    role: "Role"
+
+    assets_path: str = ""
+    """ Path to the assets directory. This will be used in templates from `volumes` """
+
+    environment: Dict[str, str] = field(default_factory=dict)
+    """ Environment variables to be set for this container """
+
+    volumes: Dict[Template, str] = field(default_factory=dict)
+    """ Volumes to be mounted in the container. Keys are paths on the host machine,
+        represented by `Template`s. These templates may include `assets_path`
+        as a placeholder to be used for substitution.  The values are container
+        paths to be used as mount points. """
+
+
 class YagnaContainer(DockerContainer):
     BUS_PORT = 6010
     HTTP_PORT = 6000
@@ -20,28 +42,7 @@ class YagnaContainer(DockerContainer):
     # Keeps track of assigned ports on the Docker host
     _port_offset = 0
 
-    @dataclass
-    class Config:
-        """ Configuration to be used for creating a new `YagnaContainer`. """
-
-        name: str
-        """ Name to be used for this container, must be unique """
-
-        role: "Role"
-
-        assets_path: str = ""
-        """ Path to the assets directory. This will be used in templates from `volumes` """
-
-        environment: Dict[str, str] = field(default_factory=dict)
-        """ Environment variables to be set for this container """
-
-        volumes: Dict[Template, str] = field(default_factory=dict)
-        """ Volumes to be mounted in the container. Keys are paths on the host machine,
-            represented by `Template`s. These templates may include `assets_path`
-            as a placeholder to be used for substitution.  The values are container
-            paths to be used as mount points. """
-
-    def __init__(self, client: DockerClient, config: Config, **kwargs):
+    def __init__(self, client: DockerClient, config: YagnaContainerConfig, **kwargs):
         self.environment = config.environment
         self.ports = {
             YagnaContainer.HTTP_PORT: YagnaContainer.host_http_port(),

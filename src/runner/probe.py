@@ -5,7 +5,7 @@ from typing import Optional
 from docker import DockerClient
 
 from src.runner.cli import Cli
-from src.runner.container.yagna import YagnaContainer
+from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from src.runner.exceptions import KeyAlreadyExistsError
 from src.runner.log import get_file_logger, LogBuffer
 
@@ -19,7 +19,7 @@ class Role(Enum):
 
 
 class Probe:
-    def __init__(self, client: DockerClient, config: YagnaContainer.Config):
+    def __init__(self, client: DockerClient, config: YagnaContainerConfig):
         self.container = YagnaContainer(client, config)
         self.cli = Cli(self.container).yagna
         self.role = config.role
