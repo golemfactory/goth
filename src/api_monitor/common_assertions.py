@@ -4,9 +4,9 @@ from typing import Set
 from src.api_monitor.api_events import (
     APIEvent,
     APIClockTick,
-    APICall,
     APIError,
-    APIResult,
+    APIRequest,
+    APIResponse,
 )
 
 from src.assertions import EventStream, TemporalAssertionError
@@ -46,23 +46,23 @@ async def assert_clock_ticks(stream: APIEvents) -> bool:
     return True
 
 
-async def assert_every_call_gets_response(stream: APIEvents) -> bool:
-    """Assert that for every `APICall` event there will eventually occur
-    a corresponding `APIResult` event.
+async def assert_every_request_gets_response(stream: APIEvents) -> bool:
+    """Assert that for every `APIRequest` event there will eventually occur
+    a corresponding `APIResponse` event.
     """
 
-    calls_in_progress: Set[APICall] = set()
+    requests_in_progress: Set[APIRequest] = set()
 
     async for e in stream:
 
-        if isinstance(e, APICall):
-            calls_in_progress.add(e)
-        elif isinstance(e, APIResult):
-            assert e.call in calls_in_progress
-            calls_in_progress.remove(e.call)
+        if isinstance(e, APIRequest):
+            requests_in_progress.add(e)
+        elif isinstance(e, APIResponse):
+            assert e.request in requests_in_progress
+            requests_in_progress.remove(e.request)
 
-    if calls_in_progress:
-        a_call = calls_in_progress.pop()
-        raise TemporalAssertionError(f"call got no response: {a_call}")
+    if requests_in_progress:
+        a_request = requests_in_progress.pop()
+        raise TemporalAssertionError(f"request got no response: {a_request}")
 
     return True

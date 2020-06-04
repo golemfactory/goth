@@ -31,65 +31,83 @@ class APIClockTick(APIEvent):
         return self._timestamp
 
 
-class APICall(APIEvent):
-    """Represents an API call"""
+class APIRequest(APIEvent):
+    """Represents an API request"""
 
     number: int
-    request: HTTPRequest
+    http_request: HTTPRequest
 
-    def __init__(self, number: int, request: HTTPRequest):
+    def __init__(self, number: int, http_request: HTTPRequest):
         self.number = number
-        self.request = request
+        self.http_request = http_request
 
     @property
     def timestamp(self) -> float:
-        return self.request.timestamp_start
+        return self.http_request.timestamp_start
+
+    @property
+    def method(self) -> str:
+        """Return the method of the underlying HTTP request"""
+
+        return self.http_request.method
+
+    @property
+    def path(self) -> str:
+        """Return the method of the underlying HTTP request"""
+
+        return self.http_request.path
 
     @property
     def caller(self) -> Optional[str]:
         """Return the caller name"""
-        return self.request.headers.get(CALLER_HEADER)
+        return self.http_request.headers.get(CALLER_HEADER)
 
     @property
     def callee(self) -> Optional[str]:
         """Return the callee name"""
-        return self.request.headers.get(CALLEE_HEADER)
+        return self.http_request.headers.get(CALLEE_HEADER)
 
     def __str__(self):
-        return (
-            f"{self.caller} -> {self.callee}.{self.request.method}"
-            f"({self.request.path})"
-        )
+        return f"{self.caller} -> {self.callee}.{self.method}({self.path})"
 
 
-class APIResult(APIEvent):
-    """Represents a response to an API call"""
+class APIResponse(APIEvent):
+    """Represents a response to an API request"""
 
-    call: APICall
-    response: HTTPResponse
+    request: APIRequest
+    http_response: HTTPResponse
 
-    def __init__(self, call: APICall, response: HTTPResponse):
-        self.call = call
-        self.response = response
+    def __init__(self, request: APIRequest, http_response: HTTPResponse):
+        self.request = request
+        self.http_response = http_response
 
     @property
     def timestamp(self) -> float:
-        return self.response.timestamp_start
+        return self.http_response.timestamp_start
+
+    @property
+    def status_code(self) -> int:
+        """Return the HTTP status code"""
+
+        return self.http_response.status_code
 
 
 class APIError(APIEvent):
-    """Represents an error when making an API call or sending a response"""
+    """Represents an error when making an API request or sending a response"""
 
-    call: APICall
+    request: APIRequest
     error: Error
-    response: Optional[HTTPResponse]
+    http_response: Optional[HTTPResponse]
 
     def __init__(
-        self, call: APICall, error: Error, response: Optional[HTTPResponse] = None,
+        self,
+        request: APIRequest,
+        error: Error,
+        http_response: Optional[HTTPResponse] = None,
     ):
-        self.call = call
+        self.request = request
         self.error = error
-        self.reponse = response
+        self.http_reponse = http_response
 
     @property
     def timestamp(self) -> float:
@@ -103,60 +121,60 @@ def _match_event(
     path_regex: Optional[str] = None,
 ) -> bool:
 
-    request: HTTPRequest
-    if isinstance(event, APICall):
-        request = event.request
-    elif isinstance(event, (APIResult, APIError)):
-        request = event.call.request
+    http_request: HTTPRequest
+    if isinstance(event, APIRequest):
+        http_request = event.http_request
+    elif isinstance(event, (APIResponse, APIError)):
+        http_request = event.request.http_request
     else:
         return False
 
     return (
         isinstance(event, event_class)
-        and (method is None or request.method == method)
-        and (path_regex is None or re.search(path_regex, request.path) is not None)
+        and (method is None or http_request.method == method)
+        and (path_regex is None or re.search(path_regex, http_request.path) is not None)
     )
 
 
-def is_import_key_call(event: APIEvent) -> bool:
-    """Check if `event` is a call of ImportKey operation."""
+def is_import_key_request(event: APIEvent) -> bool:
+    """Check if `event` is a request of ImportKey operation."""
 
-    return _match_event(event, APICall, "POST", "^/admin/import-key$")
-
-
-def is_create_agreement_call(event: APIEvent) -> bool:
-    """Check if `event` is a call of CreateAgreement operation."""
-
-    return _match_event(event, APICall, "POST", "^/market-api/v1/agreements$")
+    return _match_event(event, APIRequest, "POST", "^/admin/import-key$")
 
 
-def is_collect_demands_call(event: APIEvent, sub_id: str = "") -> bool:
-    """Check if `event` is a call of CollectDemants operation."""
+def is_create_agreement_request(event: APIEvent) -> bool:
+    """Check if `event` is a request of CreateAgreement operation."""
+
+    return _match_event(event, APIRequest, "POST", "^/market-api/v1/agreements$")
+
+
+def is_collect_demands_request(event: APIEvent, sub_id: str = "") -> bool:
+    """Check if `event` is a request of CollectDemants operation."""
 
     sub_id_re = sub_id if sub_id else "[^/]+"
     return _match_event(
-        event, APICall, "GET", f"^/market-api/v1/offers/{sub_id_re}/events"
+        event, APIRequest, "GET", f"^/market-api/v1/offers/{sub_id_re}/events"
     )
 
 
-def is_subscribe_offer_call(event: APIEvent) -> bool:
-    """Check if `event` is a call of SubscribeOffer operation."""
+def is_subscribe_offer_request(event: APIEvent) -> bool:
+    """Check if `event` is a request of SubscribeOffer operation."""
 
-    return _match_event(event, APICall, "POST", "^/market-api/v1/offers$")
+    return _match_event(event, APIRequest, "POST", "^/market-api/v1/offers$")
 
 
 def is_subscribe_offer_response(event: APIEvent) -> bool:
     """Check if `event` is a response of SubscribeOffer operation."""
 
-    return _match_event(event, APIResult, "POST", "^/market-api/v1/offers$")
+    return _match_event(event, APIResponse, "POST", "^/market-api/v1/offers$")
 
 
 def get_response_json(event: APIEvent):
     """If `event` is a response then parse and return the included JSON.
     Otherwise return `None`."""
 
-    if isinstance(event, APIResult):
-        return json.loads(event.response.text)
+    if isinstance(event, APIResponse):
+        return json.loads(event.http_response.text)
 
     return None
 
@@ -166,25 +184,25 @@ def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
     included in the response. Otherwise return `None`."""
 
     if (
-        isinstance(event, APIResult)
-        and event.call.request.method == "POST"
-        and event.call.request.path == "/activity-api/v1/activity"
+        isinstance(event, APIResponse)
+        and event.request.method == "POST"
+        and event.request.path == "/activity-api/v1/activity"
     ):
-        return event.response.text.strip()[1:-1]
+        return event.http_response.text.strip()[1:-1]
 
     return None
 
 
-def get_activity_id_from_delete_call(event: APIEvent) -> Optional[str]:
-    """If `event` is a call of DeleteActivity then return the included activity ID.
+def get_activity_id_from_delete_response(event: APIEvent) -> Optional[str]:
+    """If `event` is a response of DeleteActivity then return the included activity ID.
     Otherwise return `None`.
     """
 
     if (
-        isinstance(event, APICall)
-        and event.request.method == "DELETE"
-        and event.request.path.startswith("/activity-api/v1/activity/")
+        isinstance(event, APIRequest)
+        and event.method == "DELETE"
+        and event.path.startswith("/activity-api/v1/activity/")
     ):
-        return event.request.path.rsplit("/", 1)[-1]
+        return event.path.rsplit("/", 1)[-1]
 
     return None

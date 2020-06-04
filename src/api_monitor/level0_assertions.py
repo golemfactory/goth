@@ -1,7 +1,7 @@
-"""Assertions related to API calls in LEvel 0 test scenario"""
+"""Assertions related to API calls in Level 0 test scenario"""
 from typing import Optional, Sequence
 
-from src.api_monitor.api_events import APIEvent, APICall
+from src.api_monitor.api_events import APIEvent, APIRequest
 import src.api_monitor.api_events as api
 
 from src.assertions import AssertionFunction, TemporalAssertionError, logger
@@ -10,17 +10,17 @@ from src.api_monitor.common_assertions import (
     APIEvents,
     assert_no_api_errors,
     assert_clock_ticks,
-    assert_every_call_gets_response,
+    assert_every_request_gets_response,
 )
 
 
-async def assert_first_call_is_import_key(stream: APIEvents) -> bool:
-    """Assert that the first API call is for the `importKey` opertation."""
+async def assert_first_request_is_import_key(stream: APIEvents) -> bool:
+    """Assert that the first API request is for the `importKey` opertation."""
 
     async for e in stream:
 
-        if isinstance(e, APICall):
-            if api.is_import_key_call(e):
+        if isinstance(e, APIRequest):
+            if api.is_import_key_request(e):
                 return True
             raise TemporalAssertionError(str(e))
 
@@ -32,7 +32,7 @@ async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
 
     async for e in stream:
 
-        if api.is_subscribe_offer_call(e):
+        if api.is_subscribe_offer_request(e):
             return True
 
     raise TemporalAssertionError("subscribeOffer not called")
@@ -40,7 +40,7 @@ async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
 
 # This is formally an assertion but it never fails:
 async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEvent]:
-    """Wait for a response to a `subscribeOffer` call. Return the response event
+    """Wait for a response to a `subscribeOffer` request. Return the response event
     or `None` if the events end without the response.
     """
 
@@ -76,7 +76,7 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
     while not stream.events_ended:
 
         e = await eventually(
-            stream, lambda e: api.is_collect_demands_call(e, sub_id), deadline
+            stream, lambda e: api.is_collect_demands_request(e, sub_id), deadline
         )
         if e:
             logger.debug("`collectDemands` called")
@@ -88,7 +88,7 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
 TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [
     assert_clock_ticks,
     assert_no_api_errors,
-    assert_every_call_gets_response,
-    assert_first_call_is_import_key,
+    assert_every_request_gets_response,
+    assert_first_request_is_import_key,
     assert_provider_periodically_collects_demands,
 ]

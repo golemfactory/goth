@@ -14,8 +14,8 @@ from mitmproxy.http import HTTPFlow, HTTPRequest
 from src.api_monitor.api_events import (
     APIEvent,
     APIClockTick,
-    APICall,
-    APIResult,
+    APIRequest,
+    APIResponse,
     APIError,
 )
 from src.assertions.monitor import EventMonitor
@@ -42,44 +42,44 @@ call_logger.propagate = False
 
 
 def _log_event(event: APIEvent) -> None:
-    if isinstance(event, APICall):
+    if isinstance(event, APIRequest):
         status = "in progress"
-        call = event
-    elif isinstance(event, APIResult):
-        status = f"completed ({event.response.status_code})"
-        call = event.call
+        request = event
+    elif isinstance(event, APIResponse):
+        status = f"completed ({event.status_code})"
+        request = event.request
     elif isinstance(event, APIError):
         status = "failed"
-        call = event.call
+        request = event.request
 
-    logger.info("%s:\t%s", call, status)
+    logger.info("%s:\t%s", request, status)
 
     call_logger.info(
         "%s:\t%s",
         event,
         status,
         extra={
-            "num": call.number,
-            "caller": call.caller,
-            "callee": call.callee,
-            "method": call.request.method,
-            "path": call.request.path,
+            "num": request.number,
+            "caller": request.caller,
+            "callee": request.callee,
+            "method": request.method,
+            "path": request.path,
             "status": status,
         },
     )
 
 
 class MonitorAddon:
-    """This add-on keeps track of API calls"""
+    """This add-on keeps track of API requests and responses"""
 
     monitor: EventMonitor[APIEvent]
-    pending_calls: Dict[HTTPRequest, APICall]
-    num_calls: int
+    pending_requests: Dict[HTTPRequest, APIRequest]
+    num_requests: int
 
     def __init__(self):
         self.monitor = EventMonitor()
-        self.pending_calls = {}
-        self.num_calls = 0
+        self.pending_requests = {}
+        self.num_requests = 0
 
     def load(self, loader) -> None:
         """Load module with property functions"""
@@ -117,34 +117,34 @@ class MonitorAddon:
     def request(self, flow: HTTPFlow) -> None:
         """Register a request"""
 
-        self.num_calls += 1
-        call = APICall(self.num_calls, flow.request)
-        self.pending_calls[flow.request] = call
-        self._register_event(call)
+        self.num_requests += 1
+        request = APIRequest(self.num_requests, flow.request)
+        self.pending_requests[flow.request] = request
+        self._register_event(request)
 
     def response(self, flow: HTTPFlow) -> None:
         """Register a response"""
 
-        call = self.pending_calls.get(flow.request)
-        if call:
+        request = self.pending_requests.get(flow.request)
+        if request:
             assert flow.response is not None
-            response = APIResult(call, flow.response)
-            del self.pending_calls[flow.request]
+            response = APIResponse(request, flow.response)
+            del self.pending_requests[flow.request]
             self._register_event(response)
         else:
-            logger.error("Received response for unregistered call: %s", flow)
+            logger.error("Received response for unregistered request: %s", flow)
 
     def error(self, flow: HTTPFlow) -> None:
         """Register an error"""
 
-        call = self.pending_calls.get(flow.request)
-        if call:
+        request = self.pending_requests.get(flow.request)
+        if request:
             assert flow.error is not None
-            error = APIError(call, flow.error, flow.response)
-            del self.pending_calls[flow.request]
+            error = APIError(request, flow.error, flow.response)
+            del self.pending_requests[flow.request]
             self._register_event(error)
         else:
-            logger.error("Received error for unregistered call: %s", flow)
+            logger.error("Received error for unregistered request: %s", flow)
 
 
 # This is used by mitmproxy to install add-ons
