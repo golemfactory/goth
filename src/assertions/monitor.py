@@ -26,6 +26,9 @@ class EventMonitor(Generic[E]):
     with each new registered event.
     """
 
+    assertions: List[Assertion[E]]
+    """List of all assertions, active or finished"""
+
     _events: List[E]
     """List of events registered so far"""
 
@@ -35,14 +38,11 @@ class EventMonitor(Generic[E]):
     _incoming: "queue.Queue[Optional[E]]"
     """A queue used to pass the events to the worker thread"""
 
-    assertions: List[Assertion[E]]
-    """List of all assertions (including the satisfied or failed ones)"""
-
     def __init__(self) -> None:
         self._events = []
         self._incoming = queue.Queue()
         self.assertions = []
-        self.worker_thread = threading.Thread(
+        self._worker_thread = threading.Thread(
             target=lambda: asyncio.run(self._run_worker()),
             name="AssertionsThread",
             daemon=True,
@@ -70,21 +70,31 @@ class EventMonitor(Generic[E]):
     def start(self) -> None:
         """Start tracing events."""
 
-        self.worker_thread.start()
+        self._worker_thread.start()
 
     def add_event(self, event: E) -> None:
         """Register a new event."""
 
-        self._incoming.put(event)
+        if self.is_running():
+            self._incoming.put(event)
+        else:
+            raise RuntimeError("Monitor is not running")
 
     def stop(self) -> None:
         """Stop tracing events."""
 
-        # This will eventually terminate the worker thread:
-        self._incoming.put(None)
-        self.worker_thread.join()
+        if self.is_running():
+            # This will eventually terminate the worker thread:
+            self._incoming.put(None)
+            self._worker_thread.join()
+
+    def is_running(self) -> bool:
+        """Return `True` iff the monitor is accepting events."""
+
+        return self._worker_thread.is_alive()
 
     def __del__(self) -> None:
+
         self.stop()
 
     def __len__(self) -> int:

@@ -1,3 +1,5 @@
+"""Coroutine-based implementation of temporal assertions"""
+
 import logging
 
 from src.assertions.assertions import (
