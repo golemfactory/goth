@@ -22,7 +22,7 @@ For the sake of compatibility with other projects and/or your local Python 3 ins
 #### Installing dependencies
 To install dependencies, run the below command from the project's root directory:
 ```
-pip install -r requirements.txt
+python setup.py develop
 ```
 
 ### Docker setup
