@@ -5,7 +5,8 @@ from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
-from src.runner.log import LogBuffer, LogConfig
+from src.runner.log import LogConfig
+from src.runner.log_monitor import LogEventMonitor
 
 
 class State(Enum):
@@ -35,7 +36,7 @@ class DockerContainer:
     image: str
     """ Name of the image to be used for creating this container """
 
-    logs: Optional[LogBuffer]
+    logs: Optional[LogEventMonitor]
     """ Log buffer for the logs from this container's `entrypoint` """
 
     name: str
@@ -136,7 +137,7 @@ class DockerContainer:
     def _start(self, **kwargs):
         self._container.start(**kwargs)
         if self.log_config:
-            self.logs = LogBuffer(
+            self.logs = LogEventMonitor(
                 self._container.logs(stream=True, follow=True), self.log_config,
             )
 

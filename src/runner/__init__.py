@@ -49,8 +49,8 @@ class Runner:
                         await result
         finally:
             for probe in chain.from_iterable(self.probes.values()):
-                self.logger.info("removing container. name=%s", probe.name)
-                probe.container.remove(force=True)
+                self.logger.info("stopping probe. name=%s", probe.name)
+                await probe.stop()
 
     def _run_nodes(self, scenario):
         docker_client = docker.from_env()

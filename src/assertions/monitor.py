@@ -5,6 +5,7 @@ whether temporal assertions are satisfied.
 
 # from __future__ import annotations
 import asyncio
+from datetime import datetime, timedelta
 import importlib
 import logging
 import threading
@@ -12,10 +13,8 @@ from typing import Generic, List, Optional, Sequence
 
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
-)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class EventMonitor(Generic[E]):
@@ -46,9 +45,11 @@ class EventMonitor(Generic[E]):
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
 
-        self.assertions.extend(
-            Assertion(self._events, func) for func in assertion_funcs
-        )
+        new_assertions = [Assertion(self._events, func) for func in assertion_funcs]
+        self.assertions.extend(new_assertions)
+
+        for a in new_assertions:
+            a.start()
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -64,25 +65,42 @@ class EventMonitor(Generic[E]):
 
     def start(self) -> None:
         """Start tracing events."""
+        logger.debug("start()")
 
         self._worker_thread = asyncio.create_task(self._run_worker())
 
     async def add_event(self, event: E) -> None:
         """Register a new event."""
-
-        if self.is_running():
-            await self._incoming.put(event)
-        else:
+        logger.debug("add_event(%r)", event)
+        if not self.is_running():
             raise RuntimeError("Monitor is not running")
+
+        await self._incoming.put(event)
+
+    async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
+        logger.debug("await_assertions()")
+
+        if not self.is_running():
+            raise RuntimeError("Monitor is not running")
+
+        deadline = datetime.now() + timeout
+
+        while not self.finished:
+            if deadline < datetime.now():
+                raise TimeoutError
+            await asyncio.sleep(0.1)
+        logger.debug("await_assertions() - finished")
 
     async def stop(self) -> None:
         """Stop tracing events."""
 
         if self.is_running():
-            # This will eventually terminate the worker thread:
-            await self._incoming.put(None)
+            self._worker_thread.cancel()
             await self._worker_thread
+            logger.debug("worker_thread stopped %s", self._worker_thread.done())
             self._worker_thread = None
+        if not self.finished:
+            logger.error("Monitor stopped before it was finished")
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
@@ -99,15 +117,24 @@ class EventMonitor(Generic[E]):
 
     async def _run_worker(self) -> None:
         """In a loop, register the incoming events and check the assertions."""
+        logger.debug("run_worker()")
 
         for a in self.assertions:
             logger.debug("Starting assertion '%s'", a.name)
             a.start()
 
+        try:
+            await self._check_events()
+        except asyncio.CancelledError:
+            return
+        except RuntimeError as e:
+            if not "Event loop is closed" in str(e):
+                raise
+            return
+
+    async def _check_events(self):
         events_ended = False
-
         while not events_ended:
-
             event = await self._incoming.get()
 
             if event is not None:
@@ -142,8 +169,6 @@ class EventMonitor(Generic[E]):
                 assertions_logger.error(
                     "Assertion `%s` failed after %s: %s", a.name, event_descr, a.result
                 )
-            # Ensure other tasks can also run between assertions
-            await asyncio.sleep(0)
 
     @property
     def satisfied(self) -> Sequence[Assertion[E]]:
@@ -158,14 +183,8 @@ class EventMonitor(Generic[E]):
         return [a for a in self.assertions if a.failed]
 
     @property
-    def done(self) -> Sequence[Assertion[E]]:
-        """Return the failed assertions."""
-
-        return [a for a in self.assertions if a.done]
-
-    @property
     def finished(self) -> bool:
-        """Return the failed assertions."""
+        """Return True iif all assertions are done."""
 
         for a in self.assertions:
             if not a.done:

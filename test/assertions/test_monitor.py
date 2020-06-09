@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 
 from src.assertions import EventStream
@@ -100,7 +101,6 @@ async def test_stopped_raises_on_add_event():
 
     monitor: EventMonitor[int] = EventMonitor()
 
-    monitor.start()
     await monitor.stop()
 
     with pytest.raises(RuntimeError):
