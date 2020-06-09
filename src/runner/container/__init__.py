@@ -1,11 +1,40 @@
+from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, List, Optional
+from pathlib import Path
+from string import Template
+from typing import Callable, Dict, List, Optional
 
 from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
 from src.runner.log import LogBuffer, LogConfig
+
+
+@dataclass(frozen=True)
+class DockerContainerConfig:
+    """ Configuration to be used for creating a new docker container. """
+
+    name: str
+    """ Name to be used for this container, must be unique """
+
+    volumes: Dict[Template, str]
+    """ Volumes to be mounted in the container. Keys are paths on the host machine,
+        represented by `Template`s. These templates may include `assets_path`
+        as a placeholder to be used for substitution.  The values are container
+        paths to be used as mount points. """
+
+    def get_volumes_spec(self, assets_path: Path) -> Dict[str, dict]:
+        """ Produce volumes specification for a docker container by substituting given
+        `assets_path` into `self.volumes`.
+        """
+        return {
+            host_template.substitute(assets_path=str(assets_path)): {
+                "bind": mount_path,
+                "mode": "ro",
+            }
+            for host_template, mount_path in self.volumes.items()
+        }
 
 
 class State(Enum):
@@ -46,8 +75,8 @@ class DockerContainer:
 
     # This section lists the members which will be added at runtime by `transitions`
     stop: Callable
-    """ Stop a running container. Internally, this calls `Container.stop` with any kwargs
-        passed here being forwarded to that function. """
+    """ Stop a running container. Internally, this calls `Container.stop` with any
+        kwargs passed here being forwarded to that function. """
 
     start: Callable
     """ Start a container which is either created or stopped.

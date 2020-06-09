@@ -1,6 +1,6 @@
-from dataclasses import replace
 from enum import Enum
 import logging
+from pathlib import Path
 from typing import Optional
 
 from docker import DockerClient
@@ -21,9 +21,13 @@ class Role(Enum):
 
 class Probe:
     def __init__(
-        self, client: DockerClient, config: YagnaContainerConfig, log_config: LogConfig
+        self,
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        assets_path: Optional[Path] = None
     ):
-        self.container = YagnaContainer(client, config, log_config)
+        self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
         self.role = config.role
 

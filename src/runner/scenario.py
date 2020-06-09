@@ -1,7 +1,7 @@
 import abc
 from typing import Callable, List, Tuple
 
-from src.runner.container.yagna import YagnaContainerConfig
+from src.runner.container import DockerContainerConfig
 from src.runner.probe import Role
 
 
@@ -15,6 +15,6 @@ class Scenario(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def topology(self) -> List[YagnaContainerConfig]:
+    def topology(self) -> List[DockerContainerConfig]:
         """ List of container configurations to be used by the test runner when creating
             Docker containers for this scenario. """

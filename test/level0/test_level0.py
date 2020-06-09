@@ -2,70 +2,83 @@ import logging
 from pathlib import Path
 import re
 from string import Template
-from typing import Optional
+from typing import Dict, Optional
 
 from src.runner import Runner
+from src.runner.container.proxy import ProxyContainerConfig
 from src.runner.container.yagna import YagnaContainerConfig
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
-ENVIRONMENT_NO_PROXY = {
-    "CENTRAL_MARKET_URL": "http://mock-api:5001/market-api/v1/",
-    "CENTRAL_NET_HOST": "router:7477",
-    "GSB_URL": "tcp://0.0.0.0:6010",
-    "YAGNA_API_URL": "http://0.0.0.0:6000",
-    "YAGNA_BUS_PORT": "6010",
-    "YAGNA_HTTP_PORT": "6000",
-}
 
-ENVIRONMENT_WITH_PROXY = ENVIRONMENT_NO_PROXY.copy()
-ENVIRONMENT_WITH_PROXY.update(
-    {
-        # Environment vars used by daemons:
-        "CENTRAL_MARKET_URL": "http://proxy:5001/market-api/v1/",
-        # Environment vars used by agents:
-        "YAGNA_MARKET_URL": "http://proxy:6000/market-api/v1/",
-        "YAGNA_ACTIVITY_URL": "http://proxy:6000/activity-api/v1/",
-        "YAGNA_PAYMENT_URL": "http://proxy:6000/payment-api/v1/",
+YAGNA_BUS_PORT = 6010
+YAGNA_HTTP_PORT = 6000
+ROUTER_ADDRESS = "router:7477"
+
+
+def node_environment(
+    market_address: str = "mock-api:5001", rest_api_address: str = ""
+) -> Dict[str, str]:
+    """Construct an environment for executing commands in a yagna docker container."""
+
+    daemon_env = {
+        "CENTRAL_MARKET_URL": f"http://{market_address}/market-api/v1/",
+        "CENTRAL_NET_HOST": ROUTER_ADDRESS,
+        "GSB_URL": f"tcp://0.0.0.0:{YAGNA_BUS_PORT}",
+        "YAGNA_API_URL": f"http://0.0.0.0:{YAGNA_HTTP_PORT}",
     }
-)
+    node_env = daemon_env
+
+    if rest_api_address:
+        agent_env = {
+            "YAGNA_MARKET_URL": f"http://{rest_api_address}/market-api/v1/",
+            "YAGNA_ACTIVITY_URL": f"http://{rest_api_address}/activity-api/v1/",
+            "YAGNA_PAYMENT_URL": f"http://{rest_api_address}/payment-api/v1/",
+        }
+        node_env.update(agent_env)
+
+    return node_env
+
 
 VOLUMES = {
     Template("$assets_path"): "/asset",
     Template("$assets_path/presets.json"): "/presets.json",
 }
 
+PROXY_VOLUMES = {
+    Template("$assets_path/assertions"): "/assertions",
+}
+
 
 class Level0Scenario(Scenario):
 
-    use_proxy: bool
-    """Whether to set up environment vars so that API calls are made through proxy"""
-
-    def __init__(self, use_proxy=True):
-        self.use_proxy = use_proxy
-
     @property
     def topology(self):
-        environment = ENVIRONMENT_WITH_PROXY if self.use_proxy else ENVIRONMENT_NO_PROXY
         return [
+            ProxyContainerConfig(
+                name="proxy", stop_on_error=True, volumes=PROXY_VOLUMES
+            ),
             YagnaContainerConfig(
                 name="requestor",
                 role=Role.requestor,
-                environment=environment,
+                environment=node_environment(),
                 volumes=VOLUMES,
             ),
             YagnaContainerConfig(
                 name="provider_1",
                 role=Role.provider,
-                environment=environment,
+                environment=node_environment(),
                 volumes=VOLUMES,
             ),
             YagnaContainerConfig(
                 name="provider_2",
                 role=Role.provider,
-                environment=environment,
+                # Configure the second provider node to communicate via proxy
+                environment=node_environment(
+                    market_address="proxy:5001", rest_api_address="proxy:6000"
+                ),
                 volumes=VOLUMES,
             ),
         ]
@@ -130,11 +143,11 @@ class Level0Scenario(Scenario):
     def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
         probe.agent_logs.wait_for_pattern(
-            re.compile(re.compile(r"^(.+)Invoice (.+) sent(.+)$"))
+            re.compile(re.compile(r"^(.+)Invoice(.+)sent\.$"))
         )
         logger.info("invoice sent")
 
 
 class TestLevel0:
     def test_level0(self, assets_path: Optional[Path], logs_path: Path):
-        Runner(assets_path, logs_path).run_scenario(Level0Scenario(use_proxy=True))
+        Runner(assets_path, logs_path).run_scenario(Level0Scenario())
