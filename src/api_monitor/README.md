@@ -85,7 +85,7 @@ The agents communicate with their daemons via API Tracer using ports 16000 and 1
 This way, each of the six ports exposed by the API Tracer uniquely identifies the callee and the caller.
 
 <p align="center">
-<img src="./api-tracer.svg">
+<img src="./api-monitor.svg">
 
 Level 0 Test Scenario architecture with API Calls Tracer
 </p>
