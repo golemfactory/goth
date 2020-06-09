@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import logging
 from pathlib import Path
@@ -8,7 +9,8 @@ from docker import DockerClient
 from src.runner.cli import Cli
 from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from src.runner.exceptions import KeyAlreadyExistsError
-from src.runner.log import LogBuffer, LogConfig
+from src.runner.log import LogConfig
+from src.runner.log_monitor import LogEventMonitor
 
 
 logger = logging.getLogger(__name__)
@@ -31,10 +33,15 @@ class Probe:
         self.cli = Cli(self.container).yagna
         self.role = config.role
 
-        self.agent_logs: LogBuffer
+        self.agent_logs: LogEventMonitor
 
     def __str__(self):
         return self.name
+
+    async def stop(self):
+        self.container.remove(force=True)
+        await asyncio.sleep(0.2)  # Time for the last logs to arrive
+        await self.agent_logs.stop()
 
     @property
     def address(self) -> Optional[str]:
@@ -82,4 +89,4 @@ class Probe:
         log_config = LogConfig(
             file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
         )
-        self.agent_logs = LogBuffer(log_stream.output, log_config)
+        self.agent_logs = LogEventMonitor(log_stream.output, log_config)

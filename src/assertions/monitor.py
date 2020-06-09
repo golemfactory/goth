@@ -10,10 +10,8 @@ from typing import Generic, List, Optional, Sequence
 
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
-)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class EventMonitor(Generic[E]):
@@ -69,14 +67,20 @@ class EventMonitor(Generic[E]):
 
         self._incoming.put_nowait(event)
 
+
+
     async def stop(self) -> None:
         """Stop tracing events."""
 
         if self.is_running():
-            # This will eventually terminate the worker task:
+            # This will eventually terminate the worker thread:
             self._incoming.put_nowait(None)
             await self._worker_task
             self._worker_task = None
+        if not self.finished:
+            logger.error("Monitor stopped before it was finished")
+        else:
+            logger.warning("Monitor already stopped")
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
@@ -93,15 +97,20 @@ class EventMonitor(Generic[E]):
 
     async def _run_worker(self) -> None:
         """In a loop, register the incoming events and check the assertions."""
+        logger.debug("run_worker()")
 
-        for a in self.assertions:
-            logger.debug("Starting assertion '%s'", a.name)
-            a.start()
+        try:
+            await self._check_events()
+        except asyncio.CancelledError:
+            return
+        except RuntimeError as e:
+            if not "Event loop is closed" in str(e):
+                raise
+            return
 
+    async def _check_events(self):
         events_ended = False
-
         while not events_ended:
-
             event = await self._incoming.get()
 
             if event is not None:

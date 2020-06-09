@@ -1,3 +1,5 @@
+import asyncio
+from datetime import timedelta
 import logging
 from pathlib import Path
 import pytest
@@ -10,6 +12,8 @@ from src.runner.container.proxy import ProxyContainerConfig
 from src.runner.container.yagna import YagnaContainerConfig
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
+
+from src.api_monitor.common_assertions import APIEvents
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +52,29 @@ VOLUMES = {
     Template("$assets_path/presets.json"): "/presets.json",
 }
 
+
 PROXY_VOLUMES = {
     Template("$assets_path/assertions"): "/assertions",
 }
+
+
+def assert_message_starts_with(needle: str):
+    pattern = re.compile(r"^" + needle)
+    logger.debug(f'preparing to find "{needle}"')
+
+    async def _assert_starts_with(stream: APIEvents):
+        """Assert a api ."""
+        logger.debug(f"_assert_starts_with {stream}")
+        async for e in stream:
+
+            if isinstance(e, LogEvent):
+                logger.debug(f"checking event {e}, {e.message}")
+                if pattern.match(e.message):
+                    return True
+
+        return False
+
+    return _assert_starts_with
 
 
 class Level0Scenario(Scenario):
@@ -107,9 +131,10 @@ class Level0Scenario(Scenario):
     ):
         logger.info("starting provider agent")
         probe.start_provider_agent(preset_name)
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Subscribed offer.(.+)$")
+        probe.agent_logs.add_assertions(
+            [assert_message_starts_with("Subscribed offer")]
         )
+        await probe.agent_logs.await_assertions()
 
     def start_requestor_agent(self, probe: Probe):
         logger.info("starting requestor agent")
@@ -117,37 +142,46 @@ class Level0Scenario(Scenario):
 
     async def wait_for_proposal_accepted(self, probe: Probe):
         logger.info("waiting for proposal to be accepted")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Decided to AcceptProposal(.+)$")
+        probe.agent_logs.add_assertions(
+            [assert_message_starts_with("Decided to AcceptProposal")]
         )
+        await probe.agent_logs.await_assertions()
         logger.info("proposal accepted")
 
     async def wait_for_agreement_approved(self, probe: Probe):
         logger.info("waiting for agreement to be approved")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Decided to ApproveAgreement(.+)$")
+        probe.agent_logs.add_assertions(
+            [assert_message_starts_with("Decided to ApproveAgreement")]
         )
+        await probe.agent_logs.await_assertions()
         logger.info("agreement approved")
 
     async def wait_for_exeunit_started(self, probe: Probe):
         logger.info("waiting for exe-unit to start")
-        await probe.agent_logs.wait_for_pattern(re.compile(r"^\[ExeUnit\](.+)Started$"))
+        probe.agent_logs.add_assertions(
+            [assert_message_starts_with(r"\[ExeUnit\](.+)Started$")]
+        )
+        await probe.agent_logs.await_assertions()
         logger.info("exe-unit started")
 
     async def wait_for_exeunit_finished(self, probe: Probe):
         logger.info("waiting for exe-unit to finish")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(
-                r"^(.+)ExeUnit process exited with status Finished - exit code: 0(.+)$"
-            )
+        probe.agent_logs.add_assertions(
+            [
+                assert_message_starts_with(
+                    "ExeUnit process exited with status Finished - exit code: 0"
+                )
+            ]
         )
+        await probe.agent_logs.await_assertions()
         logger.info("exe-unit finished")
 
     async def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(re.compile(r"^(.+)Invoice (.+) sent(.+)$"))
+        probe.agent_logs.add_assertions(
+            [assert_message_starts_with("Invoice (.+) sent.")]
         )
+        await probe.agent_logs.await_assertions()
         logger.info("invoice sent")
 
 
