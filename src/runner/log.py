@@ -65,7 +65,7 @@ class LogConfig:
     level: int = logging.INFO
 
 
-def create_file_logger(config: LogConfig) -> logging.Logger:
+def _create_file_logger(config: LogConfig) -> logging.Logger:
     """ Create a new file logger configured using the `LogConfig` object provided.
         The target log file will have a .log extension. """
     handler = logging.FileHandler(
@@ -89,7 +89,7 @@ class LogBuffer:
 
     def __init__(self, in_stream: Iterator[bytes], log_config: LogConfig):
         self.in_stream = in_stream
-        self.logger = create_file_logger(log_config)
+        self.logger = _create_file_logger(log_config)
 
         self._buffer: List[str] = []
         # Index of last line read from the buffer using `wait_for_pattern`

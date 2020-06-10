@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime, timezone
 from itertools import chain
 import logging
 from pathlib import Path
@@ -24,10 +25,14 @@ class Runner:
 
     def __init__(self, assets_path: Path, logs_path: Path):
         self.assets_path = assets_path
-        self.base_log_dir = logs_path
         self.probes = defaultdict(list)
 
-        configure_logging(logs_path)
+        # Create unique subdirectory for this test run
+        date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H:%M:%S%z")
+        self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
+        self.base_log_dir.mkdir()
+
+        configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
 
     def run_scenario(self, scenario):
