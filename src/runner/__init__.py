@@ -41,14 +41,16 @@ class Runner:
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
 
-    def run_scenario(self, scenario):
+    async def run_scenario(self, scenario):
         self.logger.info("running scenario %s", type(scenario).__name__)
         self._run_nodes(scenario)
         try:
             for step, role in scenario.steps:
-                self.logger.debug("running step. role=%s, step=%s", role, step)
                 for probe in self.probes[role]:
-                    step(probe=probe)
+                    self.logger.debug("running step. probe=%s, role=%s, step=%s", probe, role, step)
+                    result = step(probe=probe)
+                    if result:
+                        await result
         finally:
             for probe in chain.from_iterable(self.probes.values()):
                 self.logger.info("removing container. name=%s", probe.name)
