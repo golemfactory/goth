@@ -136,5 +136,5 @@ class Level0Scenario(Scenario):
 
 
 class TestLevel0:
-    def test_level0(self, assets_path: Path):
-        Runner(assets_path).run(Level0Scenario(use_proxy=True))
+    def test_level0(self, assets_path: Path, logs_path: Path):
+        Runner(assets_path, logs_path).run(Level0Scenario(use_proxy=True))

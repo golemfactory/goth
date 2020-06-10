@@ -5,7 +5,7 @@ from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
-from src.runner.log import get_file_logger, LogBuffer
+from src.runner.log import LogBuffer, LogConfig
 
 
 class State(Enum):
@@ -69,9 +69,9 @@ class DockerContainer:
         command: List[str],
         entrypoint: str,
         image: str,
+        log_config: LogConfig,
         name: str,
         network: str = DEFAULT_NETWORK,
-        log_to_file: bool = True,
         **kwargs,
     ):
         self._client = client
@@ -80,7 +80,7 @@ class DockerContainer:
         self.image = image
         self.name = name
         self.network = network
-        self.log_to_file = log_to_file
+        self.log_config = log_config
 
         self._container = self._client.containers.create(
             self.image,
@@ -135,10 +135,9 @@ class DockerContainer:
 
     def _start(self, **kwargs):
         self._container.start(**kwargs)
-        if self.log_to_file:
+        if self.log_config:
             self.logs = LogBuffer(
-                self._container.logs(stream=True, follow=True),
-                get_file_logger(self.name),
+                self._container.logs(stream=True, follow=True), self.log_config,
             )
 
     def _update_state(self, *_args, **_kwargs):

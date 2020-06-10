@@ -1,3 +1,4 @@
+from dataclasses import replace
 from enum import Enum
 import logging
 from typing import Optional
@@ -7,7 +8,7 @@ from docker import DockerClient
 from src.runner.cli import Cli
 from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from src.runner.exceptions import KeyAlreadyExistsError
-from src.runner.log import get_file_logger, LogBuffer
+from src.runner.log import LogBuffer, LogConfig
 
 
 logger = logging.getLogger(__name__)
@@ -19,8 +20,10 @@ class Role(Enum):
 
 
 class Probe:
-    def __init__(self, client: DockerClient, config: YagnaContainerConfig):
-        self.container = YagnaContainer(client, config)
+    def __init__(
+        self, client: DockerClient, config: YagnaContainerConfig, log_config: LogConfig
+    ):
+        self.container = YagnaContainer(client, config, log_config)
         self.cli = Cli(self.container).yagna
         self.role = config.role
 
@@ -61,9 +64,7 @@ class Probe:
             f" --app-key {self.app_key} --node-name {self.name} {preset_name}",
             stream=True,
         )
-        self.agent_logs = LogBuffer(
-            log_stream.output, get_file_logger(f"{self.name}_agent")
-        )
+        self._init_agent_logs(log_stream)
 
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
@@ -71,6 +72,10 @@ class Probe:
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json",
             stream=True,
         )
-        self.agent_logs = LogBuffer(
-            log_stream.output, get_file_logger(f"{self.name}_agent")
+        self._init_agent_logs(log_stream)
+
+    def _init_agent_logs(self, log_stream):
+        log_config = LogConfig(
+            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
         )
+        self.agent_logs = LogBuffer(log_stream.output, log_config)
