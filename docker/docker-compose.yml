@@ -20,7 +20,7 @@ services:
     proxy:
         image: api-monitor
         build:
-            context: ../..
+            context: ../
             dockerfile: docker/api-monitor.Dockerfile
         ports:
             - "9000:9000"
