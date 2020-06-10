@@ -1,8 +1,0 @@
-transitions==0.8.1
-pytest==5.4.2
-pytest-asyncio==0.12.0
-mitmproxy<6.0,>=5.1
-openapi_payment_client
-openapi_market_client
-openapi_activity_client
-docker==4.2.0
