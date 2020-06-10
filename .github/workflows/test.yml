@@ -31,9 +31,6 @@ jobs:
       - name: Print python and pip version
         run: python --version && pip --version
 
-      - name: Install developer requirements
-        run: pip install -r requirements.txt
-
       - name: Run setuptools
         run: python setup.py develop
 

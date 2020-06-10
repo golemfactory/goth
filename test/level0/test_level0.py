@@ -130,7 +130,7 @@ class Level0Scenario(Scenario):
     def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
         probe.agent_logs.wait_for_pattern(
-            re.compile(re.compile(r"^(.+)Invoice(.+)sent for agreement(.+)$"))
+            re.compile(re.compile(r"^(.+)Invoice (.+) sent(.+)$"))
         )
         logger.info("invoice sent")
 

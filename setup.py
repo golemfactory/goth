@@ -15,7 +15,8 @@ def parse_requirements(my_path):
 
     requirements = []
     dependency_links = []
-    for line in open(path.join(my_path, "requirements.txt")):
+    requirement_lines = open(path.join(my_path, "requirements.txt"))
+    for line in reversed(list(requirement_lines)):
         line = line.strip()
         if line.startswith("-") or line.startswith("#"):
             continue
