@@ -3,14 +3,14 @@ FROM mitmproxy/mitmproxy:5.1.1
 RUN apk add --no-cache nginx \
     && mkdir -p /run/nginx
 
-COPY src/assertions /src/assertions
+COPY ya-int/assertions /ya-int/assertions
 
-COPY src/api_monitor/*.py \
-     src/api_monitor/nginx.conf \
-     src/api_monitor/start-proxy.sh \
-     /src/api_monitor/
+COPY ya-int/api_monitor/*.py \
+     ya-int/api_monitor/nginx.conf \
+     ya-int/api_monitor/start-proxy.sh \
+     /ya-int/api_monitor/
 
-WORKDIR /src/api_monitor
+WORKDIR /ya-int/api_monitor
 
 RUN chmod a+x start-proxy.sh
 
