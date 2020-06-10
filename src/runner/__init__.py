@@ -30,7 +30,7 @@ class Runner:
         # Create unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H:%M:%S%z")
         self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
-        self.base_log_dir.mkdir()
+        self.base_log_dir.mkdir(parents=True)
 
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
