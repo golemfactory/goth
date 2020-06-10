@@ -50,7 +50,7 @@ class YagnaContainer(DockerContainer):
         self,
         client: DockerClient,
         config: YagnaContainerConfig,
-        log_config: LogConfig,
+        log_config: Optional[LogConfig] = None,
         **kwargs
     ):
         self.environment = config.environment

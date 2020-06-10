@@ -69,8 +69,8 @@ class DockerContainer:
         command: List[str],
         entrypoint: str,
         image: str,
-        log_config: LogConfig,
         name: str,
+        log_config: Optional[LogConfig] = None,
         network: str = DEFAULT_NETWORK,
         **kwargs,
     ):

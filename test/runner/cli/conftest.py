@@ -5,6 +5,7 @@ import pytest
 
 from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from src.runner.exceptions import CommandError
+from src.runner.log import LogConfig
 from src.runner.probe import Role
 
 
@@ -14,7 +15,7 @@ def yagna_container():
 
     client = docker.from_env()
     config = YagnaContainerConfig(name="cli_test_container", role=Role.provider)
-    container = YagnaContainer(client, config, log_to_file=False)
+    container = YagnaContainer(client, config)
     container.start()
 
     yield container
