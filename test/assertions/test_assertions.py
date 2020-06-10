@@ -2,7 +2,7 @@
 import asyncio
 import pytest
 
-from src.assertions import Assertion
+from assertions import Assertion
 
 
 @pytest.mark.asyncio

@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Dict, Optional, Sequence
 
-from src.runner.cli.base import make_args, parse_json_table, unwrap_ok_err_json
-from src.runner.cli.typing import CommandRunner
+from runner.cli.base import make_args, parse_json_table, unwrap_ok_err_json
+from runner.cli.typing import CommandRunner
 
 
 @dataclass(frozen=True)

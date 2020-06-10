@@ -5,8 +5,8 @@ For now, events are just integers, that is, values of type `int`.
 
 Let's start with the required imports:
 ```
-from src.assertions import EventStream
-from src.assertions.monitor import EventMonitor
+from assertions import EventStream
+from assertions.monitor import EventMonitor
 ```
 
 Streams of events are values of type `EventStream[int]`. This type extends

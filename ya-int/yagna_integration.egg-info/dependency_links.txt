@@ -1,0 +1,3 @@
+file:./model/payment#egg=openapi_payment_client
+file:./model/market#egg=openapi_market_client
+file:./model/activity#egg=openapi_activity_client

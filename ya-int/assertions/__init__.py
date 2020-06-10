@@ -2,7 +2,7 @@
 
 import logging
 
-from src.assertions.assertions import (
+from assertions.assertions import (
     Assertion,
     AssertionFunction,
     E,

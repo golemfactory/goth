@@ -50,7 +50,7 @@ Once your token is generated, create an environment variable named `GITHUB_API_T
 #### Starting the Docker Compose network
 Having the GitHub API token available in your environment, navigate to this project's root directory and run the following command:
 ```
-docker-compose -f src/docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 This command starts the network defined by the `.yml` file in detached mode (running in the background). If everything is correctly configured you should see log output about building the Yagna Docker image. Once the network is up, you can verify it by checking the currently active docker containers:

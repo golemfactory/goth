@@ -35,7 +35,7 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "src.runner": {"handlers": ["console"], "propagate": False},
+        "runner": {"handlers": ["console"], "propagate": False},
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
     },
 }

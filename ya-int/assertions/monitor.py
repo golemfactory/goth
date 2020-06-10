@@ -11,7 +11,7 @@ import queue
 import threading
 from typing import Generic, List, Optional, Sequence
 
-from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
+from assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,

@@ -3,9 +3,9 @@
 import docker
 import pytest
 
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from src.runner.exceptions import CommandError
-from src.runner.probe import Role
+from runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from runner.exceptions import CommandError
+from runner.probe import Role
 
 
 @pytest.fixture

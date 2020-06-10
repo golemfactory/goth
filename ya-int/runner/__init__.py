@@ -6,8 +6,8 @@ from typing import Dict, List
 
 import docker
 
-from src.runner.log import configure_logging
-from src.runner.probe import Probe, Role
+from runner.log import configure_logging
+from runner.probe import Probe, Role
 
 configure_logging()
 logger = logging.getLogger(__name__)

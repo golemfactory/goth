@@ -5,7 +5,7 @@ from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
-from src.runner.log import get_file_logger, LogBuffer
+from runner.log import get_file_logger, LogBuffer
 
 
 class State(Enum):

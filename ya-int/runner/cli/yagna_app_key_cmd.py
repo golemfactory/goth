@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from typing import Dict, Sequence
 
-from src.runner.cli.base import make_args, parse_json_table
-from src.runner.cli.typing import CommandRunner
-from src.runner.exceptions import CommandError, KeyAlreadyExistsError
+from runner.cli.base import make_args, parse_json_table
+from runner.cli.typing import CommandRunner
+from runner.exceptions import CommandError, KeyAlreadyExistsError
 
 
 @dataclass(frozen=True)

@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.runner.cli import Cli
-from src.runner.exceptions import CommandError
+from runner.cli import Cli
+from runner.exceptions import CommandError
 
 
 def test_id_create(yagna_container):

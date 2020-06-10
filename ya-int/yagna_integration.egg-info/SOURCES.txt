@@ -1,0 +1,8 @@
+README.md
+setup.py
+ya-int/yagna_integration.egg-info/PKG-INFO
+ya-int/yagna_integration.egg-info/SOURCES.txt
+ya-int/yagna_integration.egg-info/dependency_links.txt
+ya-int/yagna_integration.egg-info/not-zip-safe
+ya-int/yagna_integration.egg-info/requires.txt
+ya-int/yagna_integration.egg-info/top_level.txt

@@ -4,10 +4,10 @@ from typing import Optional
 
 from docker import DockerClient
 
-from src.runner.cli import Cli
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from src.runner.exceptions import KeyAlreadyExistsError
-from src.runner.log import get_file_logger, LogBuffer
+from runner.cli import Cli
+from runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from runner.exceptions import KeyAlreadyExistsError
+from runner.log import get_file_logger, LogBuffer
 
 
 logger = logging.getLogger(__name__)

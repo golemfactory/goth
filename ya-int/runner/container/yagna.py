@@ -4,10 +4,10 @@ from typing import Dict, TYPE_CHECKING
 
 from docker import DockerClient
 
-from src.runner.container import DockerContainer
+from runner.container import DockerContainer
 
 if TYPE_CHECKING:
-    from src.runner.probe import Role
+    from runner.probe import Role
 
 
 @dataclass

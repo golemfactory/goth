@@ -1,7 +1,7 @@
 import pytest
 
-from src.assertions import EventStream
-from src.assertions.monitor import EventMonitor
+from assertions import EventStream
+from assertions.monitor import EventMonitor
 
 
 # Events are just integers

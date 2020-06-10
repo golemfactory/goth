@@ -52,7 +52,8 @@ setup(
     ],
     zip_safe=False,
     keywords="golem",
-    packages=find_packages(include=["src", "test"]),
+    package_dir={'': 'ya-int'},
+    packages=find_packages(include=["../test"]),
     install_requires=requirements,
     dependency_links=dependencies,
 )

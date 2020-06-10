@@ -3,10 +3,10 @@ from pathlib import Path
 import re
 from string import Template
 
-from src.runner import Runner
-from src.runner.container.yagna import YagnaContainerConfig
-from src.runner.probe import Probe, Role
-from src.runner.scenario import Scenario
+from runner import Runner
+from runner.container.yagna import YagnaContainerConfig
+from runner.probe import Probe, Role
+from runner.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 

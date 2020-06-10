@@ -1,8 +1,8 @@
 import abc
 from typing import Callable, List, Tuple
 
-from src.runner.container.yagna import YagnaContainerConfig
-from src.runner.probe import Role
+from runner.container.yagna import YagnaContainerConfig
+from runner.probe import Role
 
 
 class Scenario(abc.ABC):
