@@ -1,6 +1,6 @@
 import asyncio
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import logging
 import logging.config
 from pathlib import Path
@@ -155,11 +155,13 @@ class LogBuffer:
 
         raise TimeoutError()
 
-    def _buffer_input(self):
+    async def _buffer_input(self):
         for chunk in self.in_stream:
+            print(f'chunk={chunk}')
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 self.logger.info(line)
 
                 with self._lock:
                     self._buffer.append(line)
+            # Make sure this loop is not blocking
