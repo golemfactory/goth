@@ -24,4 +24,3 @@ services:
             dockerfile: docker/api-monitor.Dockerfile
         ports:
             - "9000:9000"
- 
