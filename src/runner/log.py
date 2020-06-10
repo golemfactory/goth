@@ -1,10 +1,9 @@
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 import logging.config
 from pathlib import Path
 import tempfile
-from threading import Lock, Thread
+from threading import Lock
 import time
 from typing import Iterator, List, Match, Optional, Pattern, Union
 
@@ -53,6 +52,7 @@ def configure_logging(base_dir: Optional[Path]):
 
     (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
+    logging.info('started logging. dir=%s', BASE_LOG_DIR)
 
 
 @dataclass
@@ -94,10 +94,8 @@ class LogBuffer:
         self._buffer: List[str] = []
         # Index of last line read from the buffer using `wait_for_pattern`
         self._last_read: int = -1
-        self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._lock = Lock()
-
-        self._buffer_thread.start()
+        self._buffer_thread = asyncio.create_task(self._buffer_input())
 
     def clear_buffer(self):
         self._buffer.clear()
@@ -126,7 +124,7 @@ class LogBuffer:
 
         return None
 
-    def wait_for_pattern(
+    async def wait_for_pattern(
         self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
     ) -> Match[str]:
         """ Blocking call which waits for a matching line to appear in the buffer.
@@ -146,15 +144,19 @@ class LogBuffer:
                     return match
             else:
                 # Prevent busy waiting
-                time.sleep(0.1)
+                await asyncio.sleep(0.1)
+            print('waiting...')
 
         raise TimeoutError()
 
-    def _buffer_input(self):
+    async def _buffer_input(self):
         for chunk in self.in_stream:
+            print(f'chunk={chunk}')
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 self.logger.info(line)
 
                 with self._lock:
                     self._buffer.append(line)
+            # Make sure this loop is not blocking
+            await asyncio.sleep(0.1)
