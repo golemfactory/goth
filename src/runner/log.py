@@ -9,7 +9,7 @@ import time
 from typing import Iterator, List, Match, Optional, Pattern, Union
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
-base_log_dir = DEFAULT_LOG_DIR
+FORMATTER_NONE = logging.Formatter("%(message)s")
 
 
 class UTCFormatter(logging.Formatter):
@@ -32,21 +32,26 @@ LOGGING_CONFIG = {
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
-            "filename": base_log_dir / "runner.log",
+            "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
         },
     },
     "loggers": {
-        "src.runner": {"handlers": ["console"], "propagate": False},
+        "src.runner": {"handlers": ["console", "runner_file"], "propagate": False},
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
+        "transitions": {"level": "WARNING"},
     },
 }
 
 
 def configure_logging(base_dir: Optional[Path]):
-    global base_log_dir
+    # substitute `base_log_dir` in `LOGGING_CONFIG` with the actual dir path
+    for _name, handler in LOGGING_CONFIG["handlers"].items():
+        if "filename" in handler:
+            # format the handler's filename with the base dir
+            handler["filename"] %= {"base_log_dir": str(base_dir)}
+
     (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
-    base_log_dir = base_dir or DEFAULT_LOG_DIR
     logging.config.dictConfig(LOGGING_CONFIG)
 
 

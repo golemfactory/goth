@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import docker
 
-from src.runner.log import configure_logging, create_file_logger, LogConfig
+from src.runner.log import configure_logging, LogConfig
 from src.runner.probe import Probe, Role
 
 
@@ -27,10 +27,21 @@ class Runner:
         self.base_log_dir = logs_path
         self.probes = defaultdict(list)
 
-        log_config = LogConfig(
-            file_name="runner", base_dir=self.base_log_dir, level=logging.DEBUG
-        )
-        self.logger = create_file_logger(log_config)
+        configure_logging(logs_path)
+        self.logger = logging.getLogger(__name__)
+
+    def run_scenario(self, scenario):
+        self.logger.info("running scenario %s", type(scenario).__name__)
+        self._run_nodes(scenario)
+        try:
+            for step, role in scenario.steps:
+                self.logger.debug("running step. role=%s, step=%s", role, step)
+                for probe in self.probes[role]:
+                    step(probe=probe)
+        finally:
+            for probe in chain.from_iterable(self.probes.values()):
+                self.logger.info("removing container. name=%s", probe.name)
+                probe.container.remove(force=True)
 
     def _run_nodes(self, scenario):
         docker_client = docker.from_env()
@@ -45,16 +56,3 @@ class Runner:
             probe = Probe(docker_client, config, log_config)
             self.probes[config.role].append(probe)
             probe.container.start()
-
-    def run(self, scenario):
-        self._run_nodes(scenario)
-
-        try:
-            for step, role in scenario.steps:
-                self.logger.debug("running step. role=%s, step=%s", role, step)
-                for probe in self.probes[role]:
-                    step(probe=probe)
-        finally:
-            for probe in chain.from_iterable(self.probes.values()):
-                self.logger.info("removing container. name=%s", probe.name)
-                probe.container.remove(force=True)

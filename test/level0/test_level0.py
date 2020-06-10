@@ -84,9 +84,8 @@ class Level0Scenario(Scenario):
         ]
 
     def create_app_key(self, probe: Probe, key_name: str = "test-key"):
-        logger.info("attempting to create app-key. key_name=%s", key_name)
         key = probe.create_app_key(key_name)
-        logger.info("app-key created: %s", key)
+        logger.info("app-key created. name=%s key=%s", key_name, key)
 
     def start_provider_agent(
         self, probe: Probe, preset_name: str = "amazing-offer",
@@ -137,4 +136,4 @@ class Level0Scenario(Scenario):
 
 class TestLevel0:
     def test_level0(self, assets_path: Path, logs_path: Path):
-        Runner(assets_path, logs_path).run(Level0Scenario(use_proxy=True))
+        Runner(assets_path, logs_path).run_scenario(Level0Scenario(use_proxy=True))
