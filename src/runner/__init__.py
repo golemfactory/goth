@@ -27,8 +27,8 @@ class Runner:
         self.assets_path = assets_path
         self.probes = defaultdict(list)
 
-        # Create unique subdirectory for this test run
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H:%M:%S%z")
+        # Create a unique subdirectory for this test run
+        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
         self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
         self.base_log_dir.mkdir(parents=True)
 
