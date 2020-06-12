@@ -93,7 +93,9 @@ class Level0Scenario(Scenario):
     ):
         logger.info("starting provider agent")
         probe.start_provider_agent(preset_name)
-        await probe.agent_logs.wait_for_pattern(re.compile(r"^(.+)Subscribed offer.(.+)$"))
+        await probe.agent_logs.wait_for_pattern(
+            re.compile(r"^(.+)Subscribed offer.(.+)$")
+        )
 
     def start_requestor_agent(self, probe: Probe):
         logger.info("starting requestor agent")

@@ -41,7 +41,9 @@ class Runner:
         try:
             for step, role in scenario.steps:
                 for probe in self.probes[role]:
-                    self.logger.debug("running step. probe=%s, role=%s, step=%s", probe, role, step)
+                    self.logger.debug(
+                        "running step. probe=%s, role=%s, step=%s", probe, role, step
+                    )
                     result = step(probe=probe)
                     if result:
                         await result
