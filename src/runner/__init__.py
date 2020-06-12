@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import chain
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import docker
 
@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 class Runner:
 
     # Path to directory containing yagna assets which should be mounted in containers
-    assets_path: Path
+    assets_path: Optional[Path]
 
     # Probes used for the test run, identified by their role names
     probes: Dict[Role, List[Probe]]
 
-    def __init__(self, assets_path: Path):
+    def __init__(self, assets_path: Optional[Path]):
         self.assets_path = assets_path
         self.probes = defaultdict(list)
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 from string import Template
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -19,7 +20,7 @@ class YagnaContainerConfig:
 
     role: "Role"
 
-    assets_path: str = ""
+    assets_path: Optional[Path] = None
     """ Path to the assets directory. This will be used in templates from `volumes` """
 
     environment: Dict[str, str] = field(default_factory=dict)
@@ -49,9 +50,12 @@ class YagnaContainer(DockerContainer):
             YagnaContainer.BUS_PORT: YagnaContainer.host_bus_port(),
         }
         self.volumes: Dict[str, dict] = {}
-        for host_template, mount_path in config.volumes.items():
-            host_path = host_template.substitute(assets_path=config.assets_path)
-            self.volumes[host_path] = {"bind": mount_path, "mode": "ro"}
+        if config.assets_path:
+            for host_template, mount_path in config.volumes.items():
+                host_path = host_template.substitute(
+                    assets_path=str(config.assets_path)
+                )
+                self.volumes[host_path] = {"bind": mount_path, "mode": "ro"}
 
         YagnaContainer._port_offset += 1
 

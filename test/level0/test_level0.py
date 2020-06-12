@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import re
 from string import Template
+from typing import Optional
 
 from src.runner import Runner
 from src.runner.container.yagna import YagnaContainerConfig
@@ -136,5 +137,5 @@ class Level0Scenario(Scenario):
 
 
 class TestLevel0:
-    def test_level0(self, assets_path: Path):
+    def test_level0(self, assets_path: Optional[Path]):
         Runner(assets_path).run(Level0Scenario(use_proxy=True))
