@@ -10,6 +10,8 @@ from typing import Iterator, List, Match, Optional, Pattern, Union
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
 
+logger = logging.getLogger(__name__)
+
 
 class UTCFormatter(logging.Formatter):
     converter = time.gmtime
@@ -52,7 +54,8 @@ def configure_logging(base_dir: Optional[Path]):
 
     (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
-    logging.info('started logging. dir=%s', BASE_LOG_DIR)
+    logger = logging.getLogger(__name__)
+    logger.info("started logging. dir=%s", BASE_LOG_DIR)
 
 
 @dataclass
@@ -72,11 +75,11 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
         (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
     )
     handler.setFormatter(config.formatter)
-    logger = logging.getLogger(str(config.file_name))
-    logger.setLevel(config.level)
-    logger.addHandler(handler)
-    logger.propagate = False
-    return logger
+    _logger = logging.getLogger(str(config.file_name))
+    _logger.setLevel(config.level)
+    _logger.addHandler(handler)
+    _logger.propagate = False
+    return _logger
 
 
 class LogBuffer:
@@ -95,7 +98,14 @@ class LogBuffer:
         # Index of last line read from the buffer using `wait_for_pattern`
         self._last_read: int = -1
         self._lock = Lock()
-        self._buffer_thread = asyncio.create_task(self._buffer_input())
+        loop = asyncio.get_event_loop()
+        self._buffer_task = loop.run_in_executor(None, self._buffer_input)
+        logger.debug(
+            "Created LogBuffer. stream=%r, logger=%r, task=%r",
+            self.in_stream,
+            self.logger,
+            self._buffer_task,
+        )
 
     def clear_buffer(self):
         self._buffer.clear()
@@ -142,21 +152,15 @@ class LogBuffer:
                 match = pattern.match(next_line)
                 if match:
                     return match
-            else:
-                # Prevent busy waiting
-                await asyncio.sleep(0.1)
-            print('waiting...')
+            await asyncio.sleep(0.1)
 
         raise TimeoutError()
 
-    async def _buffer_input(self):
+    def _buffer_input(self):
         for chunk in self.in_stream:
-            print(f'chunk={chunk}')
             chunk = chunk.decode()
             for line in chunk.splitlines():
                 self.logger.info(line)
 
                 with self._lock:
                     self._buffer.append(line)
-            # Make sure this loop is not blocking
-            await asyncio.sleep(0.1)
