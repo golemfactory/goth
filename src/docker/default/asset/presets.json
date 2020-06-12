@@ -1,0 +1,20 @@
+[
+  {
+    "name": "lame-offer",
+    "exeunit-name": "wasmtime",
+    "pricing-model": "linear",
+    "usage-coeffs": [0.0, 0.0, 0.0]
+  },
+  {
+    "name": "high-cpu",
+    "exeunit-name": "wasmtime",
+    "pricing-model": "linear",
+    "usage-coeffs": [0.01, 1.2, 1.5]
+  },
+  {
+    "name": "amazing-offer",
+    "exeunit-name": "wasmtime",
+    "pricing-model": "linear",
+    "usage-coeffs": [0.1, 0.2, 1.0]
+  }
+]
