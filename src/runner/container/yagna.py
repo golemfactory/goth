@@ -51,7 +51,7 @@ class YagnaContainer(DockerContainer):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: Optional[LogConfig] = None,
-        **kwargs
+        **kwargs,
     ):
         self.environment = config.environment
         self.ports = {
