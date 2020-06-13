@@ -152,7 +152,8 @@ class Level0Scenario(Scenario):
 
 
 class TestLevel0:
-    def test_level0(
+    @pytest.mark.asyncio
+    async def test_level0(
         self, api_monitor_image, assets_path: Optional[Path], logs_path: Path
     ):
         await Runner(assets_path, logs_path).run_scenario(Level0Scenario())

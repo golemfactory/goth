@@ -1,4 +1,6 @@
+import asyncio
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 import logging
 import logging.config
 from pathlib import Path
@@ -52,10 +54,11 @@ def configure_logging(base_dir: Optional[Path]):
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
 
-    (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
+    base_dir = base_dir or DEFAULT_LOG_DIR
+    base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
     logger = logging.getLogger(__name__)
-    logger.info("started logging. dir=%s", BASE_LOG_DIR)
+    logger.info("started logging. dir=%s", base_dir)
 
 
 @dataclass
@@ -101,10 +104,7 @@ class LogBuffer:
         loop = asyncio.get_event_loop()
         self._buffer_task = loop.run_in_executor(None, self._buffer_input)
         logger.debug(
-            "Created LogBuffer. stream=%r, logger=%r, task=%r",
-            self.in_stream,
-            self.logger,
-            self._buffer_task,
+            "Created LogBuffer. stream=%r, logger=%r", self.in_stream, self.logger,
         )
 
     def clear_buffer(self):
