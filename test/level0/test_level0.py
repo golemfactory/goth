@@ -139,5 +139,7 @@ class Level0Scenario(Scenario):
 
 class TestLevel0:
     @pytest.mark.asyncio
-    def test_level0(self, assets_path: Path):
-        await Runner(assets_path, logs_path).run_scenario(Level0Scenario(use_proxy=True))
+    async def test_level0(self, assets_path: Path, logs_path: Path):
+        await Runner(assets_path, logs_path).run_scenario(
+            Level0Scenario(use_proxy=True)
+        )
