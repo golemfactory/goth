@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
 from pathlib import Path
+from string import Template
 from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
@@ -10,18 +10,26 @@ if TYPE_CHECKING:
     from src.runner.probe import Role
 
 
-@dataclass(frozen=True)
 class YagnaContainerConfig(DockerContainerConfig):
     """ Configuration to be used for creating a new `YagnaContainer`. """
 
     role: "Role"
     """ Role this container has in a test scenario """
 
-    log_config: Optional[LogConfig] = None
-    """ Optional custom logging config to be used for this container """
-
-    environment: Dict[str, str] = field(default_factory=dict)
+    environment: Dict[str, str]
     """ Environment variables to be set for this container """
+
+    def __init__(
+        self,
+        name: str,
+        role: "Role",
+        volumes: Optional[Dict[Template, str]] = None,
+        log_config: Optional[LogConfig] = None,
+        environment: Optional[Dict[str, str]] = None,
+    ):
+        super().__init__(name, volumes or {}, log_config)
+        self.role = role
+        self.environment = environment or {}
 
 
 class YagnaContainer(DockerContainer):

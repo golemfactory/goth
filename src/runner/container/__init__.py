@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from string import Template
@@ -11,18 +11,21 @@ from transitions import Machine
 from src.runner.log import LogBuffer, LogConfig
 
 
-@dataclass(frozen=True)
+@dataclass
 class DockerContainerConfig:
     """ Configuration to be used for creating a new docker container. """
 
     name: str
     """ Name to be used for this container, must be unique """
 
-    volumes: Dict[Template, str]
+    volumes: Dict[Template, str] = field(default_factory=dict)
     """ Volumes to be mounted in the container. Keys are paths on the host machine,
         represented by `Template`s. These templates may include `assets_path`
         as a placeholder to be used for substitution.  The values are container
         paths to be used as mount points. """
+
+    log_config: Optional[LogConfig] = None
+    """ Optional custom logging config to be used for this container """
 
     def get_volumes_spec(self, assets_path: Path) -> Dict[str, dict]:
         """ Produce volumes specification for a docker container by substituting given

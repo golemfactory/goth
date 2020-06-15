@@ -1,18 +1,28 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from string import Template
+from typing import Dict, Optional
 
 from docker import DockerClient
 
 from src.runner.container import DockerContainer, DockerContainerConfig
+from src.runner.log import LogConfig
 
 
-@dataclass(frozen=True)
 class ProxyContainerConfig(DockerContainerConfig):
     """Configuration for a proxy container"""
 
     stop_on_error: bool = True
     """Should the proxy stop as soon as an assertion fails"""
+
+    def __init__(
+        self,
+        name: str,
+        volumes: Optional[Dict[Template, str]] = None,
+        log_config: Optional[LogConfig] = None,
+        stop_on_error: bool = True,
+    ):
+        super().__init__(name, volumes or {}, log_config)
+        self.stop_on_error = stop_on_error
 
 
 class ProxyContainer(DockerContainer):
@@ -25,6 +35,7 @@ class ProxyContainer(DockerContainer):
         self,
         client: DockerClient,
         config: ProxyContainerConfig,
+        log_config: Optional[LogConfig] = None,
         assets_path: Optional[Path] = None,
         **kwargs,
     ):
@@ -33,6 +44,7 @@ class ProxyContainer(DockerContainer):
             command=[],
             entrypoint=self.ENTRYPOINT,
             image=self.IMAGE,
+            log_config=log_config,
             name=config.name,
             environment={},
             ports={},

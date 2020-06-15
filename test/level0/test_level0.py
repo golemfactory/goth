@@ -19,23 +19,23 @@ ROUTER_ADDRESS = "router:7477"
 
 
 def node_environment(
-    market_address: str = "mock-api:5001", rest_api_address: str = ""
+    market_url_base: str = "http://mock-api:5001", rest_api_url_base: str = ""
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
 
     daemon_env = {
-        "CENTRAL_MARKET_URL": f"http://{market_address}/market-api/v1/",
+        "CENTRAL_MARKET_URL": f"{market_url_base}/market-api/v1/",
         "CENTRAL_NET_HOST": ROUTER_ADDRESS,
         "GSB_URL": f"tcp://0.0.0.0:{YAGNA_BUS_PORT}",
         "YAGNA_API_URL": f"http://0.0.0.0:{YAGNA_HTTP_PORT}",
     }
     node_env = daemon_env
 
-    if rest_api_address:
+    if rest_api_url_base:
         agent_env = {
-            "YAGNA_MARKET_URL": f"http://{rest_api_address}/market-api/v1/",
-            "YAGNA_ACTIVITY_URL": f"http://{rest_api_address}/activity-api/v1/",
-            "YAGNA_PAYMENT_URL": f"http://{rest_api_address}/payment-api/v1/",
+            "YAGNA_MARKET_URL": f"{rest_api_url_base}/market-api/v1/",
+            "YAGNA_ACTIVITY_URL": f"{rest_api_url_base}/activity-api/v1/",
+            "YAGNA_PAYMENT_URL": f"{rest_api_url_base}/payment-api/v1/",
         }
         node_env.update(agent_env)
 
@@ -53,7 +53,6 @@ PROXY_VOLUMES = {
 
 
 class Level0Scenario(Scenario):
-
     @property
     def topology(self):
         return [
@@ -77,7 +76,8 @@ class Level0Scenario(Scenario):
                 role=Role.provider,
                 # Configure the second provider node to communicate via proxy
                 environment=node_environment(
-                    market_address="proxy:5001", rest_api_address="proxy:6000"
+                    market_url_base="http://proxy:5001",
+                    rest_api_url_base="http://proxy:6000",
                 ),
                 volumes=VOLUMES,
             ),
@@ -143,11 +143,13 @@ class Level0Scenario(Scenario):
     def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
         probe.agent_logs.wait_for_pattern(
-            re.compile(re.compile(r"^(.+)Invoice(.+)sent\.$"))
+            re.compile(re.compile(r"^(.+)Invoice (.+) sent(.+)$"))
         )
         logger.info("invoice sent")
 
 
 class TestLevel0:
-    def test_level0(self, assets_path: Optional[Path], logs_path: Path):
+    def test_level0(
+        self, api_monitor_image, assets_path: Optional[Path], logs_path: Path
+    ):
         Runner(assets_path, logs_path).run_scenario(Level0Scenario())

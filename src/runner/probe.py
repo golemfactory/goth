@@ -25,7 +25,7 @@ class Probe:
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Optional[Path] = None
+        assets_path: Optional[Path] = None,
     ):
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
