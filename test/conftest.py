@@ -1,4 +1,6 @@
 from pathlib import Path
+from typing import Optional
+
 import pytest
 
 from src.runner.log import DEFAULT_LOG_DIR
@@ -11,12 +13,12 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture()
-def assets_path(request) -> Path:
+def assets_path(request) -> Optional[Path]:
     """ Test fixture which tries to get the value of CLI parameter --assets-path.
         If the value is not set, the test using this fixture will fail. """
     path = request.config.option.assets_path
     if not path:
-        pytest.fail("The CLI option --assets-path was not provided.")
+        return None
 
     path = Path(path)
     if not path.is_dir():

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from itertools import chain
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import docker
 
@@ -13,7 +13,7 @@ from src.runner.probe import Probe, Role
 
 class Runner:
 
-    assets_path: Path
+    assets_path: Optional[Path]
     """ Path to directory containing yagna assets which should be mounted in
         containers """
 
@@ -23,7 +23,7 @@ class Runner:
     probes: Dict[Role, List[Probe]]
     """ Probes used for the test run, identified by their role names """
 
-    def __init__(self, assets_path: Path, logs_path: Path):
+    def __init__(self, assets_path: Optional[Path], logs_path: Path):
         self.assets_path = assets_path
         self.probes = defaultdict(list)
 

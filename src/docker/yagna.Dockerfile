@@ -7,6 +7,8 @@ RUN pip install requests \
     && python ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
 
 FROM ubuntu:20.04
+COPY default/asset /asset
+COPY default/asset/presets.json /presets.json
 COPY --from=downloader /yagna.deb /ya-sb-router.deb ya-runtime-wasi.deb ./
 RUN apt update && apt install -y ./yagna.deb ./ya-sb-router.deb ./ya-runtime-wasi.deb
 ENTRYPOINT /usr/bin/yagna
