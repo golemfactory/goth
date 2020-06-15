@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 import logging.config
@@ -5,9 +6,10 @@ from pathlib import Path
 import tempfile
 from threading import Lock, Thread
 import time
-from typing import Iterator, List, Match, Optional, Pattern
+from typing import Iterator, List, Match, Optional, Pattern, Union
 
-BASE_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
+DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
+FORMATTER_NONE = logging.Formatter("%(message)s")
 
 
 class UTCFormatter(logging.Formatter):
@@ -30,32 +32,50 @@ LOGGING_CONFIG = {
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
-            "filename": BASE_LOG_DIR / "runner.log",
+            "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
         },
     },
     "loggers": {
-        "src.runner": {"handlers": ["console"], "propagate": False},
+        "src.runner": {"handlers": ["console", "runner_file"], "propagate": False},
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
+        "transitions": {"level": "WARNING"},
     },
 }
 
 
-def configure_logging():
-    BASE_LOG_DIR.mkdir(exist_ok=True)
+def configure_logging(base_dir: Optional[Path]):
+    # substitute `base_log_dir` in `LOGGING_CONFIG` with the actual dir path
+    for _name, handler in LOGGING_CONFIG["handlers"].items():
+        if "filename" in handler:
+            # format the handler's filename with the base dir
+            handler["filename"] %= {"base_log_dir": str(base_dir)}
+
+    (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
 
 
-def get_file_logger(file_name: str):
-    """ Create a new logger that will output to a .log file with no formatting applied. """
-    handler = logging.FileHandler(BASE_LOG_DIR / f"{file_name}.log", encoding="utf-8")
-    formatter = logging.Formatter(fmt="%(message)s")
-    handler.setFormatter(formatter)
+@dataclass
+class LogConfig:
+    """ Configuration used to create file loggers.  """
 
-    logger = logging.getLogger(file_name)
+    file_name: Union[str, Path]
+    base_dir: Path = DEFAULT_LOG_DIR
+    formatter: logging.Formatter = FORMATTER_NONE
+    level: int = logging.INFO
+
+
+def _create_file_logger(config: LogConfig) -> logging.Logger:
+    """ Create a new file logger configured using the `LogConfig` object provided.
+        The target log file will have a .log extension. """
+    handler = logging.FileHandler(
+        (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
+    )
+    handler.setFormatter(config.formatter)
+    logger = logging.getLogger(str(config.file_name))
+    logger.setLevel(config.level)
     logger.addHandler(handler)
     logger.propagate = False
-
     return logger
 
 
@@ -67,9 +87,9 @@ class LogBuffer:
     in_stream: Iterator[bytes]
     logger: logging.Logger
 
-    def __init__(self, in_stream: Iterator[bytes], logger: logging.Logger):
+    def __init__(self, in_stream: Iterator[bytes], log_config: LogConfig):
         self.in_stream = in_stream
-        self.logger = logger
+        self.logger = _create_file_logger(log_config)
 
         self._buffer: List[str] = []
         # Index of last line read from the buffer using `wait_for_pattern`

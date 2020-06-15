@@ -6,6 +6,7 @@ from typing import Dict, Optional, TYPE_CHECKING
 from docker import DockerClient
 
 from src.runner.container import DockerContainer
+from src.runner.log import LogConfig
 
 if TYPE_CHECKING:
     from src.runner.probe import Role
@@ -22,6 +23,9 @@ class YagnaContainerConfig:
 
     assets_path: Optional[Path] = None
     """ Path to the assets directory. This will be used in templates from `volumes` """
+
+    log_config: Optional[LogConfig] = None
+    """ Optional custom logging config to be used for this container """
 
     environment: Dict[str, str] = field(default_factory=dict)
     """ Environment variables to be set for this container """
@@ -43,7 +47,13 @@ class YagnaContainer(DockerContainer):
     # Keeps track of assigned ports on the Docker host
     _port_offset = 0
 
-    def __init__(self, client: DockerClient, config: YagnaContainerConfig, **kwargs):
+    def __init__(
+        self,
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: Optional[LogConfig] = None,
+        **kwargs,
+    ):
         self.environment = config.environment
         self.ports = {
             YagnaContainer.HTTP_PORT: YagnaContainer.host_http_port(),
@@ -60,12 +70,13 @@ class YagnaContainer(DockerContainer):
         YagnaContainer._port_offset += 1
 
         super().__init__(
-            client,
-            self.COMMAND,
-            self.ENTRYPOINT,
-            self.IMAGE,
-            config.name,
+            client=client,
+            command=self.COMMAND,
+            entrypoint=self.ENTRYPOINT,
             environment=self.environment,
+            image=self.IMAGE,
+            log_config=log_config,
+            name=config.name,
             ports=self.ports,
             volumes=self.volumes,
             **kwargs,

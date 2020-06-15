@@ -38,7 +38,6 @@ def docker_container(mock_docker_client):
         entrypoint=GENERIC_ENTRYPOINT,
         image=GENERIC_IMAGE,
         name=GENERIC_NAME,
-        log_to_file=False,
     )
 
 

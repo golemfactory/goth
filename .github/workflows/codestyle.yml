@@ -36,4 +36,4 @@ jobs:
         run: pip freeze
 
       - name: Run black codestyle in check mode
-        run: black . --check
+        run: black . -v --check --diff
