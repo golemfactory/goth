@@ -40,7 +40,12 @@ class EventMonitor(Generic[E]):
         self._events = []
         self._incoming = asyncio.Queue()
         self.assertions = []
-        self._worker_thread = None
+        self._worker_thread = threading.Thread(
+            target=lambda: asyncio.run(self._run_worker()),
+            name="AssertionsThread",
+            daemon=True,
+        )
+
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
@@ -66,8 +71,8 @@ class EventMonitor(Generic[E]):
     def start(self) -> None:
         """Start tracing events."""
         logger.debug("start()")
-
-        self._worker_thread = asyncio.create_task(self._run_worker())
+        self._worker_thread.start()
+        #self._worker_thread = asyncio.create_task(self._run_worker())
 
     async def add_event(self, event: E) -> None:
         """Register a new event."""
@@ -95,17 +100,18 @@ class EventMonitor(Generic[E]):
         """Stop tracing events."""
 
         if self.is_running():
-            self._worker_thread.cancel()
-            await self._worker_thread
-            logger.debug("worker_thread stopped %s", self._worker_thread.done())
+            self._worker_thread.join()
+            # self._worker_thread.cancel()
+            # await self._worker_thread
+            logger.debug("worker_thread stopped %s", self._worker_thread.is_alive())
             self._worker_thread = None
         if not self.finished:
             logger.error("Monitor stopped before it was finished")
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
-
-        return self._worker_thread and not self._worker_thread.done()
+        return self._worker_thread.is_alive()
+        #return self._worker_thread and not self._worker_thread.done()
 
     def __del__(self) -> None:
         asyncio.ensure_future(self.stop())
