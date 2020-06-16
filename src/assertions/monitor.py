@@ -147,7 +147,7 @@ class EventMonitor(Generic[E]):
 
     @property
     def satisfied(self) -> Sequence[Assertion[E]]:
-        """Return the satified assertions."""
+        """Return the satisfied assertions."""
 
         return [a for a in self.assertions if a.accepted]
 
@@ -159,13 +159,13 @@ class EventMonitor(Generic[E]):
 
     @property
     def done(self) -> Sequence[Assertion[E]]:
-        """Return the failed assertions."""
+        """Return the completed assertions."""
 
         return [a for a in self.assertions if a.done]
 
     @property
     def finished(self) -> bool:
-        """Return the failed assertions."""
+        """Return True iif all assertions are done."""
 
         for a in self.assertions:
             if not a.done:
