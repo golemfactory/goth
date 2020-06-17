@@ -95,7 +95,7 @@ class MonitorAddon:
         if assertions_module is not None:
             self.monitor.load_assertions(assertions_module)
         self.monitor.start()
-        asyncio.ensure_future(self.monitor.add_event(APIClockTick()))
+        asyncio.create_task(self.monitor.add_event(APIClockTick()))
 
         timer_thread = threading.Thread(
             target=self._timer, name="Timer thread", daemon=True
@@ -107,12 +107,12 @@ class MonitorAddon:
 
         logger.debug("Timer thread started")
         while not self.monitor.is_running():
-            asyncio.ensure_future(self.monitor.add_event(APIClockTick()))
+            asyncio.create_task(self.monitor.add_event(APIClockTick()))
             time.sleep(1.0)
 
     def _register_event(self, event: APIEvent) -> None:
         _log_event(event)
-        asyncio.ensure_future(self.monitor.add_event(event))
+        asyncio.create_task(self.monitor.add_event(event))
 
     def request(self, flow: HTTPFlow) -> None:
         """Register a request"""
