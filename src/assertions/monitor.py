@@ -8,13 +8,16 @@ import asyncio
 from datetime import datetime, timedelta
 import importlib
 import logging
+import queue
 import threading
 from typing import Generic, List, Optional, Sequence
 
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
+logging.basicConfig(
+    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
+)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class EventMonitor(Generic[E]):
@@ -30,17 +33,21 @@ class EventMonitor(Generic[E]):
     _events: List[E]
     """List of events registered so far"""
 
-    _worker_thread: asyncio.Task
-    """A worker task that registers events and checks assertions"""
+    _worker_thread: threading.Thread
+    """A worker thread that registers events and checks assertions"""
 
-    _incoming: "asyncio.Queue[Optional[E]]"
-    """A queue used to pass the events to the worker task"""
+    _incoming: "queue.Queue[Optional[E]]"
+    """A queue used to pass the events to the worker thread"""
 
     def __init__(self) -> None:
         self._events = []
-        self._incoming = asyncio.Queue()
+        self._incoming = queue.Queue()
         self.assertions = []
-        self._worker_thread = None
+        self._worker_thread = threading.Thread(
+            target=lambda: asyncio.run(self._run_worker()),
+            name="AssertionsThread",
+            daemon=True,
+        )
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
@@ -65,17 +72,24 @@ class EventMonitor(Generic[E]):
 
     def start(self) -> None:
         """Start tracing events."""
-        logger.debug("start()")
 
-        self._worker_thread = asyncio.create_task(self._run_worker())
+        self._worker_thread.start()
 
-    async def add_event(self, event: E) -> None:
+    def add_event(self, event: E) -> None:
         """Register a new event."""
-        logger.debug("add_event(%r)", event)
-        if not self.is_running():
+
+        if self.is_running():
+            self._incoming.put(event)
+        else:
             raise RuntimeError("Monitor is not running")
 
-        await self._incoming.put(event)
+    def stop(self) -> None:
+        """Stop tracing events."""
+
+        if self.is_running():
+            # This will eventually terminate the worker thread:
+            self._incoming.put(None)
+            self._worker_thread.join()
 
     async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
         logger.debug("await_assertions()")
@@ -91,24 +105,14 @@ class EventMonitor(Generic[E]):
             await asyncio.sleep(0.1)
         logger.debug("await_assertions() - finished")
 
-    async def stop(self) -> None:
-        """Stop tracing events."""
-
-        if self.is_running():
-            self._worker_thread.cancel()
-            await self._worker_thread
-            logger.debug("worker_thread stopped %s", self._worker_thread.done())
-            self._worker_thread = None
-        if not self.finished:
-            logger.error("Monitor stopped before it was finished")
-
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
 
-        return self._worker_thread and not self._worker_thread.done()
+        return self._worker_thread.is_alive()
 
     def __del__(self) -> None:
-        asyncio.ensure_future(self.stop())
+
+        self.stop()
 
     def __len__(self) -> int:
         """Return the number of registered events."""
@@ -117,25 +121,16 @@ class EventMonitor(Generic[E]):
 
     async def _run_worker(self) -> None:
         """In a loop, register the incoming events and check the assertions."""
-        logger.debug("run_worker()")
-
-        for a in self.assertions:
-            logger.debug("Starting assertion '%s'", a.name)
-            a.start()
-
-        try:
-            await self._check_events()
-        except asyncio.CancelledError:
-            return
-        except RuntimeError as e:
-            if not "Event loop is closed" in str(e):
-                raise
-            return
-
-    async def _check_events(self):
         events_ended = False
+
         while not events_ended:
-            event = await self._incoming.get()
+
+            for a in self.assertions:
+                logger.debug("Starting assertion '%s'", a.name)
+                a.start()
+
+
+            event = self._incoming.get()
 
             if event is not None:
                 self._events.append(event)

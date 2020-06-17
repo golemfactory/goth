@@ -37,7 +37,7 @@ class Probe:
     async def stop(self):
         self.container.remove(force=True)
         await asyncio.sleep(0.2)  # Time for the last logs to arrive
-        await self.agent_logs.stop()
+        self.agent_logs.stop()
 
     @property
     def address(self) -> Optional[str]:

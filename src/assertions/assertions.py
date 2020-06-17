@@ -91,6 +91,9 @@ class Assertion(AsyncIterable[E]):
         self._processed = asyncio.Event()
         return self._task
 
+    def is_started(self) -> Bool:
+        return not self._task is None
+
     def __str__(self) -> str:
         status = "accepted" if self.accepted else "failed" if self.failed else "ongoing"
         return f"Assertion '{self.name}' ({status})"
