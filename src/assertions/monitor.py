@@ -75,6 +75,11 @@ class EventMonitor(Generic[E]):
         else:
             raise RuntimeError("Monitor is not running")
 
+    def schedule_add_event(self, event: E) -> None:
+        """Schedule a task that adds `event` to this monitor."""
+
+        asyncio.create_task(self.add_event(event))
+
     async def stop(self) -> None:
         """Stop tracing events."""
 
