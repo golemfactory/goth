@@ -9,6 +9,8 @@ import docker
 
 from src.runner.log import configure_logging, LogConfig
 from src.runner.probe import Probe, Role
+from src.runner.container.proxy import ProxyContainer, ProxyContainerConfig
+from src.runner.container.yagna import YagnaContainerConfig
 
 
 class Runner:
@@ -23,9 +25,13 @@ class Runner:
     probes: Dict[Role, List[Probe]]
     """ Probes used for the test run, identified by their role names """
 
+    proxies: List[ProxyContainer]
+
     def __init__(self, assets_path: Optional[Path], logs_path: Path):
+
         self.assets_path = assets_path
         self.probes = defaultdict(list)
+        self.proxies = []
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -47,6 +53,8 @@ class Runner:
             for probe in chain.from_iterable(self.probes.values()):
                 self.logger.info("removing container. name=%s", probe.name)
                 probe.container.remove(force=True)
+            for proxy in self.proxies:
+                proxy.remove(force=True)
 
     def _run_nodes(self, scenario):
         docker_client = docker.from_env()
@@ -54,10 +62,15 @@ class Runner:
         scenario_dir.mkdir(exist_ok=True)
 
         for config in scenario.topology:
-            config.assets_path = self.assets_path
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
-
-            probe = Probe(docker_client, config, log_config)
-            self.probes[config.role].append(probe)
-            probe.container.start()
+            if isinstance(config, YagnaContainerConfig):
+                probe = Probe(docker_client, config, log_config, self.assets_path)
+                self.probes[config.role].append(probe)
+                probe.container.start()
+            elif isinstance(config, ProxyContainerConfig):
+                proxy = ProxyContainer(
+                    docker_client, config, log_config, self.assets_path
+                )
+                self.proxies.append(proxy)
+                proxy.start()

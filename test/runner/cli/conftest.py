@@ -1,5 +1,7 @@
 """Code common for all pytest modules in this package"""
 
+import time
+
 import docker
 import pytest
 
@@ -17,6 +19,8 @@ def yagna_container():
     config = YagnaContainerConfig(name="cli_test_container", role=Role.provider)
     container = YagnaContainer(client, config)
     container.start()
+    # Give the daemon some time to start serving requests
+    time.sleep(1.0)
 
     yield container
 

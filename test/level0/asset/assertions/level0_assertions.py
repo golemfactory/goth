@@ -6,7 +6,8 @@ import src.api_monitor.api_events as api
 
 from src.assertions import AssertionFunction, TemporalAssertionError, logger
 from src.assertions.operators import eventually
-from src.api_monitor.common_assertions import (
+
+from .common_assertions import (
     APIEvents,
     assert_no_api_errors,
     assert_clock_ticks,

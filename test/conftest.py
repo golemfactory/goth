@@ -1,9 +1,15 @@
+import logging
 from pathlib import Path
 from typing import Optional
 
+import docker
 import pytest
 
+from src.runner.container.proxy import ProxyContainer
 from src.runner.log import DEFAULT_LOG_DIR
+
+
+logger = logging.getLogger(__name__)
 
 
 def pytest_addoption(parser):
@@ -40,3 +46,39 @@ def logs_path(request) -> Path:
         pytest.fail("Provided logs path doesn't point to an existing directory.")
 
     return path.resolve()
+
+
+@pytest.fixture()
+def project_root() -> Path:
+    """A fixture that obtains the absolute path to the project's root directory
+    (assuming it's the parent directory of the current file's directory).
+    """
+
+    return Path(__file__).parent.parent.resolve()
+
+
+API_MONITOR_DOCKERFILE = "src/docker/api-monitor.Dockerfile"
+"""Dockerfile path relative to project root"""
+
+
+@pytest.fixture()
+def api_monitor_image(project_root):
+    """A fixture that (re)builds docker image for API Monitor"""
+
+    client = docker.from_env()
+
+    logger.info("Building docker image `%s`...", ProxyContainer.IMAGE)
+
+    image, logs = client.images.build(
+        path=str(project_root),
+        dockerfile=API_MONITOR_DOCKERFILE,
+        tag=ProxyContainer.IMAGE,
+        nocache=False,
+        rm=True,
+    )
+
+    image_id = None
+    for log in logs:
+        if isinstance(log, dict) and "aux" in log and isinstance(log["aux"], dict):
+            image_id = log["aux"].get("ID")
+    logger.info("Image ID: %s", image_id)
