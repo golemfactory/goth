@@ -1,15 +1,18 @@
-from dataclasses import dataclass
+import asyncio
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 import logging
 import logging.config
 from pathlib import Path
 import tempfile
-from threading import Lock, Thread
+from threading import Lock
 import time
 from typing import Iterator, List, Match, Optional, Pattern, Union
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
+
+logger = logging.getLogger(__name__)
 
 
 class UTCFormatter(logging.Formatter):
@@ -51,8 +54,10 @@ def configure_logging(base_dir: Optional[Path]):
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
 
-    (base_dir or DEFAULT_LOG_DIR).mkdir(exist_ok=True)
+    base_dir = base_dir or DEFAULT_LOG_DIR
+    base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
+    logger.info("started logging. dir=%s", base_dir)
 
 
 @dataclass
@@ -72,11 +77,11 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
         (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
     )
     handler.setFormatter(config.formatter)
-    logger = logging.getLogger(str(config.file_name))
-    logger.setLevel(config.level)
-    logger.addHandler(handler)
-    logger.propagate = False
-    return logger
+    logger_ = logging.getLogger(str(config.file_name))
+    logger_.setLevel(config.level)
+    logger_.addHandler(handler)
+    logger_.propagate = False
+    return logger_
 
 
 class LogBuffer:
@@ -94,10 +99,12 @@ class LogBuffer:
         self._buffer: List[str] = []
         # Index of last line read from the buffer using `wait_for_pattern`
         self._last_read: int = -1
-        self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._lock = Lock()
-
-        self._buffer_thread.start()
+        loop = asyncio.get_event_loop()
+        self._buffer_task = loop.run_in_executor(None, self._buffer_input)
+        logger.debug(
+            "Created LogBuffer. stream=%r, logger=%r", self.in_stream, self.logger,
+        )
 
     def clear_buffer(self):
         self._buffer.clear()
@@ -126,7 +133,7 @@ class LogBuffer:
 
         return None
 
-    def wait_for_pattern(
+    async def wait_for_pattern(
         self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
     ) -> Match[str]:
         """ Blocking call which waits for a matching line to appear in the buffer.
@@ -144,9 +151,7 @@ class LogBuffer:
                 match = pattern.match(next_line)
                 if match:
                     return match
-            else:
-                # Prevent busy waiting
-                time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
         raise TimeoutError()
 
