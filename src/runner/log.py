@@ -57,7 +57,6 @@ def configure_logging(base_dir: Optional[Path]):
     base_dir = base_dir or DEFAULT_LOG_DIR
     base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
-    logger = logging.getLogger(__name__)
     logger.info("started logging. dir=%s", base_dir)
 
 
@@ -78,11 +77,11 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
         (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
     )
     handler.setFormatter(config.formatter)
-    _logger = logging.getLogger(str(config.file_name))
-    _logger.setLevel(config.level)
-    _logger.addHandler(handler)
-    _logger.propagate = False
-    return _logger
+    logger_ = logging.getLogger(str(config.file_name))
+    logger_.setLevel(config.level)
+    logger_.addHandler(handler)
+    logger_.propagate = False
+    return logger_
 
 
 class LogBuffer:
