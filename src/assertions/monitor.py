@@ -11,7 +11,6 @@ from typing import Generic, List, Optional, Sequence
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class EventMonitor(Generic[E]):
@@ -68,6 +67,18 @@ class EventMonitor(Generic[E]):
         self._incoming.put_nowait(event)
 
 
+    async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
+        """Sleep until all assertions are done or the timeout passed."""
+
+        if not self.is_running():
+            raise RuntimeError("Monitor is not running")
+
+        deadline = datetime.now() + timeout
+
+        while not self.finished:
+            if deadline < datetime.now():
+                raise TimeoutError
+            await asyncio.sleep(0.1)
 
     async def stop(self) -> None:
         """Stop tracing events."""
@@ -97,20 +108,11 @@ class EventMonitor(Generic[E]):
 
     async def _run_worker(self) -> None:
         """In a loop, register the incoming events and check the assertions."""
-        logger.debug("run_worker()")
 
-        try:
-            await self._check_events()
-        except asyncio.CancelledError:
-            return
-        except RuntimeError as e:
-            if not "Event loop is closed" in str(e):
-                raise
-            return
-
-    async def _check_events(self):
         events_ended = False
+
         while not events_ended:
+
             event = await self._incoming.get()
 
             if event is not None:

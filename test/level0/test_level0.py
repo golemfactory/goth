@@ -1,19 +1,22 @@
-import asyncio
-from datetime import timedelta
 import logging
 from pathlib import Path
-import pytest
 import re
 from string import Template
 from typing import Dict, Optional
 
+import pytest
+
+from src.runner.log_monitor import APIEvent
+from src.assertions import EventStream
 from src.runner import Runner
 from src.runner.container.proxy import ProxyContainerConfig
 from src.runner.container.yagna import YagnaContainerConfig
+from src.runner.log_monitor import LogEvent
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
-from src.api_monitor.common_assertions import APIEvents
+# TODO: Remove duplicate with test.level0.assertions.common_assertions.py
+APIEvents = EventStream[APIEvent]
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,27 @@ def node_environment(
     return node_env
 
 
+def assert_message_starts_with(needle: str):
+    """Prepare an assertion that:
+    Assert that a `LogEvent` with message starts with {needle} is found."""
+
+    pattern = re.compile(r"^" + needle)
+
+    async def _assert_starts_with(stream: APIEvents):
+
+        async for event in stream:
+
+            if isinstance(event, LogEvent):
+                has_match = pattern.match(event.message)
+                pattern.purge()
+                if has_match:
+                    return True
+
+        return False
+
+    return _assert_starts_with
+
+
 VOLUMES = {
     Template("$assets_path"): "/asset",
     Template("$assets_path/presets.json"): "/presets.json",
@@ -56,25 +80,6 @@ VOLUMES = {
 PROXY_VOLUMES = {
     Template("$assets_path/assertions"): "/assertions",
 }
-
-
-def assert_message_starts_with(needle: str):
-    pattern = re.compile(r"^" + needle)
-    logger.debug(f'preparing to find "{needle}"')
-
-    async def _assert_starts_with(stream: APIEvents):
-        """Assert a api ."""
-        logger.debug(f"_assert_starts_with {stream}")
-        async for e in stream:
-
-            if isinstance(e, LogEvent):
-                logger.debug(f"checking event {e}, {e.message}")
-                if pattern.match(e.message):
-                    return True
-
-        return False
-
-    return _assert_starts_with
 
 
 class Level0Scenario(Scenario):
@@ -179,7 +184,7 @@ class Level0Scenario(Scenario):
     async def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
         probe.agent_logs.add_assertions(
-            [assert_message_starts_with("Invoice (.+) sent.")]
+            [assert_message_starts_with("Invoice (.+) sent")]
         )
         await probe.agent_logs.await_assertions()
         logger.info("invoice sent")

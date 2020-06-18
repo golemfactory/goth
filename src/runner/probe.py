@@ -1,4 +1,3 @@
-import asyncio
 from enum import Enum
 import logging
 from pathlib import Path
@@ -40,7 +39,9 @@ class Probe:
 
     async def stop(self):
         self.container.remove(force=True)
-        await asyncio.sleep(0.2)  # Time for the last logs to arrive
+        if self.container.log_config:
+            await self.container.logs.stop()
+
         await self.agent_logs.stop()
 
     @property

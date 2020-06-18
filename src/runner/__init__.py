@@ -59,6 +59,8 @@ class Runner:
                 await probe.stop()
             for proxy in self.proxies:
                 proxy.remove(force=True)
+                if proxy.log_config:
+                    await proxy.logs.stop()
 
     def _run_nodes(self, scenario):
         docker_client = docker.from_env()

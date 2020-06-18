@@ -1,12 +1,10 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 import logging
 import re
-from threading import Lock, Thread
 import time
-from typing import Iterator, Match, Optional, Pattern
+from typing import Iterator, Optional
 
 from src.assertions.monitor import EventMonitor
 from src.api_monitor.api_events import APIEvent
@@ -25,7 +23,7 @@ pattern = re.compile(
 
 
 class LogEvent(APIEvent):
-    """A dummy event representing clock ticks, used for timeouts in API monitor"""
+    """A event representing log lines, used for asserting messages"""
 
     def __init__(self, log_message: str):
         self._timestamp = None
@@ -68,7 +66,10 @@ class LogEvent(APIEvent):
         return self._message
 
     def __repr__(self):
-        return f"<LogEvent time={self.timestamp:0.0f}, level={self.level}, module={self.module}, message={self.message},  >"
+        return (
+            f"<LogEvent time={self.timestamp:0.0f}, level={self.level},"
+            f" module={self.module}, message={self.message},  >"
+        )
 
 
 def _create_file_logger(config: LogConfig) -> logging.Logger:
@@ -87,7 +88,7 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
 
 class LogEventMonitor(EventMonitor):
     """ Buffers logs coming from `in_stream`. Consecutive values are interpreted as lines
-        by splitting them on the new line character. Internally, it uses a daemon thread
+        by splitting them on the new line character. Internally, it uses a asyncio task
         to read the stream and add lines to the buffer. """
 
     in_stream: Iterator[bytes]
@@ -107,7 +108,7 @@ class LogEventMonitor(EventMonitor):
         )
 
     def _buffer_input(self):
-        logger.debug("_buffer_input=%s", self.logger.name)
+        logger.debug("Start reading input. name=%s", self.logger.name)
 
         for chunk in self.in_stream:
             chunk = chunk.decode()

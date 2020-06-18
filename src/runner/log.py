@@ -1,11 +1,11 @@
+""" Log utilities for the runner"""
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 import logging
 import logging.config
 from pathlib import Path
 import tempfile
 import time
-from typing import Iterator, List, Match, Optional, Pattern, Union
+from typing import Optional, Union
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
@@ -45,14 +45,16 @@ LOGGING_CONFIG = {
 }
 
 
-def configure_logging(base_dir: Optional[Path]):
+def configure_logging(base_dir: Optional[Path] = DEFAULT_LOG_DIR):
+    """ Configure the `logging` module. Updates config with `base_dir` before
+    applying the global configuration  """
+
     # substitute `base_log_dir` in `LOGGING_CONFIG` with the actual dir path
     for _name, handler in LOGGING_CONFIG["handlers"].items():
         if "filename" in handler:
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
 
-    base_dir = base_dir or DEFAULT_LOG_DIR
     base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
     logger.info("started logging. dir=%s", base_dir)
