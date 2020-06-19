@@ -75,11 +75,21 @@ class MonitorAddon:
     monitor: EventMonitor[APIEvent]
     pending_requests: Dict[HTTPRequest, APIRequest]
     num_requests: int
+    stop_on_error: bool
 
     def __init__(self):
-        self.monitor = EventMonitor()
         self.pending_requests = {}
         self.num_requests = 0
+        self.stop_on_error = False
+
+        def on_assertion_failure(assertion):
+            """Stop passing requests if `stop_on_error` is set."""
+
+            if self.stop_on_error and not mitmproxy.ctx.master.should_exit.is_set():
+                logger.info("Stopping the monitor addon")
+                mitmproxy.ctx.master.should_exit.set()
+
+        self.monitor = EventMonitor(on_failure_callback=on_assertion_failure)
 
     def load(self, loader) -> None:
         """Load module with property functions"""
@@ -90,10 +100,17 @@ class MonitorAddon:
             default=None,
             help="A file with the assertions to check",
         )
+        loader.add_option(
+            name="stop_on_error",
+            typespec=bool,
+            default=False,
+            help="Stop the monitor addon when an assertion fails",
+        )
         mitmproxy.ctx.options.process_deferred()
         assertions_module = mitmproxy.ctx.options.assertions
         if assertions_module is not None:
             self.monitor.load_assertions(assertions_module)
+        self.stop_on_error = mitmproxy.ctx.options.stop_on_error
         self.monitor.start()
         self.monitor.schedule_add_event(APIClockTick())
 
@@ -106,7 +123,7 @@ class MonitorAddon:
         """Periodically emit `APIClockTick` event"""
 
         logger.debug("Timer thread started")
-        while not self.monitor.is_running():
+        while self.monitor.is_running():
             self.monitor.schedule_add_event(APIClockTick())
             time.sleep(1.0)
 
@@ -116,6 +133,8 @@ class MonitorAddon:
 
     def request(self, flow: HTTPFlow) -> None:
         """Register a request"""
+
+        print("Got a request")
 
         self.num_requests += 1
         request = APIRequest(self.num_requests, flow.request)

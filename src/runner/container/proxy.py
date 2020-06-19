@@ -39,16 +39,19 @@ class ProxyContainer(DockerContainer):
         assets_path: Optional[Path] = None,
         **kwargs,
     ):
+        command = ["--set", "stop_on_error=True"] if config.stop_on_error else []
+        volumes = config.get_volumes_spec(assets_path) if assets_path else {}
+
         super().__init__(
             client,
-            command=[],
+            command=command,
             entrypoint=self.ENTRYPOINT,
             image=self.IMAGE,
             log_config=log_config,
             name=config.name,
             environment={},
             ports={},
-            volumes=config.get_volumes_spec(assets_path) if assets_path else {},
+            volumes=volumes,
             hostname=config.name,
             **kwargs,
         )
