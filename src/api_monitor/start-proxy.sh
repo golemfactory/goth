@@ -15,3 +15,6 @@ mitmdump --mode reverse:"http://127.0.0.1" \
     -s ./router_addon.py \
     -s ./monitor_addon.py \
     --set assertions=assertions.level0_assertions
+# This script must end with a line not terminated with "\n",
+# otherwise it won't work in Docker on Windows.
+# Do not modify this line!
