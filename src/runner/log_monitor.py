@@ -17,6 +17,7 @@ LogLevel = Enum(
     names=[("ERROR", 1), ("WARN", 2), ("INFO", 3), ("DEBUG", 4), ("TRACE", 5),],
 )
 
+# Pattern to match log lines from the `yagna` binary
 pattern = re.compile(
     r"^\[(?P<datetime>[^ ]+) (?P<level>[^ ]+) (?P<module>[^\]]+)\] (?P<message>.*)"
 )
@@ -46,7 +47,7 @@ class LogEvent(APIEvent):
                 self._module = result["module"]
                 self._message = result["message"]
         re.purge()
-        if self._timestamp is None:
+        if not self._timestamp:
             self._timestamp = time.time()
 
     @property
@@ -58,11 +59,11 @@ class LogEvent(APIEvent):
         return self._level
 
     @property
-    def module(self) -> float:
+    def module(self) -> Optional[str]:
         return self._module
 
     @property
-    def message(self) -> float:
+    def message(self) -> str:
         return self._message
 
     def __repr__(self):
