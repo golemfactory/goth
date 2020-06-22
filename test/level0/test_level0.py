@@ -6,7 +6,6 @@ from typing import Dict, Optional
 
 import pytest
 
-from src.runner.log_monitor import APIEvent
 from src.assertions import EventStream
 from src.runner import Runner
 from src.runner.container.proxy import ProxyContainerConfig
@@ -15,8 +14,7 @@ from src.runner.log_monitor import LogEvent
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
-# TODO: Remove duplicate with test.level0.assertions.common_assertions.py
-APIEvents = EventStream[APIEvent]
+APIEvents = EventStream[LogEvent]
 
 logger = logging.getLogger(__name__)
 
@@ -59,14 +57,12 @@ def assert_message_starts_with(needle: str):
     async def _assert_starts_with(stream: APIEvents):
 
         async for event in stream:
+            match = pattern.match(event.message)
+            pattern.purge()
+            if match:
+                return True
 
-            if isinstance(event, LogEvent):
-                match = pattern.match(event.message)
-                pattern.purge()
-                if match:
-                    return True
-
-        return False
+        raise AssertionError(f"No message starts with '{needle}'")
 
     return _assert_starts_with
 

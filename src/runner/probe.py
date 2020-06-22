@@ -42,7 +42,8 @@ class Probe:
         if self.container.log_config:
             await self.container.logs.stop()
 
-        await self.agent_logs.stop()
+        if self.agent_logs:
+            await self.agent_logs.stop()
 
     @property
     def address(self) -> Optional[str]:

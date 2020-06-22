@@ -5,7 +5,7 @@ import logging.config
 from pathlib import Path
 import tempfile
 import time
-from typing import Optional, Union
+from typing import Union
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
@@ -45,7 +45,7 @@ LOGGING_CONFIG = {
 }
 
 
-def configure_logging(base_dir: Optional[Path] = DEFAULT_LOG_DIR):
+def configure_logging(base_dir: Path = DEFAULT_LOG_DIR):
     """ Configure the `logging` module. Updates config with `base_dir` before
     applying the global configuration  """
 

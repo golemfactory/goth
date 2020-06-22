@@ -7,15 +7,18 @@ import time
 from typing import Iterator, Optional
 
 from src.assertions.monitor import EventMonitor
-from src.api_monitor.api_events import APIEvent
 from src.runner.log import LogConfig
 
 logger = logging.getLogger(__name__)
 
-LogLevel = Enum(
-    value="LogLevel",
-    names=[("ERROR", 1), ("WARN", 2), ("INFO", 3), ("DEBUG", 4), ("TRACE", 5),],
-)
+
+class LogLevel(Enum):
+    ERROR = 1
+    WARN = 2
+    INFO = 3
+    DEBUG = 4
+    TRACE = 5
+
 
 # Pattern to match log lines from the `yagna` binary
 pattern = re.compile(
@@ -23,8 +26,8 @@ pattern = re.compile(
 )
 
 
-class LogEvent(APIEvent):
-    """A event representing log lines, used for asserting messages"""
+class LogEvent:
+    """An event representing a log line, used for asserting messages"""
 
     def __init__(self, log_message: str):
         self._timestamp = None
@@ -86,10 +89,11 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
     return logger_
 
 
-class LogEventMonitor(EventMonitor):
-    """ Buffers logs coming from `in_stream`. Consecutive values are interpreted as lines
-        by splitting them on the new line character. Internally, it uses a asyncio task
-        to read the stream and add lines to the buffer. """
+class LogEventMonitor(EventMonitor[LogEvent]):
+    """ Buffers logs coming from `in_stream`. `log_config` holds the configuration of
+        the file logger. Consecutive values are interpreted as lines by splitting them
+        on the new line character. Internally, it uses a asyncio task to read the
+        stream and add lines to the buffer. """
 
     in_stream: Iterator[bytes]
     logger: logging.Logger
@@ -104,7 +108,9 @@ class LogEventMonitor(EventMonitor):
         self._buffer_task = loop.run_in_executor(None, self._buffer_input)
 
         logger.debug(
-            "Created LogBuffer. stream=%r, logger=%r", self.in_stream, self.logger,
+            "Created LogEventMonitor. stream=%r, logger=%r",
+            self.in_stream,
+            self.logger,
         )
 
     def _buffer_input(self):
