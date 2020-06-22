@@ -1,13 +1,14 @@
 from enum import Enum
 import logging
+from pathlib import Path
 from typing import Optional
 
 from docker import DockerClient
 
-from runner.cli import Cli
-from runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from runner.exceptions import KeyAlreadyExistsError
-from runner.log import get_file_logger, LogBuffer
+from goth.runner.cli import Cli
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.exceptions import KeyAlreadyExistsError
+from goth.runner.log import LogBuffer, LogConfig
 
 
 logger = logging.getLogger(__name__)
@@ -19,8 +20,14 @@ class Role(Enum):
 
 
 class Probe:
-    def __init__(self, client: DockerClient, config: YagnaContainerConfig):
-        self.container = YagnaContainer(client, config)
+    def __init__(
+        self,
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        assets_path: Optional[Path] = None,
+    ):
+        self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
         self.role = config.role
 
@@ -61,9 +68,7 @@ class Probe:
             f" --app-key {self.app_key} --node-name {self.name} {preset_name}",
             stream=True,
         )
-        self.agent_logs = LogBuffer(
-            log_stream.output, get_file_logger(f"{self.name}_agent")
-        )
+        self._init_agent_logs(log_stream)
 
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
@@ -71,6 +76,10 @@ class Probe:
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json",
             stream=True,
         )
-        self.agent_logs = LogBuffer(
-            log_stream.output, get_file_logger(f"{self.name}_agent")
+        self._init_agent_logs(log_stream)
+
+    def _init_agent_logs(self, log_stream):
+        log_config = LogConfig(
+            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
         )
+        self.agent_logs = LogBuffer(log_stream.output, log_config)

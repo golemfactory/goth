@@ -16,11 +16,3 @@ services:
         image: golemfactory/golem-client-mock:0.1.2
         ports:
             - "5001:5001"
-
-    proxy:
-        image: api-monitor
-        build:
-            context: ../
-            dockerfile: docker/api-monitor.Dockerfile
-        ports:
-            - "9000:9000"

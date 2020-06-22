@@ -1,13 +1,18 @@
+import asyncio
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 import logging
 import logging.config
 from pathlib import Path
 import tempfile
-from threading import Lock, Thread
+from threading import Lock
 import time
-from typing import Iterator, List, Match, Optional, Pattern
+from typing import Iterator, List, Match, Optional, Pattern, Union
 
-BASE_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
+DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
+FORMATTER_NONE = logging.Formatter("%(message)s")
+
+logger = logging.getLogger(__name__)
 
 
 class UTCFormatter(logging.Formatter):
@@ -30,33 +35,53 @@ LOGGING_CONFIG = {
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
-            "filename": BASE_LOG_DIR / "runner.log",
+            "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
         },
     },
     "loggers": {
-        "runner": {"handlers": ["console"], "propagate": False},
+        "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
+        "transitions": {"level": "WARNING"},
     },
 }
 
 
-def configure_logging():
-    BASE_LOG_DIR.mkdir(exist_ok=True)
+def configure_logging(base_dir: Optional[Path]):
+    # substitute `base_log_dir` in `LOGGING_CONFIG` with the actual dir path
+    for _name, handler in LOGGING_CONFIG["handlers"].items():
+        if "filename" in handler:
+            # format the handler's filename with the base dir
+            handler["filename"] %= {"base_log_dir": str(base_dir)}
+
+    base_dir = base_dir or DEFAULT_LOG_DIR
+    base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
+    logger.info("started logging. dir=%s", base_dir)
 
 
-def get_file_logger(file_name: str):
-    """ Create a new logger that will output to a .log file with no formatting applied. """
-    handler = logging.FileHandler(BASE_LOG_DIR / f"{file_name}.log", encoding="utf-8")
-    formatter = logging.Formatter(fmt="%(message)s")
-    handler.setFormatter(formatter)
+@dataclass
+class LogConfig:
+    """ Configuration used to create file loggers.  """
 
-    logger = logging.getLogger(file_name)
-    logger.addHandler(handler)
-    logger.propagate = False
+    file_name: Union[str, Path]
+    base_dir: Path = DEFAULT_LOG_DIR
+    formatter: logging.Formatter = FORMATTER_NONE
+    level: int = logging.INFO
 
-    return logger
+
+def _create_file_logger(config: LogConfig) -> logging.Logger:
+    """ Create a new file logger configured using the `LogConfig` object provided.
+        The target log file will have a .log extension. """
+    handler = logging.FileHandler(
+        (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
+    )
+    handler.setFormatter(config.formatter)
+    logger_ = logging.getLogger(str(config.file_name))
+    logger_.setLevel(config.level)
+    logger_.addHandler(handler)
+    logger_.propagate = False
+    return logger_
 
 
 class LogBuffer:
@@ -67,17 +92,19 @@ class LogBuffer:
     in_stream: Iterator[bytes]
     logger: logging.Logger
 
-    def __init__(self, in_stream: Iterator[bytes], logger: logging.Logger):
+    def __init__(self, in_stream: Iterator[bytes], log_config: LogConfig):
         self.in_stream = in_stream
-        self.logger = logger
+        self.logger = _create_file_logger(log_config)
 
         self._buffer: List[str] = []
         # Index of last line read from the buffer using `wait_for_pattern`
         self._last_read: int = -1
-        self._buffer_thread = Thread(target=self._buffer_input, daemon=True)
         self._lock = Lock()
-
-        self._buffer_thread.start()
+        loop = asyncio.get_event_loop()
+        self._buffer_task = loop.run_in_executor(None, self._buffer_input)
+        logger.debug(
+            "Created LogBuffer. stream=%r, logger=%r", self.in_stream, self.logger,
+        )
 
     def clear_buffer(self):
         self._buffer.clear()
@@ -106,7 +133,7 @@ class LogBuffer:
 
         return None
 
-    def wait_for_pattern(
+    async def wait_for_pattern(
         self, pattern: Pattern[str], timeout: timedelta = timedelta(seconds=10)
     ) -> Match[str]:
         """ Blocking call which waits for a matching line to appear in the buffer.
@@ -124,9 +151,7 @@ class LogBuffer:
                 match = pattern.match(next_line)
                 if match:
                     return match
-            else:
-                # Prevent busy waiting
-                time.sleep(0.1)
+            await asyncio.sleep(0.1)
 
         raise TimeoutError()
 

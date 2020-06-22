@@ -13,16 +13,16 @@ The Yagna Integration project, intending to build the Integration Harness around
 The test runner requires Python 3.7+ to be installed on the system. You can check your currently installed Python version by running:
 ```
 python3 --version
-``` 
+```
 
 If you don't have Python installed, download the appropriate package and follow instructions from the [releases page](https://www.python.org/downloads/).
 
 For the sake of compatibility with other projects and/or your local Python 3 installation you can install [`pyenv`](https://github.com/pyenv/pyenv) to manage and switch between multiple Python versions. The `pyenv` installer can be found [here](https://github.com/pyenv/pyenv-installer).
 
-#### Installing dependencies
-To install dependencies, run the below command from the project's root directory:
+#### Installing the `yagna-integration` package
+To install the `yagna-integration` package in the development mode, with all dependencies, run the below command from the project's root directory:
 ```
-pip install -r requirements.txt
+python setup.py develop
 ```
 
 ### Docker setup

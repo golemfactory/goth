@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from runner.cli.base import make_args
-from runner.cli.typing import CommandRunner
+from goth.runner.cli.base import make_args
+from goth.runner.cli.typing import CommandRunner
 
 
 @dataclass(frozen=True)

@@ -2,8 +2,8 @@
 
 import pytest
 
-from runner.cli import Cli
-from runner.exceptions import CommandError, KeyAlreadyExistsError
+from goth.runner.cli import Cli
+from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
 
 
 def test_app_key_create(yagna_container):

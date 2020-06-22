@@ -1,11 +1,43 @@
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, List, Optional
+from pathlib import Path
+from string import Template
+from typing import Callable, Dict, List, Optional
 
 from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
-from runner.log import get_file_logger, LogBuffer
+from goth.runner.log import LogBuffer, LogConfig
+
+
+@dataclass
+class DockerContainerConfig:
+    """ Configuration to be used for creating a new docker container. """
+
+    name: str
+    """ Name to be used for this container, must be unique """
+
+    volumes: Dict[Template, str] = field(default_factory=dict)
+    """ Volumes to be mounted in the container. Keys are paths on the host machine,
+        represented by `Template`s. These templates may include `assets_path`
+        as a placeholder to be used for substitution.  The values are container
+        paths to be used as mount points. """
+
+    log_config: Optional[LogConfig] = None
+    """ Optional custom logging config to be used for this container """
+
+    def get_volumes_spec(self, assets_path: Path) -> Dict[str, dict]:
+        """ Produce volumes specification for a docker container by substituting given
+        `assets_path` into `self.volumes`.
+        """
+        return {
+            host_template.substitute(assets_path=str(assets_path)): {
+                "bind": mount_path,
+                "mode": "ro",
+            }
+            for host_template, mount_path in self.volumes.items()
+        }
 
 
 class State(Enum):
@@ -46,8 +78,8 @@ class DockerContainer:
 
     # This section lists the members which will be added at runtime by `transitions`
     stop: Callable
-    """ Stop a running container. Internally, this calls `Container.stop` with any kwargs
-        passed here being forwarded to that function. """
+    """ Stop a running container. Internally, this calls `Container.stop` with any
+        kwargs passed here being forwarded to that function. """
 
     start: Callable
     """ Start a container which is either created or stopped.
@@ -70,8 +102,8 @@ class DockerContainer:
         entrypoint: str,
         image: str,
         name: str,
+        log_config: Optional[LogConfig] = None,
         network: str = DEFAULT_NETWORK,
-        log_to_file: bool = True,
         **kwargs,
     ):
         self._client = client
@@ -80,7 +112,7 @@ class DockerContainer:
         self.image = image
         self.name = name
         self.network = network
-        self.log_to_file = log_to_file
+        self.log_config = log_config
 
         self._container = self._client.containers.create(
             self.image,
@@ -135,10 +167,9 @@ class DockerContainer:
 
     def _start(self, **kwargs):
         self._container.start(**kwargs)
-        if self.log_to_file:
+        if self.log_config:
             self.logs = LogBuffer(
-                self._container.logs(stream=True, follow=True),
-                get_file_logger(self.name),
+                self._container.logs(stream=True, follow=True), self.log_config,
             )
 
     def _update_state(self, *_args, **_kwargs):

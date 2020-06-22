@@ -1,11 +1,14 @@
 """Code common for all pytest modules in this package"""
 
+import time
+
 import docker
 import pytest
 
-from runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from runner.exceptions import CommandError
-from runner.probe import Role
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.exceptions import CommandError
+from goth.runner.log import LogConfig
+from goth.runner.probe import Role
 
 
 @pytest.fixture
@@ -14,8 +17,10 @@ def yagna_container():
 
     client = docker.from_env()
     config = YagnaContainerConfig(name="cli_test_container", role=Role.provider)
-    container = YagnaContainer(client, config, log_to_file=False)
+    container = YagnaContainer(client, config)
     container.start()
+    # Give the daemon some time to start serving requests
+    time.sleep(1.0)
 
     yield container
 

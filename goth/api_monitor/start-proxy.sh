@@ -14,4 +14,4 @@ mitmdump --mode reverse:"http://127.0.0.1" \
     -q \
     -s ./router_addon.py \
     -s ./monitor_addon.py \
-    --set assertions=level0_assertions
+    --set assertions=assertions.level0_assertions

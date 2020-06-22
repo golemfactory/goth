@@ -52,8 +52,7 @@ setup(
     ],
     zip_safe=False,
     keywords="golem",
-    package_dir={"": "ya-int"},
-    packages=find_packages(include=["../test"]),
+    packages=find_packages(include=["goth", "test"]),
     install_requires=requirements,
     dependency_links=dependencies,
 )

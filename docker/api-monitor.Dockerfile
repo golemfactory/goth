@@ -3,11 +3,11 @@ FROM mitmproxy/mitmproxy:5.1.1
 RUN apk add --no-cache nginx \
     && mkdir -p /run/nginx
 
-COPY ya-int/assertions /src/assertions
+COPY goth/assertions /src/assertions
 
-COPY ya-int/api_monitor/*.py \
-     ya-int/api_monitor/nginx.conf \
-     ya-int/api_monitor/start-proxy.sh \
+COPY goth/api_monitor/*.py \
+     goth/api_monitor/nginx.conf \
+     goth/api_monitor/start-proxy.sh \
      /src/api_monitor/
 
 WORKDIR /src/api_monitor

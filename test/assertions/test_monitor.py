@@ -1,7 +1,7 @@
 import pytest
 
-from assertions import EventStream
-from assertions.monitor import EventMonitor
+from goth.assertions import EventStream
+from goth.assertions.monitor import EventMonitor
 
 
 # Events are just integers
@@ -58,7 +58,8 @@ async def assert_fancy_property(stream: Events) -> int:
     return m
 
 
-def test_assertions():
+@pytest.mark.asyncio
+async def test_assertions():
 
     monitor: EventMonitor[int] = EventMonitor()
     monitor.add_assertions(
@@ -72,9 +73,9 @@ def test_assertions():
     monitor.start()
 
     for n in [1, 3, 4, 6, 3, 8, 9, 10]:
-        monitor.add_event(n)
+        await monitor.add_event(n)
 
-    monitor.stop()
+    await monitor.stop()
 
     failed = {a.name.rsplit(".", 1)[-1] for a in monitor.failed}
     assert failed == {"assert_increasing", "assert_eventually_five"}
@@ -83,22 +84,24 @@ def test_assertions():
     assert satisfied == {"assert_all_positive", "assert_fancy_property"}
 
 
-def test_not_started_raises_on_add_event():
+@pytest.mark.asyncio
+async def test_not_started_raises_on_add_event():
     """Test whether `add_event()` invoked before starting the monitor raises error."""
 
     monitor: EventMonitor[int] = EventMonitor()
 
     with pytest.raises(RuntimeError):
-        monitor.add_event(1)
+        await monitor.add_event(1)
 
 
-def test_stopped_raises_on_add_event():
+@pytest.mark.asyncio
+async def test_stopped_raises_on_add_event():
     """Test whether `add_event()` invoked after stopping the monitor raises error."""
 
     monitor: EventMonitor[int] = EventMonitor()
 
     monitor.start()
-    monitor.stop()
+    await monitor.stop()
 
     with pytest.raises(RuntimeError):
-        monitor.add_event(1)
+        await monitor.add_event(1)
