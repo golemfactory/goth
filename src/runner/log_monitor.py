@@ -46,7 +46,6 @@ class LogEvent(APIEvent):
                 self._level = LogLevel[result["level"]]
                 self._module = result["module"]
                 self._message = result["message"]
-        re.purge()
         if not self._timestamp:
             self._timestamp = time.time()
 

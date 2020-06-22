@@ -61,9 +61,9 @@ def assert_message_starts_with(needle: str):
         async for event in stream:
 
             if isinstance(event, LogEvent):
-                has_match = pattern.match(event.message)
+                match = pattern.match(event.message)
                 pattern.purge()
-                if has_match:
+                if match:
                     return True
 
         return False
