@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
 from itertools import chain
@@ -46,13 +47,17 @@ class Runner:
         self._run_nodes(scenario)
         try:
             for step, role in scenario.steps:
+                # Collect awaitables to execute them at the same time
+                awaitables = []
                 for probe in self.probes[role]:
                     self.logger.debug(
                         "running step. probe=%s, role=%s, step=%s", probe, role, step
                     )
                     result = step(probe=probe)
                     if result:
-                        await result
+                        awaitables.append(result)
+                if awaitables:
+                    await asyncio.gather(*awaitables, return_exceptions=True)
         finally:
             for probe in chain.from_iterable(self.probes.values()):
                 self.logger.info("stopping probe. name=%s", probe.name)

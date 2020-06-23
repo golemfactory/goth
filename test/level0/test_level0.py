@@ -52,13 +52,13 @@ def assert_message_starts_with(needle: str):
     """Prepare an assertion that:
     Assert that a `LogEvent` with message starts with {needle} is found."""
 
-    pattern = re.compile(r"^" + needle)
+    # No need to add ^ in the regexp since .match( searches from the start
+    pattern = re.compile(needle)
 
     async def _assert_starts_with(stream: LogEvents):
 
         async for event in stream:
             match = pattern.match(event.message)
-            pattern.purge()
             if match:
                 return True
 
