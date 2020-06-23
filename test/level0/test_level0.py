@@ -14,7 +14,7 @@ from src.runner.log_monitor import LogEvent
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
 
-APIEvents = EventStream[LogEvent]
+LogEvents = EventStream[LogEvent]
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def assert_message_starts_with(needle: str):
 
     pattern = re.compile(r"^" + needle)
 
-    async def _assert_starts_with(stream: APIEvents):
+    async def _assert_starts_with(stream: LogEvents):
 
         async for event in stream:
             match = pattern.match(event.message)
