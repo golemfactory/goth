@@ -3,11 +3,9 @@ This module defines an event monitor class that registers events and checks
 whether temporal assertions are satisfied.
 """
 
-# from __future__ import annotations
 import asyncio
 import importlib
 import logging
-import threading
 from typing import Generic, List, Optional, Sequence
 
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
@@ -31,7 +29,7 @@ class EventMonitor(Generic[E]):
     _events: List[E]
     """List of events registered so far"""
 
-    _worker_thread: asyncio.Task
+    _worker_task: asyncio.Task
     """A worker task that registers events and checks assertions"""
 
     _incoming: "asyncio.Queue[Optional[E]]"
@@ -41,7 +39,7 @@ class EventMonitor(Generic[E]):
         self._events = []
         self._incoming = asyncio.Queue()
         self.assertions = []
-        self._worker_thread = None
+        self._worker_task = None
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
@@ -53,10 +51,6 @@ class EventMonitor(Generic[E]):
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
 
-        # We cannot instantiate `Assertion` objects here, since they will be
-        # running in an asyncio event loop associated with another thread
-        # (the worker thread). Hence we store the coroutine functions now and
-        # create `Assertion` objects for them later on in the worker thread.
         logger.info("Loading assertions from module '%s'", module_name)
         mod = importlib.import_module(module_name)
         assert mod is not None
@@ -65,37 +59,32 @@ class EventMonitor(Generic[E]):
     def start(self) -> None:
         """Start tracing events."""
 
-        self._worker_thread = asyncio.create_task(self._run_worker())
+        self._worker_task = asyncio.create_task(self._run_worker())
 
-    async def add_event(self, event: E) -> None:
+    def add_event(self, event: E) -> None:
         """Register a new event."""
 
-        if self.is_running():
-            await self._incoming.put(event)
-        else:
+        if not self.is_running():
             raise RuntimeError("Monitor is not running")
 
-    def schedule_add_event(self, event: E) -> None:
-        """Schedule a task that adds `event` to this monitor."""
-
-        asyncio.create_task(self.add_event(event))
+        self._incoming.put_nowait(event)
 
     async def stop(self) -> None:
         """Stop tracing events."""
 
         if self.is_running():
-            # This will eventually terminate the worker thread:
-            await self._incoming.put(None)
-            await self._worker_thread
-            self._worker_thread = None
+            # This will eventually terminate the worker task:
+            self._incoming.put_nowait(None)
+            await self._worker_task
+            self._worker_task = None
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
 
-        return self._worker_thread and not self._worker_thread.done()
+        return self._worker_task and not self._worker_task.done()
 
     def __del__(self) -> None:
-        asyncio.ensure_future(self.stop())
+        asyncio.create_task(self.stop())
 
     def __len__(self) -> int:
         """Return the number of registered events."""
