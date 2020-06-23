@@ -1,0 +1,32 @@
+name: unit-test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  unit:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+    
+      - name: Run setuptools
+        run: python setup.py develop
+
+      - name: Print installed package versions
+        run: pip freeze
+
+      - name: Run unit tests
+        run: python -m pytest test/runner -svx
