@@ -123,4 +123,4 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
                 event = LogEvent(line)
                 logger.debug("[%s] event=%s", self.logger.name, event)
-                self._incoming.put_nowait(event)
+                self.add_event(event)

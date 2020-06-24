@@ -4,6 +4,7 @@ whether temporal assertions are satisfied.
 """
 
 import asyncio
+from datetime import datetime, timedelta
 import importlib
 import logging
 from typing import Generic, List, Optional, Sequence
@@ -66,7 +67,6 @@ class EventMonitor(Generic[E]):
 
         self._incoming.put_nowait(event)
 
-
     async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
         """Sleep until all assertions are done or the timeout passed."""
 
@@ -99,7 +99,8 @@ class EventMonitor(Generic[E]):
         return self._worker_task and not self._worker_task.done()
 
     def __del__(self) -> None:
-        asyncio.create_task(self.stop())
+        if self.is_running():
+            asyncio.create_task(self.stop())
 
     def __len__(self) -> int:
         """Return the number of registered events."""

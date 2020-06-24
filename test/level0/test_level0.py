@@ -67,6 +67,12 @@ def assert_message_starts_with(needle: str):
     return _assert_starts_with
 
 
+async def assert_message_starts_with_and_wait(probe, needle):
+
+    probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
+    await probe.agent_logs.await_assertions()
+
+
 VOLUMES = {
     Template("$assets_path"): "/asset",
     Template("$assets_path/presets.json"): "/presets.json",
@@ -132,10 +138,7 @@ class Level0Scenario(Scenario):
     ):
         logger.info("starting provider agent")
         probe.start_provider_agent(preset_name)
-        probe.agent_logs.add_assertions(
-            [assert_message_starts_with("Subscribed offer")]
-        )
-        await probe.agent_logs.await_assertions()
+        await assert_message_starts_with_and_wait(probe, "Subscribed offer")
 
     def start_requestor_agent(self, probe: Probe):
         logger.info("starting requestor agent")
@@ -143,46 +146,29 @@ class Level0Scenario(Scenario):
 
     async def wait_for_proposal_accepted(self, probe: Probe):
         logger.info("waiting for proposal to be accepted")
-        probe.agent_logs.add_assertions(
-            [assert_message_starts_with("Decided to AcceptProposal")]
-        )
-        await probe.agent_logs.await_assertions()
+        await assert_message_starts_with_and_wait(probe, "Decided to AcceptProposal")
         logger.info("proposal accepted")
 
     async def wait_for_agreement_approved(self, probe: Probe):
         logger.info("waiting for agreement to be approved")
-        probe.agent_logs.add_assertions(
-            [assert_message_starts_with("Decided to ApproveAgreement")]
-        )
-        await probe.agent_logs.await_assertions()
+        await assert_message_starts_with_and_wait(probe, "Decided to ApproveAgreement")
         logger.info("agreement approved")
 
     async def wait_for_exeunit_started(self, probe: Probe):
         logger.info("waiting for exe-unit to start")
-        probe.agent_logs.add_assertions(
-            [assert_message_starts_with(r"\[ExeUnit\](.+)Started$")]
-        )
-        await probe.agent_logs.await_assertions()
+        await assert_message_starts_with_and_wait(probe, r"\[ExeUnit\](.+)Started$")
         logger.info("exe-unit started")
 
     async def wait_for_exeunit_finished(self, probe: Probe):
         logger.info("waiting for exe-unit to finish")
-        probe.agent_logs.add_assertions(
-            [
-                assert_message_starts_with(
-                    "ExeUnit process exited with status Finished - exit code: 0"
-                )
-            ]
+        await assert_message_starts_with_and_wait(
+            probe, "ExeUnit process exited with status Finished - exit code: 0"
         )
-        await probe.agent_logs.await_assertions()
         logger.info("exe-unit finished")
 
     async def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
-        probe.agent_logs.add_assertions(
-            [assert_message_starts_with("Invoice (.+) sent")]
-        )
-        await probe.agent_logs.await_assertions()
+        await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
         logger.info("invoice sent")
 
 
