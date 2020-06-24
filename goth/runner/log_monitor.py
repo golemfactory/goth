@@ -6,8 +6,8 @@ import re
 import time
 from typing import Iterator, Optional
 
-from src.assertions.monitor import EventMonitor
-from src.runner.log import LogConfig
+from goth.assertions.monitor import EventMonitor
+from goth.runner.log import LogConfig
 
 logger = logging.getLogger(__name__)
 
