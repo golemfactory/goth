@@ -5,6 +5,8 @@ RUN apk add --no-cache nginx \
 
 COPY goth/assertions /goth/assertions
 
+COPY goth/address.py /goth/address.py
+
 COPY goth/api_monitor/*.py \
      goth/api_monitor/nginx.conf \
      goth/api_monitor/start-proxy.sh \
