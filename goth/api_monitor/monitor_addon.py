@@ -11,14 +11,14 @@ from typing import Dict, Optional
 import mitmproxy.ctx
 from mitmproxy.http import HTTPFlow, HTTPRequest
 
-from src.api_monitor.api_events import (
+from goth.api_monitor.api_events import (
     APIEvent,
     APIClockTick,
     APIRequest,
     APIResponse,
     APIError,
 )
-from src.assertions.monitor import EventMonitor
+from goth.assertions.monitor import EventMonitor
 
 
 logging.basicConfig(

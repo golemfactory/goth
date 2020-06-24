@@ -1,7 +1,7 @@
 """Common assertions related to API calls"""
 from typing import Set
 
-from src.api_monitor.api_events import (
+from goth.api_monitor.api_events import (
     APIEvent,
     APIClockTick,
     APIError,
@@ -9,7 +9,7 @@ from src.api_monitor.api_events import (
     APIResponse,
 )
 
-from src.assertions import EventStream, TemporalAssertionError
+from goth.assertions import EventStream, TemporalAssertionError
 
 
 APIEvents = EventStream[APIEvent]

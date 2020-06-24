@@ -38,7 +38,7 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "src.runner": {"handlers": ["console", "runner_file"], "propagate": False},
+        "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
     },

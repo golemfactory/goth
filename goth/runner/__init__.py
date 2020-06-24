@@ -8,10 +8,10 @@ from typing import Dict, List, Optional
 
 import docker
 
-from src.runner.log import configure_logging, LogConfig
-from src.runner.probe import Probe, Role
-from src.runner.container.proxy import ProxyContainer, ProxyContainerConfig
-from src.runner.container.yagna import YagnaContainerConfig
+from goth.runner.log import configure_logging, LogConfig
+from goth.runner.probe import Probe, Role
+from goth.runner.container.proxy import ProxyContainer, ProxyContainerConfig
+from goth.runner.container.yagna import YagnaContainerConfig
 
 
 class Runner:

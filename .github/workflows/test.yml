@@ -21,7 +21,7 @@ jobs:
       - name: Build the docker-compose stack
         env:
           GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
-        run: docker-compose -f src/docker/docker-compose.yml up -d
+        run: docker-compose -f docker/docker-compose.yml up -d
 
       - name: Configure python 3.7
         uses: actions/setup-python@v1
@@ -47,7 +47,7 @@ jobs:
         run: python -m pytest test/assertions test/runner -svx
 
       - name: Run test suite
-        run: python -m pytest test/level0 -svx --log-cli-level=DEBUG --assets-path test/level0/asset
+        run: python -m pytest test/level0 -svx --log-cli-level=DEBUG
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2

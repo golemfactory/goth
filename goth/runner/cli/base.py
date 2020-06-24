@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 
 from docker.models.containers import ExecResult
 
-from src.runner.exceptions import CommandError
+from goth.runner.exceptions import CommandError
 
 if TYPE_CHECKING:
-    from src.runner.container import DockerContainer
+    from goth.runner.container import DockerContainer
 
 
 logger = logging.getLogger(__name__)

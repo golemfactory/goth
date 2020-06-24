@@ -5,11 +5,11 @@ from typing import Optional
 
 from docker import DockerClient
 
-from src.runner.cli import Cli
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from src.runner.exceptions import KeyAlreadyExistsError
-from src.runner.log import LogConfig
-from src.runner.log_monitor import LogEventMonitor
+from goth.runner.cli import Cli
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.exceptions import KeyAlreadyExistsError
+from goth.runner.log import LogConfig
+from goth.runner.log_monitor import LogEventMonitor
 
 
 logger = logging.getLogger(__name__)

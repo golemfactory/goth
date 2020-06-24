@@ -2,7 +2,7 @@
 
 from typing import Callable, Optional, TypeVar, TYPE_CHECKING
 
-from src.assertions import EventStream
+from goth.assertions import EventStream
 
 
 if TYPE_CHECKING:

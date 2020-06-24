@@ -5,8 +5,8 @@ from typing import Optional
 import docker
 import pytest
 
-from src.runner.container.proxy import ProxyContainer
-from src.runner.log import DEFAULT_LOG_DIR
+from goth.runner.container.proxy import ProxyContainer
+from goth.runner.log import DEFAULT_LOG_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def project_root() -> Path:
     return Path(__file__).parent.parent.resolve()
 
 
-API_MONITOR_DOCKERFILE = "src/docker/api-monitor.Dockerfile"
+API_MONITOR_DOCKERFILE = "docker/api-monitor.Dockerfile"
 """Dockerfile path relative to project root"""
 
 

@@ -1,11 +1,11 @@
 """Assertions related to API calls in Level 0 test scenario"""
 from typing import Optional, Sequence
 
-from src.api_monitor.api_events import APIEvent, APIRequest
-import src.api_monitor.api_events as api
+from goth.api_monitor.api_events import APIEvent, APIRequest
+import goth.api_monitor.api_events as api
 
-from src.assertions import AssertionFunction, TemporalAssertionError, logger
-from src.assertions.operators import eventually
+from goth.assertions import AssertionFunction, TemporalAssertionError, logger
+from goth.assertions.operators import eventually
 
 from .common_assertions import (
     APIEvents,

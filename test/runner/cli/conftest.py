@@ -5,10 +5,10 @@ import time
 import docker
 import pytest
 
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from src.runner.exceptions import CommandError
-from src.runner.log import LogConfig
-from src.runner.probe import Role
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.exceptions import CommandError
+from goth.runner.log import LogConfig
+from goth.runner.probe import Role
 
 
 @pytest.fixture

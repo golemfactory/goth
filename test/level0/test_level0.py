@@ -6,13 +6,13 @@ from typing import Dict, Optional
 
 import pytest
 
-from src.assertions import EventStream
-from src.runner import Runner
-from src.runner.container.proxy import ProxyContainerConfig
-from src.runner.container.yagna import YagnaContainerConfig
-from src.runner.log_monitor import LogEvent
-from src.runner.probe import Probe, Role
-from src.runner.scenario import Scenario
+from goth.assertions import EventStream
+from goth.runner import Runner
+from goth.runner.container.proxy import ProxyContainerConfig
+from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.log_monitor import LogEvent
+from goth.runner.probe import Probe, Role
+from goth.runner.scenario import Scenario
 
 LogEvents = EventStream[LogEvent]
 

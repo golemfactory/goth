@@ -4,8 +4,8 @@ from typing import Dict, Optional
 
 from docker import DockerClient
 
-from src.runner.container import DockerContainer, DockerContainerConfig
-from src.runner.log import LogConfig
+from goth.runner.container import DockerContainer, DockerContainerConfig
+from goth.runner.log import LogConfig
 
 
 class ProxyContainerConfig(DockerContainerConfig):

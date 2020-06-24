@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from src.runner.cli import Cli
+from goth.runner.cli import Cli
 
 
 def test_payment_init(yagna_container):

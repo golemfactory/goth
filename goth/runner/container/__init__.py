@@ -8,8 +8,8 @@ from docker import DockerClient
 from docker.models.containers import Container
 from transitions import Machine
 
-from src.runner.log import LogConfig
-from src.runner.log_monitor import LogEventMonitor
+from goth.runner.log import LogConfig
+from goth.runner.log_monitor import LogEventMonitor
 
 
 @dataclass

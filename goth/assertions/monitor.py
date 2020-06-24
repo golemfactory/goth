@@ -9,7 +9,7 @@ import importlib
 import logging
 from typing import Generic, List, Optional, Sequence
 
-from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
+from goth.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
 logger = logging.getLogger(__name__)
 
