@@ -1,15 +1,20 @@
 import logging
 from pathlib import Path
-import pytest
 import re
 from string import Template
 from typing import Dict, Optional
 
+import pytest
+
+from src.assertions import EventStream
 from src.runner import Runner
 from src.runner.container.proxy import ProxyContainerConfig
 from src.runner.container.yagna import YagnaContainerConfig
+from src.runner.log_monitor import LogEvent
 from src.runner.probe import Probe, Role
 from src.runner.scenario import Scenario
+
+LogEvents = EventStream[LogEvent]
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +48,36 @@ def node_environment(
     return node_env
 
 
+def assert_message_starts_with(needle: str):
+    """Prepare an assertion that:
+    Assert that a `LogEvent` with message starts with {needle} is found."""
+
+    # No need to add ^ in the regexp since .match( searches from the start
+    pattern = re.compile(needle)
+
+    async def _assert_starts_with(stream: LogEvents):
+
+        async for event in stream:
+            match = pattern.match(event.message)
+            if match:
+                return True
+
+        raise AssertionError(f"No message starts with '{needle}'")
+
+    return _assert_starts_with
+
+
+async def assert_message_starts_with_and_wait(probe, needle):
+
+    probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
+    await probe.agent_logs.await_assertions()
+
+
 VOLUMES = {
     Template("$assets_path"): "/asset",
     Template("$assets_path/presets.json"): "/presets.json",
 }
+
 
 PROXY_VOLUMES = {
     Template("$assets_path/assertions"): "/assertions",
@@ -107,9 +138,7 @@ class Level0Scenario(Scenario):
     ):
         logger.info("starting provider agent")
         probe.start_provider_agent(preset_name)
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Subscribed offer.(.+)$")
-        )
+        await assert_message_starts_with_and_wait(probe, "Subscribed offer")
 
     def start_requestor_agent(self, probe: Probe):
         logger.info("starting requestor agent")
@@ -117,37 +146,29 @@ class Level0Scenario(Scenario):
 
     async def wait_for_proposal_accepted(self, probe: Probe):
         logger.info("waiting for proposal to be accepted")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Decided to AcceptProposal(.+)$")
-        )
+        await assert_message_starts_with_and_wait(probe, "Decided to AcceptProposal")
         logger.info("proposal accepted")
 
     async def wait_for_agreement_approved(self, probe: Probe):
         logger.info("waiting for agreement to be approved")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(r"^(.+)Decided to ApproveAgreement(.+)$")
-        )
+        await assert_message_starts_with_and_wait(probe, "Decided to ApproveAgreement")
         logger.info("agreement approved")
 
     async def wait_for_exeunit_started(self, probe: Probe):
         logger.info("waiting for exe-unit to start")
-        await probe.agent_logs.wait_for_pattern(re.compile(r"^\[ExeUnit\](.+)Started$"))
+        await assert_message_starts_with_and_wait(probe, r"\[ExeUnit\](.+)Started$")
         logger.info("exe-unit started")
 
     async def wait_for_exeunit_finished(self, probe: Probe):
         logger.info("waiting for exe-unit to finish")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(
-                r"^(.+)ExeUnit process exited with status Finished - exit code: 0(.+)$"
-            )
+        await assert_message_starts_with_and_wait(
+            probe, "ExeUnit process exited with status Finished - exit code: 0"
         )
         logger.info("exe-unit finished")
 
     async def wait_for_invoice_sent(self, probe: Probe):
         logger.info("waiting for invoice to be sent")
-        await probe.agent_logs.wait_for_pattern(
-            re.compile(re.compile(r"^(.+)Invoice (.+) sent(.+)$"))
-        )
+        await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
         logger.info("invoice sent")
 
 

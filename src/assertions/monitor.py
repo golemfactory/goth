@@ -4,15 +4,13 @@ whether temporal assertions are satisfied.
 """
 
 import asyncio
+from datetime import datetime, timedelta
 import importlib
 import logging
 from typing import Generic, List, Optional, Sequence
 
 from src.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s [%(name)s] %(message)s", level=logging.DEBUG,
-)
 logger = logging.getLogger(__name__)
 
 
@@ -69,14 +67,31 @@ class EventMonitor(Generic[E]):
 
         self._incoming.put_nowait(event)
 
+    async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
+        """Sleep until all assertions are done or the timeout passed."""
+
+        if not self.is_running():
+            raise RuntimeError("Monitor is not running")
+
+        deadline = datetime.now() + timeout
+
+        while not self.finished:
+            if deadline < datetime.now():
+                raise TimeoutError
+            await asyncio.sleep(0.1)
+
     async def stop(self) -> None:
         """Stop tracing events."""
 
         if self.is_running():
-            # This will eventually terminate the worker task:
+            # This will eventually terminate the worker thread:
             self._incoming.put_nowait(None)
             await self._worker_task
             self._worker_task = None
+        if not self.finished:
+            logger.error("Monitor stopped before it was finished")
+        else:
+            logger.warning("Monitor already stopped")
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
@@ -84,7 +99,8 @@ class EventMonitor(Generic[E]):
         return self._worker_task and not self._worker_task.done()
 
     def __del__(self) -> None:
-        asyncio.create_task(self.stop())
+        if self.is_running():
+            asyncio.create_task(self.stop())
 
     def __len__(self) -> int:
         """Return the number of registered events."""
@@ -93,10 +109,6 @@ class EventMonitor(Generic[E]):
 
     async def _run_worker(self) -> None:
         """In a loop, register the incoming events and check the assertions."""
-
-        for a in self.assertions:
-            logger.debug("Starting assertion '%s'", a.name)
-            a.start()
 
         events_ended = False
 
