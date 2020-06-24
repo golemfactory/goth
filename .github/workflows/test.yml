@@ -44,7 +44,7 @@ jobs:
         run: docker ps
 
       - name: Run unit tests
-        run: python -m pytest test/runner -svx
+        run: python -m pytest test/assertions test/runner -svx
 
       - name: Run test suite
         run: python -m pytest test/level0 -svx --log-cli-level=DEBUG
