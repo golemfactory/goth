@@ -42,9 +42,10 @@ class EventMonitor(Generic[E]):
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
 
-        self.assertions.extend(
-            Assertion(self._events, func) for func in assertion_funcs
-        )
+        for func in assertion_funcs:
+            assertion = Assertion(self._events, func)
+            assertion.start()
+            self.assertions.append(assertion)
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -58,6 +59,7 @@ class EventMonitor(Generic[E]):
         """Start tracing events."""
 
         self._worker_task = asyncio.create_task(self._run_worker())
+        logger.info("Monitor started")
 
     def add_event(self, event: E) -> None:
         """Register a new event."""
