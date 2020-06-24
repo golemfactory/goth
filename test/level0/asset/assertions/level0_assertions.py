@@ -2,7 +2,7 @@
 from typing import Optional, Sequence
 
 from goth.api_monitor.api_events import APIEvent, APIRequest
-import api_monitor.api_events as api
+import goth.api_monitor.api_events as api
 
 from goth.assertions import AssertionFunction, TemporalAssertionError, logger
 from goth.assertions.operators import eventually
