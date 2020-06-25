@@ -21,17 +21,20 @@ GENERIC_NAME = "generic_container"
 
 YAGNA_CONTAINER_NAME = "yagna_container"
 
+
 @pytest.fixture
 def mock_container():
     mock_container = MagicMock(spec=Container)
     mock_container.status = "created"
     return mock_container
 
+
 @pytest.fixture
 def mock_docker_client(mock_container):
     client = MagicMock(spec=DockerClient)
     client.containers.create.return_value = mock_container
     return client
+
 
 @pytest.fixture
 def docker_container(mock_docker_client):
@@ -43,6 +46,7 @@ def docker_container(mock_docker_client):
         image=GENERIC_IMAGE,
         name=GENERIC_NAME,
     )
+
 
 @pytest.fixture
 def yagna_container():
