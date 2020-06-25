@@ -62,12 +62,22 @@ API_MONITOR_DOCKERFILE = "docker/api-monitor.Dockerfile"
 
 
 @pytest.fixture()
-def api_monitor_image(project_root):
+def api_monitor_image(project_root, request):
     """A fixture that (re)builds docker image for API Monitor"""
+
+    # Assume the assertions can be found in "asset/assertions/",
+    # relative to the directory of the test module that requests this fixture
+    assertions_path = Path(request.fspath.dirname) / "asset" / "assertions"
+    relative_assertions_path = assertions_path.relative_to(project_root)
+    logger.info(
+        "Building docker image '%s', assertions path: '%s' ...",
+        ProxyContainer.IMAGE,
+        assertions_path,
+    )
 
     client = docker.from_env()
 
-    logger.info("Building docker image `%s`...", ProxyContainer.IMAGE)
+    buildargs = {"ASSERTIONS_PATH": str(relative_assertions_path)}
 
     image, logs = client.images.build(
         path=str(project_root),
@@ -75,6 +85,7 @@ def api_monitor_image(project_root):
         tag=ProxyContainer.IMAGE,
         nocache=False,
         rm=True,
+        buildargs=buildargs,
     )
 
     image_id = None
