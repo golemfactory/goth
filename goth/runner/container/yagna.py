@@ -40,8 +40,11 @@ class YagnaContainer(DockerContainer):
     ENTRYPOINT = "/usr/bin/yagna"
     IMAGE = "yagna"
 
-    # Keeps track of assigned ports on the Docker host
+    ports: Dict[int, int] = {}
+    """ Port mapping between the Docker host and the container.
+        Keys are container port numbers, values are host port numbers. """
     _port_offset = 0
+    """ Keeps track of assigned ports on the Docker host """
 
     def __init__(
         self,
@@ -51,7 +54,6 @@ class YagnaContainer(DockerContainer):
         assets_path: Optional[Path] = None,
         **kwargs,
     ):
-        self.environment = config.environment
         self.ports = {
             YAGNA_REST_PORT: YagnaContainer.host_http_port(),
             YAGNA_BUS_PORT: YagnaContainer.host_bus_port(),
@@ -62,7 +64,7 @@ class YagnaContainer(DockerContainer):
             client=client,
             command=self.COMMAND,
             entrypoint=self.ENTRYPOINT,
-            environment=self.environment,
+            environment=config.environment,
             image=self.IMAGE,
             log_config=log_config,
             name=config.name,
