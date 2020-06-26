@@ -42,7 +42,28 @@ class Runner:
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
 
+    def check_assertion_errors(self) -> None:
+        """If any monitor reports an assertion error, raise the first error"""
+
+        probes = chain.from_iterable(self.probes.values())
+        monitors = chain.from_iterable(
+            (
+                (probe.container.logs for probe in probes),
+                (probe.agent_logs for probe in probes),
+                (proxy.logs for proxy in self.proxies),
+            )
+        )
+        failed = chain.from_iterable(
+            monitor.failed for monitor in monitors if monitor is not None
+        )
+        for assertion in failed:
+            # We assumme all failed assertions were already reported
+            # in their corresponding log files. Now we only need to raise
+            # one of them to break the execution.
+            raise assertion.result
+
     async def run_scenario(self, scenario):
+
         self.logger.info("running scenario %s", type(scenario).__name__)
         self._run_nodes(scenario)
         try:
@@ -58,10 +79,19 @@ class Runner:
                         awaitables.append(result)
                 if awaitables:
                     await asyncio.gather(*awaitables, return_exceptions=True)
+
+                self.check_assertion_errors()
+
+            # TODO:
+            # at this point we have to notify the proxies that the test is finished
+            # so that they evaluate the assertions at the end of events,
+            # and check for proxy errors one more time.
+
         finally:
             for probe in chain.from_iterable(self.probes.values()):
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
+
             for proxy in self.proxies:
                 proxy.remove(force=True)
                 if proxy.log_config:

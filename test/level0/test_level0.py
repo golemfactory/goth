@@ -88,9 +88,7 @@ class Level0Scenario(Scenario):
     @property
     def topology(self):
         return [
-            ProxyContainerConfig(
-                name="proxy", stop_on_error=True, volumes=PROXY_VOLUMES
-            ),
+            ProxyContainerConfig(name="proxy", volumes=PROXY_VOLUMES),
             YagnaContainerConfig(
                 name="requestor",
                 role=Role.requestor,

@@ -61,7 +61,7 @@ class AssertionFailureMessage(AssertionMessage):
         )
 
 
-msg_classes = {
+_msg_classes = {
     cls.__name__: cls
     for cls in (AssertionFailureMessage, AssertionStartMessage, AssertionSuccessMessage)
 }
@@ -75,7 +75,7 @@ def parse_assertion_message(text: str) -> Optional[AssertionMessage]:
     try:
         msg_dict = json.loads(text)
         fields = msg_dict["fields"]
-        cls = msg_classes[msg_dict["type"]]
+        cls = _msg_classes[msg_dict["type"]]
         return cls(**fields)
     except (json.decoder.JSONDecodeError, KeyError, TypeError):
         return None
