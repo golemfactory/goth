@@ -1,13 +1,13 @@
 """Assertion-related messages: utils for printing, parsing and JSON-enconding"""
 
-from abc import abstractmethod
+from abc import ABC
 from dataclasses import dataclass, asdict
 import json
 from typing import Optional
 
 
 @dataclass(frozen=True)
-class AssertionMessage:
+class AssertionMessage(ABC):
     """Abstract base class for assertion messages"""
 
     assertion: str
@@ -16,9 +16,11 @@ class AssertionMessage:
     event_description: str
     """Description of the event to which this message refers, if any"""
 
-    @abstractmethod
-    def pretty(self) -> str:
-        """Return a human-readable description of this message."""
+    def as_json(self) -> str:
+        """Encode `msg` as a dictionary and format it as a JSON string."""
+
+        msg_dict = {"type": self.__class__.__name__, "fields": asdict(self)}
+        return json.dumps(msg_dict)
 
 
 @dataclass(frozen=True)
@@ -27,7 +29,7 @@ class AssertionStartMessage(AssertionMessage):
 
     event_description: str = "assertion started"
 
-    def pretty(self) -> str:
+    def __str__(self) -> str:
         return f"Assertion {self.assertion} started"
 
 
@@ -38,7 +40,7 @@ class AssertionSuccessMessage(AssertionMessage):
     result: str
     """Assertion result"""
 
-    def pretty(self) -> str:
+    def __str__(self) -> str:
         return (
             f"Assertion {self.assertion} succeeded after {self.event_description}"
             f", result: {self.result}"
@@ -52,18 +54,11 @@ class AssertionFailureMessage(AssertionMessage):
     cause: str
     """Cause of the failure"""
 
-    def pretty(self) -> str:
+    def __str__(self) -> str:
         return (
             f"Assertion {self.assertion} failed after {self.event_description}"
             f", cause: {self.cause}"
         )
-
-
-def format_assertion_message(msg: AssertionMessage) -> str:
-    """Encode `msg` as a dictionary and format it as JSON string."""
-
-    msg_dict = {"type": msg.__class__.__name__, "fields": asdict(msg)}
-    return json.dumps(msg_dict)
 
 
 msg_classes = {

@@ -14,7 +14,6 @@ from goth.assertions.messages import (
     AssertionFailureMessage,
     AssertionStartMessage,
     AssertionSuccessMessage,
-    format_assertion_message,
 )
 
 logger = logging.getLogger(__name__)
@@ -57,9 +56,9 @@ class EventMonitor(Generic[E]):
             assertion.start()
             self.assertions.append(assertion)
             msg = AssertionStartMessage(assertion.name)
-            logger.info(msg.pretty())
+            logger.info("%s", msg)
             if self._messages_file:
-                self._messages_file.write(format_assertion_message(msg) + "\n")
+                self._messages_file.write(msg.as_json() + "\n")
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -159,15 +158,15 @@ class EventMonitor(Generic[E]):
 
             if a.accepted:
                 success = AssertionSuccessMessage(a.name, event_descr, str(a.result))
-                logger.info(success.pretty())
+                logger.info("%s", success)
                 if self._messages_file:
-                    self._messages_file.write(format_assertion_message(success) + "\n")
+                    self._messages_file.write(success.as_json() + "\n")
 
             elif a.failed:
                 failure = AssertionFailureMessage(a.name, event_descr, str(a.result))
-                logger.error(failure.pretty())
+                logger.error("%s", failure)
                 if self._messages_file:
-                    self._messages_file.write(format_assertion_message(failure) + "\n")
+                    self._messages_file.write(failure.as_json() + "\n")
 
             # Ensure other tasks can also run between assertions
             await asyncio.sleep(0)
