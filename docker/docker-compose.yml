@@ -10,9 +10,21 @@ services:
             args:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
         entrypoint: /usr/bin/ya_sb_router
-        command: ["-l", "tcp://0.0.0.0:7477"]     
+        command: ["-l", "tcp://0.0.0.0:7477"]
 
     mock-api:
         image: golemfactory/golem-client-mock:0.1.2
         ports:
             - "5001:5001"
+
+    proxy:
+        image: proxy
+        build:
+            context: ../
+            dockerfile: docker/proxy.Dockerfile
+
+networks:
+    default:
+        ipam:
+            config:
+                - subnet: 172.19.0.0/16

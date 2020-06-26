@@ -96,6 +96,11 @@ class Assertion(AsyncIterable[E]):
         return f"Assertion '{self.name}' ({status})"
 
     @property
+    def started(self) -> bool:
+
+        return self._task is not None
+
+    @property
     def done(self) -> bool:
         """Return `True` iff this assertion finished execution."""
 
@@ -105,21 +110,13 @@ class Assertion(AsyncIterable[E]):
     def accepted(self) -> bool:
         """Return `True` iff this assertion finished execution successfuly."""
 
-        return (
-            self._task is not None
-            and self._task.done()
-            and self._task.exception() is None
-        )
+        return self.started and self._task.done() and self._task.exception() is None
 
     @property
     def failed(self) -> bool:
         """Return `True` iff this assertion finished execution by failing."""
 
-        return (
-            self._task is not None
-            and self._task.done()
-            and self._task.exception() is not None
-        )
+        return self.started and self._task.done() and self._task.exception() is not None
 
     @property
     def result(self) -> Any:
@@ -128,7 +125,7 @@ class Assertion(AsyncIterable[E]):
         thrown on failure, or `None` if the assertion haven't finished yet.
         """
 
-        if self._task is None:
+        if not self.started:
             raise asyncio.InvalidStateError("Assertion not started")
 
         if self._task.done():

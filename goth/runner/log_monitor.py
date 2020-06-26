@@ -113,14 +113,16 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             self.logger,
         )
 
+    def _log_line(self, line: str) -> None:
+        self.logger.info(line)
+
     def _buffer_input(self):
         logger.debug("Start reading input. name=%s", self.logger.name)
 
         for chunk in self.in_stream:
             chunk = chunk.decode()
             for line in chunk.splitlines():
-                self.logger.info(line)
-
+                self._log_line(line)
                 event = LogEvent(line)
                 logger.debug("[%s] event=%s", self.logger.name, event)
                 self.add_event(event)

@@ -5,7 +5,7 @@ from typing import Optional
 
 from docker import DockerClient
 
-from goth.runner.cli import Cli
+from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
@@ -21,6 +21,12 @@ class Role(Enum):
 
 
 class Probe:
+
+    container: YagnaContainer
+    cli: YagnaDockerCli
+    role: Role
+    agent_logs: Optional[LogEventMonitor]
+
     def __init__(
         self,
         client: DockerClient,
@@ -31,8 +37,7 @@ class Probe:
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
         self.role = config.role
-
-        self.agent_logs: LogEventMonitor
+        self.agent_logs = None
 
     def __str__(self):
         return self.name
