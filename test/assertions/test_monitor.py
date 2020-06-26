@@ -1,6 +1,15 @@
+import asyncio
+from unittest import mock
+
 import pytest
 
 from goth.assertions import EventStream
+from goth.assertions.messages import (
+    AssertionFailureMessage,
+    AssertionStartMessage,
+    AssertionSuccessMessage,
+    parse_assertion_message,
+)
 from goth.assertions.monitor import EventMonitor
 
 
@@ -29,7 +38,7 @@ async def assert_eventually_five(stream: Events) -> None:
         if e == 5:
             return  # success!
 
-    assert False, "Events ended"
+    raise AssertionError("Events ended")
 
 
 async def assert_eventually_even(stream: Events) -> int:
@@ -38,7 +47,7 @@ async def assert_eventually_even(stream: Events) -> int:
         if e % 2 == 0:
             return e
 
-    assert False, "Events ended"
+    raise AssertionError("Events ended")
 
 
 async def assert_eventually_greater(n: int, stream: Events) -> int:
@@ -47,7 +56,7 @@ async def assert_eventually_greater(n: int, stream: Events) -> int:
         if e > n:
             return e
 
-    assert False, "Events ended"
+    raise AssertionError("Events ended")
 
 
 async def assert_fancy_property(stream: Events) -> int:
@@ -105,3 +114,58 @@ async def test_stopped_raises_on_add_event():
 
     with pytest.raises(RuntimeError):
         monitor.add_event(1)
+
+
+@pytest.mark.asyncio
+async def test_monitor_messages():
+    """Test if a monitor outputs correct assertion messages"""
+
+    messages = []
+
+    mock_file = mock.MagicMock()
+    mock_file.write = messages.append
+
+    def _check_message(msg, msg_class, func):
+        assert isinstance(msg, msg_class)
+        assert msg.assertion == f"{func.__module__}.{func.__name__}"
+
+    monitor: EventMonitor[int] = EventMonitor(messages_file=mock_file)
+
+    assertions = [
+        assert_increasing,
+        assert_all_positive,
+        assert_eventually_five,
+        assert_eventually_even,
+    ]
+
+    monitor.add_assertions(assertions)
+
+    assert len(messages) == 4
+    parsed = [parse_assertion_message(msg) for msg in messages]
+    expected = [
+        AssertionStartMessage(f"{func.__module__}.{func.__name__}")
+        for func in assertions
+    ]
+    assert parsed == expected
+
+    monitor.start()
+
+    for n in [1, 3, 4, 6, 3, 8]:
+        monitor.add_event(n)
+        # Need this sleep to make sure the assertions consume the events
+        await asyncio.sleep(0.2)
+
+    assert len(messages) == 6
+    parsed = [parse_assertion_message(msg) for msg in messages[4:]]
+    assert len(parsed) == 2
+    _check_message(parsed[0], AssertionSuccessMessage, assert_eventually_even)
+    assert parsed[0].result == "4"
+    _check_message(parsed[1], AssertionFailureMessage, assert_increasing)
+
+    await monitor.stop()
+
+    assert len(messages) == 8
+    parsed = [parse_assertion_message(msg) for msg in messages[6:]]
+    assert len(parsed) == 2
+    _check_message(parsed[0], AssertionSuccessMessage, assert_all_positive)
+    _check_message(parsed[1], AssertionFailureMessage, assert_eventually_five)
