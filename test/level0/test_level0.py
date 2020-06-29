@@ -34,10 +34,10 @@ def node_environment(
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
     # Use custom base if given, default otherwise
-    market_template = {"base": market_url_base} if market_url_base else {}
+    market_template_params = {"base": market_url_base} if market_url_base else {}
 
     daemon_env = {
-        "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template),
+        "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template_params),
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
