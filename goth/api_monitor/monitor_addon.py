@@ -4,6 +4,7 @@ that the sequence of calls satifies given properties
 """
 from __future__ import annotations
 import logging
+import sys
 import threading
 import time
 from typing import Dict, Optional
@@ -77,7 +78,7 @@ class MonitorAddon:
     num_requests: int
 
     def __init__(self):
-        self.monitor = EventMonitor()
+        self.monitor = EventMonitor(messages_file=sys.stderr)
         self.pending_requests = {}
         self.num_requests = 0
 
@@ -106,7 +107,7 @@ class MonitorAddon:
         """Periodically emit `APIClockTick` event"""
 
         logger.debug("Timer thread started")
-        while not self.monitor.is_running():
+        while self.monitor.is_running():
             self.monitor.add_event(APIClockTick())
             time.sleep(1.0)
 

@@ -7,9 +7,14 @@ import asyncio
 from datetime import datetime, timedelta
 import importlib
 import logging
-from typing import Generic, List, Optional, Sequence
+from typing import Generic, List, Optional, Sequence, TextIO
 
-from goth.assertions import Assertion, AssertionFunction, E, logger as assertions_logger
+from goth.assertions import Assertion, AssertionFunction, E
+from goth.assertions.messages import (
+    AssertionFailureMessage,
+    AssertionStartMessage,
+    AssertionSuccessMessage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +29,24 @@ class EventMonitor(Generic[E]):
     assertions: List[Assertion[E]]
     """List of all assertions, active or finished"""
 
+    _messages_file: Optional[TextIO]
+    """A file for writing assertion messages"""
+
     _events: List[E]
     """List of events registered so far"""
 
-    _worker_task: asyncio.Task
+    _worker_task: Optional[asyncio.Task]
     """A worker task that registers events and checks assertions"""
 
     _incoming: "asyncio.Queue[Optional[E]]"
     """A queue used to pass the events to the worker task"""
 
-    def __init__(self) -> None:
+    def __init__(self, messages_file: Optional[TextIO] = None) -> None:
         self._events = []
         self._incoming = asyncio.Queue()
         self.assertions = []
         self._worker_task = None
+        self._messages_file = messages_file
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
@@ -46,6 +55,10 @@ class EventMonitor(Generic[E]):
             assertion = Assertion(self._events, func)
             assertion.start()
             self.assertions.append(assertion)
+            msg = AssertionStartMessage(assertion.name)
+            logger.info("%s", msg)
+            if self._messages_file:
+                self._messages_file.write(msg.as_json() + "\n")
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -85,20 +98,24 @@ class EventMonitor(Generic[E]):
     async def stop(self) -> None:
         """Stop tracing events."""
 
-        if self.is_running():
-            # This will eventually terminate the worker thread:
-            self._incoming.put_nowait(None)
-            await self._worker_task
-            self._worker_task = None
-        if not self.finished:
-            logger.error("Monitor stopped before it was finished")
-        else:
+        if not self.is_running():
             logger.warning("Monitor already stopped")
+            return
+
+        # This will eventually terminate the worker thread:
+        self._incoming.put_nowait(None)
+        assert self._worker_task
+        await self._worker_task
+        self._worker_task = None
+
+        if not self.finished:
+            # This may happen in case of ill-behaved assertions
+            logger.error("Monitor stopped before all assertions finished")
 
     def is_running(self) -> bool:
         """Return `True` iff the monitor is accepting events."""
 
-        return self._worker_task and not self._worker_task.done()
+        return self._worker_task is not None and not self._worker_task.done()
 
     def __del__(self) -> None:
         if self.is_running():
@@ -140,16 +157,17 @@ class EventMonitor(Generic[E]):
             await a.update_events(events_ended=events_ended)
 
             if a.accepted:
-                assertions_logger.info(
-                    "Assertion `%s` satisfied after %s, result: %s",
-                    a.name,
-                    event_descr,
-                    a.result,
-                )
+                success = AssertionSuccessMessage(a.name, event_descr, str(a.result))
+                logger.info("%s", success)
+                if self._messages_file:
+                    self._messages_file.write(success.as_json() + "\n")
+
             elif a.failed:
-                assertions_logger.error(
-                    "Assertion `%s` failed after %s: %s", a.name, event_descr, a.result
-                )
+                failure = AssertionFailureMessage(a.name, event_descr, str(a.result))
+                logger.error("%s", failure)
+                if self._messages_file:
+                    self._messages_file.write(failure.as_json() + "\n")
+
             # Ensure other tasks can also run between assertions
             await asyncio.sleep(0)
 

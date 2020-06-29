@@ -1,10 +1,11 @@
 """Assertions related to API calls in Level 0 test scenario"""
+import logging
 from typing import Optional, Sequence
 
 from goth.api_monitor.api_events import APIEvent, APIRequest
 import goth.api_monitor.api_events as api
 
-from goth.assertions import AssertionFunction, TemporalAssertionError, logger
+from goth.assertions import AssertionFunction, TemporalAssertionError
 from goth.assertions.operators import eventually
 
 from .common_assertions import (
@@ -13,6 +14,9 @@ from .common_assertions import (
     assert_clock_ticks,
     assert_every_request_gets_response,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 async def assert_first_request_is_import_key(stream: APIEvents) -> bool:
