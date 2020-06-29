@@ -5,6 +5,7 @@ information to request headers
 import logging
 
 from mitmproxy.http import HTTPFlow
+from goth.address import MARKET_HOST, MARKET_PORT, YAGNA_REST_PORT
 
 
 logging.basicConfig(
@@ -14,10 +15,6 @@ logging.basicConfig(
 # `mitmproxy` adds ugly prefix to add-on module names
 logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
 
-
-API_PORT = 5001
-API_HOST = "mock-api"
-YAGNA_PORT = 6000
 
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
@@ -43,17 +40,17 @@ class RouterAddon:
             remote_addr = req.headers["X-Remote-Addr"]
             node_num = remote_addr.rsplit(".", 1)[-1]
 
-            if server_port == API_PORT:
-                # It's a yagna daemon calling the mock API
-                req.host = API_HOST
-                req.port = API_PORT
+            if server_port == MARKET_PORT:
+                # It's a yagna daemon calling the central market API
+                req.host = MARKET_HOST
+                req.port = MARKET_PORT
                 req.headers[CALLER_HEADER] = f"Daemon-{node_num}"
                 req.headers[CALLEE_HEADER] = "MarketAPI"
 
-            elif server_port == YAGNA_PORT:
+            elif server_port == YAGNA_REST_PORT:
                 # It's an agent calling a yagna daemon
                 req.host = remote_addr
-                req.port = YAGNA_PORT
+                req.port = YAGNA_REST_PORT
                 req.headers[CALLER_HEADER] = f"Agent-{node_num}"
                 req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
 

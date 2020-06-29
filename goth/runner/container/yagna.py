@@ -3,6 +3,7 @@ from string import Template
 from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
+from goth.address import YAGNA_BUS_PORT, YAGNA_REST_PORT
 from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
@@ -52,8 +53,8 @@ class YagnaContainer(DockerContainer):
     ):
         self.environment = config.environment
         self.ports = {
-            YagnaContainer.HTTP_PORT: YagnaContainer.host_http_port(),
-            YagnaContainer.BUS_PORT: YagnaContainer.host_bus_port(),
+            YAGNA_REST_PORT: YagnaContainer.host_http_port(),
+            YAGNA_BUS_PORT: YagnaContainer.host_bus_port(),
         }
         YagnaContainer._port_offset += 1
 
@@ -72,8 +73,8 @@ class YagnaContainer(DockerContainer):
 
     @classmethod
     def host_http_port(cls):
-        return cls.HTTP_PORT + cls._port_offset
+        return YAGNA_REST_PORT + cls._port_offset
 
     @classmethod
     def host_bus_port(cls):
-        return cls.BUS_PORT + cls._port_offset
+        return YAGNA_BUS_PORT + cls._port_offset
