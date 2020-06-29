@@ -3,11 +3,11 @@ from string import Template
 from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
-from src.runner.container import DockerContainer, DockerContainerConfig
-from src.runner.log import LogConfig
+from goth.runner.container import DockerContainer, DockerContainerConfig
+from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
-    from src.runner.probe import Role
+    from goth.runner.probe import Role
 
 
 class YagnaContainerConfig(DockerContainerConfig):

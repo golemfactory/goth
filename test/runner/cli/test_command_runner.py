@@ -5,8 +5,8 @@ import shlex
 
 import pytest
 
-from src.runner.cli import DockerJSONCommandRunner
-from src.runner.exceptions import CommandError
+from goth.runner.cli import DockerJSONCommandRunner
+from goth.runner.exceptions import CommandError
 
 
 @pytest.mark.parametrize(

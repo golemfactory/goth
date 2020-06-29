@@ -13,11 +13,11 @@ import socket
 import struct
 import subprocess
 
-from src.runner.container import DockerContainer
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
-from src.runner.exceptions import CommandError, KeyAlreadyExistsError
-from src.runner.log import LogConfig
-from src.runner.probe import Role
+from goth.runner.container import DockerContainer
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
+from goth.runner.log import LogConfig
+from goth.runner.probe import Role
 
 GENERIC_COMMAND = ["cmd_name", "-f", "flag_value"]
 GENERIC_ENTRYPOINT = "/usr/bin/binary_name"

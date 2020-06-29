@@ -1,7 +1,7 @@
 import pytest
 
-from src.assertions import EventStream
-from src.assertions.monitor import EventMonitor
+from goth.assertions import EventStream
+from goth.assertions.monitor import EventMonitor
 
 
 # Events are just integers
@@ -73,7 +73,7 @@ async def test_assertions():
     monitor.start()
 
     for n in [1, 3, 4, 6, 3, 8, 9, 10]:
-        await monitor.add_event(n)
+        monitor.add_event(n)
 
     await monitor.stop()
 
@@ -91,7 +91,7 @@ async def test_not_started_raises_on_add_event():
     monitor: EventMonitor[int] = EventMonitor()
 
     with pytest.raises(RuntimeError):
-        await monitor.add_event(1)
+        monitor.add_event(1)
 
 
 @pytest.mark.asyncio
@@ -104,4 +104,4 @@ async def test_stopped_raises_on_add_event():
     await monitor.stop()
 
     with pytest.raises(RuntimeError):
-        await monitor.add_event(1)
+        monitor.add_event(1)

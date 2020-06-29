@@ -2,11 +2,11 @@
 
 from docker.models.containers import ExecResult
 
-from src.runner.cli.base import DockerJSONCommandRunner
-from src.runner.cli.yagna_app_key_cmd import YagnaAppKeyMixin
-from src.runner.cli.yagna_id_cmd import YagnaIdMixin
-from src.runner.cli.yagna_payment_cmd import YagnaPaymentMixin
-from src.runner.container import DockerContainer
+from goth.runner.cli.base import DockerJSONCommandRunner
+from goth.runner.cli.yagna_app_key_cmd import YagnaAppKeyMixin
+from goth.runner.cli.yagna_id_cmd import YagnaIdMixin
+from goth.runner.cli.yagna_payment_cmd import YagnaPaymentMixin
+from goth.runner.container import DockerContainer
 
 
 class YagnaDockerCli(

@@ -11,14 +11,14 @@ from typing import Dict, Optional
 import mitmproxy.ctx
 from mitmproxy.http import HTTPFlow, HTTPRequest
 
-from src.api_monitor.api_events import (
+from goth.api_monitor.api_events import (
     APIEvent,
     APIClockTick,
     APIRequest,
     APIResponse,
     APIError,
 )
-from src.assertions.monitor import EventMonitor
+from goth.assertions.monitor import EventMonitor
 
 
 logging.basicConfig(
@@ -95,7 +95,7 @@ class MonitorAddon:
         if assertions_module is not None:
             self.monitor.load_assertions(assertions_module)
         self.monitor.start()
-        self.monitor.schedule_add_event(APIClockTick())
+        self.monitor.add_event(APIClockTick())
 
         timer_thread = threading.Thread(
             target=self._timer, name="Timer thread", daemon=True
@@ -107,12 +107,12 @@ class MonitorAddon:
 
         logger.debug("Timer thread started")
         while not self.monitor.is_running():
-            self.monitor.schedule_add_event(APIClockTick())
+            self.monitor.add_event(APIClockTick())
             time.sleep(1.0)
 
     def _register_event(self, event: APIEvent) -> None:
         _log_event(event)
-        self.monitor.schedule_add_event(event)
+        self.monitor.add_event(event)
 
     def request(self, flow: HTTPFlow) -> None:
         """Register a request"""

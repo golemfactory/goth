@@ -5,8 +5,8 @@ from docker.models.containers import Container
 import pytest
 import transitions
 
-from src.runner.container import DockerContainer, State
-from src.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.container import DockerContainer, State
+from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 
 GENERIC_COMMAND = ["cmd_name", "-f", "flag_value"]
 GENERIC_ENTRYPOINT = "/usr/bin/binary_name"

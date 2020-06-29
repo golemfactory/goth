@@ -1,8 +1,8 @@
 import abc
 from typing import Awaitable, Callable, List, Optional, Tuple
 
-from src.runner.container import DockerContainerConfig
-from src.runner.probe import Role
+from goth.runner.container import DockerContainerConfig
+from goth.runner.probe import Role
 
 StepFunction = Callable[..., Optional[Awaitable]]
 

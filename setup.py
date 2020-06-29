@@ -52,7 +52,7 @@ setup(
     ],
     zip_safe=False,
     keywords="golem",
-    packages=find_packages(include=["src", "test"]),
+    packages=find_packages(include=["goth", "test"]),
     install_requires=requirements,
     dependency_links=dependencies,
 )

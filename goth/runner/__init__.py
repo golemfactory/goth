@@ -1,3 +1,4 @@
+import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
 from itertools import chain
@@ -7,10 +8,10 @@ from typing import Dict, List, Optional
 
 import docker
 
-from src.runner.log import configure_logging, LogConfig
-from src.runner.probe import Probe, Role
-from src.runner.container.proxy import ProxyContainer, ProxyContainerConfig
-from src.runner.container.yagna import YagnaContainerConfig
+from goth.runner.log import configure_logging, LogConfig
+from goth.runner.probe import Probe, Role
+from goth.runner.container.proxy import ProxyContainer, ProxyContainerConfig
+from goth.runner.container.yagna import YagnaContainerConfig
 
 
 class Runner:
@@ -46,19 +47,25 @@ class Runner:
         self._run_nodes(scenario)
         try:
             for step, role in scenario.steps:
+                # Collect awaitables to execute them at the same time
+                awaitables = []
                 for probe in self.probes[role]:
                     self.logger.debug(
                         "running step. probe=%s, role=%s, step=%s", probe, role, step
                     )
                     result = step(probe=probe)
                     if result:
-                        await result
+                        awaitables.append(result)
+                if awaitables:
+                    await asyncio.gather(*awaitables, return_exceptions=True)
         finally:
             for probe in chain.from_iterable(self.probes.values()):
-                self.logger.info("removing container. name=%s", probe.name)
-                probe.container.remove(force=True)
+                self.logger.info("stopping probe. name=%s", probe.name)
+                await probe.stop()
             for proxy in self.proxies:
                 proxy.remove(force=True)
+                if proxy.log_config:
+                    await proxy.logs.stop()
 
     def _run_nodes(self, scenario):
         docker_client = docker.from_env()

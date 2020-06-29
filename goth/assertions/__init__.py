@@ -2,7 +2,7 @@
 
 import logging
 
-from src.assertions.assertions import (
+from goth.assertions.assertions import (
     Assertion,
     AssertionFunction,
     E,
