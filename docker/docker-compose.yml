@@ -6,8 +6,6 @@ services:
         image: ${DOCKER_PKG}/yagna-goth:${YAGNA_DEB}
         build:
             context: .
-            cache_from:
-                - ${DOCKER_PKG}/yagna-goth:${YAGNA_DEB}
             dockerfile: yagna-goth.Dockerfile
             args:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
