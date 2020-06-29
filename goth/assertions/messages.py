@@ -68,7 +68,9 @@ msg_classes = {
 
 
 def parse_assertion_message(text: str) -> Optional[AssertionMessage]:
-    """Parse JSON-encoded message."""
+    """If `text` is a JSON-encoded assertion message then parse and
+    return the message. Otherwise, return `None`.
+    """
 
     try:
         msg_dict = json.loads(text)
