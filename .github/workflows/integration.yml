@@ -45,8 +45,6 @@ jobs:
           docker-compose -f docker/docker-compose.yml down
           docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
           docker-compose -f docker/docker-compose.yml up -d
-        
-        # docker-compose -f docker/docker-compose.yml pull
 
       - name: Push docker images to Github Packages
         run: docker-compose -f docker/docker-compose.yml push
