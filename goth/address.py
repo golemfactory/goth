@@ -1,7 +1,7 @@
 """ Module containing constants and templates related to addresses commonly used in
     the context of yagna and the test harness. """
 from string import Template
-from typing import Dict, Mapping
+from typing import Dict, Mapping, Optional
 
 
 class DefaultTemplate(Template):
@@ -12,14 +12,14 @@ class DefaultTemplate(Template):
         self.default = default
         super().__init__(template)
 
-    def substitute(self, mapping: Mapping[str, object] = {}, **kwargs):
+    def substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
         return super(DefaultTemplate, self).substitute(
-            self._with_default(mapping), **kwargs
+            self._with_default(mapping or {}), **kwargs
         )
 
-    def safe_substitute(self, mapping: Mapping[str, object] = {}, **kwargs):
+    def safe_substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
         return super(DefaultTemplate, self).safe_substitute(
-            self._with_default(mapping), **kwargs
+            self._with_default(mapping or {}), **kwargs
         )
 
     def __repr__(self):
