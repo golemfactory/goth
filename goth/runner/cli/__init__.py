@@ -1,7 +1,5 @@
 """Classes for running commands inside docker containers"""
 
-from docker.models.containers import ExecResult
-
 from goth.runner.cli.base import DockerJSONCommandRunner
 from goth.runner.cli.yagna_app_key_cmd import YagnaAppKeyMixin
 from goth.runner.cli.yagna_id_cmd import YagnaIdMixin

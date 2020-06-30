@@ -30,7 +30,7 @@ def level0_activity(agreement_id):
     print(f"state. result={state}")
     # i. PROVIDER
 
-    # provider.event.waitFor(LogEvent, event => event matches "ExeUnit start log regexp")
+    # provider.event.waitFor(LogEvent, event => matches "ExeUnit start log regexp")
     time.sleep(2.0)
     # ii. REQUESTOR
 
@@ -56,7 +56,7 @@ def level0_activity(agreement_id):
         print(f"state. result={state}")
         results = req_api.get_exec_batch_results(
             activity_id, batch_id
-        )  # to be replaced by requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
+        )  # TODO: requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
         print(f"poll batch results. result={results}")
 
     req_api.destroy_activity(activity_id)

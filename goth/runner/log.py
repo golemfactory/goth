@@ -29,7 +29,7 @@ LOGGING_CONFIG = {
         },
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "simple",},
+        "console": {"class": "logging.StreamHandler", "formatter": "simple", },
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",

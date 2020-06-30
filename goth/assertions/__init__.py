@@ -7,3 +7,11 @@ from goth.assertions.assertions import (
     EventStream,
     TemporalAssertionError,
 )
+
+__all__ = [
+    'Assertion',
+    'AssertionFunction',
+    'E',
+    'EventStream',
+    'TemporalAssertionError',
+]

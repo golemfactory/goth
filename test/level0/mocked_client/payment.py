@@ -19,7 +19,7 @@ def level0_payment(agreement_id):
     print(f"Init completed, connected to {config.host}")
     # v. PROVIDER
 
-    # provider.events.waitUntil(LogEvent, event => event.message matches "DestroyActivity regexp")
+    # provider.events.waitUntil(LogEvent, event matches "DestroyActivity regexp")
 
     # 8. REQUESTOR
     invoice_events = []
@@ -54,6 +54,6 @@ def level0_payment(agreement_id):
 
     # 9. PROVIDER
 
-    # provider.events.waitUntil(LogEvent, event => event.message matches "Payment received regexp")
+    # provider.events.waitUntil(LogEvent, event => matches "Payment received regexp")
 
     # ... and maybe we can assert some balance change on etherscan???

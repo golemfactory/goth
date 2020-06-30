@@ -37,3 +37,6 @@ jobs:
 
       - name: Run black codestyle in check mode
         run: black . -v --check --diff
+
+      - name: Run flake8 codestyle
+        run: flake8
