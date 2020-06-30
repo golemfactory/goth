@@ -33,8 +33,17 @@ class Role(Enum):
 
 
 class Probe(abc.ABC):
+    """
+    Provides a unified interface for interacting with and testing a single Yagna node
+    running as part of an integration test. This interface consists of several
+    independent modules which may be extended in subclasses
+    (see `ProviderProbe` and `RequestorProbe`).
+    """
+
     cli: YagnaDockerCli
+    """A module which enables calling the Yagna CLI on the daemon being tested"""
     container: YagnaContainer
+    """A module which handles the lifecycle of the daemon's Docker container"""
 
     def __init__(
         self,
@@ -51,13 +60,13 @@ class Probe(abc.ABC):
 
     @property
     def address(self) -> Optional[str]:
-        """ returns address from id marked as default """
+        """Return the address for the Yagna daemon identity marked as default"""
         identity = self.cli.id_show()
         return identity.address if identity else None
 
     @property
     def app_key(self) -> Optional[str]:
-        """ returns first app key on the list """
+        """Return the first app key from this probe's Yagna daemon"""
         keys = self.cli.app_key_list()
         return keys[0].key if keys else None
 
@@ -66,6 +75,11 @@ class Probe(abc.ABC):
         return self.container.name
 
     def create_app_key(self, key_name: str = "test_key") -> str:
+        """
+        Attempt to create a new app key on the Yagna daemon. The key name can be
+        specified via `key_name` parameter.
+        Return the key as string.
+        """
         try:
             key = self.cli.app_key_create(key_name)
             logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
@@ -77,17 +91,37 @@ class Probe(abc.ABC):
         return key
 
     def start(self):
+        """
+        Start the probe, performing all necessary steps to make the daemon ready for
+        testing (e.g. starting the Docker container, creating the default app key).
+        """
         self.container.start()
         self.create_app_key()
 
     async def stop(self):
+        """
+        Stop the probe, removing the Docker container of the daemon being tested.
+        Once stopped, a probe cannot be restarted.
+        """
         self.container.remove(force=True)
         if self.container.log_config:
             await self.container.logs.stop()
 
 
-class ActivityClient:
-    def __init__(self, app_key: str, address: str):
+class ActivityApiClient:
+    """
+    Client for the activity API of a Yagna daemon. The activity API is divided into two
+    domains: control and state. This division is reflected in the inner client objects
+    of this class.
+    """
+
+    control: activity.RequestorControlApi
+    """Client for the control part of the activity API"""
+
+    state: activity.RequestorStateApi
+    """Client for the state part of the activity API"""
+
+    def __init__(self, app_key: str, address: str, node_name: str):
         api_url = ACTIVITY_API_URL.substitute(base=address)
         config = activity.Configuration(host=api_url)
         config.access_token = app_key
@@ -95,13 +129,24 @@ class ActivityClient:
 
         self.control = activity.RequestorControlApi(client)
         self.state = activity.RequestorStateApi(client)
-        logger.debug("activity API initialized. url=%s", api_url)
+        logger.debug(
+            "activity API initialized. node_name=%s, url=%s", node_name, api_url
+        )
 
 
 class RequestorProbe(Probe):
-    activity: ActivityClient
+    """
+    Provides a testing interface for a Yagna node acting as a requestor.
+    This includes activity, market and payment API clients which can be used to
+    directly control the requestor daemon.
+    """
+
+    activity: ActivityApiClient
+    """Activity API client for the requestor daemon"""
     market: market.ApiClient
+    """Market API client for the requestor daemon"""
     payment: payment.ApiClient
+    """Payment API client for the requestor daemon"""
 
     def start(self):
         super().start()
@@ -111,7 +156,7 @@ class RequestorProbe(Probe):
         market_base_url = MARKET_BASE_URL.substitute(host="localhost")
 
         key = self.app_key
-        self.activity = ActivityClient(key, daemon_base_url)
+        self.activity = ActivityApiClient(key, daemon_base_url, self.name)
         self._init_payment_api(key, daemon_base_url)
         self._init_market_api(key, market_base_url)
 
@@ -140,7 +185,7 @@ class RequestorProbe(Probe):
         config.access_token = app_key
         client = market.ApiClient(config)
         self.market = market.RequestorApi(client)
-        logger.debug("market API initialized. url=%s", api_url)
+        logger.debug("market API initialized. node_name=%s, url=%s", self.name, api_url)
 
     def _init_payment_api(self, app_key: str, address: str):
         api_url = PAYMENT_API_URL.substitute(base=address)
@@ -148,12 +193,21 @@ class RequestorProbe(Probe):
         config.access_token = app_key
         client = payment.ApiClient(config)
         self.payment = payment.RequestorApi(config)
-        logger.debug("payment API initialized. url=%s", api_url)
+        logger.debug(
+            "payment API initialized. node_name=%s, url=%s", self.name, api_url
+        )
 
 
 class ProviderProbe(Probe):
+    """Provides a testing interface for a Yagna node acting as a provider."""
+
     agent_logs: LogEventMonitor
+    """
+    Monitor and buffer for provider agent logs, enables asserting for certain lines to
+    be present in the log buffer
+    """
     agent_preset: str
+    """Name of the preset to be used when placing a market offer"""
 
     def __init__(
         self,
