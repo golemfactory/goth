@@ -14,7 +14,6 @@ import openapi_payment_client as payment
 from goth.address import (
     ACTIVITY_API_URL,
     MARKET_API_URL,
-    MARKET_BASE_URL,
     PAYMENT_API_URL,
     YAGNA_REST_URL,
 )
@@ -153,12 +152,11 @@ class RequestorProbe(Probe):
 
         host_port = self.container.ports[YagnaContainer.HTTP_PORT]
         daemon_base_url = YAGNA_REST_URL.substitute(host="localhost", port=host_port)
-        market_base_url = MARKET_BASE_URL.substitute(host="localhost")
 
         key = self.app_key
         self.activity = ActivityApiClient(key, daemon_base_url, self.name)
         self._init_payment_api(key, daemon_base_url)
-        self._init_market_api(key, market_base_url)
+        self._init_market_api(key, daemon_base_url)
 
         # TODO Remove once agent calls are implemented via probe
         self.start_requestor_agent()
