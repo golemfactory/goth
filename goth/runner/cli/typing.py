@@ -1,4 +1,4 @@
-"""Type definitions for type-checking mixin classes with mypy (and no other purpose)"""
+"""Type definitions for type-checking mixin classes with mypy (and no other purpose)."""
 
 from typing import TYPE_CHECKING
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     V = TypeVar("V")
 
     class CommandRunner(Protocol):
-        """A protocol used for type annotations of self in mixin classes"""
+        """A protocol used for type annotations of self in mixin classes."""
 
         def run_command(self, *cmd_args: str) -> Tuple[str, str]:
             """Run the command with `cmd_args`, raise exception on error."""

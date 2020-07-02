@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Script to download artefacts from a github repository."""
 
 import argparse
 import logging
@@ -39,6 +40,7 @@ session.headers["Authorization"] = f"token {args.token}"
 
 
 def get_workflow(workflow_name: str) -> dict:
+    """Query the workflow on github."""
     url = f"{BASE_URL}/actions/workflows"
     logger.info("fetching workflows. url=%s", url)
     response = session.get(url)
@@ -52,6 +54,7 @@ def get_workflow(workflow_name: str) -> dict:
 
 
 def get_latest_run(workflow_id: str, branch: str) -> dict:
+    """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
     logger.info("fetching worflow runs. url=%s", url)
     response = session.get(url)
@@ -70,6 +73,7 @@ def get_latest_run(workflow_id: str, branch: str) -> dict:
 
 
 def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
+    """Download an artifact from a specific github workflow."""
     logger.info("fetching artifacts. url=%s", artifacts_url)
     response = session.get(artifacts_url)
     response.raise_for_status()

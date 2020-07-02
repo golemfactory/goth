@@ -1,4 +1,4 @@
-"""Assertions related to API calls in Level 0 test scenario"""
+"""Assertions related to API calls in Level 0 test scenario."""
 import logging
 from typing import Optional, Sequence
 
@@ -31,8 +31,9 @@ async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
 
 # This is formally an assertion but it never fails:
 async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEvent]:
-    """Wait for a response to a `subscribeOffer` request. Return the response event
-    or `None` if the events end without the response.
+    """Wait for a response to a `subscribeOffer` request.
+
+    Return the response event or `None` if the events end without the response.
     """
 
     async for e in stream:
@@ -45,7 +46,7 @@ async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEv
 
 
 async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bool:
-    """Assertion describing call patterns for the provider agent."""
+    """Assert call patterns for the provider agent."""
 
     # 1. Make sure subscribeOffer is called
     await assert_eventually_subscribe_offer_called(stream)

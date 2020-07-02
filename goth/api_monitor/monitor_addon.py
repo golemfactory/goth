@@ -1,6 +1,6 @@
-"""
-Mitmproxy addon that traces API calls and verifies
-that the sequence of calls satifies given properties
+"""Mitmproxy addon that traces API calls.
+
+and verifies that the sequence of calls satifies given properties
 """
 from __future__ import annotations
 import asyncio
@@ -37,7 +37,7 @@ def _log_event(event: APIEvent) -> None:
 
 
 class MonitorAddon:
-    """This add-on keeps track of API requests and responses"""
+    """This add-on keeps track of API requests and responses."""
 
     monitor: EventMonitor[APIEvent]
     pending_requests: Dict[HTTPRequest, APIRequest]
@@ -58,7 +58,7 @@ class MonitorAddon:
         asyncio.ensure_future(self._timer())
 
     async def _timer(self) -> None:
-        """Periodically emit `APIClockTick` event"""
+        """Periodically emit `APIClockTick` event."""
 
         logger.debug("Timer thread started")
         while self.monitor.is_running():
@@ -71,7 +71,7 @@ class MonitorAddon:
         self.monitor.add_event(event)
 
     def request(self, flow: HTTPFlow) -> None:
-        """Register a request"""
+        """Register a request."""
 
         self.num_requests += 1
         request = APIRequest(self.num_requests, flow.request)
@@ -79,7 +79,7 @@ class MonitorAddon:
         self._register_event(request)
 
     def response(self, flow: HTTPFlow) -> None:
-        """Register a response"""
+        """Register a response."""
 
         request = self.pending_requests.get(flow.request)
         if request:
@@ -91,7 +91,7 @@ class MonitorAddon:
             logger.error("Received response for unregistered request: %s", flow)
 
     def error(self, flow: HTTPFlow) -> None:
-        """Register an error"""
+        """Register an error."""
 
         request = self.pending_requests.get(flow.request)
         if request:

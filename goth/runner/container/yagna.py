@@ -1,3 +1,5 @@
+"""Classes to help configure and create `YagnaContainer`s."""
+
 from pathlib import Path
 from string import Template
 from typing import Dict, Optional, TYPE_CHECKING
@@ -12,13 +14,13 @@ if TYPE_CHECKING:
 
 
 class YagnaContainerConfig(DockerContainerConfig):
-    """ Configuration to be used for creating a new `YagnaContainer`. """
+    """Configuration to be used for creating a new `YagnaContainer`."""
 
     role: "Role"
-    """ Role this container has in a test scenario """
+    """Role this container has in a test scenario"""
 
     environment: Dict[str, str]
-    """ Environment variables to be set for this container """
+    """Environment variables to be set for this container"""
 
     def __init__(
         self,
@@ -34,6 +36,8 @@ class YagnaContainerConfig(DockerContainerConfig):
 
 
 class YagnaContainer(DockerContainer):
+    """Extension of DockerContainer to be configured for yagna daemons."""
+
     BUS_PORT = 6010
     HTTP_PORT = 6000
     COMMAND = ["service", "run", "-d", "/"]
@@ -75,8 +79,10 @@ class YagnaContainer(DockerContainer):
 
     @classmethod
     def host_http_port(cls):
+        """Http port for the yagna rest api running on this container."""
         return YAGNA_REST_PORT + cls._port_offset
 
     @classmethod
     def host_bus_port(cls):
+        """Gsb port for the yagna service bus running on this container."""
         return YAGNA_BUS_PORT + cls._port_offset

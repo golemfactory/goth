@@ -1,4 +1,4 @@
-"""Classes for running commands in a docker container and some utility functions"""
+"""Classes for running commands in a docker container and some utility functions."""
 
 import json
 import logging
@@ -18,16 +18,17 @@ logger.setLevel(logging.DEBUG)
 
 
 class DockerCommandRunner:
-    """A wrapper for executing a command in a docker container"""
+    """A wrapper for executing a command in a docker container."""
 
     def __init__(self, container: "DockerContainer", command: str):
         self.container = container
         self.command = command
 
     def run_command(self, *cmd_args: str) -> Tuple[str, str]:
-        """Run the command with `cmd_args`. Return a pair of strings containing
-        the standard output and standard error of the command on success, or raise
-        `CommandError` on error.
+        """Run the command with `cmd_args`.
+
+        Return a pair of strings containing the standard output and standard error of
+        the command on success, or raise `CommandError` on error.
         """
 
         result = self.run_command_no_throw(*cmd_args)
@@ -54,6 +55,7 @@ class DockerJSONCommandRunner(DockerCommandRunner):
 
     def run_json_command(self, result_type: Type[T], *cmd_args: str) -> T:
         """Add `--json` flag to command arguments and run the command.
+
         Parse the command output as JSON and return it.
         """
 
@@ -103,7 +105,8 @@ U = TypeVar("U")
 
 
 def unwrap_ok_err_json(output_dict: Dict[str, U]) -> U:
-    """Parse `{ "Ok": <result>, "Err": <error>}` JSON; return `<result>`
+    """Parse `{ "Ok": <result>, "Err": <error>}` JSON; return `<result>`.
+
     or raise `CommandError(<error>)`.
     """
 

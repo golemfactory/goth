@@ -1,3 +1,5 @@
+"""Level 0 test to be ran from pytest."""
+
 import logging
 from pathlib import Path
 import re
@@ -56,8 +58,10 @@ def node_environment(
 
 
 def assert_message_starts_with(needle: str):
-    """Prepare an assertion that:
-    Assert that a `LogEvent` with message starts with {needle} is found."""
+    """Prepare an assertion that:.
+
+    Assert that a `LogEvent` with message starts with {needle} is found.
+    """
 
     # No need to add ^ in the regexp since .match( searches from the start
     pattern = re.compile(needle)
@@ -75,6 +79,7 @@ def assert_message_starts_with(needle: str):
 
 
 async def assert_message_starts_with_and_wait(probe, needle):
+    """Attaches an assertion to the probe and wait for the needle to be found."""
 
     probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
     await probe.agent_logs.await_assertions()
@@ -87,8 +92,11 @@ VOLUMES = {
 
 
 class Level0Scenario(Scenario):
+    """Scenario desctibing the toppology and steps of the level0 test."""
+
     @property
     def topology(self):
+        """List of Containers to be spawned before running the test."""
         return [
             YagnaContainerConfig(
                 name="requestor",
@@ -120,6 +128,7 @@ class Level0Scenario(Scenario):
 
     @property
     def steps(self):
+        """List of steps to be executed during the test."""
         return [
             (self.wait_for_offer_subscribed, Role.provider),
             (self.wait_for_proposal_accepted, Role.provider),
@@ -130,25 +139,31 @@ class Level0Scenario(Scenario):
         ]
 
     async def wait_for_offer_subscribed(self, probe: Probe):
+        """Start provider agent on the `probe`, listening to the offer `preset_name`."""
         logger.info("waiting for offer to be subscribed")
         await assert_message_starts_with_and_wait(probe, "Subscribed offer")
+        """Start requestor agent on `probe`."""
 
     async def wait_for_proposal_accepted(self, probe: Probe):
+        """Wait untill the provider agent accepts the propoosal."""
         logger.info("waiting for proposal to be accepted")
         await assert_message_starts_with_and_wait(probe, "Decided to AcceptProposal")
         logger.info("proposal accepted")
 
     async def wait_for_agreement_approved(self, probe: Probe):
+        """Wait untill the provider agent accepts the agreement."""
         logger.info("waiting for agreement to be approved")
         await assert_message_starts_with_and_wait(probe, "Decided to ApproveAgreement")
         logger.info("agreement approved")
 
     async def wait_for_exeunit_started(self, probe: Probe):
+        """Wait untill the provider agent starts the exe-unit."""
         logger.info("waiting for exe-unit to start")
         await assert_message_starts_with_and_wait(probe, r"\[ExeUnit\](.+)Started$")
         logger.info("exe-unit started")
 
     async def wait_for_exeunit_finished(self, probe: Probe):
+        """Wait untill exe-unit finishes."""
         logger.info("waiting for exe-unit to finish")
         await assert_message_starts_with_and_wait(
             probe, "ExeUnit process exited with status Finished - exit code: 0"
@@ -156,12 +171,16 @@ class Level0Scenario(Scenario):
         logger.info("exe-unit finished")
 
     async def wait_for_invoice_sent(self, probe: Probe):
+        """Wait untill the invoice is send."""
         logger.info("waiting for invoice to be sent")
         await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
         logger.info("invoice sent")
 
 
 class TestLevel0:
+    """TestCase running Level0Scenario."""
+
     @pytest.mark.asyncio
     async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
+        """Test running Level0Scenario."""
         await Runner(logs_path, assets_path).run_scenario(Level0Scenario())

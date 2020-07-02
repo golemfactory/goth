@@ -1,5 +1,6 @@
-"""Mitmproxy addon that routes API calls and adds caller and callee
-information to request headers
+"""Mitmproxy addon that routes API calls.
+
+and adds caller and callee information to request headers.
 """
 
 import logging
@@ -16,7 +17,8 @@ CALLEE_HEADER = "X-Callee"
 
 
 class RouterAddon:
-    """This add-on does the following:
+    """This add-on does the following:.
+
     - parses the port on which the original request has been made by API client,
     - sets "X-Caller" and "X-Calle" request headers, so that they can be used
       by subsequent add-ons,

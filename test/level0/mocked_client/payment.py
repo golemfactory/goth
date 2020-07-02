@@ -1,3 +1,5 @@
+"""High level API for the level 0 payment steps."""
+
 import os
 import time
 
@@ -11,6 +13,8 @@ from openapi_payment_client import (
 
 
 def level0_payment(agreement_id):
+    """Execute all level 0 payment steps on the payment api one by one."""
+
     # INIT
     config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/payment-api/v1")
     config.access_token = os.environ["APP_KEY"]

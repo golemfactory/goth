@@ -1,4 +1,4 @@
-"""Tests for the `runner.cli.yagna_app_key_cmd` module"""
+"""Tests for the `runner.cli.yagna_app_key_cmd` module."""
 
 import pytest
 

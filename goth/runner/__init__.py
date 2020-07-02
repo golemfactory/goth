@@ -1,3 +1,5 @@
+"""Test harnass runner class, creating the nodes and running the scenario."""
+
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -17,19 +19,19 @@ from goth.runner.proxy import Proxy
 
 
 class Runner:
+    """Manages the nodes and runs the scenario on them."""
 
     assets_path: Optional[Path]
-    """ Path to directory containing yagna assets which should be mounted in
-        containers """
+    """Path to directory containing yagna assets to be mounted in containers."""
 
     base_log_dir: Path
-    """ Base directory for all log files created during this test run """
+    """Base directory for all log files created during this test run."""
 
     probes: Dict[Role, List[Probe]]
-    """ Probes used for the test run, identified by their role names """
+    """Probes used for the test run, identified by their role names."""
 
     proxy: Optional[Proxy]
-    """ An embedded instance of mitmproxy """
+    """An embedded instance of mitmproxy."""
 
     def __init__(self, logs_path: Path, assets_path: Optional[Path]):
 
@@ -68,7 +70,7 @@ class Runner:
             )
 
     async def run_scenario(self, scenario):
-
+        """Start the nodes, run the scenario, then stop the nodes again."""
         self.logger.info("running scenario %s", type(scenario).__name__)
         self._run_nodes(scenario)
         try:

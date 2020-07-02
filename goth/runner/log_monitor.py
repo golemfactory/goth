@@ -1,3 +1,5 @@
+"""Classes and utilities to use a Monitor for log events."""
+
 import asyncio
 from datetime import datetime
 from enum import Enum
@@ -13,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class LogLevel(Enum):
+    """Level's representing the rust log levels."""
+
     ERROR = 1
     WARN = 2
     INFO = 3
@@ -27,7 +31,7 @@ pattern = re.compile(
 
 
 class LogEvent:
-    """An event representing a log line, used for asserting messages"""
+    """An event representing a log line, used for asserting messages."""
 
     def __init__(self, log_message: str):
         self._timestamp = None
@@ -54,18 +58,31 @@ class LogEvent:
 
     @property
     def timestamp(self) -> float:
+        """Time of the log message.
+
+        ( or time of receiving the event when _module is None)
+        """
         return self._timestamp
 
     @property
     def level(self) -> Optional[LogLevel]:
+        """Level reported on the log message.
+
+        Will be empty for multi line logs.
+        """
         return self._level
 
     @property
     def module(self) -> Optional[str]:
+        """Source module of this log message.
+
+        Will be empty for multi line logs.
+        """
         return self._module
 
     @property
     def message(self) -> str:
+        """Text of the log message."""
         return self._message
 
     def __repr__(self):
@@ -76,8 +93,11 @@ class LogEvent:
 
 
 def _create_file_logger(config: LogConfig) -> logging.Logger:
-    """ Create a new file logger configured using the `LogConfig` object provided.
-        The target log file will have a .log extension. """
+    """Create a new file logger configured using the `LogConfig` object provided.
+
+    The target log file will have a .log extension.
+    """
+
     handler = logging.FileHandler(
         (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
     )
@@ -90,10 +110,13 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
 
 
 class LogEventMonitor(EventMonitor[LogEvent]):
-    """ Buffers logs coming from `in_stream`. `log_config` holds the configuration of
-        the file logger. Consecutive values are interpreted as lines by splitting them
-        on the new line character. Internally, it uses a asyncio task to read the
-        stream and add lines to the buffer. """
+    """Buffers logs coming from `in_stream`.
+
+    `log_config` holds the configuration of the file logger.
+    Consecutive values are interpreted as lines by splitting them on the new line
+    character. Internally, it uses a asyncio task to read the stream and add lines to
+    the buffer.
+    """
 
     in_stream: Iterator[bytes]
     logger: logging.Logger

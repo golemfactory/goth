@@ -1,4 +1,4 @@
-"""Code common for all pytest modules in this package"""
+"""Code common for all pytest modules in this package."""
 
 from docker import DockerClient
 from docker.models.containers import Container
@@ -50,7 +50,7 @@ def docker_container(mock_docker_client, mock_container):
 
 @pytest.fixture
 def yagna_container(mock_docker_client):
-    """A fixture for starting and terminating a container using the `yagna` image"""
+    """Fixture for starting and terminating a container using the `yagna` image."""
     config = MagicMock(spec=YagnaContainerConfig)
     config.name = YAGNA_CONTAINER_NAME
     config.environment = {}

@@ -1,3 +1,5 @@
+"""Test the `assertions.monitor`."""
+
 import asyncio
 
 import pytest
@@ -11,12 +13,14 @@ Events = EventStream[int]
 
 
 async def assert_all_positive(stream: Events) -> None:
+    """Assert all events are positive."""
 
     async for e in stream:
         assert e > 0
 
 
 async def assert_increasing(stream: Events) -> None:
+    """Assert all events increasing numbers."""
 
     async for e in stream:
         # stream.past_events[-1] is `e`, stream.past_events[-2] is the previous event
@@ -26,6 +30,7 @@ async def assert_increasing(stream: Events) -> None:
 
 
 async def assert_eventually_five(stream: Events) -> None:
+    """Assert the event will eventually be five."""
 
     async for e in stream:
         if e == 5:
@@ -35,6 +40,7 @@ async def assert_eventually_five(stream: Events) -> None:
 
 
 async def assert_eventually_even(stream: Events) -> int:
+    """Assert the event will eventually be even."""
 
     async for e in stream:
         if e % 2 == 0:
@@ -44,6 +50,7 @@ async def assert_eventually_even(stream: Events) -> int:
 
 
 async def assert_eventually_greater(n: int, stream: Events) -> int:
+    """Assert the event will eventually be greater then `n`."""
 
     async for e in stream:
         if e > n:
@@ -53,6 +60,11 @@ async def assert_eventually_greater(n: int, stream: Events) -> int:
 
 
 async def assert_fancy_property(stream: Events) -> int:
+    """Assert the event to match multiple other assertions.
+
+    - assert_eventually_even
+    - assert_eventually_greater
+    """
 
     n = await assert_eventually_even(stream)
     m = await assert_eventually_greater(n * 2, stream)
@@ -62,6 +74,7 @@ async def assert_fancy_property(stream: Events) -> int:
 
 @pytest.mark.asyncio
 async def test_assertions():
+    """Test a dummy set of assertions agains a list of int's."""
 
     monitor: EventMonitor[int] = EventMonitor()
     monitor.add_assertions(

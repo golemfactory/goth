@@ -1,4 +1,4 @@
-"""Coroutine-based implementation of temporal assertions"""
+"""Coroutine-based implementation of temporal assertions."""
 
 import asyncio
 
@@ -17,7 +17,7 @@ from typing import (
 
 
 class TemporalAssertionError(AssertionError):
-    """Thrown by temporal assertions on failure"""
+    """Thrown by temporal assertions on failure."""
 
 
 E = TypeVar("E")
@@ -29,13 +29,13 @@ if TYPE_CHECKING:
     from typing_extensions import Protocol
 
     class EventStream(Protocol, AsyncIterable[E]):
-        """A protocol for streams of events of type `E` used by assertion functions"""
+        """A protocol for streams of events of type `E` used by assertion functions."""
 
         past_events: Sequence[E]
-        """A sequence of past events, the last element is the most recent event"""
+        """A sequence of past events, the last element is the most recent event."""
 
         events_ended: bool
-        """`True` iff there will be no more events"""
+        """`True` iff there will be no more events."""
 
 
 else:
@@ -47,28 +47,28 @@ AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
 class Assertion(AsyncIterable[E]):
-    """A class for executing assertion coroutines"""
+    """A class for executing assertion coroutines."""
 
     past_events: Sequence[E]
-    """See `EventStream`"""
+    """See `EventStream`."""
 
     events_ended: bool
-    """See `EventStream`"""
+    """See `EventStream`."""
 
     name: str
-    """Assertion name for logging etc"""
+    """Assertion name for logging etc."""
 
     _func: Optional[AssertionFunction]
-    """A coroutine function that is executed for this assertion"""
+    """A coroutine function that is executed for this assertion."""
 
     _task: Optional[asyncio.Task]
-    """A task in which the assertion coroutine runs"""
+    """A task in which the assertion coroutine runs."""
 
     _ready: Optional[asyncio.Event]
-    """An event object used for synchronising the client and the assertion coroutine"""
+    """An event object used for synchronising the client and the assertion coroutine."""
 
     _processed: Optional[asyncio.Event]
-    """An event object used for synchronising the client and the assertion coroutine"""
+    """An event object used for synchronising the client and the assertion coroutine."""
 
     def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
         self.past_events = events
@@ -120,8 +120,9 @@ class Assertion(AsyncIterable[E]):
 
     @property
     def result(self) -> Any:
-        """
-        Return either a value returned by this assertion on success, an exception
+        """Return the result of the assertion.
+
+        This can be either a value returned by this assertion on success, an exception
         thrown on failure, or `None` if the assertion haven't finished yet.
         """
 

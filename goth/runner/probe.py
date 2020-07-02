@@ -1,4 +1,3 @@
-import abc
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
@@ -27,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class Role(Enum):
+    """Role of the probe."""
+
     requestor = 0
     provider = 1
 
@@ -73,23 +74,23 @@ class Probe(abc.ABC):
 
     @property
     def address(self) -> Optional[str]:
-        """Return the address for the Yagna daemon identity marked as default."""
+        """ returns address from id marked as default """
         identity = self.cli.id_show()
         return identity.address if identity else None
 
     @property
     def app_key(self) -> Optional[str]:
-        """Return the first app key from this probe's Yagna daemon."""
+        """ returns first app key on the list """
         keys = self.cli.app_key_list()
         return keys[0].key if keys else None
 
     @property
     def name(self) -> str:
+        """Name of the container."""
         return self.container.name
 
     def create_app_key(self, key_name: str = "test_key") -> str:
-        """
-        Attempt to create a new app key on the Yagna daemon.
+        """Attempt to create a new app key on the Yagna daemon.
 
         The key name can be specified via `key_name` parameter.
         Return the key as string.
@@ -182,6 +183,7 @@ class RequestorProbe(Probe):
 
     # TODO Remove once agent calls are implemented via probe
     def start_requestor_agent(self):
+        """Start provider agent on the container and initialize its LogMonitor."""
         log_stream = self.container.exec_run(
             f"ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"

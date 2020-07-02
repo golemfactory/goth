@@ -1,5 +1,8 @@
-"""Tests for `runner.cli.base.DockerCommandRunner`
-and `runner.cli.base.DockerJSONCommandRunner`
+"""Tests for `runner.cli.base`.
+
+Containing:
+- `runner.cli.base.DockerCommandRunner`
+- `runner.cli.base.DockerJSONCommandRunner`
 """
 import shlex
 

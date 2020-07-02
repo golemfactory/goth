@@ -1,4 +1,4 @@
-"""Tests for the `runner.cli.yagna_payment_cmd` module"""
+"""Tests for the `runner.cli.yagna_payment_cmd` module."""
 
 import time
 
