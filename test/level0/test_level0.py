@@ -1,3 +1,4 @@
+from datetime import timedelta
 import logging
 from pathlib import Path
 import re
@@ -39,6 +40,7 @@ def node_environment(
     daemon_env = {
         "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template_params),
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
+        "ETH_FAUCET_ADDRESS": "http://faucet.testnet.golem.network:4000/donate",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
     }
@@ -74,10 +76,10 @@ def assert_message_starts_with(needle: str):
     return _assert_starts_with
 
 
-async def assert_message_starts_with_and_wait(probe, needle):
+async def assert_message_starts_with_and_wait(probe, needle, timeout=None):
 
     probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
-    await probe.agent_logs.await_assertions()
+    await probe.agent_logs.await_assertions(timeout=timeout)
 
 
 VOLUMES = {
@@ -126,7 +128,9 @@ class Level0Scenario(Scenario):
     def steps(self):
         return [
             (self.create_app_key, Role.requestor),
+            (self.init_payments, Role.requestor),
             (self.create_app_key, Role.provider),
+            (self.init_payments, Role.provider),
             (self.start_provider_agent, Role.provider),
             (self.start_requestor_agent, Role.requestor),
             (self.wait_for_proposal_accepted, Role.provider),
@@ -134,11 +138,16 @@ class Level0Scenario(Scenario):
             (self.wait_for_exeunit_started, Role.provider),
             (self.wait_for_exeunit_finished, Role.provider),
             (self.wait_for_invoice_sent, Role.provider),
+            (self.wait_for_invoice_paid, Role.provider),
         ]
 
     def create_app_key(self, probe: Probe, key_name: str = "test-key"):
         key = probe.create_app_key(key_name)
         logger.info("app-key created. name=%s key=%s", key_name, key)
+
+    def init_payments(self, probe: Probe):
+        probe.init_payments(probe.role)
+        logger.info("payments initialised.")
 
     async def start_provider_agent(
         self, probe: Probe, preset_name: str = "amazing-offer",
@@ -177,6 +186,15 @@ class Level0Scenario(Scenario):
         logger.info("waiting for invoice to be sent")
         await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
         logger.info("invoice sent")
+
+    async def wait_for_invoice_paid(self, probe: Probe):
+        logger.info("waiting for invoice to be payed")
+        await assert_message_starts_with_and_wait(
+            probe,
+            r"Invoice (.+?) for agreement (.+?) was paid",
+            timedelta.minutes(5),
+        )
+        logger.info("invoice payed")
 
 
 class TestLevel0:

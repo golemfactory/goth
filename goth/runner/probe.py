@@ -71,6 +71,15 @@ class Probe:
             key = app_key.key
         return key
 
+    def init_payments(self, probe):
+        print('init_payments()')
+        print(probe)
+        print(probe == Role.requestor)
+        self.cli.payment_init(
+            requestor_mode=probe == Role.requestor,
+            provider_mode=probe == Role.provider,
+        )
+
     def start_provider_agent(self, preset_name: str):
         log_stream = self.container.exec_run(
             f"ya-provider run"

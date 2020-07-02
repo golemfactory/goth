@@ -19,7 +19,7 @@ from .common_assertions import (
 logger = logging.getLogger(__name__)
 
 
-async def assert_first_request_is_import_key(stream: APIEvents) -> bool:
+async def assert_eventually_import_key_called(stream: APIEvents) -> bool:
     """Assert that the first API request is for the `importKey` opertation."""
 
     async for e in stream:
@@ -27,9 +27,8 @@ async def assert_first_request_is_import_key(stream: APIEvents) -> bool:
         if isinstance(e, APIRequest):
             if api.is_import_key_request(e):
                 return True
-            raise TemporalAssertionError(str(e))
 
-    return False
+    raise TemporalAssertionError(str(e))
 
 
 async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
@@ -94,6 +93,6 @@ TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [
     assert_clock_ticks,
     assert_no_api_errors,
     assert_every_request_gets_response,
-    assert_first_request_is_import_key,
+    assert_eventually_import_key_called,
     assert_provider_periodically_collects_demands,
 ]
