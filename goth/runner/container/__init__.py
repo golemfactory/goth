@@ -170,12 +170,9 @@ class DockerContainer:
     def _start(self, **kwargs):
         self._container.start(**kwargs)
         if self.log_config:
-            self.logs = self._create_log_monitor()
-
-    def _create_log_monitor(self):
-        return LogEventMonitor(
-            self._container.logs(stream=True, follow=True), self.log_config
-        )
+            self.logs = LogEventMonitor(
+                self._container.logs(stream=True, follow=True), self.log_config,
+            )
 
     def _update_state(self, *_args, **_kwargs):
         """ Update the state machine based on data obtained from the Docker daemon

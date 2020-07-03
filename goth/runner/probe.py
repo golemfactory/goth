@@ -21,12 +21,6 @@ class Role(Enum):
 
 
 class Probe:
-
-    container: YagnaContainer
-    cli: YagnaDockerCli
-    role: Role
-    agent_logs: Optional[LogEventMonitor]
-
     def __init__(
         self,
         client: DockerClient,

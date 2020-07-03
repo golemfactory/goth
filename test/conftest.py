@@ -2,10 +2,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-import docker
 import pytest
 
-# from goth.runner.container.proxy import ProxyContainer
 from goth.runner.log import DEFAULT_LOG_DIR
 
 
