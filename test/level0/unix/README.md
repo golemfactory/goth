@@ -13,7 +13,7 @@ Follow these steps to setup the test environment:
 
 1. Install `yagna` deb package (**TODO**: reference).
 
-1b. Build yagna binaries and add them to your path:
+1b. Build `yagna` binaries and add them to your path:
 ```
 export YAGNA_GIT_DIR=/path/to/yagna/repo/
 
@@ -25,11 +25,21 @@ cargo build --release -p ya-sb-router --examples
 EXPORT PATH=${YAGNA_GIT_DIR}/target/release
 EXPORT PATH=${YAGNA_GIT_DIR}/target/release/examples
 ```
-TODO: Setup exe-unit:
-- Build `ya-runtime-wasi`
+Setup exe-unit:
+- Build `ya-runtime-wasi` in `--release` mode
 - Create `local-exeunit-descriptor.json`
-- Add `exe-unit` and `ya-runtime-wasi` locations to the json
-- edit start_provider.sh to use `local-exeunit-descriptor.json`
+```
+[
+    {
+        "name": "wasmtime",
+        "version": "0.1.0",
+        "supervisor-path": "/path/to/yagna.git/target/release/exe-unit",
+        "runtime-path": "/path/to/ya-runtime-wasi.git/target/release/ya-runtime-wasi"
+    }
+]
+```
+- Update `supervisor-path` and `runtime-path` locations and version in the json
+- edit `start_provider.sh` to use `local-exeunit-descriptor.json`
 
 2. Build and start Market API Mock TestBed using the standard port `5001` (https://github.com/stranger80/golem-client-mock).
 
