@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 
 ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
-BRANCH = "mwu/feature/gnt_driver_as_service"
+BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
 WORKFLOW_NAME = "Build .deb"

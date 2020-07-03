@@ -190,9 +190,7 @@ class Level0Scenario(Scenario):
     async def wait_for_invoice_paid(self, probe: Probe):
         logger.info("waiting for invoice to be payed")
         await assert_message_starts_with_and_wait(
-            probe,
-            r"Invoice (.+?) for agreement (.+?) was paid",
-            timedelta.minutes(5),
+            probe, r"Invoice (.+?) for agreement (.+?) was paid", timedelta.minutes(5),
         )
         logger.info("invoice payed")
 

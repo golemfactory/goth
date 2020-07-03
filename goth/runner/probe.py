@@ -72,7 +72,7 @@ class Probe:
         return key
 
     def init_payments(self, probe):
-        print('init_payments()')
+        print("init_payments()")
         print(probe)
         print(probe == Role.requestor)
         self.cli.payment_init(
