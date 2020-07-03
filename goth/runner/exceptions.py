@@ -9,7 +9,7 @@ class CommandError(Exception):
 
 
 class KeyAlreadyExistsError(CommandError):
-    """Specific duplucate key subclass of the CommandError."""
+    """Specific duplicate key subclass of the CommandError."""
 
     pass
 

@@ -10,7 +10,7 @@ StepFunction = Callable[..., Optional[Awaitable]]
 
 
 class Scenario(abc.ABC):
-    """Abstract template for requireed properties on a Scenario."""
+    """Abstract template for required properties on a Scenario."""
 
     @property
     @abc.abstractmethod

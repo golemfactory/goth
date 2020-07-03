@@ -1,6 +1,6 @@
 """Mitmproxy addon that traces API calls.
 
-and verifies that the sequence of calls satifies given properties
+Verifies that a sequence of calls satisfies given properties.
 """
 from __future__ import annotations
 import asyncio

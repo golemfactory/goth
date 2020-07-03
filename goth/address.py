@@ -17,15 +17,16 @@ class DefaultTemplate(Template):
         super().__init__(template)
 
     def substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
-        """Replace values in steing with `mapping`, merge default and mapping first."""
+        """Replace values in string with `mapping`, merge default and mapping first."""
         return super(DefaultTemplate, self).substitute(
             self._with_default(mapping or {}), **kwargs
         )
 
     def safe_substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
-        """Replace values in steing with `mapping`, merge default and mapping first.
+        """Replace values in string with `mapping`, merge default and mapping first.
 
-        Safe means try-catching before reading the mapping
+        Safe means that instead of raising a `KeyError` if a value for a placeholder is
+        missing, the placeholder will appear in the result string.
         """
         return super(DefaultTemplate, self).safe_substitute(
             self._with_default(mapping or {}), **kwargs

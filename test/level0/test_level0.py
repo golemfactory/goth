@@ -58,8 +58,9 @@ def node_environment(
 
 
 def assert_message_starts_with(needle: str):
-    """Prepare an assertion that:.
+    """Return the "message.start_with" assertion with pre-compiled re `needle`.
 
+    Prepare an assertion that:
     Assert that a `LogEvent` with message starts with {needle} is found.
     """
 
@@ -92,7 +93,7 @@ VOLUMES = {
 
 
 class Level0Scenario(Scenario):
-    """Scenario desctibing the toppology and steps of the level0 test."""
+    """Scenario describing the topology and steps of the level0 test."""
 
     @property
     def topology(self):
@@ -145,25 +146,25 @@ class Level0Scenario(Scenario):
         """Start requestor agent on `probe`."""
 
     async def wait_for_proposal_accepted(self, probe: Probe):
-        """Wait untill the provider agent accepts the propoosal."""
+        """Wait until the provider agent accepts the proposal."""
         logger.info("waiting for proposal to be accepted")
         await assert_message_starts_with_and_wait(probe, "Decided to AcceptProposal")
         logger.info("proposal accepted")
 
     async def wait_for_agreement_approved(self, probe: Probe):
-        """Wait untill the provider agent accepts the agreement."""
+        """Wait until the provider agent accepts the agreement."""
         logger.info("waiting for agreement to be approved")
         await assert_message_starts_with_and_wait(probe, "Decided to ApproveAgreement")
         logger.info("agreement approved")
 
     async def wait_for_exeunit_started(self, probe: Probe):
-        """Wait untill the provider agent starts the exe-unit."""
+        """Wait until the provider agent starts the exe-unit."""
         logger.info("waiting for exe-unit to start")
         await assert_message_starts_with_and_wait(probe, r"\[ExeUnit\](.+)Started$")
         logger.info("exe-unit started")
 
     async def wait_for_exeunit_finished(self, probe: Probe):
-        """Wait untill exe-unit finishes."""
+        """Wait until exe-unit finishes."""
         logger.info("waiting for exe-unit to finish")
         await assert_message_starts_with_and_wait(
             probe, "ExeUnit process exited with status Finished - exit code: 0"
@@ -171,7 +172,7 @@ class Level0Scenario(Scenario):
         logger.info("exe-unit finished")
 
     async def wait_for_invoice_sent(self, probe: Probe):
-        """Wait untill the invoice is send."""
+        """Wait until the invoice is sent."""
         logger.info("waiting for invoice to be sent")
         await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
         logger.info("invoice sent")

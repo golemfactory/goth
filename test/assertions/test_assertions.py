@@ -81,7 +81,7 @@ async def test_assertion_fail_immediately():
 
 @pytest.mark.asyncio
 async def test_assertion_consumes_one():
-    """Test if an assertion will comsume all given events."""
+    """Test if an assertion will consume all given events."""
 
     events = []
 
@@ -167,7 +167,7 @@ async def test_assertion_end_events():
 
 @pytest.mark.asyncio
 async def test_assertion_end_events_raises():
-    """Test if an assertion raises when events_ended and there assertion is not met."""
+    """Test if an assertion raises when events_ended and the assertion is not met."""
 
     events = []
 

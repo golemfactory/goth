@@ -1,4 +1,4 @@
-"""Test harnass runner class, creating the nodes and running the scenario."""
+"""Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
 from collections import defaultdict
@@ -70,7 +70,7 @@ class Runner:
             )
 
     async def run_scenario(self, scenario):
-        """Start the nodes, run the scenario, then stop the nodes again."""
+        """Start the nodes, run the scenario, then stop the nodes and clean up."""
         self.logger.info("running scenario %s", type(scenario).__name__)
         self._run_nodes(scenario)
         try:

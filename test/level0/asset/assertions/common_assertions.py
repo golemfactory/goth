@@ -26,10 +26,10 @@ async def assert_no_api_errors(stream: APIEvents) -> bool:
 
 
 async def assert_clock_ticks(stream: APIEvents) -> bool:
-    """Assert at least one timer event.
+    """Assert at least one timer event has occurred.
 
-    That occurred and the distance between
-    any event the last timer event is less than 1.5s
+    Additionally, asserts the distance between
+    any event and the last timer event is less than 1.5s.
     """
 
     last_timer_event = None

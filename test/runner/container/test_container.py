@@ -102,7 +102,7 @@ def test_container_status_change(docker_container, mock_container):
     """Test if status updates are passed from the Container to the DockerContainer.
 
     Test that `DockerContainer` reports correct state in case of external changes to the
-    status of the underlying `Container` instance
+    status of the underlying `Container` instance.
     """
 
     assert docker_container.state is State.created

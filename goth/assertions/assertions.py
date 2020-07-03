@@ -123,7 +123,7 @@ class Assertion(AsyncIterable[E]):
         """Return the result of the assertion.
 
         This can be either a value returned by this assertion on success, an exception
-        thrown on failure, or `None` if the assertion haven't finished yet.
+        thrown on failure, or `None` if the assertion hasn't finished yet.
         """
 
         if not self.started:

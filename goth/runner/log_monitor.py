@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class LogLevel(Enum):
-    """Level's representing the rust log levels."""
+    """Enum representing the rust log levels."""
 
     ERROR = 1
     WARN = 2
@@ -60,7 +60,7 @@ class LogEvent:
     def timestamp(self) -> float:
         """Time of the log message.
 
-        ( or time of receiving the event when _module is None)
+        (or time of receiving the event when _module is None)
         """
         return self._timestamp
 

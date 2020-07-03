@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Package version and description for goth, Golem Test Harnass."""
+"""Package version and description for goth, Golem Test Harness."""
 
 from os import path
 import sys

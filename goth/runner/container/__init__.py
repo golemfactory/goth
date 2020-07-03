@@ -63,7 +63,7 @@ class State(Enum):
 class DockerContainer:
     """A wrapper around `Container`.
 
-    which includes a state machine (from `transitions`) to keep track of a container's
+    Includes a state machine (from `transitions`) to keep track of a container's
     lifecycle.
     """
 
@@ -195,7 +195,7 @@ class DockerContainer:
     def _update_state(self, *_args, **_kwargs):
         """Update the state machine.
 
-        based on data obtained from the Docker daemon by reloading the inner `Container`
+        Data is obtained from the Docker daemon by reloading the inner `Container`
         object.
         """
 
