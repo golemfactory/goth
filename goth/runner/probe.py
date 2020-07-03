@@ -81,7 +81,9 @@ class Probe:
     def start_requestor_agent(self):
         log_stream = self.container.exec_run(
             f"ya-requestor"
-            f" --app-key {self.app_key} --exe-script /asset/exe_script.json",
+            f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
+            f" --task-package hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
+            f"http://34.244.4.185:8000/rust-wasi-tutorial.zip",
             stream=True,
         )
         self._init_agent_logs(log_stream)
