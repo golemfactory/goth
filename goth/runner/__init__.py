@@ -28,7 +28,7 @@ class Runner:
 
     proxies: List[ProxyContainer]
 
-    def __init__(self, assets_path: Optional[Path], logs_path: Path):
+    def __init__(self, logs_path: Path, assets_path: Optional[Path]):
 
         self.assets_path = assets_path
         self.probes = defaultdict(list)
