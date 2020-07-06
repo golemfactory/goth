@@ -16,6 +16,7 @@ from goth.runner.cli.yagna_id_cmd import Identity
 from goth.runner.cli.yagna_payment_cmd import Payments, PaymentStatus
 from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
 
+
 class MockYagnaCLI:
     commands: dict = {}
     id_list = {"headers": ["alias", "default", "locked", "address"], "values": []}
