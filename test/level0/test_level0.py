@@ -177,5 +177,5 @@ class Level0Scenario(Scenario):
 
 class TestLevel0:
     @pytest.mark.asyncio
-    async def test_level0(self, assets_path: Optional[Path], logs_path: Path):
-        await Runner(assets_path, logs_path).run_scenario(Level0Scenario())
+    async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
+        await Runner(logs_path, assets_path).run_scenario(Level0Scenario())
