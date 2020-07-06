@@ -28,6 +28,14 @@ class MockYagnaCLI:
     )
 
     def __init__(self):
+        """
+            Commands are mapped as an object, so each command can 
+            point its relevant function to call. This is done automatically
+            by call_fn method under MockYagnaCLI.
+
+            To add more commands, simply map the command as other commands in object 
+            and pass the function to be executed as a value.
+        """
         self.commands = {
             "/bin/sh": {"-c": self.echo_demux},
             "yagna": {
@@ -158,7 +166,9 @@ class MockYagnaCLI:
             if key_id
             else self.key_values
         )
-        self.key_list["values"] = [list(ob.__dict__.values()) for ob in key_value_list]
+        self.key_list["values"] = [
+            list(asdict(value).values()) for value in key_value_list
+        ]
         return (json.dumps(self.key_list).encode("utf-8"), b"")
 
     def create_id(self, options, cmd):
@@ -183,7 +193,7 @@ class MockYagnaCLI:
 
     def show_id(self, _options, cmd):
         """Shows specific id if exist"""
-        filter_index = "address"
+        filter_key = "address"
         result_list = self.id_values
         try:
             alias_or_addr = re.search(r"^.*?\bshow ([^\s]+)", cmd).group(1)
@@ -192,8 +202,8 @@ class MockYagnaCLI:
 
         if alias_or_addr:
             if not self.is_ipv4(alias_or_addr):
-                filter_index = "alias"
-            result_list = self.filter_list(self.id_values, alias_or_addr, filter_index)
+                filter_key = "alias"
+            result_list = self.filter_list(self.id_values, alias_or_addr, filter_key)
 
         if len(result_list) < 1:
             result = {"Ok": None}
@@ -211,9 +221,12 @@ class MockYagnaCLI:
 
     def list_id(self, _options, _cmd):
         """Lists current ids"""
-        list_values = [list(ob.__dict__.values()) for ob in self.id_values]
-        for item in list_values:
-            item[1] = "X" if item[1] else None
+        list_values = []
+        for value in self.id_values:
+            identity_as_list = list(asdict(value).values())
+            identity_as_list[1] = "X" if identity_as_list[1] else None
+            list_values.append(identity_as_list)
+
         self.id_list["values"] = list_values
         return (json.dumps(self.id_list).encode("utf-8"), b"")
 
