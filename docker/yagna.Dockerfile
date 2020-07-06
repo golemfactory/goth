@@ -6,7 +6,7 @@ RUN pip install requests \
     && python ./download_artifacts.py -t ${GITHUB_API_TOKEN} \
     && python ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
 
-FROM ubuntu:20.04
+FROM debian:bullseye-slim
 COPY default/asset /asset
 COPY default/asset/presets.json /presets.json
 COPY --from=downloader /yagna.deb /ya-sb-router.deb ya-runtime-wasi.deb ./
