@@ -102,7 +102,7 @@ class Probe(abc.ABC):
         Stop the probe, removing the Docker container of the daemon being tested.
         Once stopped, a probe cannot be restarted.
         """
-        if self.container.log_config:
+        if self.container.logs is not None:
             await self.container.logs.stop()
         self.container.remove(force=True)
 
@@ -228,7 +228,7 @@ class ProviderProbe(Probe):
         self._init_agent_logs(log_stream)
 
     async def stop(self):
-        if self.agent_logs:
+        if self.agent_logs is not None:
             await self.agent_logs.stop()
         await super().stop()
 
