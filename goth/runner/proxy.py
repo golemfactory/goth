@@ -13,7 +13,9 @@ from goth.api_monitor.api_events import APIEvent
 from goth.api_monitor.router_addon import RouterAddon
 from goth.api_monitor.monitor_addon import MonitorAddon
 
-
+# This function in `mitmproxy` will try to register signal handlers
+# which will fail since the proxy does not run in the main thread.
+# So we monkey-patch it to no-op.
 mitmproxy.utils.debug.register_info_dumpers = lambda *args: None
 
 
@@ -48,7 +50,6 @@ class Proxy:
         self._proxy_thread.start()
 
     def stop(self):
-
         if not self._loop:
             raise RuntimeError("Event loop is not set")
         asyncio.run_coroutine_threadsafe(self.monitor.stop(), self._loop)
@@ -68,7 +69,7 @@ class Proxy:
 
         self._logger.info("Starting embedded mitmproxy...")
 
-        # This class is nested since it needs to refer to the attribute `_monitor`
+        # This class is nested since it needs to refer to the `monitor` attribute
         # of the enclosing instance of `Proxy`.
         class MITMProxyRunner(dump.DumpMaster):
             def __init__(inner_self, opts: options.Options) -> None:

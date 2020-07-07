@@ -35,8 +35,8 @@ class EventMonitor(Generic[E]):
 
     def __init__(self, logger: Optional[logging.Logger] = None, on_stop=None) -> None:
         self._events = []
-        # Delay creating the queue to make sure it's created in the same
-        # event loop as the worker task
+        # Delay creating the queue to make sure it's created in the event loop
+        # used by the worker task.
         self._incoming = None
         self.assertions = []
         self._worker_task = None
@@ -46,6 +46,8 @@ class EventMonitor(Generic[E]):
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
 
+        # Create assertions here but don't start them yet, to make sure
+        # they're started in the same event loop in which they'll be running.
         self.assertions.extend(
             Assertion(self._events, func) for func in assertion_funcs
         )
@@ -167,6 +169,8 @@ class EventMonitor(Generic[E]):
 
         for a in self.assertions:
 
+            # As new assertions may be added on the fly, we need to make sure
+            # that this one has been started already.
             if not a.started:
                 a.start()
                 self._logger.debug("Assertion '%s' started", a.name)

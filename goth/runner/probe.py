@@ -5,7 +5,7 @@ from typing import Optional
 
 from docker import DockerClient
 
-from goth.runner.cli import Cli, YagnaDockerCli
+from goth.runner.cli import Cli
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig

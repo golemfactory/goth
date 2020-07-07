@@ -18,6 +18,9 @@ services:
             - "5001:5001"
 
     proxy:
+        # A service that runs `nginx` and routes API calls to
+        # the `mitmproxy` instance running as part of the test
+        # harness on the host machine
         image: proxy
         build:
             context: ../
@@ -27,4 +30,6 @@ networks:
     default:
         ipam:
             config:
+                # Fix the IP address range to ensure the host machine
+                # is reachable at the fixed address 172.19.0.1
                 - subnet: 172.19.0.0/16
