@@ -31,6 +31,17 @@ class Role(Enum):
     provider = 1
 
 
+class ProbeLoggingAdapter(logging.LoggerAdapter):
+    """
+    Adds probe name information to log messages.
+    """
+
+    EXTRA_PROBE_NAME = "probe_name"
+
+    def process(self, msg, kwargs):
+        return "[%s] %s" % (self.extra[self.EXTRA_PROBE_NAME], msg), kwargs
+
+
 class Probe(abc.ABC):
     """
     Provides a unified interface for interacting with and testing a single Yagna node.
@@ -53,6 +64,9 @@ class Probe(abc.ABC):
     ):
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
+        self._logger = ProbeLoggingAdapter(
+            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
+        )
 
     def __str__(self):
         return self.name
@@ -82,7 +96,7 @@ class Probe(abc.ABC):
         """
         try:
             key = self.cli.app_key_create(key_name)
-            logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
+            self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
         except KeyAlreadyExistsError:
             app_key = next(
                 filter(lambda k: k.name == key_name, self.cli.app_key_list())
@@ -125,7 +139,7 @@ class ActivityApiClient:
     state: activity.RequestorStateApi
     """Client for the state part of the activity API."""
 
-    def __init__(self, app_key: str, address: str, node_name: str):
+    def __init__(self, app_key: str, address: str):
         api_url = ACTIVITY_API_URL.substitute(base=address)
         config = activity.Configuration(host=api_url)
         config.access_token = app_key
@@ -133,9 +147,6 @@ class ActivityApiClient:
 
         self.control = activity.RequestorControlApi(client)
         self.state = activity.RequestorStateApi(client)
-        logger.debug(
-            "activity API initialized. node_name=%s, url=%s", node_name, api_url
-        )
 
 
 class RequestorProbe(Probe):
@@ -159,7 +170,10 @@ class RequestorProbe(Probe):
         host_port = self.container.ports[YagnaContainer.HTTP_PORT]
         daemon_base_url = YAGNA_REST_URL.substitute(host="localhost", port=host_port)
 
-        self.activity = ActivityApiClient(self.app_key, daemon_base_url, self.name)
+        self.activity = ActivityApiClient(self.app_key, daemon_base_url)
+        self._logger.debug(
+            "activity API initialized. node_name=%s, url=%s", self.name, daemon_base_url
+        )
         self._init_payment_api(daemon_base_url)
         self._init_market_api(daemon_base_url)
 
@@ -188,7 +202,9 @@ class RequestorProbe(Probe):
         config.access_token = self.app_key
         client = market.ApiClient(config)
         self.market = market.RequestorApi(client)
-        logger.debug("market API initialized. node_name=%s, url=%s", self.name, api_url)
+        self._logger.debug(
+            "market API initialized. node_name=%s, url=%s", self.name, api_url
+        )
 
     def _init_payment_api(self, address: str):
         api_url = PAYMENT_API_URL.substitute(base=address)
@@ -196,7 +212,7 @@ class RequestorProbe(Probe):
         config.access_token = self.app_key
         client = payment.ApiClient(config)
         self.payment = payment.RequestorApi(config)
-        logger.debug(
+        self._logger.debug(
             "payment API initialized. node_name=%s, url=%s", self.name, api_url
         )
 
