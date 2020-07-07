@@ -153,10 +153,9 @@ class RequestorProbe(Probe):
         host_port = self.container.ports[YagnaContainer.HTTP_PORT]
         daemon_base_url = YAGNA_REST_URL.substitute(host="localhost", port=host_port)
 
-        key = self.app_key
-        self.activity = ActivityApiClient(key, daemon_base_url, self.name)
-        self._init_payment_api(key, daemon_base_url)
-        self._init_market_api(key, daemon_base_url)
+        self.activity = ActivityApiClient(self.app_key, daemon_base_url, self.name)
+        self._init_payment_api(daemon_base_url)
+        self._init_market_api(daemon_base_url)
 
         # TODO Remove once agent calls are implemented via probe
         self.start_requestor_agent()
@@ -177,18 +176,18 @@ class RequestorProbe(Probe):
         )
         self.agent_logs = LogEventMonitor(log_stream.output, log_config)
 
-    def _init_market_api(self, app_key: str, address: str):
+    def _init_market_api(self, address: str):
         api_url = MARKET_API_URL.substitute(base=address)
         config = market.Configuration(host=api_url)
-        config.access_token = app_key
+        config.access_token = self.app_key
         client = market.ApiClient(config)
         self.market = market.RequestorApi(client)
         logger.debug("market API initialized. node_name=%s, url=%s", self.name, api_url)
 
-    def _init_payment_api(self, app_key: str, address: str):
+    def _init_payment_api(self, address: str):
         api_url = PAYMENT_API_URL.substitute(base=address)
         config = payment.Configuration(host=api_url)
-        config.access_token = app_key
+        config.access_token = self.app_key
         client = payment.ApiClient(config)
         self.payment = payment.RequestorApi(config)
         logger.debug(
