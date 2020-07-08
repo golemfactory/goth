@@ -3,7 +3,7 @@ version: "3.3"
 services:
 
     router:
-        image: ${DOCKER_PKG:-}yagna-goth:${YAGNA_DEB:-latest}
+        image: ${DOCKER_PKG:-yagna-goth}:${YAGNA_DEB:-latest}
         build:
             context: .
             dockerfile: yagna-goth.Dockerfile
