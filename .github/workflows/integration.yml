@@ -10,7 +10,7 @@ on:
       - master
 
 env:
-  DOCKER_PKG: docker.pkg.github.com/${{github.repository}}
+  DOCKER_PKG: docker.pkg.github.com/${{github.repository}}/
 
 jobs:
   level0:
@@ -50,7 +50,7 @@ jobs:
 
       # tagging as latest after push, so goth/runner/container/yagna.py#L35 wont complain
       - name: Update tag of yagna image with version of yagna.deb file
-        run: docker tag ${DOCKER_PKG}/yagna-goth:${YAGNA_DEB} yagna-goth:latest
+        run: docker tag ${DOCKER_PKG}yagna-goth:${YAGNA_DEB} yagna-goth:latest
 
       - name: Run setuptools
         run: python setup.py develop

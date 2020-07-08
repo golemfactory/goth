@@ -1,8 +1,8 @@
-from dataclasses import asdict, astuple, fields
-import json
+from dataclasses import asdict, astuple
 import ipaddress
-import re
+import json
 import random
+import re
 import shlex
 import socket
 import struct
@@ -20,9 +20,9 @@ from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
 class MockYagnaCLI:
     commands: dict = {}
     id_list = {"headers": ["alias", "default", "locked", "address"], "values": []}
-    id_values: List[Identity] = []
+    id_values: List[Identity]
     key_list = {"headers": ["name", "key", "id", "role", "created"], "values": []}
-    key_values: List[AppKeyInfo] = []
+    key_values: List[AppKeyInfo]
     payment_status_value = PaymentStatus(
         0, Payments(0, 0, 0, 0), Payments(0, 0, 0, 0), 0
     )
@@ -48,10 +48,10 @@ class MockYagnaCLI:
                 "payment": {"init": self.payment_status, "status": self.payment_status},
             },
         }
-        self.reset_states()
-        self.id_values.append(
+        self.id_values = [
             Identity(alias="", is_default=True, is_locked=False, address="")
-        )
+        ]
+        self.key_values = []
 
     def is_ipv4(self, value):
         """Check if given value is IPv4."""
@@ -60,13 +60,6 @@ class MockYagnaCLI:
             return True
         except ValueError:
             return False
-
-    def filter_list(self, target_list, item, index):
-        return list(filter(lambda x: getattr(x, index) == item, target_list))
-
-    def is_item_in(self, target_list, item, index):
-        result = self.filter_list(target_list, item, index)
-        return len(result) > 0
 
     def deep_get_fn(self, dictionary, keys):
         """Recursively search for function in nested object."""
@@ -77,11 +70,6 @@ class MockYagnaCLI:
             return dictionary
 
         return self.deep_get_fn(dictionary.get(keys[0]), keys[1:])
-
-    def reset_states(self):
-        """Reset states for each test."""
-        self.key_values.clear()
-        self.id_values.clear()
 
     def call_fn(self, args, cmd, options):
         """Call mapped function from given commands."""
@@ -137,12 +125,12 @@ class MockYagnaCLI:
         alias = options.get("--id")
         key = re.search(r"^.*?\bcreate \'(.*)\'(?:.+)?$", cmd).group(1)
 
-        if isinstance(alias, str) and not self.is_item_in(
-            self.id_values, alias, "alias"
-        ):
-            raise CommandError("no-such-command")
+        if isinstance(alias, str) and not [
+            value for value in self.id_values if alias == value.alias
+        ]:
 
-        if self.is_item_in(self.key_values, key, "key"):
+            raise CommandError("no-such-command")
+        if [value for value in self.key_values if key == value.key]:
             raise KeyAlreadyExistsError(key)
 
         self.key_values.append(AppKeyInfo("name", key, alias, "", ""))
@@ -155,14 +143,16 @@ class MockYagnaCLI:
         alias = None
 
         if self.is_ipv4(key_id):
-            result_alias = self.filter_list(self.id_values, key_id, "address")
+            result_alias = [
+                value for value in self.id_values if value.address == key_id
+            ]
             alias = result_alias[0].alias
             alias = alias if alias else key_id
         else:
             alias = key_id
 
         key_value_list = (
-            self.filter_list(self.key_values, alias, "address")
+            [value for value in self.key_values if value.address == alias]
             if key_id
             else self.key_values
         )
@@ -176,7 +166,7 @@ class MockYagnaCLI:
         alias = options.get("--no-password")
         alias = alias if isinstance(alias, str) else None
 
-        if alias and self.is_item_in(self.id_values, alias, "alias"):
+        if alias and [value for value in self.id_values if alias == value.alias]:
             raise CommandError("no-such-command")
 
         address = socket.inet_ntoa(struct.pack(">I", random.randint(1, 0xFFFFFFFF)))
@@ -203,8 +193,11 @@ class MockYagnaCLI:
         if alias_or_addr:
             if not self.is_ipv4(alias_or_addr):
                 filter_key = "alias"
-            result_list = self.filter_list(self.id_values, alias_or_addr, filter_key)
-
+            result_list = [
+                value
+                for value in self.id_values
+                if getattr(value, filter_key) == alias_or_addr
+            ]
         if len(result_list) < 1:
             result = {"Ok": None}
         else:
@@ -224,7 +217,7 @@ class MockYagnaCLI:
         list_values = []
         for value in self.id_values:
             identity_as_list = list(asdict(value).values())
-            identity_as_list[1] = "X" if identity_as_list[1] else None
+            identity_as_list[1] = "X" if value.is_default else None
             list_values.append(identity_as_list)
 
         self.id_list["values"] = list_values
