@@ -3,7 +3,6 @@
 Verifies that a sequence of calls satisfies given properties.
 """
 from __future__ import annotations
-import asyncio
 import logging
 from typing import Dict, Optional
 
@@ -11,7 +10,6 @@ from mitmproxy.http import HTTPFlow, HTTPRequest
 
 from goth.api_monitor.api_events import (
     APIEvent,
-    APIClockTick,
     APIRequest,
     APIResponse,
     APIError,
@@ -45,25 +43,10 @@ class MonitorAddon:
 
     def __init__(self, monitor: Optional[EventMonitor[APIEvent]] = None):
         self.monitor = monitor or EventMonitor()
-        self.pending_requests = {}
-        self.num_requests = 0
-
-    def load(self, _loader) -> None:
-        """Finished loading this add-on into mitmproxy."""
-
         if not self.monitor.is_running():
             self.monitor.start()
-        self.monitor.add_event(APIClockTick())
-
-        asyncio.ensure_future(self._timer())
-
-    async def _timer(self) -> None:
-        """Periodically emit `APIClockTick` event."""
-
-        logger.debug("Timer thread started")
-        while self.monitor.is_running():
-            self.monitor.add_event(APIClockTick())
-            await asyncio.sleep(1.0)
+        self.pending_requests = {}
+        self.num_requests = 0
 
     def _register_event(self, event: APIEvent) -> None:
 

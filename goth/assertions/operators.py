@@ -1,5 +1,6 @@
 """Operators for building temporal assertions."""
 
+import asyncio
 from typing import Callable, Optional, TypeVar, TYPE_CHECKING
 
 from goth.assertions import EventStream
@@ -26,18 +27,21 @@ else:
 EventPredicate = Callable[[E], bool]
 
 
-async def eventually(
-    events: EventStream[E], predicate: EventPredicate, deadline: Optional[float] = None
+async def wait_for_predicate(
+    stream: EventStream[E], predicate: EventPredicate, timeout: Optional[float] = None
 ) -> Optional[E]:
-    """Ensure `predicate` is satisfied for some event occurring before `deadline`."""
+    """Wait for an event that satisfies `predicate` with `timeout`.
 
-    async for e in events:
+    Returns the first event satisfying `predicate` if any such event occurs
+    before `timeout`, `None` if the end of events occurs before `timeout` and
+    raises `asyncio.TimeoutError` otherwise.
+    """
 
-        assert (
-            deadline is None or e.timestamp <= deadline
-        ), f"Timeout: {(e.timestamp - deadline):.1f}s after deadline"
+    if timeout is None:
+        async for e in stream:
+            if predicate(e):
+                return e
+        return None
 
-        if predicate(e):
-            return e
-
-    return None
+    else:
+        return await asyncio.wait_for(wait_for_predicate(stream, predicate), timeout)

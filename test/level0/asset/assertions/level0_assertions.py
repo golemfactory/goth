@@ -1,78 +1,64 @@
 """Assertions related to API calls in Level 0 test scenario."""
 import logging
-from typing import Optional, Sequence
+from typing import Sequence
 
-from goth.api_monitor.api_events import APIEvent
+from goth.api_monitor.api_events import APIResponse
 import goth.api_monitor.api_events as api
 
 from goth.assertions import AssertionFunction, TemporalAssertionError
-from goth.assertions.operators import eventually
+from goth.assertions.operators import wait_for_predicate
 
 from .common_assertions import (
     APIEvents,
     assert_no_api_errors,
-    assert_clock_ticks,
 )
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("proxy")
 
 
-async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
-    """Assert that eventually `subscribeOffer` is called."""
+async def assert_eventually_offer_subscribed(stream: APIEvents) -> APIResponse:
+    """Assert that eventually `SubscribeOffer` is called and gets a response.
 
-    async for e in stream:
-
-        if api.is_subscribe_offer_request(e):
-            return True
-
-    raise TemporalAssertionError("subscribeOffer not called")
-
-
-# This is formally an assertion but it never fails:
-async def wait_for_subscribe_offer_returned(stream: APIEvents) -> Optional[APIEvent]:
-    """Wait for a response to a `subscribeOffer` request.
-
-    Return the response event or `None` if the events end without the response.
+    Return the response event for the `SubscribeOffer` call, or `None` if
+    the end of events occurs before the request is made or before the response
+    arrives.
     """
+    req = await wait_for_predicate(stream, api.is_subscribe_offer_request)
+    if req is None:
+        # We've reached the End of Events
+        raise TemporalAssertionError("SubscribeOffer not called")
 
-    async for e in stream:
+    # Now wait for a response event matching `req`.
+    resp = await wait_for_predicate(
+        stream, lambda e: isinstance(e, APIResponse) and e.request == req
+    )
+    if resp is None:
+        raise TemporalAssertionError("no response to SubscribeOffer")
 
-        if api.is_subscribe_offer_response(e):
-            assert isinstance(e, APIEvent)
-            return e
-
-    return None
+    return resp
 
 
 async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bool:
     """Assert call patterns for the provider agent."""
 
-    # 1. Make sure subscribeOffer is called
-    await assert_eventually_subscribe_offer_called(stream)
-
-    # 2. After subscribeOffer is responded, extract subscription ID from response
-    #    (this step does not fail if the response never comes!)
-    response = await wait_for_subscribe_offer_returned(stream)
-    if response is None:
-        # This means the response did not arrive and the events ended
-        return True
+    # Make sure `SubscribeOffer` call is made; extract the subscription ID
+    # from the response.
+    response = await assert_eventually_offer_subscribed(stream)
 
     sub_id = api.get_response_json(response)
-    logger.debug("`subscribeOffer` returned sub_id %s", sub_id)
+    logger.debug("SubscribeOffer returned sub_id %s", sub_id)
 
-    interval = 6.0
-    deadline = response.timestamp + interval
+    interval = 10.0
 
-    # 3. Ensure that `collectDemands` is called within each `interval`
+    # Ensure that `CollectDemands(sub_id)` is called within each `interval`
     while not stream.events_ended:
 
-        e = await eventually(
-            stream, lambda e: api.is_collect_demands_request(e, sub_id), deadline
+        req = await wait_for_predicate(
+            stream, lambda e: api.is_collect_demands_request(e, sub_id), interval
         )
-        if e:
-            logger.debug("`collectDemands` called")
-            deadline = e.timestamp + interval
+        if req:
+            logger.debug("CollectDemands called")
 
     return True
 
@@ -94,7 +80,6 @@ async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
 
 
 TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [
-    assert_clock_ticks,
     assert_provider_periodically_collects_demands,
     assert_no_errors_until_invoice_sent,
 ]
