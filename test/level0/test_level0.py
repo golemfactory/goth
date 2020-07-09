@@ -121,10 +121,7 @@ class Level0Scenario(Scenario):
     @property
     def steps(self):
         return [
-            (self.create_app_key, Role.requestor),
-            (self.create_app_key, Role.provider),
-            (self.start_provider_agent, Role.provider),
-            (self.start_requestor_agent, Role.requestor),
+            (self.wait_for_offer_subscribed, Role.provider),
             (self.wait_for_proposal_accepted, Role.provider),
             (self.wait_for_agreement_approved, Role.provider),
             (self.wait_for_exeunit_started, Role.provider),
@@ -132,20 +129,9 @@ class Level0Scenario(Scenario):
             (self.wait_for_invoice_sent, Role.provider),
         ]
 
-    def create_app_key(self, probe: Probe, key_name: str = "test-key"):
-        key = probe.create_app_key(key_name)
-        logger.info("app-key created. name=%s key=%s", key_name, key)
-
-    async def start_provider_agent(
-        self, probe: Probe, preset_name: str = "amazing-offer",
-    ):
-        logger.info("starting provider agent")
-        probe.start_provider_agent(preset_name)
+    async def wait_for_offer_subscribed(self, probe: Probe):
+        logger.info("waiting for offer to be subscribed")
         await assert_message_starts_with_and_wait(probe, "Subscribed offer")
-
-    def start_requestor_agent(self, probe: Probe):
-        logger.info("starting requestor agent")
-        probe.start_requestor_agent()
 
     async def wait_for_proposal_accepted(self, probe: Probe):
         logger.info("waiting for proposal to be accepted")

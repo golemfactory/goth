@@ -9,10 +9,10 @@ from typing import Dict, List, Optional
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig, LOGGING_CONFIG
 from goth.runner.log_monitor import _create_file_logger
-from goth.runner.probe import Probe, Role
-from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.proxy import Proxy
 
 
@@ -112,10 +112,19 @@ class Runner:
         for config in scenario.topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
+
             if isinstance(config, YagnaContainerConfig):
-                probe = Probe(docker_client, config, log_config, self.assets_path)
+                if config.role == Role.requestor:
+                    probe = RequestorProbe(
+                        docker_client, config, log_config, self.assets_path
+                    )
+                else:
+                    probe = ProviderProbe(
+                        docker_client, config, log_config, self.assets_path
+                    )
+
+                probe.start()
                 self.probes[config.role].append(probe)
-                probe.container.start()
 
 
 def _create_proxy_logger(scenario_dir):
