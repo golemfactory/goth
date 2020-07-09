@@ -1,4 +1,4 @@
-"""A class for starting an embedded instance of mitmproxy"""
+"""A class for starting an embedded instance of mitmproxy."""
 import asyncio
 import logging
 import threading
@@ -20,6 +20,7 @@ mitmproxy.utils.debug.register_info_dumpers = lambda *args: None
 
 
 class Proxy:
+    """Proxy using mitmproxy to generate events out of http calls."""
 
     monitor: EventMonitor[APIEvent]
     _proxy_thread: threading.Thread
@@ -47,16 +48,18 @@ class Proxy:
             self.monitor.load_assertions(assertions_module)
 
     def start(self):
+        """Start the proxy thread."""
         self._proxy_thread.start()
 
     def stop(self):
+        """Start the proxy monitor and thread."""
         if not self._loop:
             raise RuntimeError("Event loop is not set")
         asyncio.run_coroutine_threadsafe(self.monitor.stop(), self._loop)
         self._proxy_thread.join()
 
     def _run_mitmproxy(self):
-        """This method is run by `self.proxy_thread`"""
+        """Ran by `self.proxy_thread`."""
 
         self._loop = asyncio.new_event_loop()
         # Monkey patch the loop to set its `add_signal_handler` method to no-op.

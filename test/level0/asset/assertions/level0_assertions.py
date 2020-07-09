@@ -78,6 +78,7 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
 
 
 async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
+    """Assert there are no errors before the invoice is sent."""
 
     try:
         await assert_no_api_errors(stream)

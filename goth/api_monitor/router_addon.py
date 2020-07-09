@@ -6,7 +6,7 @@ Also, adds caller and callee information to request headers.
 import logging
 
 from mitmproxy.http import HTTPFlow
-from goth.address import MARKET_HOST, MARKET_PORT, YAGNA_REST_PORT
+from goth.address import MARKET_PORT, YAGNA_REST_PORT
 
 
 logger = logging.getLogger(__name__)

@@ -49,7 +49,7 @@ class MonitorAddon:
         self.num_requests = 0
 
     def load(self, _loader) -> None:
-        """A callback called when this add-on is inserted into mitmproxy."""
+        """Finished loading this add-on into mitmproxy."""
 
         if not self.monitor.is_running():
             self.monitor.start()

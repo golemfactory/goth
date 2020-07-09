@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+"""Classes and helpers for managing Probes."""
+
+import abc
 from enum import Enum
 import logging
 from pathlib import Path
-from string import Template
 from typing import Optional
 
 from docker import DockerClient
@@ -33,19 +34,17 @@ class Role(Enum):
 
 
 class ProbeLoggingAdapter(logging.LoggerAdapter):
-    """
-    Adds probe name information to log messages.
-    """
+    """Adds probe name information to log messages."""
 
     EXTRA_PROBE_NAME = "probe_name"
 
     def process(self, msg, kwargs):
+        """Process the log message."""
         return "[%s] %s" % (self.extra[self.EXTRA_PROBE_NAME], msg), kwargs
 
 
 class Probe(abc.ABC):
-    """
-    Provides a unified interface for interacting with and testing a single Yagna node.
+    """Provides a unified interface for interacting with and testing a single Yagna node.
 
     This interface consists of several independent modules which may be extended
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
@@ -74,13 +73,13 @@ class Probe(abc.ABC):
 
     @property
     def address(self) -> Optional[str]:
-        """ returns address from id marked as default """
+        """Return address from id marked as default."""
         identity = self.cli.id_show()
         return identity.address if identity else None
 
     @property
     def app_key(self) -> Optional[str]:
-        """ returns first app key on the list """
+        """Return first app key on the list."""
         keys = self.cli.app_key_list()
         return keys[0].key if keys else None
 
@@ -166,6 +165,7 @@ class RequestorProbe(Probe):
     """Payment API client for the requestor daemon."""
 
     def start(self):
+        """Start the yagna container and initialize the requestor agent."""
         super().start()
 
         host_port = self.container.ports[YagnaContainer.HTTP_PORT]
@@ -185,10 +185,11 @@ class RequestorProbe(Probe):
     def start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
         log_stream = self.container.exec_run(
-            f"ya-requestor"
+            "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
-            f" --task-package hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
-            f"http://34.244.4.185:8000/rust-wasi-tutorial.zip",
+            " --task-package "
+            "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
+            "http://34.244.4.185:8000/rust-wasi-tutorial.zip",
             stream=True,
         )
         self._init_agent_logs(log_stream)
@@ -244,6 +245,7 @@ class ProviderProbe(Probe):
         self.agent_preset = preset_name
 
     def start(self):
+        """Start the agents and attach the log monitor."""
         super().start()
         log_stream = self.container.exec_run(
             f"ya-provider run"
@@ -253,6 +255,7 @@ class ProviderProbe(Probe):
         self._init_agent_logs(log_stream)
 
     async def stop(self):
+        """Stop the agent and the log monitor."""
         if self.agent_logs is not None:
             await self.agent_logs.stop()
         await super().stop()

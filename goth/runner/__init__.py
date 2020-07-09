@@ -12,7 +12,7 @@ import docker
 
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.log import configure_logging, LogConfig, LOGGING_CONFIG
+from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import _create_file_logger
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.proxy import Proxy
@@ -48,7 +48,7 @@ class Runner:
         self.logger = logging.getLogger(__name__)
 
     def check_assertion_errors(self) -> None:
-        """If any monitor reports an assertion error, raise the first error"""
+        """If any monitor reports an assertion error, raise the first error."""
 
         probes = chain.from_iterable(self.probes.values())
         monitors = chain.from_iterable(

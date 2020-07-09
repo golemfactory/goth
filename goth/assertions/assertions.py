@@ -97,6 +97,7 @@ class Assertion(AsyncIterable[E]):
 
     @property
     def started(self) -> bool:
+        """Return `True` iff this assertion has started."""
 
         return self._task is not None
 
