@@ -10,9 +10,26 @@ services:
             args:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
         entrypoint: /usr/bin/ya_sb_router
-        command: ["-l", "tcp://0.0.0.0:7477"]     
+        command: ["-l", "tcp://0.0.0.0:7477"]
 
     mock-api:
         image: golemfactory/golem-client-mock:0.1.2
         ports:
             - "5001:5001"
+
+    proxy:
+        # A service that runs `nginx` and routes API calls to
+        # the `mitmproxy` instance running as part of the test
+        # harness on the host machine
+        image: proxy
+        build:
+            context: ../
+            dockerfile: docker/proxy.Dockerfile
+
+networks:
+    default:
+        ipam:
+            config:
+                # Fix the IP address range to ensure the host machine
+                # is reachable at the fixed address 172.19.0.1
+                - subnet: 172.19.0.0/16

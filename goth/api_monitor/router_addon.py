@@ -8,12 +8,7 @@ from mitmproxy.http import HTTPFlow
 from goth.address import MARKET_HOST, MARKET_PORT, YAGNA_REST_PORT
 
 
-logging.basicConfig(
-    format="[%(asctime)s %(levelname)s %(name)s] %(message)s", level=logging.INFO
-)
-
-# `mitmproxy` adds ugly prefix to add-on module names
-logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
+logger = logging.getLogger(__name__)
 
 
 CALLER_HEADER = "X-Caller"
@@ -41,8 +36,10 @@ class RouterAddon:
             node_num = remote_addr.rsplit(".", 1)[-1]
 
             if server_port == MARKET_PORT:
-                # It's a yagna daemon calling the central market API
-                req.host = MARKET_HOST
+                # It's a yagna daemon calling the central market API.
+                # We use localhost's address, since `MARKET_PORT` in the
+                # market API container is mapped to the same port on the host.
+                req.host = "127.0.0.1"
                 req.port = MARKET_PORT
                 req.headers[CALLER_HEADER] = f"Daemon-{node_num}"
                 req.headers[CALLEE_HEADER] = "MarketAPI"

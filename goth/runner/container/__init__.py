@@ -114,6 +114,7 @@ class DockerContainer:
         self.name = name
         self.network = network
         self.log_config = log_config
+        self.logs = None
 
         self._container = self._client.containers.create(
             self.image,

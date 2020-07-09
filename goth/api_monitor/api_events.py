@@ -136,12 +136,6 @@ def _match_event(
     )
 
 
-def is_import_key_request(event: APIEvent) -> bool:
-    """Check if `event` is a request of ImportKey operation."""
-
-    return _match_event(event, APIRequest, "POST", "^/admin/import-key$")
-
-
 def is_create_agreement_request(event: APIEvent) -> bool:
     """Check if `event` is a request of CreateAgreement operation."""
 
@@ -167,6 +161,14 @@ def is_subscribe_offer_response(event: APIEvent) -> bool:
     """Check if `event` is a response of SubscribeOffer operation."""
 
     return _match_event(event, APIResponse, "POST", "^/market-api/v1/offers$")
+
+
+def is_invoice_send_response(event: APIEvent) -> bool:
+    """Check if `event` is a response for InvoiceSend operation."""
+
+    return _match_event(
+        event, APIResponse, "POST", "^/payment-api/v1/provider/invoices/.*/send$",
+    )
 
 
 def get_response_json(event: APIEvent):

@@ -19,7 +19,7 @@ from goth.address import (
 )
 from goth.assertions import EventStream
 from goth.runner import Runner
-from goth.runner.container.proxy import ProxyContainerConfig
+
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe, Role
@@ -86,18 +86,10 @@ VOLUMES = {
 }
 
 
-PROXY_VOLUMES = {
-    Template("$assets_path/assertions"): "/assertions",
-}
-
-
 class Level0Scenario(Scenario):
     @property
     def topology(self):
         return [
-            ProxyContainerConfig(
-                name="proxy", stop_on_error=True, volumes=PROXY_VOLUMES
-            ),
             YagnaContainerConfig(
                 name="requestor",
                 role=Role.requestor,
@@ -107,13 +99,17 @@ class Level0Scenario(Scenario):
             YagnaContainerConfig(
                 name="provider_1",
                 role=Role.provider,
-                environment=node_environment(),
+                # Configure this provider node to communicate via proxy
+                environment=node_environment(
+                    market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+                    rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+                ),
                 volumes=VOLUMES,
             ),
             YagnaContainerConfig(
                 name="provider_2",
                 role=Role.provider,
-                # Configure the second provider node to communicate via proxy
+                # Configure this provider node to communicate via proxy
                 environment=node_environment(
                     market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
                     rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
@@ -167,7 +163,5 @@ class Level0Scenario(Scenario):
 
 class TestLevel0:
     @pytest.mark.asyncio
-    async def test_level0(
-        self, api_monitor_image, logs_path: Path, assets_path: Optional[Path]
-    ):
+    async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
         await Runner(logs_path, assets_path).run_scenario(Level0Scenario())

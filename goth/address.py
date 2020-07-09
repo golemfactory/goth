@@ -57,11 +57,11 @@ ROUTER_BASE_URL = DefaultTemplate(
     {"host": ROUTER_HOST, "port": ROUTER_PORT, "protocol": ROUTER_PROTOCOL},
 )
 
-ACTIVITY_API_URL = Template("$base/activity-api/v1")
+ACTIVITY_API_URL = Template("$base/activity-api/v1/")
 MARKET_API_URL = DefaultTemplate(
-    "$base/market-api/v1", default={"base": str(MARKET_BASE_URL)}
+    "$base/market-api/v1/", default={"base": str(MARKET_BASE_URL)}
 )
-PAYMENT_API_URL = Template("$base/payment-api/v1")
+PAYMENT_API_URL = Template("$base/payment-api/v1/")
 
 YAGNA_BUS_PORT = 6010
 YAGNA_BUS_PROTOCOL = "tcp"

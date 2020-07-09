@@ -2,7 +2,7 @@
 import logging
 from typing import Optional, Sequence
 
-from goth.api_monitor.api_events import APIEvent, APIRequest
+from goth.api_monitor.api_events import APIEvent
 import goth.api_monitor.api_events as api
 
 from goth.assertions import AssertionFunction, TemporalAssertionError
@@ -12,24 +12,10 @@ from .common_assertions import (
     APIEvents,
     assert_no_api_errors,
     assert_clock_ticks,
-    assert_every_request_gets_response,
 )
 
 
 logger = logging.getLogger(__name__)
-
-
-async def assert_first_request_is_import_key(stream: APIEvents) -> bool:
-    """Assert that the first API request is for the `importKey` opertation."""
-
-    async for e in stream:
-
-        if isinstance(e, APIRequest):
-            if api.is_import_key_request(e):
-                return True
-            raise TemporalAssertionError(str(e))
-
-    return False
 
 
 async def assert_eventually_subscribe_offer_called(stream: APIEvents) -> bool:
@@ -74,7 +60,7 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
     sub_id = api.get_response_json(response)
     logger.debug("`subscribeOffer` returned sub_id %s", sub_id)
 
-    interval = 5.0
+    interval = 6.0
     deadline = response.timestamp + interval
 
     # 3. Ensure that `collectDemands` is called within each `interval`
@@ -90,10 +76,23 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
     return True
 
 
+async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
+
+    try:
+        await assert_no_api_errors(stream)
+
+    except TemporalAssertionError as err:
+        # After the invoice is sent the test is finished and the containers are
+        # shut down, and hence some API requests may get no response
+        if any(api.is_invoice_send_response(e) for e in stream.past_events):
+            logger.warning("API error occurred after invoice send response, ignoring")
+        else:
+            logger.warning("API error occurred before invoice send response")
+            raise err
+
+
 TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [
     assert_clock_ticks,
-    assert_no_api_errors,
-    assert_every_request_gets_response,
-    assert_first_request_is_import_key,
     assert_provider_periodically_collects_demands,
+    assert_no_errors_until_invoice_sent,
 ]

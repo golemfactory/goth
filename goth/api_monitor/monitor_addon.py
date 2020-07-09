@@ -3,13 +3,10 @@ Mitmproxy addon that traces API calls and verifies
 that the sequence of calls satifies given properties
 """
 from __future__ import annotations
+import asyncio
 import logging
-import sys
-import threading
-import time
 from typing import Dict, Optional
 
-import mitmproxy.ctx
 from mitmproxy.http import HTTPFlow, HTTPRequest
 
 from goth.api_monitor.api_events import (
@@ -22,24 +19,7 @@ from goth.api_monitor.api_events import (
 from goth.assertions.monitor import EventMonitor
 
 
-logging.basicConfig(
-    format="[%(asctime)s %(levelname)s %(name)s] %(message)s", level=logging.DEBUG,
-)
-
-# `mitmproxy` adds ugly prefix to add-on module names
-logger = logging.getLogger(__name__.replace("__mitmproxy_script__.", ""))
-
-# Setup call logging to "calls.log" file
-call_logger = logging.getLogger("api_calls")
-_log_handler = logging.FileHandler("calls.log", mode="w")
-_log_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s %(num)-4s %(status)-15s %(caller)-15s -> "
-        "%(callee)-16s %(method)-6s %(path)s"
-    )
-)
-call_logger.handlers = [_log_handler]
-call_logger.propagate = False
+logger = logging.getLogger(__name__)
 
 
 def _log_event(event: APIEvent) -> None:
@@ -55,20 +35,6 @@ def _log_event(event: APIEvent) -> None:
 
     logger.info("%s:\t%s", request, status)
 
-    call_logger.info(
-        "%s:\t%s",
-        event,
-        status,
-        extra={
-            "num": request.number,
-            "caller": request.caller,
-            "callee": request.callee,
-            "method": request.method,
-            "path": request.path,
-            "status": status,
-        },
-    )
-
 
 class MonitorAddon:
     """This add-on keeps track of API requests and responses"""
@@ -77,41 +43,30 @@ class MonitorAddon:
     pending_requests: Dict[HTTPRequest, APIRequest]
     num_requests: int
 
-    def __init__(self):
-        self.monitor = EventMonitor(messages_file=sys.stderr)
+    def __init__(self, monitor: Optional[EventMonitor[APIEvent]] = None):
+        self.monitor = monitor or EventMonitor()
         self.pending_requests = {}
         self.num_requests = 0
 
-    def load(self, loader) -> None:
-        """Load module with property functions"""
+    def load(self, _loader) -> None:
+        """A callback called when this add-on is inserted into mitmproxy."""
 
-        loader.add_option(
-            name="assertions",
-            typespec=Optional[str],
-            default=None,
-            help="A file with the assertions to check",
-        )
-        mitmproxy.ctx.options.process_deferred()
-        assertions_module = mitmproxy.ctx.options.assertions
-        if assertions_module is not None:
-            self.monitor.load_assertions(assertions_module)
-        self.monitor.start()
+        if not self.monitor.is_running():
+            self.monitor.start()
         self.monitor.add_event(APIClockTick())
 
-        timer_thread = threading.Thread(
-            target=self._timer, name="Timer thread", daemon=True
-        )
-        timer_thread.start()
+        asyncio.ensure_future(self._timer())
 
-    def _timer(self) -> None:
+    async def _timer(self) -> None:
         """Periodically emit `APIClockTick` event"""
 
         logger.debug("Timer thread started")
         while self.monitor.is_running():
             self.monitor.add_event(APIClockTick())
-            time.sleep(1.0)
+            await asyncio.sleep(1.0)
 
     def _register_event(self, event: APIEvent) -> None:
+
         _log_event(event)
         self.monitor.add_event(event)
 
