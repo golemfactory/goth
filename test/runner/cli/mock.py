@@ -116,7 +116,9 @@ class MockYagnaCLI:
         proc.wait()
         result = proc.communicate()
         if proc.returncode != 0:
-            raise CommandError("no-such-command")
+            raise CommandError(
+                "no-such-command"
+            )  # test_error_output_demultiplexing is depend on given message
 
         return result
 
@@ -128,8 +130,8 @@ class MockYagnaCLI:
         if isinstance(alias, str) and not [
             value for value in self.id_values if alias == value.alias
         ]:
+            raise CommandError("Given alias is not on the list")
 
-            raise CommandError("no-such-command")
         if [value for value in self.key_values if key == value.key]:
             raise KeyAlreadyExistsError(key)
 
@@ -167,7 +169,7 @@ class MockYagnaCLI:
         alias = alias if isinstance(alias, str) else None
 
         if alias and [value for value in self.id_values if alias == value.alias]:
-            raise CommandError("no-such-command")
+            raise CommandError("Given alias is already on the list")
 
         address = socket.inet_ntoa(struct.pack(">I", random.randint(1, 0xFFFFFFFF)))
         self.id_values.append(Identity(alias, False, False, address))
