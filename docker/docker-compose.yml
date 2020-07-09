@@ -3,10 +3,10 @@ version: "3.3"
 services:
 
     router:
-        image: yagna
+        image: ${DOCKER_PKG:-yagna-goth}:${YAGNA_DEB:-latest}
         build:
             context: .
-            dockerfile: yagna.Dockerfile
+            dockerfile: yagna-goth.Dockerfile
             args:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
         entrypoint: /usr/bin/ya_sb_router

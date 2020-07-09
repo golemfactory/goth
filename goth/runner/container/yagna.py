@@ -38,7 +38,7 @@ class YagnaContainer(DockerContainer):
     HTTP_PORT = 6000
     COMMAND = ["service", "run", "-d", "/"]
     ENTRYPOINT = "/usr/bin/yagna"
-    IMAGE = "yagna"
+    IMAGE = "yagna-goth"
 
     ports: Dict[int, int] = {}
     """ Port mapping between the Docker host and the container.
