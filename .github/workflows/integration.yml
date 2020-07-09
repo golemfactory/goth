@@ -45,6 +45,16 @@ jobs:
           docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
           docker-compose -f docker/docker-compose.yml up -d
 
+      # --ignore-pull-failures: if there is no cache in github packages
+      # or latest cache is invalidated, this flag will prevent failing
+      # in next step we will build non-existent images.
+      #
+      # --ignore-push-failures: if there is an image we wont be caching,
+      # "docker compose push" anyway will try to push but will get denied,
+      # so this flag will prevent command to fail.
+      # Until this pr merged in docker compose: https://github.com/docker/compose/pull/7430
+      # it's the best option to use.
+      
       - name: Push docker images to Github Packages
         run: docker-compose -f docker/docker-compose.yml push --ignore-push-failures
 
