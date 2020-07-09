@@ -193,10 +193,10 @@ class MockYagnaCLI:
         """Show specific id if exist."""
         filter_key = "address"
         result_list = self.id_values
-        try:
-            alias_or_addr = re.search(r"^.*?\bshow ([^\s]+)", cmd).group(1)
-        except IndexError:
-            alias_or_addr = None
+        alias_or_addr = None
+        match = re.search(r"^.*?\bshow ([^\s]+)", cmd)
+        if match:
+            alias_or_addr = match.group(1)
 
         if alias_or_addr:
             if not self.is_ipv4(alias_or_addr):
