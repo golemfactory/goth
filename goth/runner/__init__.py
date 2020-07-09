@@ -139,6 +139,9 @@ class Runner:
                 probe.start()
                 self.probes[config.role].append(probe)
 
+    def get_probes(self, role):
+        return ProbeStepBuilder(steps=self.steps, probes=role)
+
 
 def _create_proxy_logger(scenario_dir):
 
@@ -149,6 +152,3 @@ def _create_proxy_logger(scenario_dir):
     )
     proxy_log_config.level = logging.DEBUG
     return _create_file_logger(proxy_log_config)
-
-    def get_probes(self, role):
-        return ProbeStepBuilder(steps=self.steps, probes=role)

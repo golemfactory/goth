@@ -76,7 +76,7 @@ LEVEL0_TOPPOLOGY = [
     YagnaContainerConfig(
         name="provider_2",
         role=Role.provider,
-                # Configure the second provider node to communicate via proxy
+        # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
             rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
@@ -89,9 +89,7 @@ LEVEL0_TOPPOLOGY = [
 class TestLevel0:
     """TestCase running Level0Scenario."""
     @pytest.mark.asyncio
-    async def test_level0(
-        self, api_monitor_image, logs_path: Path, assets_path: Optional[Path]
-    ):
+    async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level0Scenario."""
         runner = Runner(LEVEL0_TOPPOLOGY, logs_path, assets_path)
 
