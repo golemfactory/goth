@@ -18,11 +18,13 @@ YAGNA_CONTAINER_NAME = "yagna_container"
 
 @pytest.fixture
 def mock_yagna_cli():
+    """Mock a yagna CLI."""
     return MockYagnaCLI()
 
 
 @pytest.fixture
 def mock_container(mock_yagna_cli):
+    """Mock a Container."""
     mock_container = MagicMock(spec=Container)
     mock_container.status = "created"
     mock_container.exec_run = mock_yagna_cli.exec_run
@@ -31,6 +33,7 @@ def mock_container(mock_yagna_cli):
 
 @pytest.fixture
 def mock_docker_client(mock_container):
+    """Mock a DockerClient, `create()`` always returns a mock_container()."""
     client = MagicMock(spec=DockerClient)
     client.containers.create.return_value = mock_container
     return client
@@ -38,6 +41,7 @@ def mock_docker_client(mock_container):
 
 @pytest.fixture
 def docker_container(mock_docker_client, mock_container):
+    """Create a DockerContainer, using the `mock_docker_client()`."""
     mock_docker_client.containers.create.return_value = mock_container
     return DockerContainer(
         client=mock_docker_client,
