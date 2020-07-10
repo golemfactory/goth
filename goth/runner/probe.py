@@ -213,7 +213,7 @@ class RequestorProbe(Probe):
         config = payment.Configuration(host=api_url)
         config.access_token = self.app_key
         client = payment.ApiClient(config)
-        self.payment = payment.RequestorApi(config)
+        self.payment = payment.RequestorApi(client)
         self._logger.debug(
             "payment API initialized. node_name=%s, url=%s", self.name, api_url
         )
