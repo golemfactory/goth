@@ -1,4 +1,4 @@
-"""Common assertions related to API calls"""
+"""Common assertions related to API calls."""
 from typing import Set
 
 from goth.api_monitor.api_events import (
@@ -17,7 +17,6 @@ APIEvents = EventStream[APIEvent]
 
 async def assert_no_api_errors(stream: APIEvents) -> bool:
     """Assert that no instance of `APIError` event ever occurs."""
-
     async for e in stream:
 
         if isinstance(e, APIError):
@@ -27,8 +26,11 @@ async def assert_no_api_errors(stream: APIEvents) -> bool:
 
 
 async def assert_clock_ticks(stream: APIEvents) -> bool:
-    """Assert at least one timer event occurred and the distance between
-    any event the last timer event is less than 1.5s"""
+    """Assert at least one timer event has occurred.
+
+    Additionally, asserts the distance between
+    any event and the last timer event is less than 1.5s.
+    """
 
     last_timer_event = None
 
@@ -47,10 +49,11 @@ async def assert_clock_ticks(stream: APIEvents) -> bool:
 
 
 async def assert_every_request_gets_response(stream: APIEvents) -> bool:
-    """Assert that for every `APIRequest` event there will eventually occur
-    a corresponding `APIResponse` event.
-    """
+    """Assert that every request gets a response.
 
+    Assert that for every `APIRequest` event there will eventually occur a
+    corresponding `APIResponse` event.
+    """
     requests_in_progress: Set[APIRequest] = set()
 
     async for e in stream:

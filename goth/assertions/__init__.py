@@ -1,4 +1,4 @@
-"""Coroutine-based implementation of temporal assertions"""
+"""Coroutine-based implementation of temporal assertions."""
 
 from goth.assertions.assertions import (
     Assertion,
@@ -7,3 +7,11 @@ from goth.assertions.assertions import (
     EventStream,
     TemporalAssertionError,
 )
+
+__all__ = [
+    "Assertion",
+    "AssertionFunction",
+    "E",
+    "EventStream",
+    "TemporalAssertionError",
+]

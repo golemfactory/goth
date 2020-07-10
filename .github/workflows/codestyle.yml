@@ -13,8 +13,8 @@ jobs:
       - name: Check if requirements are sorted properly
         run: ls | grep '^requirements.*txt$' | LC_ALL=C xargs -I@ sort --ignore-case -c @
 
-  black:
-    name: black
+  codestyle:
+    name: black flake8
     runs-on: ubuntu-latest
     steps:
 
@@ -37,3 +37,6 @@ jobs:
 
       - name: Run black codestyle in check mode
         run: black . -v --check --diff
+
+      - name: Run flake8 codestyle
+        run: flake8

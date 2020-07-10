@@ -1,4 +1,4 @@
-"""Operators for building temporal assertions"""
+"""Operators for building temporal assertions."""
 
 from typing import Callable, Optional, TypeVar, TYPE_CHECKING
 
@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from typing_extensions import Protocol
 
     class HasTimestamp(Protocol):
-        """A protocol for objects with `timestamp` property"""
+        """A protocol for objects with `timestamp` property."""
 
         @property
         def timestamp(self) -> float:
-            """Return time at which this event occurred"""
+            """Return time at which this event occurred."""
 
     E = TypeVar("E", bound=HasTimestamp)
 

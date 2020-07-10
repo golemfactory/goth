@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Package version and description for goth, Golem Test Harness."""
 
 from os import path
 import sys
@@ -7,8 +8,8 @@ from setuptools import setup, find_packages
 
 
 def parse_requirements(my_path):
-    """
-    Parse requirements.txt file
+    """Parse requirements.txt file.
+
     :return: [requirements, dependencies]
     """
     import re

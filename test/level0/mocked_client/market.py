@@ -1,20 +1,22 @@
+"""High level API for the level 0 market steps."""
+
 from datetime import datetime, timedelta
 import os
 import time
-import sys
 
 from openapi_market_client import (
     ApiClient,
     Configuration,
     RequestorApi,
     Demand,
-    DemandOfferBase,
     Proposal,
     AgreementProposal,
 )
 
 
 def level0_market():
+    """Execute all level 0 market steps on the market api one by one."""
+
     # INIT
     config = Configuration(host=f"{os.environ['MARKET_URL_BASE']}/market-api/v1")
     config.access_token = os.environ["APP_KEY"]
@@ -22,6 +24,14 @@ def level0_market():
     req_api = RequestorApi(ApiClient(config))
     print(f"Init completed, connected to {config.host}")
 
+    package = (
+        "hash://sha3:38D951E2BD2408D95D8D5E5068A69C60C8238FA45DB8BC841DC0BD50"
+        ":http://34.244.4.185:8000/rust-wasi-tutorial.zip"
+    )
+    constraints = (
+        "(&(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)"
+        "(golem.com.pricing.model=linear))"
+    )
     # REGISTER DEMAND
     demand = Demand(
         requestor_id=os.environ["NODE_ID"],
@@ -30,9 +40,9 @@ def level0_market():
             "golem.srv.comp.expiration": int(
                 (datetime.now() + timedelta(days=1)).timestamp() * 1000
             ),
-            "golem.srv.comp.wasm.task_package": "hash://sha3:38D951E2BD2408D95D8D5E5068A69C60C8238FA45DB8BC841DC0BD50:http://34.244.4.185:8000/rust-wasi-tutorial.zip",
+            "golem.srv.comp.wasm.task_package": package,
         },
-        constraints="(&(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)(golem.com.pricing.model=linear))",
+        constraints=constraints,
     )
     subscription_id = req_api.subscribe_demand(demand)
     print(f"Subscribe completed, subscription_id={subscription_id}")

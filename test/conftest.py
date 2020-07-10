@@ -1,3 +1,5 @@
+"""Code common for all pytest modules in this package."""
+
 import logging
 from pathlib import Path
 from typing import Optional
@@ -11,15 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 def pytest_addoption(parser):
-    """ Adds the optional parameter --assets-path to pytest CLI invocations. """
+    """Add the optional parameter --assets-path to pytest CLI invocations."""
     parser.addoption("--assets-path", action="store")
     parser.addoption("--logs-path", action="store")
 
 
 @pytest.fixture()
 def assets_path(request) -> Optional[Path]:
-    """ Test fixture which tries to get the value of CLI parameter --assets-path.
-        If the value is not set, the test using this fixture will fail. """
+    """Test fixture which tries to get the value of CLI parameter --assets-path.
+
+    If the value is not set, the test using this fixture will fail.
+    """
+
     path = request.config.option.assets_path
     if not path:
         return None
@@ -33,8 +38,11 @@ def assets_path(request) -> Optional[Path]:
 
 @pytest.fixture()
 def logs_path(request) -> Path:
-    """ Fixture which handles the CLI parameter --logs-path. If this parameter is not
-        present, `DEFAULT_LOG_DIR` is used as the returned value. """
+    """Fixture which handles the CLI parameter --logs-path.
+
+    If this parameter is not present, `DEFAULT_LOG_DIR` is used as the returned value.
+    """
+
     path = request.config.option.logs_path
 
     if not path:
@@ -48,7 +56,8 @@ def logs_path(request) -> Path:
 
 @pytest.fixture()
 def project_root() -> Path:
-    """A fixture that obtains the absolute path to the project's root directory
+    """Fixture that obtains the absolute path to the project's root directory.
+
     (assuming it's the parent directory of the current file's directory).
     """
 

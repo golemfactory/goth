@@ -1,23 +1,33 @@
-""" Module containing constants and templates related to addresses commonly used in
-    the context of yagna and the test harness. """
+"""Transport address helper.
+
+Module containing constants and templates related to addresses commonly used in
+the context of yagna and the test harness.
+"""
 from string import Template
 from typing import Dict, Mapping, Optional
 
 
 class DefaultTemplate(Template):
-    """ Extension of `Template` which allows for specifying default values for template
-        fields. """
+    """Extend `Template` to allow for default values for template fields."""
 
     def __init__(self, template: str, default: Dict[str, object]):
+        """Set the default and initialise Template()."""
+
         self.default = default
         super().__init__(template)
 
     def substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
+        """Replace values in string with `mapping`, merge default and mapping first."""
         return super(DefaultTemplate, self).substitute(
             self._with_default(mapping or {}), **kwargs
         )
 
     def safe_substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
+        """Replace values in string with `mapping`, merge default and mapping first.
+
+        Safe means that instead of raising a `KeyError` if a value for a placeholder is
+        missing, the placeholder will appear in the result string.
+        """
         return super(DefaultTemplate, self).safe_substitute(
             self._with_default(mapping or {}), **kwargs
         )
@@ -29,9 +39,12 @@ class DefaultTemplate(Template):
         return self.substitute()
 
     def _with_default(self, mapping: Mapping[str, object]):
-        """ Make a copy of the defaults mapping and then extend and/or overwrite the
-            copy with entries from `mapping`. Allows for passing in a `mapping` dict
-            alongside `kwargs` in `substitute` and `safe_substitute`. """
+        """Merge `self.default` with `mapping`.
+
+        Make a copy of the defaults mapping and then extend and/or overwrite the copy
+        with entries from `mapping`. Allows for passing in a `mapping` dict alongside
+        `kwargs` in `substitute` and `safe_substitute`.
+        """
         default_copy = self.default.copy()
         default_copy.update(mapping)
         return default_copy

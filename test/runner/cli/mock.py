@@ -1,3 +1,5 @@
+"""Utils for mocking CLI components."""
+
 from dataclasses import asdict, astuple
 import ipaddress
 import json
@@ -18,6 +20,8 @@ from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
 
 
 class MockYagnaCLI:
+    """Mocked Yagna CLI."""
+
     commands: dict = {}
     id_list = {"headers": ["alias", "default", "locked", "address"], "values": []}
     id_values: List[Identity]
@@ -28,12 +32,14 @@ class MockYagnaCLI:
     )
 
     def __init__(self):
+        """Create a MockYagnaCLI."""
+
         """
-            Commands are mapped as an object, so each command can 
+            Commands are mapped as an object, so each command can
             point its relevant function to call. This is done automatically
             by call_fn method under MockYagnaCLI.
 
-            To add more commands, simply map the command as other commands in object 
+            To add more commands, simply map the command as other commands in object
             and pass the function to be executed as a value.
         """
         self.commands = {
@@ -77,7 +83,7 @@ class MockYagnaCLI:
         return fn(options, cmd)
 
     def parse_options(self, cmd_args):
-        """Parse flags from given commands"""
+        """Parse flags from given commands."""
         cmd_options = {}
 
         """
@@ -85,8 +91,8 @@ class MockYagnaCLI:
 
             i.e.
             input: "yagna id create --no-password id-alias"
-            output: {('id-alias', '--'), ('id', 'create'), 
-            ('create', '--no-password'), 
+            output: {('id-alias', '--'), ('id', 'create'),
+            ('create', '--no-password'),
             ('--no-password', 'id-alias'), ('yagna', 'id')}
         """
         zip_pairs = zip(cmd_args, cmd_args[1:] + ["--"])
@@ -96,7 +102,7 @@ class MockYagnaCLI:
         return cmd_options
 
     def exec_run(self, cmd, **kwargs):
-        """Mock function of docker exec_run"""
+        """Mock function of docker exec_run."""
         cmd = cmd.replace("--json", "")
         cmd_args = shlex.split(cmd)
         cmd_options = self.parse_options(cmd_args)
@@ -108,7 +114,7 @@ class MockYagnaCLI:
         return result_mock
 
     def echo_demux(self, _options, cmd):
-        """Mock function of command line interface of yagna docker container"""
+        """Mock function of command line interface of yagna docker container."""
         command = re.search(r"\'(.*?)\'", cmd).group(1)
         proc = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -123,7 +129,7 @@ class MockYagnaCLI:
         return result
 
     def create_app_key(self, options, cmd):
-        """Creates yagna app key."""
+        """Create yagna app key."""
         alias = options.get("--id")
         key = re.search(r"^.*?\bcreate \'(.*)\'(?:.+)?$", cmd).group(1)
 
@@ -140,7 +146,7 @@ class MockYagnaCLI:
         return (key.encode(), b"")
 
     def list_app_key(self, options, cmd):
-        """Lists current yagna app keys."""
+        """List current yagna app keys."""
         key_id = options.get("--id")
         alias = None
 
@@ -164,7 +170,7 @@ class MockYagnaCLI:
         return (json.dumps(self.key_list).encode("utf-8"), b"")
 
     def create_id(self, options, cmd):
-        """Creates id"""
+        """Create id."""
         alias = options.get("--no-password")
         alias = alias if isinstance(alias, str) else None
 
@@ -184,13 +190,13 @@ class MockYagnaCLI:
         return (json.dumps(result).encode("utf-8"), b"")
 
     def show_id(self, _options, cmd):
-        """Shows specific id if exist"""
+        """Show specific id if exist."""
         filter_key = "address"
         result_list = self.id_values
-        try:
-            alias_or_addr = re.search(r"^.*?\bshow ([^\s]+)", cmd).group(1)
-        except:
-            alias_or_addr = None
+        alias_or_addr = None
+        match = re.search(r"^.*?\bshow ([^\s]+)", cmd)
+        if match:
+            alias_or_addr = match.group(1)
 
         if alias_or_addr:
             if not self.is_ipv4(alias_or_addr):
@@ -215,7 +221,7 @@ class MockYagnaCLI:
         return (json.dumps(result).encode("utf-8"), b"")
 
     def list_id(self, _options, _cmd):
-        """Lists current ids"""
+        """List current ids."""
         list_values = []
         for value in self.id_values:
             identity_as_list = list(asdict(value).values())
@@ -226,5 +232,5 @@ class MockYagnaCLI:
         return (json.dumps(self.id_list).encode("utf-8"), b"")
 
     def payment_status(self, _options, _cmd):
-        """Shows payment statuses"""
+        """Show payment statuses."""
         return (json.dumps(asdict(self.payment_status_value)).encode("utf-8"), b"")

@@ -1,3 +1,5 @@
+"""Test harness runner class, creating the nodes and running the scenario."""
+
 import asyncio
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -10,26 +12,26 @@ import docker
 
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.log import configure_logging, LogConfig, LOGGING_CONFIG
+from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import _create_file_logger
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.proxy import Proxy
 
 
 class Runner:
+    """Manages the nodes and runs the scenario on them."""
 
     assets_path: Optional[Path]
-    """ Path to directory containing yagna assets which should be mounted in
-        containers """
+    """Path to directory containing yagna assets to be mounted in containers."""
 
     base_log_dir: Path
-    """ Base directory for all log files created during this test run """
+    """Base directory for all log files created during this test run."""
 
     probes: Dict[Role, List[Probe]]
-    """ Probes used for the test run, identified by their role names """
+    """Probes used for the test run, identified by their role names."""
 
     proxy: Optional[Proxy]
-    """ An embedded instance of mitmproxy """
+    """An embedded instance of mitmproxy."""
 
     def __init__(self, logs_path: Path, assets_path: Optional[Path]):
 
@@ -46,7 +48,7 @@ class Runner:
         self.logger = logging.getLogger(__name__)
 
     def check_assertion_errors(self) -> None:
-        """If any monitor reports an assertion error, raise the first error"""
+        """If any monitor reports an assertion error, raise the first error."""
 
         probes = chain.from_iterable(self.probes.values())
         monitors = chain.from_iterable(
@@ -68,7 +70,7 @@ class Runner:
             )
 
     async def run_scenario(self, scenario):
-
+        """Start the nodes, run the scenario, then stop the nodes and clean up."""
         self.logger.info("running scenario %s", type(scenario).__name__)
         self._run_nodes(scenario)
         try:

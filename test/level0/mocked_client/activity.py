@@ -1,3 +1,5 @@
+"""High level API for the level 0 market steps."""
+
 import json
 import time
 import os
@@ -13,6 +15,7 @@ from openapi_activity_client import (
 
 
 def level0_activity(agreement_id):
+    """Execute all level 0 activity steps on the activity api one by one."""
     # INIT
     config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/activity-api/v1")
     config.access_token = os.environ["APP_KEY"]
@@ -30,7 +33,7 @@ def level0_activity(agreement_id):
     print(f"state. result={state}")
     # i. PROVIDER
 
-    # provider.event.waitFor(LogEvent, event => event matches "ExeUnit start log regexp")
+    # provider.event.waitFor(LogEvent, event => matches "ExeUnit start log regexp")
     time.sleep(2.0)
     # ii. REQUESTOR
 
@@ -56,7 +59,7 @@ def level0_activity(agreement_id):
         print(f"state. result={state}")
         results = req_api.get_exec_batch_results(
             activity_id, batch_id
-        )  # to be replaced by requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
+        )  # TODO: requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
         print(f"poll batch results. result={results}")
 
     req_api.destroy_activity(activity_id)

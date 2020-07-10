@@ -1,3 +1,5 @@
+"""Classes and utilties to manage docker Containers."""
+
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -14,24 +16,29 @@ from goth.runner.log_monitor import LogEventMonitor
 
 @dataclass
 class DockerContainerConfig:
-    """ Configuration to be used for creating a new docker container. """
+    """Configuration to be used for creating a new docker container."""
 
     name: str
-    """ Name to be used for this container, must be unique """
+    """Name to be used for this container, must be unique."""
 
     volumes: Dict[Template, str] = field(default_factory=dict)
-    """ Volumes to be mounted in the container. Keys are paths on the host machine,
-        represented by `Template`s. These templates may include `assets_path`
-        as a placeholder to be used for substitution.  The values are container
-        paths to be used as mount points. """
+    """Volumes to be mounted in the container.
+
+    Keys are paths on the host machine, represented by `Template`s. These templates may
+    include `assets_path` as a placeholder to be used for substitution. The values are
+    container paths to be used as mount points.
+    """
 
     log_config: Optional[LogConfig] = None
-    """ Optional custom logging config to be used for this container """
+    """Optional custom logging config to be used for this container."""
 
     def get_volumes_spec(self, assets_path: Path) -> Dict[str, dict]:
-        """ Produce volumes specification for a docker container by substituting given
+        """Produce volume specification to be passed to docker.
+
+        Produce volumes specification for a docker container by substituting given
         `assets_path` into `self.volumes`.
         """
+
         return {
             host_template.substitute(assets_path=str(assets_path)): {
                 "bind": mount_path,
@@ -42,7 +49,7 @@ class DockerContainerConfig:
 
 
 class State(Enum):
-    """ Represents states that a Docker container may be in. """
+    """Represents states that a Docker container may be in."""
 
     created = 0
     running = 1
@@ -54,43 +61,54 @@ class State(Enum):
 
 
 class DockerContainer:
-    """ A wrapper around `Container` which includes a state machine (from `transitions`)
-        to keep track of a container's lifecycle. """
+    """A wrapper around `Container`.
+
+    Includes a state machine (from `transitions`) to keep track of a container's
+    lifecycle.
+    """
 
     DEFAULT_NETWORK = "docker_default"
 
     command: List[str]
-    """ Arguments passed to this container's `command` """
+    """Arguments passed to this container's `command`."""
 
     entrypoint: str
-    """ The binary to be run by this container once started """
+    """The binary to be run by this container once started."""
 
     image: str
-    """ Name of the image to be used for creating this container """
+    """Name of the image to be used for creating this container."""
 
     logs: Optional[LogEventMonitor]
-    """ Log buffer for the logs from this container's `entrypoint` """
+    """Log buffer for the logs from this container's `entrypoint`."""
 
     name: str
-    """ Name to be assigned to this container """
+    """Name to be assigned to this container."""
 
     network: str
-    """ Name of the Docker network to be joined once the container is started """
+    """Name of the Docker network to be joined once the container is started."""
 
     # This section lists the members which will be added at runtime by `transitions`
     stop: Callable
-    """ Stop a running container. Internally, this calls `Container.stop` with any
-        kwargs passed here being forwarded to that function. """
+    """Stop a running container.
+
+    Internally, this calls `Container.stop` with any kwargs passed here being forwarded
+    to that function.
+    """
 
     start: Callable
     """ Start a container which is either created or stopped.
-        Internally, this calls `Container.start` with any kwargs passed here being
-        forwarded to that function. """
+
+    Internally, this calls `Container.start` with any kwargs passed here being forwarded
+    to that function.
+    """
 
     remove: Callable
-    """ Remove a container. This puts this `DockerContainer` in its final state
-        `State.dead`. Internally, this calls `Container.remove` with any kwargs
-        passed here being forwarded to that function. """
+    """Remove a container.
+
+    This puts this `DockerContainer` in its final state `State.dead`. Internally, this
+    calls `Container.remove` with any kwargs passed here being forwarded to that
+    function.
+    """
 
     _client: DockerClient
     _container: Container
@@ -159,12 +177,12 @@ class DockerContainer:
 
     @property
     def state(self) -> State:
-        """ Current state of this container as reported by the Docker daemon """
+        """State of this container as reported by the Docker daemon."""
         self._update_state()
         return self._state
 
     def exec_run(self, *args, **kwargs):
-        """ Proxy to `Container.exec_run`. """
+        """Proxy to `Container.exec_run`."""
         return self._container.exec_run(*args, **kwargs)
 
     def _start(self, **kwargs):
@@ -175,7 +193,11 @@ class DockerContainer:
             )
 
     def _update_state(self, *_args, **_kwargs):
-        """ Update the state machine based on data obtained from the Docker daemon
-            by reloading the inner `Container` object. """
+        """Update the state machine.
+
+        Data is obtained from the Docker daemon by reloading the inner `Container`
+        object.
+        """
+
         self._container.reload()
         self.machine.set_state(State[self._container.status])

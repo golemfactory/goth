@@ -1,4 +1,5 @@
-"""Classes representing API calls and utility functions"""
+"""Classes representing API calls and utility functions."""
+
 import abc
 import json
 import re
@@ -12,27 +13,28 @@ from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
 
 
 class APIEvent(abc.ABC):
-    """Abstract superclass of API event classes"""
+    """Abstract superclass of API event classes."""
 
     @property
     @abc.abstractmethod
     def timestamp(self) -> float:
-        """Return event's time"""
+        """Return event's time."""
 
 
 class APIClockTick(APIEvent):
-    """A dummy event representing clock ticks, used for timeouts in API monitor"""
+    """A dummy event representing clock ticks, used for timeouts in API monitor."""
 
     def __init__(self, timestamp: Optional[float] = None):
         self._timestamp = timestamp or time.time()
 
     @property
     def timestamp(self) -> float:
+        """Time of the clock tick."""
         return self._timestamp
 
 
 class APIRequest(APIEvent):
-    """Represents an API request"""
+    """Represents an API request."""
 
     number: int
     http_request: HTTPRequest
@@ -43,28 +45,29 @@ class APIRequest(APIEvent):
 
     @property
     def timestamp(self) -> float:
+        """Start time op the `http_request`."""
         return self.http_request.timestamp_start
 
     @property
     def method(self) -> str:
-        """Return the method of the underlying HTTP request"""
+        """Return the method of the underlying HTTP request."""
 
         return self.http_request.method
 
     @property
     def path(self) -> str:
-        """Return the method of the underlying HTTP request"""
+        """Return the method of the underlying HTTP request."""
 
         return self.http_request.path
 
     @property
     def caller(self) -> Optional[str]:
-        """Return the caller name"""
+        """Return the caller name."""
         return self.http_request.headers.get(CALLER_HEADER)
 
     @property
     def callee(self) -> Optional[str]:
-        """Return the callee name"""
+        """Return the callee name."""
         return self.http_request.headers.get(CALLEE_HEADER)
 
     def __str__(self):
@@ -72,7 +75,7 @@ class APIRequest(APIEvent):
 
 
 class APIResponse(APIEvent):
-    """Represents a response to an API request"""
+    """Represents a response to an API request."""
 
     request: APIRequest
     http_response: HTTPResponse
@@ -83,17 +86,18 @@ class APIResponse(APIEvent):
 
     @property
     def timestamp(self) -> float:
+        """Start time op the `http_response`."""
         return self.http_response.timestamp_start
 
     @property
     def status_code(self) -> int:
-        """Return the HTTP status code"""
+        """Return the HTTP status code."""
 
         return self.http_response.status_code
 
 
 class APIError(APIEvent):
-    """Represents an error when making an API request or sending a response"""
+    """Represents an error when making an API request or sending a response."""
 
     request: APIRequest
     error: Error
@@ -111,6 +115,7 @@ class APIError(APIEvent):
 
     @property
     def timestamp(self) -> float:
+        """Time of the error."""
         return self.error.timestamp
 
 
@@ -173,7 +178,9 @@ def is_invoice_send_response(event: APIEvent) -> bool:
 
 def get_response_json(event: APIEvent):
     """If `event` is a response then parse and return the included JSON.
-    Otherwise return `None`."""
+
+    Otherwise return `None`.
+    """
 
     if isinstance(event, APIResponse):
         return json.loads(event.http_response.text)
@@ -182,8 +189,11 @@ def get_response_json(event: APIEvent):
 
 
 def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
-    """If `event` is a response to CreateActivity operation then return the activity ID
-    included in the response. Otherwise return `None`."""
+    """Look for the CreateActivity event to return the ActivityID.
+
+    If `event` is a response to CreateActivity operation then return the activity ID
+    included in the response. Otherwise return `None`.
+    """
 
     if (
         isinstance(event, APIResponse)
@@ -197,6 +207,7 @@ def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
 
 def get_activity_id_from_delete_response(event: APIEvent) -> Optional[str]:
     """If `event` is a response of DeleteActivity then return the included activity ID.
+
     Otherwise return `None`.
     """
 

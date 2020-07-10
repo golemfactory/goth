@@ -1,4 +1,5 @@
-""" Log utilities for the runner"""
+"""Log utilities for the runner."""
+
 from dataclasses import dataclass
 import logging
 import logging.config
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class UTCFormatter(logging.Formatter):
+    """Custom `logging` formatter that uses `time.gmtime`."""
+
     converter = time.gmtime
 
 
@@ -46,8 +49,10 @@ LOGGING_CONFIG = {
 
 
 def configure_logging(base_dir: Path = DEFAULT_LOG_DIR):
-    """ Configure the `logging` module. Updates config with `base_dir` before
-    applying the global configuration  """
+    """Configure the `logging` module.
+
+    Updates config with `base_dir` before applying the global configuration.
+    """
 
     # substitute `base_log_dir` in `LOGGING_CONFIG` with the actual dir path
     for _name, handler in LOGGING_CONFIG["handlers"].items():
@@ -62,7 +67,7 @@ def configure_logging(base_dir: Path = DEFAULT_LOG_DIR):
 
 @dataclass
 class LogConfig:
-    """ Configuration used to create file loggers.  """
+    """Configuration used to create file loggers."""
 
     file_name: Union[str, Path]
     base_dir: Path = DEFAULT_LOG_DIR

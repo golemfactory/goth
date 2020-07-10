@@ -1,4 +1,4 @@
-"""Implementation of `yagna payment` subcommands"""
+"""Implementation of `yagna payment` subcommands."""
 
 from dataclasses import dataclass
 from typing import Dict
@@ -9,7 +9,7 @@ from goth.runner.cli.typing import CommandRunner
 
 @dataclass(frozen=True)
 class Payments:
-    """Information about payment amounts"""
+    """Information about payment amounts."""
 
     accepted: float
     confirmed: float
@@ -19,7 +19,7 @@ class Payments:
 
 @dataclass(frozen=True)
 class PaymentStatus:
-    """Information about payment status"""
+    """Information about payment status."""
 
     amount: float
     incoming: Payments
@@ -28,7 +28,7 @@ class PaymentStatus:
 
 
 class YagnaPaymentMixin:
-    """A mixin class that adds support for `<yagna-cmd> payment` commands"""
+    """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
     def payment_init(
         self: CommandRunner,
@@ -38,6 +38,7 @@ class YagnaPaymentMixin:
         address: str = "",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
+
         Return the command's output.
         """
 
@@ -52,6 +53,7 @@ class YagnaPaymentMixin:
         self: CommandRunner, data_dir: str = "", address: str = ""
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
+
         Parse the command's output as a `PatmentStatus` and return it.
         """
 

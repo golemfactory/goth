@@ -1,4 +1,4 @@
-"""Implementation of `yagna app-key` subcommands"""
+"""Implementation of `yagna app-key` subcommands."""
 
 from dataclasses import dataclass
 from typing import Dict, Sequence
@@ -10,7 +10,7 @@ from goth.runner.exceptions import CommandError, KeyAlreadyExistsError
 
 @dataclass(frozen=True)
 class AppKeyInfo:
-    """Information about an application key"""
+    """Information about an application key."""
 
     name: str
     key: str
@@ -20,7 +20,7 @@ class AppKeyInfo:
 
 
 class YagnaAppKeyMixin:
-    """A mixin class that adds support for `<yagna-cmd> app-key` commands"""
+    """A mixin class that adds support for `<yagna-cmd> app-key` commands."""
 
     def app_key_create(
         self: CommandRunner,
@@ -29,7 +29,8 @@ class YagnaAppKeyMixin:
         alias_or_addr: str = "",
         data_dir: str = "",
     ) -> str:
-        """"Run `<cmd> app-key create <name>` with optional extra args.
+        """Run `<cmd> app-key create <name>` with optional extra args.
+
         Return the application key parsed from the command's output.
         """
 
@@ -48,6 +49,7 @@ class YagnaAppKeyMixin:
         self: CommandRunner, name: str, address: str = "", data_dir: str = "",
     ) -> str:
         """Run `<cmd> app-key drop <name>` with optional extra args.
+
         Return the command's output.
         """
 
@@ -58,6 +60,7 @@ class YagnaAppKeyMixin:
         self: CommandRunner, address: str = "", data_dir: str = ""
     ) -> Sequence[AppKeyInfo]:
         """Run `<cmd> app-key list` with optional extra args.
+
         Return the list of `AppKeyInfo`s parsed from the command's output.
         """
 

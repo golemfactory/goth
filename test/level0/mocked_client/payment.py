@@ -1,3 +1,5 @@
+"""High level API for the level 0 payment steps."""
+
 import os
 import time
 
@@ -11,6 +13,8 @@ from openapi_payment_client import (
 
 
 def level0_payment(agreement_id):
+    """Execute all level 0 payment steps on the payment api one by one."""
+
     # INIT
     config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/payment-api/v1")
     config.access_token = os.environ["APP_KEY"]
@@ -19,7 +23,7 @@ def level0_payment(agreement_id):
     print(f"Init completed, connected to {config.host}")
     # v. PROVIDER
 
-    # provider.events.waitUntil(LogEvent, event => event.message matches "DestroyActivity regexp")
+    # provider.events.waitUntil(LogEvent, event matches "DestroyActivity regexp")
 
     # 8. REQUESTOR
     invoice_events = []
@@ -54,6 +58,6 @@ def level0_payment(agreement_id):
 
     # 9. PROVIDER
 
-    # provider.events.waitUntil(LogEvent, event => event.message matches "Payment received regexp")
+    # provider.events.waitUntil(LogEvent, event => matches "Payment received regexp")
 
     # ... and maybe we can assert some balance change on etherscan???

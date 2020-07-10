@@ -1,4 +1,4 @@
-"""Implementation of `yagna id` subcommands"""
+"""Implementation of `yagna id` subcommands."""
 
 from dataclasses import dataclass
 from typing import Dict, Optional, Sequence
@@ -9,7 +9,7 @@ from goth.runner.cli.typing import CommandRunner
 
 @dataclass(frozen=True)
 class Identity:
-    """Stores information about an identity"""
+    """Stores information about an identity."""
 
     alias: Optional[str]
     is_default: bool
@@ -18,7 +18,7 @@ class Identity:
 
 
 class YagnaIdMixin:
-    """A mixin class that adds support for `<yagna-cmd> id` commands"""
+    """A mixin class that adds support for `<yagna-cmd> id` commands."""
 
     def id_create(self: CommandRunner, data_dir: str = "", alias: str = "") -> Identity:
         """Run `<yagna-cmd> id create` command."""

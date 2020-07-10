@@ -1,6 +1,6 @@
-"""
-This module defines an event monitor class that registers events and checks
-whether temporal assertions are satisfied.
+"""This module defines an event monitor class.
+
+that registers events and checks whether temporal assertions are satisfied.
 """
 
 import asyncio
@@ -13,23 +13,24 @@ from goth.assertions import Assertion, AssertionFunction, E
 
 
 class EventMonitor(Generic[E]):
-    """
-    An event monitor registers *events* (values of type `E`) and manages *assertions*
-    that specify properties of sequences of events. The assertions are evaluated
-    with each new registered event.
+    """An event monitor.
+
+    That registers *events* (values of type `E`) and manages *assertions* that specify
+    properties of sequences of events. The assertions are evaluated with each new
+    registered event.
     """
 
     assertions: List[Assertion[E]]
-    """List of all assertions, active or finished"""
+    """List of all assertions, active or finished."""
 
     _events: List[E]
-    """List of events registered so far"""
+    """List of events registered so far."""
 
     _worker_task: Optional[asyncio.Task]
-    """A worker task that registers events and checks assertions"""
+    """A worker task that registers events and checks assertions."""
 
     _incoming: "Optional[asyncio.Queue[Optional[E]]]"
-    """A queue used to pass the events to the worker task"""
+    """A queue used to pass the events to the worker task."""
 
     _logger: logging.Logger
 

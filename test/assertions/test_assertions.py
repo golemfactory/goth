@@ -1,4 +1,5 @@
-"""Unit tests for `assertions.assertions` module"""
+"""Unit tests for `assertions.assertions` module."""
+
 import asyncio
 import pytest
 
@@ -7,6 +8,7 @@ from goth.assertions import Assertion
 
 @pytest.mark.asyncio
 async def test_assertion_not_started_raises():
+    """Test if an assertion raises when it is used before starting."""
 
     events = []
 
@@ -25,6 +27,7 @@ async def test_assertion_not_started_raises():
 
 @pytest.mark.asyncio
 async def test_assertion_accept_immediately():
+    """Test if an assertion passes when it accepts immediately."""
 
     events = []
 
@@ -41,6 +44,7 @@ async def test_assertion_accept_immediately():
 
 @pytest.mark.asyncio
 async def test_assertion_accept_with_delay():
+    """Test if an assertion passes when it accepts after a delay."""
 
     events = []
 
@@ -58,6 +62,7 @@ async def test_assertion_accept_with_delay():
 
 @pytest.mark.asyncio
 async def test_assertion_fail_immediately():
+    """Test if an assertion raises AND finishes, when it fails immediately."""
 
     events = []
 
@@ -76,6 +81,7 @@ async def test_assertion_fail_immediately():
 
 @pytest.mark.asyncio
 async def test_assertion_consumes_one():
+    """Test if an assertion will consume all given events."""
 
     events = []
 
@@ -93,6 +99,7 @@ async def test_assertion_consumes_one():
 
 @pytest.mark.asyncio
 async def test_assertion_fails_on_event():
+    """Test if an assertion is marked as failed when the result is an AssertionError."""
 
     events = [1]
 
@@ -109,6 +116,7 @@ async def test_assertion_fails_on_event():
 
 @pytest.mark.asyncio
 async def test_assertion_consumes_three():
+    """Test if an assertion keeps state when events tickle in."""
 
     events = []
 
@@ -139,6 +147,7 @@ async def test_assertion_consumes_three():
 
 @pytest.mark.asyncio
 async def test_assertion_end_events():
+    """Test if an assertion is accepted and done when no events are passed."""
 
     events = []
 
@@ -158,6 +167,7 @@ async def test_assertion_end_events():
 
 @pytest.mark.asyncio
 async def test_assertion_end_events_raises():
+    """Test if an assertion raises when events_ended and the assertion is not met."""
 
     events = []
 
@@ -177,6 +187,7 @@ async def test_assertion_end_events_raises():
 
 @pytest.mark.asyncio
 async def test_assertion_consumes_all():
+    """Test if an assertion comsumes all events given to it."""
 
     events = []
 
@@ -200,6 +211,7 @@ async def test_assertion_consumes_all():
 
 @pytest.mark.asyncio
 async def test_events_ended_set():
+    """Test if events_ended is set properly throughout the lifetime of an assertion."""
 
     events = [1]
 
@@ -222,6 +234,7 @@ async def test_events_ended_set():
 
 @pytest.mark.asyncio
 async def test_events_ended_not_set():
+    """Test if events_ended is not set when the assertion breaks out of its loop."""
 
     events = [1]
 
@@ -243,6 +256,7 @@ async def test_events_ended_not_set():
 
 @pytest.mark.asyncio
 async def test_past_events():
+    """Test if `past_events` matches the events given to this assertion before."""
 
     events = []
 

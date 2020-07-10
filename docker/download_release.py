@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Script to download releases from a github repository."""
 
 import argparse
 import logging
@@ -36,7 +37,7 @@ session.headers["Authorization"] = f"token {args.token}"
 
 
 def get_latest_release() -> dict:
-    """ Includes pre-releases """
+    """Get the latest version, this includes pre-releases."""
     url = f"{BASE_URL}/releases"
     logger.info("fetching releases. url=%s", url)
     response = session.get(url)
@@ -51,6 +52,7 @@ def get_latest_release() -> dict:
 
 
 def download_asset(release: dict, content_type: str, output_path: str):
+    """Download an asset from a specific github release."""
     assets = release["assets"]
     logger.debug("assets=%s", assets)
     asset = next(filter(lambda a: a["content_type"] == content_type, assets))
