@@ -15,9 +15,11 @@ from goth.address import (
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
+    PROXY_HOST,
     YAGNA_REST_URL,
 )
 from goth.runner.cli import Cli, YagnaDockerCli
+from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
@@ -139,7 +141,7 @@ class ActivityApiClient:
     state: activity.RequestorStateApi
     """Client for the state part of the activity API."""
 
-    def __init__(self, app_key: str, address: str):
+    def __init__(self, app_key: str, address: str, logger: logging.Logger):
         api_url = ACTIVITY_API_URL.substitute(base=address)
         config = activity.Configuration(host=api_url)
         config.access_token = app_key
@@ -147,6 +149,7 @@ class ActivityApiClient:
 
         self.control = activity.RequestorControlApi(client)
         self.state = activity.RequestorStateApi(client)
+        logger.debug("activity API initialized. url=%s", api_url)
 
 
 class RequestorProbe(Probe):
@@ -164,19 +167,31 @@ class RequestorProbe(Probe):
     payment: payment.ApiClient
     """Payment API client for the requestor daemon."""
 
+    _api_base_host: str
+    """Base hostname for the Yagna API clients."""
+
+    def __init__(
+        self,
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        assets_path: Optional[Path] = None,
+    ):
+        super().__init__(client, config, log_config, assets_path)
+
+        host_port = self.container.ports[YagnaContainer.HTTP_PORT]
+        proxy_ip = get_container_address(client, PROXY_HOST)
+        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
+
     def start(self):
         """Start the yagna container and initialize the requestor agent."""
         super().start()
 
-        host_port = self.container.ports[YagnaContainer.HTTP_PORT]
-        daemon_base_url = YAGNA_REST_URL.substitute(host="localhost", port=host_port)
-
-        self.activity = ActivityApiClient(self.app_key, daemon_base_url)
-        self._logger.debug(
-            "activity API initialized. node_name=%s, url=%s", self.name, daemon_base_url
+        self.activity = ActivityApiClient(
+            self.app_key, self._api_base_host, self._logger
         )
-        self._init_payment_api(daemon_base_url)
-        self._init_market_api(daemon_base_url)
+        self._init_payment_api()
+        self._init_market_api()
 
         # TODO Remove once agent calls are implemented via probe
         self.start_requestor_agent()
@@ -201,25 +216,21 @@ class RequestorProbe(Probe):
         )
         self.agent_logs = LogEventMonitor(log_stream.output, log_config)
 
-    def _init_market_api(self, address: str):
-        api_url = MARKET_API_URL.substitute(base=address)
+    def _init_market_api(self):
+        api_url = MARKET_API_URL.substitute(base=self._api_base_host)
         config = market.Configuration(host=api_url)
         config.access_token = self.app_key
         client = market.ApiClient(config)
         self.market = market.RequestorApi(client)
-        self._logger.debug(
-            "market API initialized. node_name=%s, url=%s", self.name, api_url
-        )
+        self._logger.debug("market API initialized. url=%s", api_url)
 
-    def _init_payment_api(self, address: str):
-        api_url = PAYMENT_API_URL.substitute(base=address)
+    def _init_payment_api(self):
+        api_url = PAYMENT_API_URL.substitute(base=self._api_base_host)
         config = payment.Configuration(host=api_url)
         config.access_token = self.app_key
         client = payment.ApiClient(config)
         self.payment = payment.RequestorApi(client)
-        self._logger.debug(
-            "payment API initialized. node_name=%s, url=%s", self.name, api_url
-        )
+        self._logger.debug("payment API initialized. url=%s", api_url)
 
 
 class ProviderProbe(Probe):
