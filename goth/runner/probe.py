@@ -239,7 +239,7 @@ class ProviderProbe(Probe):
         config: YagnaContainerConfig,
         log_config: LogConfig,
         assets_path: Optional[Path] = None,
-        preset_name: str = "amazing-offer",
+        preset_name: str = "default",
     ):
         super().__init__(client, config, log_config, assets_path=assets_path)
         self.agent_preset = preset_name
@@ -247,9 +247,9 @@ class ProviderProbe(Probe):
     def start(self):
         """Start the agents and attach the log monitor."""
         super().start()
+        self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
         log_stream = self.container.exec_run(
-            f"ya-provider run"
-            f" --app-key {self.app_key} --node-name {self.name} {self.agent_preset}",
+            f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
         )
         self._init_agent_logs(log_stream)

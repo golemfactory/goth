@@ -12,7 +12,7 @@
     "usage-coeffs": [0.01, 1.2, 1.5]
   },
   {
-    "name": "amazing-offer",
+    "name": "default",
     "exeunit-name": "wasmtime",
     "pricing-model": "linear",
     "usage-coeffs": [0.1, 0.2, 1.0]
