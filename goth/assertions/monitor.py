@@ -85,7 +85,7 @@ class EventMonitor(Generic[E]):
 
         self._incoming.put_nowait(event)
 
-    async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
+    async def await_assertions(self, timeout: timedelta = timedelta(seconds=60)):
         """Sleep until all assertions are done or the timeout passed."""
 
         if not self.is_running():
@@ -95,6 +95,7 @@ class EventMonitor(Generic[E]):
 
         while not self.finished:
             if deadline < datetime.now():
+                print("TIMEOUT!!!")
                 raise TimeoutError
             await asyncio.sleep(0.1)
 
