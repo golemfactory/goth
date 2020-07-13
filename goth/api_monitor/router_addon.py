@@ -7,8 +7,6 @@ import logging
 
 from mitmproxy.http import HTTPFlow
 from goth.address import (
-    HOST_BUS_PORT_END,
-    HOST_BUS_PORT_START,
     HOST_REST_PORT_END,
     HOST_REST_PORT_START,
     MARKET_PORT,
