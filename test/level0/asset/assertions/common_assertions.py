@@ -3,7 +3,6 @@ from typing import Set
 
 from goth.api_monitor.api_events import (
     APIEvent,
-    APIClockTick,
     APIError,
     APIRequest,
     APIResponse,
@@ -21,29 +20,6 @@ async def assert_no_api_errors(stream: APIEvents) -> bool:
 
         if isinstance(e, APIError):
             raise TemporalAssertionError("API error occurred")
-
-    return True
-
-
-async def assert_clock_ticks(stream: APIEvents) -> bool:
-    """Assert at least one timer event has occurred.
-
-    Additionally, asserts the distance between
-    any event and the last timer event is less than 1.5s.
-    """
-
-    last_timer_event = None
-
-    async for e in stream:
-
-        if last_timer_event is not None and e.timestamp > last_timer_event + 1.5:
-            raise TemporalAssertionError()
-
-        if isinstance(e, APIClockTick):
-            last_timer_event = e.timestamp
-
-    if last_timer_event is None:
-        raise TemporalAssertionError("No timer events")
 
     return True
 
