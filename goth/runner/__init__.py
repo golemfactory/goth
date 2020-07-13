@@ -85,7 +85,7 @@ class Runner:
                     if result:
                         awaitables.append(result)
                 if awaitables:
-                    await asyncio.gather(*awaitables, return_exceptions=True)
+                    await asyncio.gather(*awaitables)
 
                 self.check_assertion_errors()
 
