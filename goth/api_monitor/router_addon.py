@@ -6,7 +6,14 @@ Also, adds caller and callee information to request headers.
 import logging
 
 from mitmproxy.http import HTTPFlow
-from goth.address import MARKET_PORT, YAGNA_REST_PORT
+from goth.address import (
+    HOST_BUS_PORT_END,
+    HOST_BUS_PORT_START,
+    HOST_REST_PORT_END,
+    HOST_REST_PORT_START,
+    MARKET_PORT,
+    YAGNA_REST_PORT,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +43,7 @@ class RouterAddon:
             server_addr = req.headers["X-Server-Addr"]
             server_port = int(req.headers["X-Server-Port"])
             remote_addr = req.headers["X-Remote-Addr"]
+            # node_num is the last section of the node's IP v4 address
             node_num = remote_addr.rsplit(".", 1)[-1]
 
             if server_port == MARKET_PORT:
@@ -48,9 +56,21 @@ class RouterAddon:
                 req.headers[CALLEE_HEADER] = "MarketAPI"
 
             elif server_port == YAGNA_REST_PORT:
-                # It's an agent calling a yagna daemon
+                # It's a provider agent calling a yagna daemon.
+                # We assume that both are running on the same host, so the
+                # request is bounced back to the caller.
                 req.host = remote_addr
                 req.port = YAGNA_REST_PORT
+                req.headers[CALLER_HEADER] = f"Agent-{node_num}"
+                req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
+
+            elif HOST_REST_PORT_START <= server_port <= HOST_REST_PORT_END:
+                # It's a requestor agent calling a yagna daemon.
+                # We use localhost as the address together with the original port,
+                # since each daemon has its API port mapped to a port on the host
+                # chosen from the specified range.
+                req.host = "127.0.0.1"
+                req.port = server_port
                 req.headers[CALLER_HEADER] = f"Agent-{node_num}"
                 req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
 

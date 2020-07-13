@@ -5,7 +5,14 @@ from string import Template
 from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
-from goth.address import YAGNA_BUS_PORT, YAGNA_REST_PORT
+from goth.address import (
+    HOST_BUS_PORT_END,
+    HOST_BUS_PORT_START,
+    HOST_REST_PORT_END,
+    HOST_REST_PORT_START,
+    YAGNA_BUS_PORT,
+    YAGNA_REST_PORT,
+)
 from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
@@ -79,10 +86,26 @@ class YagnaContainer(DockerContainer):
 
     @classmethod
     def host_http_port(cls):
-        """Http port for the yagna rest api running on this container."""
-        return YAGNA_REST_PORT + cls._port_offset
+        """Host port for the yagna REST API running in this container.
+
+        Raises `OverflowError` if the port to return would exceed the expected range.
+        """
+        next_port = HOST_REST_PORT_START + cls._port_offset
+        if next_port > HOST_REST_PORT_END:
+            raise OverflowError(
+                f"Port range exceeded. port={next_port}, range_end={HOST_REST_PORT_END}"
+            )
+        return next_port
 
     @classmethod
     def host_bus_port(cls):
-        """Gsb port for the yagna service bus running on this container."""
-        return YAGNA_BUS_PORT + cls._port_offset
+        """Host port for the yagna service bus running in this container.
+
+        Raises `OverflowError` if the port to return would exceed the expected range.
+        """
+        next_port = HOST_BUS_PORT_START + cls._port_offset
+        if next_port > HOST_BUS_PORT_END:
+            raise OverflowError(
+                f"Port range exceeded. port={next_port}, range_end={HOST_BUS_PORT_END}"
+            )
+        return next_port
