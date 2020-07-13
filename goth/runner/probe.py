@@ -4,6 +4,7 @@ import abc
 from enum import Enum
 import logging
 from pathlib import Path
+import time
 from typing import Optional
 
 from docker import DockerClient
@@ -112,6 +113,8 @@ class Probe(abc.ABC):
         (e.g. starting the Docker container, creating the default app key).
         """
         self.container.start()
+        # Give the daemon some time to start before asking it for an app key.
+        time.sleep(1)
         self.create_app_key()
 
     async def stop(self):
