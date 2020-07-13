@@ -20,7 +20,7 @@ export YAGNA_GIT_DIR=/path/to/yagna/repo/
 cd ${YAGNA_GIT_DIR}
 
 cargo build --release -p yagna -p ya-provider -p ya-requestor -p ya-exe-unit
-cargo build --release -p ya-sb-router --examples
+cargo build --release -p ya-sb-router --example ya_sb_router
 
 EXPORT PATH=${YAGNA_GIT_DIR}/target/release
 EXPORT PATH=${YAGNA_GIT_DIR}/target/release/examples

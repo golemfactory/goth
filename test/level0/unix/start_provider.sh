@@ -20,7 +20,7 @@ echo "YAGNA_MARKET_URL: $YAGNA_MARKET_URL" > /dev/stderr
 [ -f "./presets.json" ] || cp ../asset/presets.json .
 
 # This preset must be defined in `presets.json`:
-PRESET_NAME=amazing-offer
+PRESET_NAME=default
 
 # This is the standard location of `exeunits-descriptor.json`
 # for `ya-provider` installed from `.deb` package:
@@ -28,10 +28,11 @@ EXE_UNIT_PATH="/usr/lib/yagna/plugins/exeunits-descriptor.json"
 
 export RUST_LOG=info
 
+ya-provider preset activate "$PRESET_NAME"
+
 ya-provider --exe-unit-path "$EXE_UNIT_PATH" \
 	    run \
 	    --activity-url "$YAGNA_ACTIVITY_URL" \
 	    --app-key "$APP_KEY" \
 	    --market-url "$YAGNA_MARKET_URL" \
-	    --node-name test-provider \
-	    "$PRESET_NAME"
+	    --node-name test-provider
