@@ -2,7 +2,7 @@
 
 import asyncio
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from itertools import chain
 import logging
 import os
@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import docker
 
-from goth.assertions import TemporalAssertionError
+from goth.assertions import TemporalAssertionError, Assertion
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
@@ -87,19 +87,21 @@ class Runner:
 
     async def run_scenario(self):
         """Start the nodes, run the scenario, then stop the nodes and clean up."""
+        self._start_nodes()
         try:
-            for step, role in self.steps:
-                # Collect awaitables to execute them at the same time
-                awaitables = []
-                for probe in self.probes[role]:
-                    self.logger.debug(
-                        "running step. probe=%s, role=%s, step=%s", probe, role, step
-                    )
-                    result = step(probe=probe)
-                    if result:
-                        awaitables.append(result)
-                if awaitables:
-                    await asyncio.gather(*awaitables, return_exceptions=True)
+            for step in self.steps:
+                self.logger.info("running step. list=%r", step)
+                for awaitable in step:
+                    self.logger.debug("awaiting sub step. awaitable=%s", awaitable)
+                    if isinstance(awaitable, Assertion):
+                        deadline = datetime.now() + timedelta(seconds=20)
+
+                        while not awaitable.done:
+                            if deadline < datetime.now():
+                                raise TimeoutError
+                            await asyncio.sleep(0.1)
+                    else:
+                        raise RuntimeError("UNKNOWN  TYPE")
 
                 self.check_assertion_errors()
 
@@ -138,7 +140,6 @@ class Runner:
                         docker_client, config, log_config, self.assets_path
                     )
 
-                probe.start()
                 self.probes[config.role].append(probe)
 
     def _get_test_log_dir_name(self):
@@ -149,6 +150,12 @@ class Runner:
         self.logger.debug("Cleaned current test dir name=%s", test_name)
         return test_name
 
-    def get_probes(self, role):
+    def _start_nodes(self):
+        for req in self.probes[Role.requestor]:
+            req.start()
+        for prov in self.probes[Role.provider]:
+            prov.start()
+
+    def get_probes_by_role(self, role):
         """Create a ProbeStepBuilder for the requested role."""
-        return ProbeStepBuilder(steps=self.steps, probes=role)
+        return ProbeStepBuilder(steps=self.steps, probes=self.probes[role])

@@ -2,10 +2,11 @@
 
 import logging
 import re
+from typing import List
 
 from goth.assertions import EventStream
 from goth.runner.log_monitor import LogEvent
-from goth.runner.probe import Probe, Role
+from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +16,18 @@ LogEvents = EventStream[LogEvent]
 class ProbeStepBuilder:
     """Helper for creating test steps to be ran inside the runner."""
 
-    def __init__(self, steps, probes: Role):
+    def __init__(self, steps, probes: List[Probe]):
         self._steps = steps
         self._probes = probes
 
     def wait_for_offer_subscribed(self):
         """Wait until the provider agent subscribes to the offer."""
-        self._steps.append((_wait_for_offer_subscribed, self._probes))
+        step_result = []
+        for probe in self._probes:
+            step = assert_message_starts_with("Subscribed offer")
+            result = probe.agent_logs.add_assertion(step)
+            step_result.append(result)
+        self._steps.append(step_result)
 
     def wait_for_proposal_accepted(self):
         """Wait until the provider agent accepts the proposal."""

@@ -133,6 +133,8 @@ class DockerContainer:
         self.network = network
         self.log_config = log_config
         self.logs = None
+        if self.log_config:
+            self.logs = LogEventMonitor(self.log_config)
 
         self._container = self._client.containers.create(
             self.image,
@@ -187,10 +189,8 @@ class DockerContainer:
 
     def _start(self, **kwargs):
         self._container.start(**kwargs)
-        if self.log_config:
-            self.logs = LogEventMonitor(
-                self._container.logs(stream=True, follow=True), self.log_config,
-            )
+        if self.logs:
+            self.logs.start(self._container.logs(stream=True, follow=True))
 
     def _update_state(self, *_args, **_kwargs):
         """Update the state machine.

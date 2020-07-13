@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      # - <your-branch>    # put your branch name here to test it @ GH Actions
+      - mwu/step_builder_poc    # put your branch name here to test it @ GH Actions
   pull_request:
     branches:
       - master
@@ -34,7 +34,7 @@ jobs:
 
       - name: Get version of yagna deb file
         run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna.deb Version)
-      
+
       - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
       - name: Build the docker-compose stack
@@ -54,7 +54,7 @@ jobs:
       # so this flag will prevent command to fail.
       # Until this pr merged in docker compose: https://github.com/docker/compose/pull/7430
       # it's the best option to use.
-      
+
       - name: Push docker images to Github Packages
         run: docker-compose -f docker/docker-compose.yml push --ignore-push-failures
 

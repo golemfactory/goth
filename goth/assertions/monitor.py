@@ -44,6 +44,13 @@ class EventMonitor(Generic[E]):
         self._logger = logger or logging.getLogger(__name__)
         self._stop_callback = on_stop
 
+    def add_assertion(self, assertion_func: AssertionFunction[E]) -> Assertion:
+        """Add a list of assertion functions to this monitor."""
+
+        result = Assertion(self._events, assertion_func)
+        self.assertions.append(result)
+        return result
+
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""
 
