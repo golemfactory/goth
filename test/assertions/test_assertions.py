@@ -4,6 +4,7 @@ import asyncio
 import pytest
 
 from goth.assertions import Assertion
+from goth.assertions.operators import wait_for_predicate
 
 
 @pytest.mark.asyncio
@@ -280,3 +281,104 @@ async def test_past_events():
 
     assert assertion.accepted
     assert assertion.result == [3, 2, 1]
+
+
+@pytest.mark.asyncio
+async def test_wait_for_predicate_no_timeout():
+
+    events = []
+
+    async def func(stream):
+        return await wait_for_predicate(stream, lambda e: e % 2 == 0)
+
+    assertion = Assertion(events, func)
+    assertion.start()
+
+    for n in [1, 2, 3]:
+        await asyncio.sleep(0.1)
+        events.append(n)
+        await assertion.update_events()
+    await assertion.update_events(events_ended=True)
+
+    assert assertion.accepted
+    assert assertion.result == 2
+
+
+@pytest.mark.asyncio
+async def test_wait_for_predicate_within_timeout():
+
+    events = []
+
+    async def func(stream):
+        return await wait_for_predicate(stream, lambda e: e % 2 == 0, timeout=0.3)
+
+    assertion = Assertion(events, func)
+    assertion.start()
+
+    for n in [1, 2, 3, 5]:
+        await asyncio.sleep(0.1)
+        events.append(n)
+        await assertion.update_events()
+    await assertion.update_events(events_ended=True)
+
+    assert assertion.accepted
+    assert assertion.result == 2
+
+
+@pytest.mark.asyncio
+async def test_wait_for_predicate_with_timeout():
+
+    events = []
+
+    async def func(stream):
+        return await wait_for_predicate(stream, lambda e: e % 2 == 0, timeout=0.1)
+
+    assertion = Assertion(events, func)
+    assertion.start()
+
+    for n in [1, 3, 2]:
+        events.append(n)
+        await assertion.update_events()
+        await asyncio.sleep(0.1)
+    await assertion.update_events(events_ended=True)
+
+    assert assertion.failed
+    assert isinstance(assertion.result, asyncio.TimeoutError)
+
+
+@pytest.mark.asyncio
+async def test_composite_assertion():
+    """Test an assertion that calls sub-assertions.
+
+    In early versions of assertion implementation, each `async for`
+    with a given `stream` created a new generator, but all generators
+    shared the internal state of the underlying `Assertion` object
+    in an incorrect way, which could lead to one `async for` seeing
+    the same event the previous `async for` have seen already. For example,
+    in the following scenario the event `1` would be seen by three times,
+    by each invocation of `assert_1`.
+    """
+    events = []
+
+    async def assert_1(stream):
+        async for e in stream:
+            if e == 1:
+                return True
+        return False
+
+    async def assert_111(stream):
+        one = await assert_1(stream)
+        two = await assert_1(stream)
+        three = await assert_1(stream)
+        return one, two, three
+
+    assertion = Assertion(events, assert_111)
+    assertion.start()
+
+    events.append(1)
+    await asyncio.sleep(0.1)
+    await assertion.update_events()
+    await asyncio.sleep(0.1)
+    await assertion.update_events(events_ended=True)
+
+    assert assertion.result == (True, False, False)

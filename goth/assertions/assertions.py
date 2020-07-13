@@ -2,10 +2,8 @@
 
 import asyncio
 
-# import logging
 from typing import (
     Any,
-    AsyncIterable,
     AsyncIterator,
     Callable,
     Coroutine,
@@ -28,7 +26,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Protocol
 
-    class EventStream(Protocol, AsyncIterable[E]):
+    class EventStream(Protocol, AsyncIterator[E]):
         """A protocol for streams of events of type `E` used by assertion functions."""
 
         past_events: Sequence[E]
@@ -40,13 +38,13 @@ if TYPE_CHECKING:
 
 else:
 
-    EventStream = AsyncIterable
+    EventStream = AsyncIterator
 
 
 AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
-class Assertion(AsyncIterable[E]):
+class Assertion(AsyncIterator[E]):
     """A class for executing assertion coroutines."""
 
     past_events: Sequence[E]
@@ -126,7 +124,6 @@ class Assertion(AsyncIterable[E]):
         This can be either a value returned by this assertion on success, an exception
         thrown on failure, or `None` if the assertion hasn't finished yet.
         """
-
         if not self.started:
             raise asyncio.InvalidStateError("Assertion not started")
 
@@ -155,24 +152,35 @@ class Assertion(AsyncIterable[E]):
         await self._processed.wait()
         self._processed.clear()
 
-    async def __aiter__(self) -> AsyncIterator[E]:
-        """Return a generator of events, to be used in assertion coroutines."""
-
+    def __aiter__(self) -> AsyncIterator[E]:
+        """Return an asynchronous generator of events, that will yield events
+        to `async for` loops in assertion coroutines.
+        """
         if self._ready is None or self._processed is None:
             raise asyncio.InvalidStateError("Assertion not started")
 
-        while True:
+        return self
 
+    async def __anext__(self):
+        """Called when this object is used in `async for` loop."""
+
+        try:
+            if self.events_ended:
+                # this will end `async for ...` loop on this aync generator
+                raise StopAsyncIteration()
+
+            # Wait for an update. asyncio.TimeoutError may occur here.
             await self._ready.wait()
+
+            if self.events_ended:
+                # this will end `async for ...` loop on this aync generator
+                raise StopAsyncIteration()
+
+            assert self.past_events
+            return self.past_events[-1]
+
+        finally:
+            # Notify the task waiting in `update_events`
+            # that the new event has been processed.
             self._ready.clear()
-
-            try:
-                if self.events_ended:
-                    # this will end `async for ...` loop on this aync generator
-                    return
-
-                assert self.past_events
-                yield self.past_events[-1]
-
-            finally:
-                self._processed.set()
+            self._processed.set()

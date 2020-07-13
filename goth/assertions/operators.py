@@ -27,7 +27,7 @@ else:
 EventPredicate = Callable[[E], bool]
 
 
-async def wait_for_predicate(
+async def eventually(
     stream: EventStream[E], predicate: EventPredicate, timeout: Optional[float] = None
 ) -> Optional[E]:
     """Wait for an event that satisfies `predicate` with `timeout`.
@@ -36,12 +36,16 @@ async def wait_for_predicate(
     before `timeout`, `None` if the end of events occurs before `timeout` and
     raises `asyncio.TimeoutError` otherwise.
     """
+    # This operator could be generalised by:
+    # 1) accepting an optional second predicate that would have to be true for each
+    #    event *until* `predicate` holds;
+    # 2) adding a flag that causes the whole `eventually()` assertion to fail
+    #    if the end of events occurs before timeout.
 
-    if timeout is None:
+    async def _coro():
         async for e in stream:
             if predicate(e):
                 return e
         return None
 
-    else:
-        return await asyncio.wait_for(wait_for_predicate(stream, predicate), timeout)
+    return await asyncio.wait_for(_coro(), timeout)
