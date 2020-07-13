@@ -92,7 +92,3 @@ YAGNA_REST_URL = DefaultTemplate(
 # Range of ports on the host which can be mapped to yagna daemons' REST API port
 HOST_REST_PORT_START = 6001
 HOST_REST_PORT_END = 7000
-
-# Range of ports on the host which can be mapped to yagna daemons' GSB port
-HOST_BUS_PORT_START = 7001
-HOST_BUS_PORT_END = 8000

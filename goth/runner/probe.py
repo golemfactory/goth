@@ -17,6 +17,7 @@ from goth.address import (
     MARKET_API_URL,
     PAYMENT_API_URL,
     PROXY_HOST,
+    YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
 from goth.runner.cli import Cli, YagnaDockerCli
@@ -182,7 +183,7 @@ class RequestorProbe(Probe):
     ):
         super().__init__(client, config, log_config, assets_path)
 
-        host_port = self.container.ports[YagnaContainer.HTTP_PORT]
+        host_port = self.container.ports[YAGNA_REST_PORT]
         proxy_ip = get_container_address(client, PROXY_HOST)
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
