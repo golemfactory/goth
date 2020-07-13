@@ -3,7 +3,6 @@ from typing import Set
 
 from goth.api_monitor.api_events import (
     APIEvent,
-    APIClockTick,
     APIError,
     APIRequest,
     APIResponse,

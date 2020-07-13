@@ -284,7 +284,8 @@ async def test_past_events():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_predicate_no_timeout():
+async def test_eventually_without_timeout():
+    """Test if the `eventually` operator works without timeout."""
 
     events = []
 
@@ -305,8 +306,11 @@ async def test_wait_for_predicate_no_timeout():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_predicate_within_timeout():
+async def test_eventually_within_timeout():
+    """Test if the `eventually` operator works with timeout set.
 
+    The assertion should accept within timeout in this test.
+    """
     events = []
 
     async def func(stream):
@@ -326,8 +330,11 @@ async def test_wait_for_predicate_within_timeout():
 
 
 @pytest.mark.asyncio
-async def test_wait_for_predicate_with_timeout():
+async def test_eventually_with_timeout():
+    """Test if the `eventually` operator works with timeout set.
 
+    The assertion should fail because of timeout in this test.
+    """
     events = []
 
     async def func(stream):

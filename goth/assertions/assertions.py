@@ -153,8 +153,9 @@ class Assertion(AsyncIterator[E]):
         self._processed.clear()
 
     def __aiter__(self) -> AsyncIterator[E]:
-        """Return an asynchronous generator of events, that will yield events
-        to `async for` loops in assertion coroutines.
+        """Return an asynchronous generator of events.
+
+        It will yield events to `async for` loops in assertion coroutines.
         """
         if self._ready is None or self._processed is None:
             raise asyncio.InvalidStateError("Assertion not started")
@@ -162,8 +163,10 @@ class Assertion(AsyncIterator[E]):
         return self
 
     async def __anext__(self):
-        """Called when this object is used in `async for` loop."""
+        """Wait for the next event and yield it.
 
+        Called when this object is used in `async for` loop.
+        """
         try:
             if self.events_ended:
                 # this will end `async for ...` loop on this aync generator
