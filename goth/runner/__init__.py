@@ -90,6 +90,8 @@ class Runner:
                 self.check_assertion_errors()
 
         finally:
+            # Sleep to let the logs be saved
+            await asyncio.sleep(2.0)
             for probe in chain.from_iterable(self.probes.values()):
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
