@@ -4,7 +4,7 @@ import asyncio
 import pytest
 
 from goth.assertions import Assertion
-from goth.assertions.operators import wait_for_predicate
+from goth.assertions.operators import eventually
 
 
 @pytest.mark.asyncio
@@ -289,7 +289,7 @@ async def test_wait_for_predicate_no_timeout():
     events = []
 
     async def func(stream):
-        return await wait_for_predicate(stream, lambda e: e % 2 == 0)
+        return await eventually(stream, lambda e: e % 2 == 0)
 
     assertion = Assertion(events, func)
     assertion.start()
@@ -310,7 +310,7 @@ async def test_wait_for_predicate_within_timeout():
     events = []
 
     async def func(stream):
-        return await wait_for_predicate(stream, lambda e: e % 2 == 0, timeout=0.3)
+        return await eventually(stream, lambda e: e % 2 == 0, timeout=0.3)
 
     assertion = Assertion(events, func)
     assertion.start()
@@ -331,7 +331,7 @@ async def test_wait_for_predicate_with_timeout():
     events = []
 
     async def func(stream):
-        return await wait_for_predicate(stream, lambda e: e % 2 == 0, timeout=0.1)
+        return await eventually(stream, lambda e: e % 2 == 0, timeout=0.1)
 
     assertion = Assertion(events, func)
     assertion.start()
