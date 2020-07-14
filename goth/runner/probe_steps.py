@@ -88,7 +88,15 @@ class ProbeStepBuilder:
         """Wait until the invoice is sent."""
         self._wait_for_log("wait_for_invoice_sent", r"Invoice (.+) sent")
 
-    def _wait_for_log(self, name: str, message: str, timeout=10):
+    def wait_for_invoice_paid(self):
+        """Wait until the invoice is sent."""
+        self._wait_for_log(
+            "wait_for_invoice_paid",
+            r"Invoice (.+?) for agreement (.+?) was paid",
+            timeout=60 * 5,
+        )
+
+    def _wait_for_log(self, name: str, message: str, timeout: int = 10):
         step = AssertionStep(name, timeout)
         for probe in self._probes:
             assertion = assert_message_starts_with(message)

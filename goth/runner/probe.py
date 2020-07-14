@@ -209,6 +209,7 @@ class RequestorProbe(Probe):
     # TODO Remove once agent calls are implemented via probe
     def start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
+        self.cli.payment_init(requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -262,6 +263,7 @@ class ProviderProbe(Probe):
         """Start the agents and attach the log monitor."""
         super().start()
         self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
+        self.cli.payment_init(provider_mode=True)
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
