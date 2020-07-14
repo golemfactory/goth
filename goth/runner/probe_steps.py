@@ -22,32 +22,35 @@ class ProbeStepBuilder:
 
     def wait_for_offer_subscribed(self):
         """Wait until the provider agent subscribes to the offer."""
-        step_result = []
-        for probe in self._probes:
-            step = assert_message_starts_with("Subscribed offer")
-            result = probe.agent_logs.add_assertion(step)
-            step_result.append(result)
-        self._steps.append(step_result)
+        self._wait_for_log("Subscribed offer")
 
     def wait_for_proposal_accepted(self):
         """Wait until the provider agent accepts the proposal."""
-        self._steps.append((_wait_for_proposal_accepted, self._probes))
+        self._wait_for_log("Decided to AcceptProposal")
 
     def wait_for_agreement_approved(self):
         """Wait until the provider agent accepts the agreement."""
-        self._steps.append((_wait_for_agreement_approved, self._probes))
+        self._wait_for_log("Decided to ApproveAgreement")
 
     def wait_for_exeunit_started(self):
         """Wait until the provider agent starts the exe-unit."""
-        self._steps.append((_wait_for_exeunit_started, self._probes))
+        self._wait_for_log(r"\[ExeUnit\](.+)Started$")
 
     def wait_for_exeunit_finished(self):
         """Wait until exe-unit finishes."""
-        self._steps.append((_wait_for_exeunit_finished, self._probes))
+        self._wait_for_log("ExeUnit process exited with status Finished - exit code: 0")
 
     def wait_for_invoice_sent(self):
         """Wait until the invoice is sent."""
-        self._steps.append((_wait_for_invoice_sent, self._probes))
+        self._wait_for_log(r"Invoice (.+) sent")
+
+    def _wait_for_log(self, message):
+        step_result = []
+        for probe in self._probes:
+            step = assert_message_starts_with(message)
+            result = probe.agent_logs.add_assertion(step)
+            step_result.append(result)
+        self._steps.append(step_result)
 
 
 # --- ASSERTIONS --- #
@@ -81,44 +84,3 @@ async def assert_message_starts_with_and_wait(probe, needle):
 
     probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
     await probe.agent_logs.await_assertions()
-
-
-# --- ASYNC PROBE ACTIONS --- #
-# TODO: Move to own file
-
-
-async def _wait_for_offer_subscribed(probe: Probe):
-    logger.info("waiting for offer to be subscribed")
-    await assert_message_starts_with_and_wait(probe, "Subscribed offer")
-
-
-async def _wait_for_proposal_accepted(probe: Probe):
-    logger.info("waiting for proposal to be accepted")
-    await assert_message_starts_with_and_wait(probe, "Decided to AcceptProposal")
-    logger.info("proposal accepted")
-
-
-async def _wait_for_agreement_approved(probe: Probe):
-    logger.info("waiting for agreement to be app roved")
-    await assert_message_starts_with_and_wait(probe, "Decided to ApproveAgreement")
-    logger.info("agreement approved")
-
-
-async def _wait_for_exeunit_started(probe: Probe):
-    logger.info("waiting for exe-unit to start")
-    await assert_message_starts_with_and_wait(probe, r"\[ExeUnit\](.+)Started$")
-    logger.info("exe-unit started")
-
-
-async def _wait_for_exeunit_finished(probe: Probe):
-    logger.info("waiting for exe-unit to finish")
-    await assert_message_starts_with_and_wait(
-        probe, "ExeUnit process exited with status Finished - exit code: 0"
-    )
-    logger.info("exe-unit finished")
-
-
-async def _wait_for_invoice_sent(probe: Probe):
-    logger.info("waiting for invoice to be sent")
-    await assert_message_starts_with_and_wait(probe, r"Invoice (.+) sent")
-    logger.info("invoice sent")

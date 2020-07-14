@@ -101,10 +101,10 @@ class TestLevel0:
         all_providers = runner.get_probes_by_role(Role.provider)
 
         all_providers.wait_for_offer_subscribed()
-        # all_providers.wait_for_proposal_accepted()
-        # all_providers.wait_for_agreement_approved()
-        # all_providers.wait_for_exeunit_started()
-        # all_providers.wait_for_exeunit_finished()
-        # all_providers.wait_for_invoice_sent()
+        all_providers.wait_for_proposal_accepted()
+        all_providers.wait_for_agreement_approved()
+        all_providers.wait_for_exeunit_started()
+        all_providers.wait_for_exeunit_finished()
+        all_providers.wait_for_invoice_sent()
 
         await runner.run_scenario()
