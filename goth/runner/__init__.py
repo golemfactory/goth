@@ -120,8 +120,8 @@ class Runner:
 
         docker_client = docker.from_env()
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
-        test_name = test_name.replace("::", "_")
-        test_name = test_name.replace("/", "_")
+        # Take only the function name of the currently running test
+        test_name = test_name.split(":")[-1].split(" ")[0]
         self.logger.info(test_name)
         scenario_dir = self.base_log_dir / test_name
         scenario_dir.mkdir(exist_ok=True)
