@@ -23,6 +23,9 @@ from goth.runner.proxy import Proxy
 class Runner:
     """Manages the nodes and runs the scenario on them."""
 
+    api_assertions_module: Optional[str]
+    """Name of the module containing assertions to be loaded into the API monitor."""
+
     assets_path: Optional[Path]
     """Path to directory containing yagna assets to be mounted in containers."""
 
@@ -35,14 +38,18 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
+    topology: List[YagnaContainerConfig]
+    """A list of configuration objects for the containers to be instantiated."""
+
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
+        api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Optional[Path],
     ):
-
         self.topology = topology
+        self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path
         self.probes = defaultdict(list)
         self.proxy = None
@@ -81,12 +88,10 @@ class Runner:
 
     async def run_scenario(self):
         """Start the nodes, run the scenario, then stop the nodes and clean up."""
-        # self.logger.info("running scenario %s", type(self.scenario).__name__)
         try:
             for step, role in self.steps:
                 # Collect awaitables to execute them at the same time
                 awaitables = []
-                self.logger.info(self.probes)
                 for probe in self.probes[role]:
                     self.logger.debug(
                         "running step. probe=%s, role=%s, step=%s", probe, role, step
@@ -111,7 +116,7 @@ class Runner:
             # "at the end of events".
             self.check_assertion_errors()
 
-    def _run_nodes(self):
+    def _run_nodes(self) -> None:
 
         docker_client = docker.from_env()
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
@@ -121,10 +126,7 @@ class Runner:
         scenario_dir = self.base_log_dir / test_name
         scenario_dir.mkdir(exist_ok=True)
 
-        self.proxy = Proxy(
-            logger=_create_proxy_logger(scenario_dir),
-            assertions_module="asset.assertions.level0_assertions",
-        )
+        self.proxy = Proxy(assertions_module=self.api_assertions_module)
         self.proxy.start()
 
         for config in self.topology:

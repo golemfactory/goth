@@ -29,3 +29,11 @@ class Scenario(abc.ABC):
 
         when creating Docker containers for this scenario.
         """
+
+    @property
+    @abc.abstractmethod
+    def api_assertions_module(self) -> str:
+        """Name of the assertions module that should be loaded into the API monitor.
+
+        The name should be relative to the directory containing the scenario module.
+        """

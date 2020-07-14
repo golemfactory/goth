@@ -27,12 +27,8 @@ class Proxy:
     _logger: logging.Logger
     _loop: Optional[asyncio.AbstractEventLoop]
 
-    def __init__(
-        self,
-        logger: Optional[logging.Logger] = None,
-        assertions_module: Optional[str] = None,
-    ):
-        self._logger = logger or logging.getLogger(__name__)
+    def __init__(self, assertions_module: Optional[str] = None):
+        self._logger = logging.getLogger(__name__)
         self._loop = None
         self._proxy_thread = threading.Thread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
