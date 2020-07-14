@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from itertools import chain
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -15,6 +16,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import _create_file_logger
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
+from goth.runner.probe_steps import ProbeStepBuilder
 from goth.runner.proxy import Proxy
 
 
@@ -33,11 +35,18 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    def __init__(self, logs_path: Path, assets_path: Optional[Path]):
+    def __init__(
+        self,
+        topology: List[YagnaContainerConfig],
+        logs_path: Path,
+        assets_path: Optional[Path],
+    ):
 
+        self.topology = topology
         self.assets_path = assets_path
         self.probes = defaultdict(list)
         self.proxy = None
+        self.steps = []
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -46,6 +55,7 @@ class Runner:
 
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
+        self._run_nodes()
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
@@ -69,14 +79,14 @@ class Runner:
                 f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
             )
 
-    async def run_scenario(self, scenario):
+    async def run_scenario(self):
         """Start the nodes, run the scenario, then stop the nodes and clean up."""
-        self.logger.info("running scenario %s", type(scenario).__name__)
-        self._run_nodes(scenario)
+        # self.logger.info("running scenario %s", type(self.scenario).__name__)
         try:
-            for step, role in scenario.steps:
+            for step, role in self.steps:
                 # Collect awaitables to execute them at the same time
                 awaitables = []
+                self.logger.info(self.probes)
                 for probe in self.probes[role]:
                     self.logger.debug(
                         "running step. probe=%s, role=%s, step=%s", probe, role, step
@@ -101,10 +111,14 @@ class Runner:
             # "at the end of events".
             self.check_assertion_errors()
 
-    def _run_nodes(self, scenario):
+    def _run_nodes(self):
 
         docker_client = docker.from_env()
-        scenario_dir = self.base_log_dir / type(scenario).__name__
+        test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        test_name = test_name.replace("::", "_")
+        test_name = test_name.replace("/", "_")
+        self.logger.info(test_name)
+        scenario_dir = self.base_log_dir / test_name
         scenario_dir.mkdir(exist_ok=True)
 
         self.proxy = Proxy(
@@ -113,7 +127,7 @@ class Runner:
         )
         self.proxy.start()
 
-        for config in scenario.topology:
+        for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
@@ -129,6 +143,10 @@ class Runner:
 
                 probe.start()
                 self.probes[config.role].append(probe)
+
+    def get_probes(self, role):
+        """Create a ProbeStepBuilder for the requested role."""
+        return ProbeStepBuilder(steps=self.steps, probes=role)
 
 
 def _create_proxy_logger(scenario_dir):
