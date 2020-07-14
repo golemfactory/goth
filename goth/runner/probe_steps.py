@@ -1,6 +1,7 @@
 """Helpers to build steps on the runner attached to different probes."""
 
 import abc
+from datetime import datetime, timedelta
 import logging
 import re
 from typing import List
@@ -8,6 +9,8 @@ from typing import List
 from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
+
+from openapi_market_client import Demand
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +25,8 @@ class Step(abc.ABC):
         self.timeout = timeout
 
     @abc.abstractmethod
-    def is_done(self):
-        """Check if all required awaitables are done for this step.
+    def tick(self) -> bool:
+        """Return `True` iff this step has been completed.
 
         Implemented in sub-classes of Step
         """
@@ -38,20 +41,48 @@ class Step(abc.ABC):
 class AssertionStep(Step):
     """Step that holds a set of assertions to await."""
 
+    assertions: List[Assertion]
+    """All assertions that have to pass for this step."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._assertions: List[Assertion] = []
+        self.assertions = []
 
     def add_assertion(self, assertion: Assertion):
         """Add an assertion to be awaited in this step."""
-        self._assertions.append(assertion)
+        self.assertions.append(assertion)
 
-    def is_done(self):
+    def tick(self) -> bool:
         """Check if all required awaitables are done for this step.
 
         For the AssertionStep this means all assertions are marked as done
         """
-        return all(a.done for a in self._assertions)
+        return all(a.done for a in self.assertions)
+
+
+class CallableStep(Step):
+    """Step that executes apython function call on all `probes`."""
+
+    probes: List[Probe]
+    """Probes to execute `callable(probe)` for."""
+    callback: callable
+
+    def setup_callback(self, probes, callback):
+        """Configure this step, set probes and callback to be executed on tick()."""
+
+        self.probes = probes
+        self.callback = callback
+
+    def tick(self) -> bool:
+        """Check if all required awaitables are done for this step.
+
+        For the CallableStep this means the callback is executed for each probe
+        """
+        logger.debug("tick()")
+        for probe in self.probes:
+            res = self.callback(probe)
+            logger.debug("result=%r", res)
+        return True
 
 
 class ProbeStepBuilder:
@@ -60,6 +91,8 @@ class ProbeStepBuilder:
     def __init__(self, steps, probes: List[Probe]):
         self._steps: List[Step] = steps
         self._probes = probes
+
+    # --- PROVIDER --- #
 
     def wait_for_offer_subscribed(self):
         """Wait until the provider agent subscribes to the offer."""
@@ -102,6 +135,37 @@ class ProbeStepBuilder:
             assertion = assert_message_starts_with(message)
             result = probe.agent_logs.add_assertion(assertion)
             step.add_assertion(result)
+        self._steps.append(step)
+
+    # --- REQUESTOR --- #
+
+    def subscribe_demand(self):
+        """Call subscribe demand on the requestor market api."""
+        package = (
+            "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
+            ":http://34.244.4.185:8000/rust-wasi-tutorial.zip"
+        )
+        constraints = (
+            "(&(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)"
+            "(golem.com.pricing.model=linear))"
+        )
+
+        def _call_subscribe_demand(probe):
+            demand = Demand(
+                requestor_id=probe.address,
+                properties={
+                    "golem.node.id.name": "test1",
+                    "golem.srv.comp.expiration": int(
+                        (datetime.now() + timedelta(days=1)).timestamp() * 1000
+                    ),
+                    "golem.srv.comp.wasm.task_package": package,
+                },
+                constraints=constraints,
+            )
+            return probe.market.subscribe_demand(demand)
+
+        step = CallableStep(name="subscribe_demand", timeout=10)
+        step.setup_callback(self._probes, _call_subscribe_demand)
         self._steps.append(step)
 
 

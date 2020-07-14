@@ -96,7 +96,7 @@ class Runner:
                 self.logger.info("running step. step=%s", step)
                 deadline = datetime.now() + timedelta(seconds=step.timeout)
 
-                while not step.is_done():
+                while not step.tick():
                     if deadline < datetime.now():
                         raise TimeoutError
                     await asyncio.sleep(0.1)

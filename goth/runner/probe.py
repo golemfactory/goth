@@ -221,7 +221,7 @@ class RequestorProbe(Probe):
         self._init_market_api()
 
         # TODO Remove once agent calls are implemented via probe
-        self.start_requestor_agent()
+        # self.start_requestor_agent()
 
     # TODO Remove once agent calls are implemented via probe
     def start_requestor_agent(self):
