@@ -35,9 +35,9 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    def __init__(self, toppology: List, logs_path: Path, assets_path: Optional[Path]):
+    def __init__(self, topology: List, logs_path: Path, assets_path: Optional[Path]):
 
-        self.toppology = toppology
+        self.topology = topology
         self.assets_path = assets_path
         self.probes = defaultdict(list)
         self.proxy = None
@@ -122,7 +122,7 @@ class Runner:
         )
         self.proxy.start()
 
-        for config in self.toppology:
+        for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
