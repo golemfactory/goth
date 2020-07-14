@@ -14,7 +14,6 @@ import docker
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
-from goth.runner.log_monitor import _create_file_logger
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.probe_steps import ProbeStepBuilder
 from goth.runner.proxy import Proxy
@@ -149,14 +148,3 @@ class Runner:
     def get_probes(self, role):
         """Create a ProbeStepBuilder for the requested role."""
         return ProbeStepBuilder(steps=self.steps, probes=role)
-
-
-def _create_proxy_logger(scenario_dir):
-
-    proxy_log_config = LogConfig("proxy")
-    proxy_log_config.base_dir = scenario_dir
-    proxy_log_config.formatter = logging.Formatter(
-        fmt="%(asctime)s %(levelname)-8s %(message)s"
-    )
-    proxy_log_config.level = logging.DEBUG
-    return _create_file_logger(proxy_log_config)

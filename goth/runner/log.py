@@ -32,25 +32,40 @@ LOGGING_CONFIG = {
         },
     },
     "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "simple",},
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "level": "INFO",
+        },
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
             "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
+            "level": "INFO",
         },
         "proxy_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
             "filename": "%(base_log_dir)s/proxy.log",
             "encoding": "utf-8",
+            "level": "DEBUG",
         },
     },
     "loggers": {
         "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
+        # This logger is used also by the assertions loaded into the proxy
         "goth.runner.proxy": {
-            "handlers": ["console", "proxy_file"],
+            "handlers": ["proxy_file"],
+            "propagate": True,
+            "level": "DEBUG",
+        },
+        "goth.api_monitor": {
+            "handlers": ["proxy_file"],
             "propagate": False,
+            # Changing this to "DEBUG" can help in diagnosing issues with routing
+            # in the proxy. Using "INFO" by default to avoid verbose output.
+            "level": "INFO",
         },
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
