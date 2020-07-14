@@ -1,3 +1,5 @@
+"""Level 0 test to be ran from pytest."""
+
 import logging
 from pathlib import Path
 from string import Template
@@ -88,6 +90,7 @@ LEVEL0_TOPPOLOGY = [
 
 class TestLevel0:
     """TestCase running Level0Scenario."""
+
     @pytest.mark.asyncio
     async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level0Scenario."""

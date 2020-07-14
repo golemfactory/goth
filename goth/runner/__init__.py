@@ -140,6 +140,7 @@ class Runner:
                 self.probes[config.role].append(probe)
 
     def get_probes(self, role):
+        """Create a ProbeStepBuilder for the requested role."""
         return ProbeStepBuilder(steps=self.steps, probes=role)
 
 
