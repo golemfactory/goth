@@ -13,6 +13,46 @@ logger = logging.getLogger(__name__)
 LogEvents = EventStream[LogEvent]
 
 
+class Step:
+    """Step to be awaited in the runner."""
+
+    def __init__(self, name: str, timeout: int):
+        self.name = name
+        self.timeout = timeout
+
+    def is_done(self):
+        """Check if all required awaitables are done for this step.
+
+        Implemented in sub-classes of Step
+        """
+        raise NotImplementedError
+
+    def __repr__(self):
+        return f"<{type(self).__name__} name={self.name} timeout={self.timeout}>"
+
+
+class AssertionStep(Step):
+    """Step that holds a set of assertions to await."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._assertions = []
+
+    def add_assertion(self, assertion):
+        """Add an assertion to be awaited in this step."""
+        self._assertions.append(assertion)
+
+    def is_done(self):
+        """Check if all required awaitables are done for this step.
+
+        For the AssertionStep this means all assertions are marked as done
+        """
+        for a in self._assertions:
+            if not a.done:
+                return False
+        return True
+
+
 class ProbeStepBuilder:
     """Helper for creating test steps to be ran inside the runner."""
 
@@ -22,35 +62,38 @@ class ProbeStepBuilder:
 
     def wait_for_offer_subscribed(self):
         """Wait until the provider agent subscribes to the offer."""
-        self._wait_for_log("Subscribed offer")
+        self._wait_for_log("wait_for_offer_subscribed", "Subscribed offer")
 
     def wait_for_proposal_accepted(self):
         """Wait until the provider agent accepts the proposal."""
-        self._wait_for_log("Decided to AcceptProposal")
+        self._wait_for_log("wait_for_proposal_accepted", "Decided to AcceptProposal")
 
     def wait_for_agreement_approved(self):
         """Wait until the provider agent accepts the agreement."""
-        self._wait_for_log("Decided to ApproveAgreement")
+        self._wait_for_log("wait_for_agreement_approved", "Decided to ApproveAgreement")
 
     def wait_for_exeunit_started(self):
         """Wait until the provider agent starts the exe-unit."""
-        self._wait_for_log(r"\[ExeUnit\](.+)Started$")
+        self._wait_for_log("wait_for_exeunit_started", r"\[ExeUnit\](.+)Started$")
 
     def wait_for_exeunit_finished(self):
         """Wait until exe-unit finishes."""
-        self._wait_for_log("ExeUnit process exited with status Finished - exit code: 0")
+        self._wait_for_log(
+            "wait_for_exeunit_finished",
+            "ExeUnit process exited with status Finished - exit code: 0",
+        )
 
     def wait_for_invoice_sent(self):
         """Wait until the invoice is sent."""
-        self._wait_for_log(r"Invoice (.+) sent")
+        self._wait_for_log("wait_for_invoice_sent", r"Invoice (.+) sent")
 
-    def _wait_for_log(self, message):
-        step_result = []
+    def _wait_for_log(self, name, message, timeout=10):
+        step = AssertionStep(name, timeout)
         for probe in self._probes:
-            step = assert_message_starts_with(message)
-            result = probe.agent_logs.add_assertion(step)
-            step_result.append(result)
-        self._steps.append(step_result)
+            assertion = assert_message_starts_with(message)
+            result = probe.agent_logs.add_assertion(assertion)
+            step.add_assertion(result)
+        self._steps.append(step)
 
 
 # --- ASSERTIONS --- #

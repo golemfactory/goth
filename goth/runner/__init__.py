@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import docker
 
-from goth.assertions import TemporalAssertionError, Assertion
+from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
@@ -90,20 +90,13 @@ class Runner:
         self._start_nodes()
         try:
             for step in self.steps:
-                self.logger.info("running step. list=%r", step)
-                for awaitable in step:
-                    self.logger.debug("awaiting sub step. awaitable=%s", awaitable)
-                    if isinstance(awaitable, Assertion):
-                        deadline = datetime.now() + timedelta(seconds=20)
+                self.logger.info("running step. step=%r", step)
+                deadline = datetime.now() + timedelta(seconds=step.timeout)
 
-                        while not awaitable.done:
-                            if deadline < datetime.now():
-                                raise TimeoutError
-                            await asyncio.sleep(0.1)
-                    else:
-                        raise RuntimeError("UNKNOWN  TYPE")
-
-                self.check_assertion_errors()
+                while not step.is_done():
+                    if deadline < datetime.now():
+                        raise TimeoutError
+                    await asyncio.sleep(0.1)
 
         finally:
             # Sleep to let the logs be saved
