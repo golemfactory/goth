@@ -35,7 +35,12 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    def __init__(self, topology: List, logs_path: Path, assets_path: Optional[Path]):
+    def __init__(
+        self,
+        topology: List[YagnaContainerConfig],
+        logs_path: Path,
+        assets_path: Optional[Path],
+    ):
 
         self.topology = topology
         self.assets_path = assets_path
