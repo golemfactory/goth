@@ -120,10 +120,3 @@ def assert_message_starts_with(needle: str):
         raise AssertionError(f"No message starts with '{needle}'")
 
     return _assert_starts_with
-
-
-async def assert_message_starts_with_and_wait(probe, needle):
-    """Attaches an assertion to the probe and wait for the needle to be found."""
-
-    probe.agent_logs.add_assertions([assert_message_starts_with(needle)])
-    await probe.agent_logs.await_assertions()

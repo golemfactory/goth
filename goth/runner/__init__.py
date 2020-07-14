@@ -15,7 +15,7 @@ from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
-from goth.runner.probe_steps import ProbeStepBuilder
+from goth.runner.probe_steps import ProbeStepBuilder, Step
 from goth.runner.proxy import Proxy
 
 
@@ -39,6 +39,9 @@ class Runner:
 
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
+
+    steps: List[Step]
+    """The list of steps to be awaited, steps of the scenario to be executed."""
 
     def __init__(
         self,

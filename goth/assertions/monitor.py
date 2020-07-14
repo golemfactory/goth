@@ -4,7 +4,6 @@ that registers events and checks whether temporal assertions are satisfied.
 """
 
 import asyncio
-from datetime import datetime, timedelta
 import importlib
 import logging
 from typing import Generic, List, Optional, Sequence
@@ -101,19 +100,6 @@ class EventMonitor(Generic[E]):
             raise RuntimeError("Monitor is not running")
 
         self._incoming.put_nowait(event)
-
-    async def await_assertions(self, timeout: timedelta = timedelta(seconds=10)):
-        """Sleep until all assertions are done or the timeout passed."""
-
-        if not self.is_running():
-            raise RuntimeError("Monitor is not running")
-
-        deadline = datetime.now() + timeout
-
-        while not self.finished:
-            if deadline < datetime.now():
-                raise TimeoutError
-            await asyncio.sleep(0.1)
 
     async def stop(self) -> None:
         """Stop tracing events."""
