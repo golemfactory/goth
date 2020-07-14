@@ -94,7 +94,9 @@ class TestLevel0:
     @pytest.mark.asyncio
     async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level0Scenario."""
-        runner = Runner(LEVEL0_TOPOLOGY, logs_path, assets_path)
+        runner = Runner(
+            LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+        )
 
         all_providers = runner.get_probes(Role.provider)
 
