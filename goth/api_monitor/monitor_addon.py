@@ -53,7 +53,7 @@ class MonitorAddon:
         self._logger.debug("%s: %s", request, status)
 
     def _register_event(self, event: APIEvent) -> None:
-        """Log and API event and add it to the monitor."""
+        """Log an API event and add it to the monitor."""
 
         self._log_event(event)
         self._monitor.add_event(event)
