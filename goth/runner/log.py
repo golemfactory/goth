@@ -35,14 +35,14 @@ LOGGING_CONFIG = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
-            "level": "INFO",
+            "level": "DEBUG",
         },
         "runner_file": {
             "class": "logging.FileHandler",
             "formatter": "date",
             "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
-            "level": "INFO",
+            "level": "DEBUG",
         },
         "proxy_file": {
             "class": "logging.FileHandler",
@@ -68,6 +68,7 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
         },
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
+        "test_level1": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
     },
 }
