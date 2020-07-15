@@ -222,21 +222,21 @@ class RequestorProbe(Probe):
         self._init_market_api()
 
         # TODO Remove once agent calls are implemented via probe
-        self.start_requestor_agent()
+        # self.start_requestor_agent()
 
     # TODO Remove once agent calls are implemented via probe
     def start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        self.cli.payment_init(requestor_mode=True)
-        # log_stream = self.container.exec_run(
-        #     "ya-requestor"
-        #     f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
-        #     " --task-package "
-        #     "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
-        #     "http://34.244.4.185:8000/rust-wasi-tutorial.zip",
-        #     stream=True,
-        # )
-        # self.agent_logs.start(log_stream.output)
+        # self.cli.payment_init(requestor_mode=True)
+        log_stream = self.container.exec_run(
+            "ya-requestor"
+            f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
+            " --task-package "
+            "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
+            "http://34.244.4.185:8000/rust-wasi-tutorial.zip",
+            stream=True,
+        )
+        self.agent_logs.start(log_stream.output)
 
     def _init_market_api(self):
         api_url = MARKET_API_URL.substitute(base=self._api_base_host)

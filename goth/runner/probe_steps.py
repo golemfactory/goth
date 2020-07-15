@@ -152,6 +152,17 @@ class ProbeStepBuilder:
 
     # --- REQUESTOR --- #
 
+    def init_payment(self):
+        """Call collect_offers on the requestor market api."""
+
+        def _call_init_payment(probe):
+            result = probe.cli.payment_init(requestor_mode=True)
+            return result
+
+        step = CallableStep(name="init_payment", timeout=120)
+        step.setup_callback(self._probes, _call_init_payment)
+        self._steps.append(step)
+
     def subscribe_demand(self):
         """Call subscribe demand on the requestor market api."""
         package = (

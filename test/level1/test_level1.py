@@ -102,6 +102,8 @@ class TestLevel1:
         provider = runner.get_probes_by_role(Role.provider)
         requestor = runner.get_probes_by_role(Role.requestor)
 
+        requestor.init_payment()
+
         # Market
         provider.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
