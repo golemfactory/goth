@@ -33,8 +33,11 @@ class MonitorAddon:
         self._num_requests = 0
         self._logger = logging.getLogger(__name__)
 
-    def _register_event(self, event: APIEvent) -> None:
-        """Log and API event and add it to the monitor."""
+    def _log_event(self, event: APIEvent) -> None:
+        """Log an API event."""
+
+        if not self._logger.isEnabledFor(logging.DEBUG):
+            return
 
         if isinstance(event, APIRequest):
             status = "in progress"
@@ -48,6 +51,11 @@ class MonitorAddon:
             request = event.request
 
         self._logger.debug("%s: %s", request, status)
+
+    def _register_event(self, event: APIEvent) -> None:
+        """Log and API event and add it to the monitor."""
+
+        self._log_event(event)
         self._monitor.add_event(event)
 
     def request(self, flow: HTTPFlow) -> None:
