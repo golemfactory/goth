@@ -220,8 +220,6 @@ class ProbeStepBuilder:
                 proposal_id=provider_proposal.proposal_id,
                 proposal=proposal,
             )
-            # Wait for provider to reply, where does this belong?
-            time.sleep(5.0)
             awaitable.set_result(counter_proposal)
             return counter_proposal
 
