@@ -99,24 +99,24 @@ class TestLevel1:
             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
-        all_providers = runner.get_probes_by_role(Role.provider)
+        provider = runner.get_probes_by_role(Role.provider)
         requestor = runner.get_probes_by_role(Role.requestor)
 
-        all_providers.wait_for_offer_subscribed()
+        provider.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
-        proposal_1 = requestor.wait_for_proposal(subscription_id)
-        requestor.counter_proposal(subscription_id, proposal_1)
-        all_providers.wait_for_proposal_accepted()
+        proposal = requestor.wait_for_proposal(subscription_id)
+        requestor.counter_proposal(subscription_id, proposal)
+        provider.wait_for_proposal_accepted()
         requestor.wait_for_proposal(subscription_id)
-        agreement_id = requestor.create_agreement()
+        agreement_id = requestor.create_agreement(proposal)
         requestor.confirm_agreement(agreement_id)
-        all_providers.wait_for_agreement_approved()
+        provider.wait_for_agreement_approved()
         # requestor.wait_for_approval() ???
 
         # requestor.start_activity()
-        # all_providers.wait_for_exeunit_started()
-        # all_providers.wait_for_exeunit_finished()
-        # all_providers.wait_for_invoice_sent()
+        # provider.wait_for_exeunit_started()
+        # provider.wait_for_exeunit_finished()
+        # provider.wait_for_invoice_sent()
         # requestor.pay_invoice()
 
         await runner.run_scenario()
