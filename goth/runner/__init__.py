@@ -118,11 +118,7 @@ class Runner:
     def _run_nodes(self) -> None:
 
         docker_client = docker.from_env()
-        test_name = os.environ.get("PYTEST_CURRENT_TEST")
-        test_name = test_name.replace("::", "_")
-        test_name = test_name.replace("/", "_")
-        self.logger.info(test_name)
-        scenario_dir = self.base_log_dir / test_name
+        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
         scenario_dir.mkdir(exist_ok=True)
 
         self.proxy = Proxy(assertions_module=self.api_assertions_module)
@@ -144,6 +140,14 @@ class Runner:
 
                 probe.start()
                 self.probes[config.role].append(probe)
+
+    def _get_test_log_dir_name(self):
+        test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        self.logger.debug("Raw current pytest test=%s", test_name)
+        # Take only the function name of the currently running test
+        test_name = test_name.split("::")[-1].split()[0]
+        self.logger.debug("Cleaned current test dir name=%s", test_name)
+        return test_name
 
     def get_probes(self, role):
         """Create a ProbeStepBuilder for the requested role."""
