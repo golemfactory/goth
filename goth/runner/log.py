@@ -39,9 +39,19 @@ LOGGING_CONFIG = {
             "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
         },
+        "proxy_file": {
+            "class": "logging.FileHandler",
+            "formatter": "date",
+            "filename": "%(base_log_dir)s/proxy.log",
+            "encoding": "utf-8",
+        },
     },
     "loggers": {
         "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
+        "goth.runner.proxy": {
+            "handlers": ["console", "proxy_file"],
+            "propagate": False,
+        },
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
     },
