@@ -99,7 +99,7 @@ class ProbeStepBuilder:
 
         def _call_log():
             contents = fut.result()
-            logger.debug('contents=%r', contents)
+            logger.debug("contents=%r", contents)
 
         step = CallableStep(name="wait_for_proposal", timeout=10)
         step.setup_callback(self._probes, _call_log)
