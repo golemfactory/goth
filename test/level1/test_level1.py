@@ -102,6 +102,7 @@ class TestLevel1:
         provider = runner.get_probes_by_role(Role.provider)
         requestor = runner.get_probes_by_role(Role.requestor)
 
+        # Market
         provider.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
         proposal = requestor.wait_for_proposal(subscription_id)
@@ -113,10 +114,18 @@ class TestLevel1:
         provider.wait_for_agreement_approved()
         # requestor.wait_for_approval() ???
 
-        # requestor.start_activity()
+        # Activity
+        activity_id = requestor.create_activity(agreement_id)
+        requestor.log(activity_id)
+        # batch_id = requestor.call_exec(activity_id)
         # provider.wait_for_exeunit_started()
         # provider.wait_for_exeunit_finished()
+        # requestor.collect_results(batch_id)
+        # requestor.destroy_activity(activity_id)
+
+        # Payment
         # provider.wait_for_invoice_sent()
         # requestor.pay_invoice()
+        # provider.wait_for_invoice_paid()
 
         await runner.run_scenario()

@@ -94,6 +94,17 @@ class ProbeStepBuilder:
         self._steps: List[Step] = steps
         self._probes = probes
 
+    def log(self, fut):
+        """Log the contents of the future."""
+
+        def _call_log():
+            contents = fut.result()
+            logger.debug('contents=%r', contents)
+
+        step = CallableStep(name="wait_for_proposal", timeout=10)
+        step.setup_callback(self._probes, _call_log)
+        self._steps.append(step)
+
     # --- PROVIDER --- #
 
     def wait_for_offer_subscribed(self):
@@ -264,6 +275,22 @@ class ProbeStepBuilder:
 
         step = CallableStep(name="confirm_agreement", timeout=10)
         step.setup_callback(self._probes, _call_confirm_agreement)
+        self._steps.append(step)
+        return awaitable
+
+    def create_activity(self, fut_agreement_id):
+        """Call create_activity on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_create_activity(probe):
+            agreement_id = fut_agreement_id.result()
+            activity_id = probe.activity.create_activity(agreement_id)
+            awaitable.set_result(activity_id)
+            return activity_id
+
+        step = CallableStep(name="create_activity", timeout=10)
+        step.setup_callback(self._probes, _call_create_activity)
         self._steps.append(step)
         return awaitable
 
