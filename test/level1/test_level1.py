@@ -103,7 +103,8 @@ class TestLevel1:
         requestor = runner.get_probes_by_role(Role.requestor)
 
         all_providers.wait_for_offer_subscribed()
-        requestor.subscribe_demand()
+        subscription_id = requestor.subscribe_demand()
+        proposal = requestor.wait_for_proposal(subscription_id)
         # requestor.accept_proposal()
         # all_providers.wait_for_proposal_accepted()
         # requestor.approve_agreement()

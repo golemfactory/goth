@@ -1,9 +1,11 @@
 """Helpers to build steps on the runner attached to different probes."""
 
 import abc
+import asyncio
 from datetime import datetime, timedelta
 import logging
 import re
+import time
 from typing import List
 
 from goth.assertions import EventStream, Assertion
@@ -150,6 +152,8 @@ class ProbeStepBuilder:
             "(golem.com.pricing.model=linear))"
         )
 
+        awaitable = asyncio.Future()
+
         def _call_subscribe_demand(probe):
             demand = Demand(
                 requestor_id=probe.address,
@@ -162,7 +166,30 @@ class ProbeStepBuilder:
                 },
                 constraints=constraints,
             )
-            return probe.market.subscribe_demand(demand)
+            result = probe.market.subscribe_demand(demand)
+            awaitable.set_result(result)
+            return result
+
+        step = CallableStep(name="subscribe_demand", timeout=10)
+        step.setup_callback(self._probes, _call_subscribe_demand)
+        self._steps.append(step)
+        return awaitable
+
+    def wait_for_proposal(self, fut_subscription_id):
+        """Call subscribe demand on the requestor market api."""
+
+        def _call_subscribe_demand(probe):
+            subscription_id = fut_subscription_id.result()
+            proposal = None
+            while proposal is None:
+                result_offers = probe.market.collect_offers(subscription_id)
+                print(f"collect_offers({subscription_id}). proposal={result_offers}")
+                if result_offers:
+                    proposal = result_offers[0].proposal
+                else:
+                    print(f"Waiting on proposal... {result_offers}")
+                    time.sleep(1.0)
+            return proposal
 
         step = CallableStep(name="subscribe_demand", timeout=10)
         step.setup_callback(self._probes, _call_subscribe_demand)
