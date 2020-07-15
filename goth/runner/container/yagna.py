@@ -2,10 +2,14 @@
 
 from pathlib import Path
 from string import Template
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import ClassVar, Dict, Iterator, Optional, TYPE_CHECKING
 
 from docker import DockerClient
-from goth.address import YAGNA_BUS_PORT, YAGNA_REST_PORT
+from goth.address import (
+    HOST_REST_PORT_END,
+    HOST_REST_PORT_START,
+    YAGNA_REST_PORT,
+)
 from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
@@ -38,8 +42,6 @@ class YagnaContainerConfig(DockerContainerConfig):
 class YagnaContainer(DockerContainer):
     """Extension of DockerContainer to be configured for yagna daemons."""
 
-    BUS_PORT = 6010
-    HTTP_PORT = 6000
     COMMAND = ["service", "run", "-d", "/"]
     ENTRYPOINT = "/usr/bin/yagna"
     IMAGE = "yagna-goth"
@@ -47,7 +49,10 @@ class YagnaContainer(DockerContainer):
     ports: Dict[int, int] = {}
     """ Port mapping between the Docker host and the container.
         Keys are container port numbers, values are host port numbers. """
-    _port_offset = 0
+
+    host_port_range: ClassVar[Iterator[int]] = iter(
+        range(HOST_REST_PORT_START, HOST_REST_PORT_END)
+    )
     """ Keeps track of assigned ports on the Docker host """
 
     def __init__(
@@ -58,11 +63,7 @@ class YagnaContainer(DockerContainer):
         assets_path: Optional[Path] = None,
         **kwargs,
     ):
-        self.ports = {
-            YAGNA_REST_PORT: YagnaContainer.host_http_port(),
-            YAGNA_BUS_PORT: YagnaContainer.host_bus_port(),
-        }
-        YagnaContainer._port_offset += 1
+        self.ports = {YAGNA_REST_PORT: YagnaContainer.host_rest_port()}
 
         super().__init__(
             client=client,
@@ -78,11 +79,12 @@ class YagnaContainer(DockerContainer):
         )
 
     @classmethod
-    def host_http_port(cls):
-        """Http port for the yagna rest api running on this container."""
-        return YAGNA_REST_PORT + cls._port_offset
+    def host_rest_port(cls):
+        """Return the next host port that can be used for port mapping.
 
-    @classmethod
-    def host_bus_port(cls):
-        """Gsb port for the yagna service bus running on this container."""
-        return YAGNA_BUS_PORT + cls._port_offset
+        Raises `OverflowError` if the port to return would exceed the expected range.
+        """
+        try:
+            return next(cls.host_port_range)
+        except StopIteration:
+            raise OverflowError(f"Port range exceeded. range_end={HOST_REST_PORT_END}")
