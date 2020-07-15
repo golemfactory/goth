@@ -5,6 +5,7 @@ import asyncio
 from typing import (
     Any,
     AsyncIterator,
+    AsyncIterable,
     Callable,
     Coroutine,
     Optional,
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Protocol
 
-    class EventStream(Protocol, AsyncIterator[E]):
+    class EventStream(Protocol, AsyncIterable[E]):
         """A protocol for streams of events of type `E` used by assertion functions."""
 
         past_events: Sequence[E]
@@ -38,14 +39,26 @@ if TYPE_CHECKING:
 
 else:
 
-    EventStream = AsyncIterator
+    EventStream = AsyncIterable
 
 
 AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
-class Assertion(AsyncIterator[E]):
-    """A class for executing assertion coroutines."""
+class Assertion(AsyncIterable[E]):
+    """A class for executing assertion coroutines.
+
+    An instance of this class wraps a coroutine function (called the
+    "assertion coroutine") and provides an asynchronous generator of
+    events that the assertion coroutine processes.
+
+    After creating an instance of this class, it's client should await
+    the `update_events()` method each time a new event is appended to the list
+    of events (the list is passed as an argument to `Assertion()`).
+    After `update_events()` returns, the state of the assertion is updated
+    and the client can query that state using the `done`, `accepted`
+    and `failed` properties.
+    """
 
     past_events: Sequence[E]
     """See `EventStream`."""
@@ -68,6 +81,9 @@ class Assertion(AsyncIterator[E]):
     _processed: Optional[asyncio.Event]
     """An event object used for synchronising the client and the assertion coroutine."""
 
+    _generator: Optional[AsyncIterator[E]]
+    """An asynchronous generator that provides events to the assertion coroutine."""
+
     def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
         self.past_events = events
         self.events_ended = False
@@ -79,12 +95,14 @@ class Assertion(AsyncIterator[E]):
         self._task = None
         self._ready = None
         self._processed = None
+        self._generator = None
 
     def start(self) -> asyncio.Task:
         """Create asyncio task that runs this assertion."""
 
         assert self._func is not None
         self._task = asyncio.create_task(self._func(self))
+        self._task.add_done_callback(lambda *_args: self._notify_update_events())
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
         return self._task
@@ -109,13 +127,13 @@ class Assertion(AsyncIterator[E]):
     def accepted(self) -> bool:
         """Return `True` iff this assertion finished execution successfuly."""
 
-        return self.started and self._task.done() and self._task.exception() is None
+        return self._task and self._task.done() and self._task.exception() is None
 
     @property
     def failed(self) -> bool:
         """Return `True` iff this assertion finished execution by failing."""
 
-        return self.started and self._task.done() and self._task.exception() is not None
+        return self._task and self._task.done() and self._task.exception() is not None
 
     @property
     def result(self) -> Any:
@@ -124,7 +142,7 @@ class Assertion(AsyncIterator[E]):
         This can be either a value returned by this assertion on success, an exception
         thrown on failure, or `None` if the assertion hasn't finished yet.
         """
-        if not self.started:
+        if not self._task:
             raise asyncio.InvalidStateError("Assertion not started")
 
         if self._task.done():
@@ -146,9 +164,9 @@ class Assertion(AsyncIterator[E]):
         if self.done:
             return
 
-        # This will allow the assertion function to resume execution
+        # This will allow the assertion coroutine to resume execution
         self._ready.set()
-        # Here we wait until the assertion function yields control
+        # Here we wait until the assertion coroutine yields control
         await self._processed.wait()
         self._processed.clear()
 
@@ -156,34 +174,46 @@ class Assertion(AsyncIterator[E]):
         """Return an asynchronous generator of events.
 
         It will yield events to `async for` loops in assertion coroutines.
+
+        For a given assertion `a`, `a.__iter__()` is guaranteed to return
+        the same asynchronous generator every time it's called.
         """
         if self._ready is None or self._processed is None:
             raise asyncio.InvalidStateError("Assertion not started")
 
-        return self
+        if self._generator is None:
+            self._generator = self._create_generator()
 
-    async def __anext__(self):
-        """Wait for the next event and yield it.
+        return self._generator
 
-        Called when this object is used in `async for` loop.
-        """
-        try:
-            if self.events_ended:
-                # this will end `async for ...` loop on this aync generator
-                raise StopAsyncIteration()
+    def _notify_update_events(self):
+        """Notify the task waiting in `update_events()` that the update is procesed."""
 
-            # Wait for an update. asyncio.TimeoutError may occur here.
+        self._ready.clear()
+        self._processed.set()
+
+    async def _create_generator(self) -> AsyncIterator[E]:
+        """Create an asynchronous generator that will be returned by `__aiter__()`."""
+        assert self._ready  # to silence mypy
+
+        while True:
+            # Wait for `update_events()` to signal that new event is available
+            # or that the events ended.
             await self._ready.wait()
-
             if self.events_ended:
-                # this will end `async for ...` loop on this aync generator
-                raise StopAsyncIteration()
+                return
 
             assert self.past_events
-            return self.past_events[-1]
+            yield self.past_events[-1]
 
-        finally:
-            # Notify the task waiting in `update_events`
-            # that the new event has been processed.
-            self._ready.clear()
-            self._processed.set()
+            # It's important to notify the task waiting in `update_events()`
+            # only after the control returns to this generator. In particular,
+            # doing this in a `finally` clause wouldn't be correct, as the task
+            # waiting in `update_events()` could be notified of processing an event
+            # before the assertion coroutine could for example finish execution
+            # and mark the assertion as finished.
+            #
+            # In case the control does not return (since the events end or
+            # the assertion coroutine raises an exception), `_notify_update_events()`
+            # is called in the done callback for the coroutine task.
+            self._notify_update_events()
