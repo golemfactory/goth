@@ -255,7 +255,6 @@ class ProviderProbe(Probe):
         preset_name: str = "default",
     ):
         super().__init__(client, config, log_config, assets_path=assets_path)
-        self.agent_logs = None
         self.agent_preset = preset_name
 
     def start(self):
