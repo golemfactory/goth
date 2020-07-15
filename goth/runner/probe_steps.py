@@ -12,7 +12,7 @@ from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
 
-from openapi_market_client import Demand, Proposal
+from openapi_market_client import Demand, Proposal, AgreementProposal
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +225,45 @@ class ProbeStepBuilder:
 
         step = CallableStep(name="counter_proposal", timeout=10)
         step.setup_callback(self._probes, _call_subscribe_demand)
+        self._steps.append(step)
+        return awaitable
+
+    def create_agreement(self, fut_proposal):
+        """Call collect_offers on the requestor market api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_create_agreement(probe):
+            proposal = fut_proposal.result()
+
+            valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
+            logger.debug(f"valid_to={valid_to}")
+            agreement_proposal = AgreementProposal(
+                proposal_id=proposal.proposal_id, valid_to=valid_to
+            )
+
+            agreement_id = probe.market.create_agreement(agreement_proposal)
+            awaitable.set_result(agreement_id)
+            return agreement_id
+
+        step = CallableStep(name="create_agreement", timeout=10)
+        step.setup_callback(self._probes, _call_create_agreement)
+        self._steps.append(step)
+        return awaitable
+
+    def confirm_agreement(self, fut_agreement_id):
+        """Call collect_offers on the requestor market api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_confirm_agreement(probe):
+            agreement_id = fut_agreement_id.result()
+            result = probe.market.confirm_agreement(agreement_id)
+            awaitable.set_result(result)
+            return result
+
+        step = CallableStep(name="confirm_agreement", timeout=10)
+        step.setup_callback(self._probes, _call_confirm_agreement)
         self._steps.append(step)
         return awaitable
 

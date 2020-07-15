@@ -108,8 +108,11 @@ class TestLevel1:
         requestor.counter_proposal(subscription_id, proposal_1)
         all_providers.wait_for_proposal_accepted()
         requestor.wait_for_proposal(subscription_id)
-        # requestor.approve_agreement()
-        # all_providers.wait_for_agreement_approved()
+        agreement_id = requestor.create_agreement()
+        requestor.confirm_agreement(agreement_id)
+        all_providers.wait_for_agreement_approved()
+        # requestor.wait_for_approval() ???
+
         # requestor.start_activity()
         # all_providers.wait_for_exeunit_started()
         # all_providers.wait_for_exeunit_finished()
