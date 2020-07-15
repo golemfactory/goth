@@ -14,9 +14,6 @@ from goth.address import (
 )
 
 
-logger = logging.getLogger(__name__)
-
-
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
 
@@ -30,6 +27,11 @@ class RouterAddon:
       by subsequent add-ons,
     - routes the request to the appropriate callee, based on the request port.
     """
+
+    _logger: logging.Logger
+
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
 
     # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow) -> None:
@@ -76,20 +78,24 @@ class RouterAddon:
                 flow.kill()
                 raise ValueError(f"Invalid server port: {server_port}")
 
-            logger.debug(
-                "(%s) %s:%d -> %s:%d (%s): %s",
+            self._logger.debug(
+                "Request from %s for %s:%d/%s routed to %s at %s:%d",
+                # request caller:
                 req.headers[CALLER_HEADER],
+                # original host, port and path:
                 server_addr,
                 server_port,
+                req.path,
+                # request recipient:
+                req.headers[CALLEE_HEADER],
+                # rewritten host and port:
                 req.host,
                 req.port,
-                req.headers[CALLEE_HEADER],
-                req.path,
             )
 
         except (KeyError, ValueError) as ex:
-            logger.error("Invalid request: %s", ex.args[0])
-            logger.error("Headers: %s", req.headers)
+            self._logger.error("Invalid request: %s", ex.args[0])
+            self._logger.error("Headers: %s", req.headers)
 
 
 # This is used by mitmproxy to install add-ons

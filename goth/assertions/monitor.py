@@ -61,6 +61,16 @@ class EventMonitor(Generic[E]):
         assert mod is not None
         self.add_assertions(mod.__dict__["TEMPORAL_ASSERTIONS"])
 
+        # Set up the logger in the imported assertions module to use the handlers
+        # used by `self._logger`.
+        mod_logger = mod.__dict__.get("logger")
+        if mod_logger and isinstance(mod_logger, logging.Logger):
+            mod_logger.setLevel(self._logger.level)
+            mod_logger.propagate = False
+            for handler in self._logger.handlers:
+                if handler not in mod_logger.handlers:
+                    mod_logger.addHandler(handler)
+
     def start(self) -> None:
         """Start tracing events."""
 

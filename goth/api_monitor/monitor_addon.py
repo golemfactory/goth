@@ -17,73 +17,78 @@ from goth.api_monitor.api_events import (
 from goth.assertions.monitor import EventMonitor
 
 
-logger = logging.getLogger(__name__)
-
-
-def _log_event(event: APIEvent) -> None:
-    if isinstance(event, APIRequest):
-        status = "in progress"
-        request = event
-    elif isinstance(event, APIResponse):
-        status = f"completed ({event.status_code})"
-        request = event.request
-    elif isinstance(event, APIError):
-        status = "failed"
-        request = event.request
-
-    logger.info("%s:\t%s", request, status)
-
-
 class MonitorAddon:
     """This add-on keeps track of API requests and responses."""
 
-    monitor: EventMonitor[APIEvent]
-    pending_requests: Dict[HTTPRequest, APIRequest]
-    num_requests: int
+    _monitor: EventMonitor[APIEvent]
+    _pending_requests: Dict[HTTPRequest, APIRequest]
+    _num_requests: int
+    _logger: logging.Logger
 
     def __init__(self, monitor: Optional[EventMonitor[APIEvent]] = None):
-        self.monitor = monitor or EventMonitor()
-        if not self.monitor.is_running():
-            self.monitor.start()
-        self.pending_requests = {}
-        self.num_requests = 0
+        self._monitor = monitor or EventMonitor()
+        if not self._monitor.is_running():
+            self._monitor.start()
+        self._pending_requests = {}
+        self._num_requests = 0
+        self._logger = logging.getLogger(__name__)
+
+    def _log_event(self, event: APIEvent) -> None:
+        """Log an API event."""
+
+        if not self._logger.isEnabledFor(logging.DEBUG):
+            return
+
+        if isinstance(event, APIRequest):
+            status = "in progress"
+            request = event
+        elif isinstance(event, APIResponse):
+            status = f"completed ({event.status_code})"
+            request = event.request
+        else:
+            assert isinstance(event, APIError)
+            status = "failed"
+            request = event.request
+
+        self._logger.debug("%s: %s", request, status)
 
     def _register_event(self, event: APIEvent) -> None:
+        """Log an API event and add it to the monitor."""
 
-        _log_event(event)
-        self.monitor.add_event(event)
+        self._log_event(event)
+        self._monitor.add_event(event)
 
     def request(self, flow: HTTPFlow) -> None:
         """Register a request."""
 
-        self.num_requests += 1
-        request = APIRequest(self.num_requests, flow.request)
-        self.pending_requests[flow.request] = request
+        self._num_requests += 1
+        request = APIRequest(self._num_requests, flow.request)
+        self._pending_requests[flow.request] = request
         self._register_event(request)
 
     def response(self, flow: HTTPFlow) -> None:
         """Register a response."""
 
-        request = self.pending_requests.get(flow.request)
+        request = self._pending_requests.get(flow.request)
         if request:
             assert flow.response is not None
             response = APIResponse(request, flow.response)
-            del self.pending_requests[flow.request]
+            del self._pending_requests[flow.request]
             self._register_event(response)
         else:
-            logger.error("Received response for unregistered request: %s", flow)
+            self._logger.error("Received response for unregistered request: %s", flow)
 
     def error(self, flow: HTTPFlow) -> None:
         """Register an error."""
 
-        request = self.pending_requests.get(flow.request)
+        request = self._pending_requests.get(flow.request)
         if request:
             assert flow.error is not None
             error = APIError(request, flow.error, flow.response)
-            del self.pending_requests[flow.request]
+            del self._pending_requests[flow.request]
             self._register_event(error)
         else:
-            logger.error("Received error for unregistered request: %s", flow)
+            self._logger.error("Received error for unregistered request: %s", flow)
 
 
 # This is used by mitmproxy to install add-ons

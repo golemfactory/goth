@@ -15,7 +15,7 @@ from .common_assertions import (
 )
 
 
-logger = logging.getLogger("proxy")
+logger = logging.getLogger(__name__)
 
 
 async def assert_eventually_offer_subscribed(stream: APIEvents) -> APIResponse:
@@ -79,9 +79,9 @@ async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
         # After the invoice is sent the test is finished and the containers are
         # shut down, and hence some API requests may get no response
         if any(api.is_invoice_send_response(e) for e in stream.past_events):
-            logger.warning("API error occurred after invoice send response, ignoring")
+            logger.info("API error occurred after invoice send response, ignoring")
         else:
-            logger.warning("API error occurred before invoice send response")
+            logger.error("API error occurred before invoice send response")
             raise err
 
 
