@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from string import Template
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import ClassVar, Dict, Iterator, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 from goth.address import (
@@ -49,7 +49,10 @@ class YagnaContainer(DockerContainer):
     ports: Dict[int, int] = {}
     """ Port mapping between the Docker host and the container.
         Keys are container port numbers, values are host port numbers. """
-    _port_offset = 0
+
+    host_port_range: ClassVar[Iterator[int]] = iter(
+        range(HOST_REST_PORT_START, HOST_REST_PORT_END)
+    )
     """ Keeps track of assigned ports on the Docker host """
 
     def __init__(
@@ -60,8 +63,7 @@ class YagnaContainer(DockerContainer):
         assets_path: Optional[Path] = None,
         **kwargs,
     ):
-        self.ports = {YAGNA_REST_PORT: YagnaContainer.host_http_port()}
-        YagnaContainer._port_offset += 1
+        self.ports = {YAGNA_REST_PORT: YagnaContainer.host_rest_port()}
 
         super().__init__(
             client=client,
@@ -77,14 +79,12 @@ class YagnaContainer(DockerContainer):
         )
 
     @classmethod
-    def host_http_port(cls):
-        """Host port for the yagna REST API running in this container.
+    def host_rest_port(cls):
+        """Return the next host port that can be used for port mapping.
 
         Raises `OverflowError` if the port to return would exceed the expected range.
         """
-        next_port = HOST_REST_PORT_START + cls._port_offset
-        if next_port > HOST_REST_PORT_END:
-            raise OverflowError(
-                f"Port range exceeded. port={next_port}, range_end={HOST_REST_PORT_END}"
-            )
-        return next_port
+        try:
+            return next(cls.host_port_range)
+        except StopIteration:
+            raise OverflowError(f"Port range exceeded. range_end={HOST_REST_PORT_END}")
