@@ -12,7 +12,7 @@ from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
 
-from openapi_market_client import Demand
+from openapi_market_client import Demand, Proposal
 
 logger = logging.getLogger(__name__)
 
@@ -166,9 +166,9 @@ class ProbeStepBuilder:
                 },
                 constraints=constraints,
             )
-            result = probe.market.subscribe_demand(demand)
-            awaitable.set_result(result)
-            return result
+            subscription_id = probe.market.subscribe_demand(demand)
+            awaitable.set_result((subscription_id, demand))
+            return (subscription_id, demand)
 
         step = CallableStep(name="subscribe_demand", timeout=10)
         step.setup_callback(self._probes, _call_subscribe_demand)
@@ -176,10 +176,12 @@ class ProbeStepBuilder:
         return awaitable
 
     def wait_for_proposal(self, fut_subscription_id):
-        """Call subscribe demand on the requestor market api."""
+        """Call collect_offers on the requestor market api."""
+
+        awaitable = asyncio.Future()
 
         def _call_subscribe_demand(probe):
-            subscription_id = fut_subscription_id.result()
+            subscription_id, _ = fut_subscription_id.result()
             proposal = None
             while proposal is None:
                 result_offers = probe.market.collect_offers(subscription_id)
@@ -189,11 +191,42 @@ class ProbeStepBuilder:
                 else:
                     print(f"Waiting on proposal... {result_offers}")
                     time.sleep(1.0)
+            awaitable.set_result(proposal)
             return proposal
 
-        step = CallableStep(name="subscribe_demand", timeout=10)
+        step = CallableStep(name="wait_for_proposal", timeout=10)
         step.setup_callback(self._probes, _call_subscribe_demand)
         self._steps.append(step)
+        return awaitable
+
+    def counter_proposal(self, fut_subscription_id, fut_proposal):
+        """Call collect_offers on the requestor market api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_subscribe_demand(probe):
+            subscription_id, demand = fut_subscription_id.result()
+            provider_proposal = fut_proposal.result()
+
+            # TODO: Would be nice to have the original demand here
+            proposal = Proposal(
+                constraints=demand.constraints,
+                properties=demand.properties,
+                prev_proposal_id=provider_proposal.proposal_id,
+            )
+
+            counter_proposal = probe.market.counter_proposal_demand(
+                subscription_id=subscription_id,
+                proposal_id=provider_proposal.proposal_id,
+                proposal=proposal,
+            )
+            awaitable.set_result(counter_proposal)
+            return counter_proposal
+
+        step = CallableStep(name="counter_proposal", timeout=10)
+        step.setup_callback(self._probes, _call_subscribe_demand)
+        self._steps.append(step)
+        return awaitable
 
 
 # --- ASSERTIONS --- #

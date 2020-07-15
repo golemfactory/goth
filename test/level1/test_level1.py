@@ -38,7 +38,7 @@ def node_environment(
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
-        "RUST_LOG": "debug",
+        "RUST_LOG": "debug,trust_dns_proto=info",
     }
     node_env = daemon_env
 
@@ -76,16 +76,16 @@ LEVEL1_TOPOLOGY = [
         ),
         volumes=VOLUMES,
     ),
-    YagnaContainerConfig(
-        name="provider_2",
-        role=Role.provider,
-        # Configure the second provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        ),
-        volumes=VOLUMES,
-    ),
+    # YagnaContainerConfig(
+    #     name="provider_2",
+    #     role=Role.provider,
+    #     # Configure the second provider node to communicate via proxy
+    #     environment=node_environment(
+    #         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+    #         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+    #     ),
+    #     volumes=VOLUMES,
+    # ),
 ]
 
 
@@ -104,9 +104,10 @@ class TestLevel1:
 
         all_providers.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
-        proposal = requestor.wait_for_proposal(subscription_id)
-        # requestor.accept_proposal()
-        # all_providers.wait_for_proposal_accepted()
+        proposal_1 = requestor.wait_for_proposal(subscription_id)
+        requestor.counter_proposal(subscription_id, proposal_1)
+        requestor.wait_for_proposal(subscription_id)
+        all_providers.wait_for_proposal_accepted()
         # requestor.approve_agreement()
         # all_providers.wait_for_agreement_approved()
         # requestor.start_activity()
