@@ -38,6 +38,7 @@ def node_environment(
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
+        "RUST_LOG": "debug",
     }
     node_env = daemon_env
 
