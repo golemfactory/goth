@@ -18,14 +18,14 @@ def level0_market():
     """Execute all level 0 market steps on the market api one by one."""
 
     # INIT
-    config = Configuration(host=f"{os.environ['MARKET_URL_BASE']}/market-api/v1")
+    config = Configuration(host=f"{os.environ['YAGNA_API_URL']}/market-api/v1")
     config.access_token = os.environ["APP_KEY"]
 
     req_api = RequestorApi(ApiClient(config))
     print(f"Init completed, connected to {config.host}")
 
     package = (
-        "hash://sha3:38D951E2BD2408D95D8D5E5068A69C60C8238FA45DB8BC841DC0BD50"
+        "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
         ":http://34.244.4.185:8000/rust-wasi-tutorial.zip"
     )
     constraints = (
@@ -40,7 +40,7 @@ def level0_market():
             "golem.srv.comp.expiration": int(
                 (datetime.now() + timedelta(days=1)).timestamp() * 1000
             ),
-            "golem.srv.comp.wasm.task_package": package,
+            "golem.srv.comp.task_package": package,
         },
         constraints=constraints,
     )

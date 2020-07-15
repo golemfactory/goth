@@ -158,7 +158,7 @@ class ProbeStepBuilder:
                     "golem.srv.comp.expiration": int(
                         (datetime.now() + timedelta(days=1)).timestamp() * 1000
                     ),
-                    "golem.srv.comp.wasm.task_package": package,
+                    "golem.srv.comp.task_package": package,
                 },
                 constraints=constraints,
             )
