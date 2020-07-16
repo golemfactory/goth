@@ -2,7 +2,7 @@
 
 import asyncio
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from itertools import chain
 import logging
 import os
@@ -15,7 +15,7 @@ from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
-from goth.runner.probe_steps import ProbeStepBuilder
+from goth.runner.probe_steps import ProbeStepBuilder, Step
 from goth.runner.proxy import Proxy
 
 
@@ -39,6 +39,9 @@ class Runner:
 
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
+
+    steps: List[Step]
+    """The list of steps to be awaited, steps of the scenario to be executed."""
 
     def __init__(
         self,
@@ -87,21 +90,16 @@ class Runner:
 
     async def run_scenario(self):
         """Start the nodes, run the scenario, then stop the nodes and clean up."""
+        self._start_nodes()
         try:
-            for step, role in self.steps:
-                # Collect awaitables to execute them at the same time
-                awaitables = []
-                for probe in self.probes[role]:
-                    self.logger.debug(
-                        "running step. probe=%s, role=%s, step=%s", probe, role, step
-                    )
-                    result = step(probe=probe)
-                    if result:
-                        awaitables.append(result)
-                if awaitables:
-                    await asyncio.gather(*awaitables, return_exceptions=True)
+            for step in self.steps:
+                self.logger.info("running step. step=%s", step)
+                deadline = datetime.now() + timedelta(seconds=step.timeout)
 
-                self.check_assertion_errors()
+                while not step.is_done():
+                    if deadline < datetime.now():
+                        raise TimeoutError
+                    await asyncio.sleep(0.1)
 
         finally:
             # Sleep to let the logs be saved
@@ -138,7 +136,6 @@ class Runner:
                         docker_client, config, log_config, self.assets_path
                     )
 
-                probe.start()
                 self.probes[config.role].append(probe)
 
     def _get_test_log_dir_name(self):
@@ -149,6 +146,10 @@ class Runner:
         self.logger.debug("Cleaned current test dir name=%s", test_name)
         return test_name
 
-    def get_probes(self, role):
+    def _start_nodes(self):
+        for probe in chain.from_iterable(self.probes.values()):
+            probe.start()
+
+    def get_probes_by_role(self, role):
         """Create a ProbeStepBuilder for the requested role."""
-        return ProbeStepBuilder(steps=self.steps, probes=role)
+        return ProbeStepBuilder(steps=self.steps, probes=self.probes[role])

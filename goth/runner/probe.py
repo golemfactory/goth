@@ -68,6 +68,12 @@ class Probe(abc.ABC):
     ):
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
+        agent_log_config = LogConfig(
+            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
+        )
+        # FIXME: Move agent logs to ProviderProbe when level0 is removed
+        self.agent_logs = LogEventMonitor(agent_log_config)
+
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
@@ -211,14 +217,7 @@ class RequestorProbe(Probe):
             "http://34.244.4.185:8000/rust-wasi-tutorial.zip",
             stream=True,
         )
-        self._init_agent_logs(log_stream)
-
-    # TODO Remove once agent calls are implemented via probe
-    def _init_agent_logs(self, log_stream):
-        log_config = LogConfig(
-            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
-        )
-        self.agent_logs = LogEventMonitor(log_stream.output, log_config)
+        self.agent_logs.start(log_stream.output)
 
     def _init_market_api(self):
         api_url = MARKET_API_URL.substitute(base=self._api_base_host)
@@ -257,7 +256,6 @@ class ProviderProbe(Probe):
         preset_name: str = "default",
     ):
         super().__init__(client, config, log_config, assets_path=assets_path)
-        self.agent_logs = None
         self.agent_preset = preset_name
 
     def start(self):
@@ -268,16 +266,10 @@ class ProviderProbe(Probe):
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
         )
-        self._init_agent_logs(log_stream)
+        self.agent_logs.start(log_stream.output)
 
     async def stop(self):
         """Stop the agent and the log monitor."""
         if self.agent_logs is not None:
             await self.agent_logs.stop()
         await super().stop()
-
-    def _init_agent_logs(self, log_stream):
-        log_config = LogConfig(
-            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
-        )
-        self.agent_logs = LogEventMonitor(log_stream.output, log_config)

@@ -121,17 +121,19 @@ class LogEventMonitor(EventMonitor[LogEvent]):
     in_stream: Iterator[bytes]
     logger: logging.Logger
 
-    def __init__(self, in_stream: Iterator[bytes], log_config: LogConfig):
+    def __init__(self, log_config: LogConfig):
         super().__init__()
-        self.start()
-        self.in_stream = in_stream
         self.logger = _create_file_logger(log_config)
 
+    def start(self, in_stream: Iterator[bytes]):
+        """Start reading the logs."""
+        super().start()
+        self.in_stream = in_stream
         loop = asyncio.get_event_loop()
         self._buffer_task = loop.run_in_executor(None, self._buffer_input)
 
         logger.debug(
-            "Created LogEventMonitor. stream=%r, logger=%r",
+            "Started LogEventMonitor. stream=%r, logger=%r",
             self.in_stream,
             self.logger,
         )

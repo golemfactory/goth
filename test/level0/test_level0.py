@@ -98,7 +98,7 @@ class TestLevel0:
             LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
         )
 
-        all_providers = runner.get_probes(Role.provider)
+        all_providers = runner.get_probes_by_role(Role.provider)
 
         all_providers.wait_for_offer_subscribed()
         all_providers.wait_for_proposal_accepted()
