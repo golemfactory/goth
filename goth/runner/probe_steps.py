@@ -156,8 +156,6 @@ class ProbeStepBuilder:
         """Call collect_offers on the requestor market api."""
 
         def _call_init_payment(probe):
-            # TODO: replace with wait for daemon to be started?
-            time.sleep(5.0)
             result = probe.cli.payment_init(requestor_mode=True)
             return result
 
@@ -209,11 +207,11 @@ class ProbeStepBuilder:
             proposal = None
             while proposal is None:
                 result_offers = probe.market.collect_offers(subscription_id)
-                print(f"collect_offers({subscription_id}). proposal={result_offers}")
+                logger.debug(f"collect_offers({subscription_id}). proposal={result_offers}")
                 if result_offers:
                     proposal = result_offers[0].proposal
                 else:
-                    print(f"Waiting on proposal... {result_offers}")
+                    logger.debug(f"Waiting on proposal... {result_offers}")
                     time.sleep(1.0)
             awaitable.set_result(proposal)
             return proposal
@@ -298,7 +296,9 @@ class ProbeStepBuilder:
 
         def _call_create_activity(probe):
             agreement_id = fut_agreement_id.result()
-            activity_id = probe.activity.create_activity(agreement_id)
+            logger.debug("Creating activity... agreement_id=%s", agreement_id)
+            activity_id = probe.activity.control.create_activity(agreement_id)
+            logger.debug("Activity created agreement_id=%s", agreement_id)
             awaitable.set_result(activity_id)
             return activity_id
 
