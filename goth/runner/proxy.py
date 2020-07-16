@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import threading
-from typing import Optional
+from typing import Mapping, Optional
 
 from mitmproxy import options
 import mitmproxy.utils.debug
@@ -26,8 +26,12 @@ class Proxy:
     _proxy_thread: threading.Thread
     _logger: logging.Logger
     _loop: Optional[asyncio.AbstractEventLoop]
+    _node_names: Mapping[str, str]
 
-    def __init__(self, assertions_module: Optional[str] = None):
+    def __init__(
+        self, node_names: Mapping[str, str], assertions_module: Optional[str] = None,
+    ):
+        self._node_names = node_names
         self._logger = logging.getLogger(__name__)
         self._loop = None
         self._proxy_thread = threading.Thread(
@@ -73,7 +77,7 @@ class Proxy:
         class MITMProxyRunner(dump.DumpMaster):
             def __init__(inner_self, opts: options.Options) -> None:
                 super().__init__(opts)
-                inner_self.addons.add(RouterAddon())
+                inner_self.addons.add(RouterAddon(self._node_names))
                 inner_self.addons.add(MonitorAddon(self.monitor))
 
         args = "-q --mode reverse:http://127.0.0.1 --listen-port 9000".split()

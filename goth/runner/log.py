@@ -65,7 +65,7 @@ LOGGING_CONFIG = {
             "propagate": False,
             # Changing this to "DEBUG" can help in diagnosing issues with routing
             # in the proxy. Using "INFO" by default to avoid verbose output.
-            "level": "INFO",
+            "level": "DEBUG",
         },
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},

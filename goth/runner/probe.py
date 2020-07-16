@@ -7,7 +7,7 @@ from pathlib import Path
 import time
 from typing import Optional
 
-from docker import DockerClient
+from docker import APIClient, DockerClient
 
 import openapi_activity_client as activity
 import openapi_market_client as market
@@ -47,6 +47,10 @@ class ProbeLoggingAdapter(logging.LoggerAdapter):
         return "[%s] %s" % (self.extra[self.EXTRA_PROBE_NAME], msg), kwargs
 
 
+DOCKER_NETWORK = "docker_default"
+"""Name of the docker network to which yagna containers are attached."""
+
+
 class Probe(abc.ABC):
     """Provides a unified interface for interacting with and testing a single Yagna node.
 
@@ -58,6 +62,8 @@ class Probe(abc.ABC):
     """A module which enables calling the Yagna CLI on the daemon being tested."""
     container: YagnaContainer
     """A module which handles the lifecycle of the daemon's Docker container."""
+
+    ip_address: Optional[str]
 
     def __init__(
         self,
@@ -77,6 +83,7 @@ class Probe(abc.ABC):
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
+        self.ip_address = None
 
     def __str__(self):
         return self.name
@@ -98,6 +105,25 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
+    def start_container(self) -> None:
+        """
+        Start the probe.
+
+        Performs all necessary steps to make the daemon ready for testing
+        (e.g. starting the Docker container, creating the default app key).
+        """
+        self.container.start()
+        # Give the daemon some time to start before asking it for an app key.
+        time.sleep(1)
+        self.create_app_key()
+
+        # Obtain the IP address of the container
+        api_client = APIClient()
+        info = api_client.inspect_container(self.container.name)
+        network_info = info["NetworkSettings"]["Networks"][DOCKER_NETWORK]
+        self.ip_address = network_info["IPAddress"]
+        self._logger.info("IP address: %s", self.ip_address)
+
     def create_app_key(self, key_name: str = "test_key") -> str:
         """Attempt to create a new app key on the Yagna daemon.
 
@@ -114,17 +140,10 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-    def start(self):
-        """
-        Start the probe.
+    def start_agent(self):
+        """Start the agent (an abstract method)."""
 
-        Performs all necessary steps to make the daemon ready for testing
-        (e.g. starting the Docker container, creating the default app key).
-        """
-        self.container.start()
-        # Give the daemon some time to start before asking it for an app key.
-        time.sleep(1)
-        self.create_app_key()
+        raise NotImplementedError("An abstract method")
 
     async def stop(self):
         """
@@ -195,9 +214,8 @@ class RequestorProbe(Probe):
         proxy_ip = get_container_address(client, PROXY_HOST)
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
-    def start(self):
+    def start_agent(self):
         """Start the yagna container and initialize the requestor agent."""
-        super().start()
 
         self.activity = ActivityApiClient(
             self.app_key, self._api_base_host, self._logger
@@ -260,9 +278,9 @@ class ProviderProbe(Probe):
         super().__init__(client, config, log_config, assets_path=assets_path)
         self.agent_preset = preset_name
 
-    def start(self):
-        """Start the agents and attach the log monitor."""
-        super().start()
+    def start_agent(self):
+        """Start the agent and attach the log monitor."""
+
         self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
