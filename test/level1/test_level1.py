@@ -119,7 +119,7 @@ class TestLevel1:
 
         # Activity
         activity_id = requestor.create_activity(agreement_id)
-        requestor.log(activity_id)
+        provider.wait_for_activity_created()
         batch_id = requestor.call_exec(activity_id)
         provider.wait_for_exeunit_started()
         provider.wait_for_exeunit_finished()

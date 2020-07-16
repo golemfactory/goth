@@ -130,6 +130,10 @@ class ProbeStepBuilder:
         """Wait until the provider agent accepts the agreement."""
         self._wait_for_log("wait_for_agreement_approved", "Decided to ApproveAgreement")
 
+    def wait_for_activity_created(self):
+        """Wait until the provider agent receives the activity."""
+        self._wait_for_log("wait_for_activity_created", "Activity created")
+
     def wait_for_exeunit_started(self):
         """Wait until the provider agent starts the exe-unit."""
         self._wait_for_log("wait_for_exeunit_started", r"\[ExeUnit\](.+)Started$")
