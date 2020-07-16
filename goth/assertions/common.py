@@ -19,7 +19,7 @@ async def assert_no_api_errors(stream: APIEvents) -> bool:
     async for e in stream:
 
         if isinstance(e, APIError):
-            raise TemporalAssertionError("API error occurred")
+            raise TemporalAssertionError(f"API error occurred: {e}")
 
     return True
 
