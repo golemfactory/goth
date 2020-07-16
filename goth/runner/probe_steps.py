@@ -350,8 +350,8 @@ class ProbeStepBuilder:
         awaitable = asyncio.Future()
 
         def _call_collect_results(probe):
-            activity_id = fut_batch_id.result()
-            batch_id = fut_activity_id.result()
+            activity_id = fut_activity_id.result()
+            batch_id = fut_batch_id.result()
 
             commands_cnt = len(json.loads(self.exe_script_txt))
             state = probe.activity.state.get_activity_state(activity_id)
