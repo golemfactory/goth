@@ -71,6 +71,7 @@ class Probe(abc.ABC):
         agent_log_config = LogConfig(
             file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
         )
+        # FIXME: Move agent logs to ProviderProbe when level0 is removed
         self.agent_logs = LogEventMonitor(agent_log_config)
 
         self._logger = ProbeLoggingAdapter(

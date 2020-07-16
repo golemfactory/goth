@@ -147,10 +147,8 @@ class Runner:
         return test_name
 
     def _start_nodes(self):
-        for req in self.probes[Role.requestor]:
-            req.start()
-        for prov in self.probes[Role.provider]:
-            prov.start()
+        for probe in chain.from_iterable(self.probes.values()):
+            probe.start()
 
     def get_probes_by_role(self, role):
         """Create a ProbeStepBuilder for the requested role."""

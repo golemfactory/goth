@@ -1,10 +1,11 @@
 """Helpers to build steps on the runner attached to different probes."""
 
+import abc
 import logging
 import re
 from typing import List
 
-from goth.assertions import EventStream
+from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
 
@@ -13,19 +14,19 @@ logger = logging.getLogger(__name__)
 LogEvents = EventStream[LogEvent]
 
 
-class Step:
+class Step(abc.ABC):
     """Step to be awaited in the runner."""
 
     def __init__(self, name: str, timeout: int):
         self.name = name
         self.timeout = timeout
 
+    @abc.abstractmethod
     def is_done(self):
         """Check if all required awaitables are done for this step.
 
         Implemented in sub-classes of Step
         """
-        raise NotImplementedError
 
     def __repr__(self):
         return f"<{type(self).__name__} name={self.name} timeout={self.timeout}>"
@@ -36,9 +37,9 @@ class AssertionStep(Step):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._assertions = []
+        self._assertions: List[Assertion] = []
 
-    def add_assertion(self, assertion):
+    def add_assertion(self, assertion: Assertion):
         """Add an assertion to be awaited in this step."""
         self._assertions.append(assertion)
 
@@ -57,7 +58,7 @@ class ProbeStepBuilder:
     """Helper for creating test steps to be ran inside the runner."""
 
     def __init__(self, steps, probes: List[Probe]):
-        self._steps = steps
+        self._steps: List[Step] = steps
         self._probes = probes
 
     def wait_for_offer_subscribed(self):
@@ -87,7 +88,7 @@ class ProbeStepBuilder:
         """Wait until the invoice is sent."""
         self._wait_for_log("wait_for_invoice_sent", r"Invoice (.+) sent")
 
-    def _wait_for_log(self, name, message, timeout=10):
+    def _wait_for_log(self, name: str, message: str, timeout=10):
         step = AssertionStep(name, timeout)
         for probe in self._probes:
             assertion = assert_message_starts_with(message)

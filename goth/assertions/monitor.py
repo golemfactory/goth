@@ -44,7 +44,7 @@ class EventMonitor(Generic[E]):
         self._stop_callback = on_stop
 
     def add_assertion(self, assertion_func: AssertionFunction[E]) -> Assertion:
-        """Add a list of assertion functions to this monitor."""
+        """Add an assertion function to this monitor."""
 
         result = Assertion(self._events, assertion_func)
         self.assertions.append(result)
