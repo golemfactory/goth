@@ -127,8 +127,9 @@ class TestLevel1:
         provider.wait_for_exeunit_finished()
 
         # Payment
-        # provider.wait_for_invoice_sent()
-        # requestor.pay_invoice()
-        # provider.wait_for_invoice_paid()
+        provider.wait_for_invoice_sent()
+        invoice = requestor.gather_invoice(agreement_id)
+        requestor.pay_invoice(invoice)
+        provider.wait_for_invoice_paid()
 
         await runner.run_scenario()

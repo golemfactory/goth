@@ -17,6 +17,7 @@ from goth.runner.probe import Probe
 
 from openapi_market_client import Demand, Proposal, AgreementProposal
 from openapi_activity_client import ExeScriptRequest
+from openapi_payment_client import Allocation, Acceptance
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +101,7 @@ class ProbeStepBuilder:
 
         # Requestor only
         my_path = os.path.abspath(os.path.dirname(__file__))
-        exe_script_file = Path(
-            my_path + "/../../test/level0/asset/exe_script.json"
-        )
+        exe_script_file = Path(my_path + "/../../test/level0/asset/exe_script.json")
         self.exe_script_txt = exe_script_file.read_text()
         logger.debug(f"exe_script read. contents={self.exe_script_txt}")
 
@@ -392,6 +391,69 @@ class ProbeStepBuilder:
 
         step = CallableStep(name="destroy_activity", timeout=10)
         step.setup_callback(self._probes, _call_destroy_activity)
+        self._steps.append(step)
+        return awaitable
+
+    def gather_invoice(self, fut_agreement_id):
+        """Call gather_invoice on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_gather_invoice(probe):
+            agreement_id = fut_agreement_id.result()
+
+            invoice_events = []
+            while len(invoice_events) == 0:
+                time.sleep(2.0)
+                invoice_events = (
+                    probe.payment.get_received_invoices()
+                )  # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
+                logger.debug(f"Gathered invoice_event {invoice_events}")
+                invoice_events = list(
+                    filter(lambda x: x.agreement_id == agreement_id, invoice_events)
+                )
+                logger.debug(f"filtered invoice_event {invoice_events}")
+
+            invoice_event = invoice_events[0]
+            awaitable.set_result(invoice_event)
+            return invoice_event
+
+        step = CallableStep(name="gather_invoice", timeout=10)
+        step.setup_callback(self._probes, _call_gather_invoice)
+        self._steps.append(step)
+        return awaitable
+
+    def pay_invoice(self, fut_invoice_event):
+        """Call gather_invoice on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_pay_invoice(probe):
+            invoice_event = fut_invoice_event.result()
+
+            allocation = Allocation(
+                total_amount=invoice_event.amount,
+                spent_amount=0,
+                remaining_amount=0,
+                make_deposit=True,
+            )
+            allocation_result = probe.payment.create_allocation(allocation)
+            logger.debug(f"Created allocation. id={allocation_result}")
+
+            acceptance = Acceptance(
+                total_amount_accepted=invoice_event.amount,
+                allocation_id=allocation_result.allocation_id,
+            )
+            result = probe.payment.accept_invoice(invoice_event.invoice_id, acceptance)
+            logger.debug(
+                f"Accepted invoice. id={invoice_event.invoice_id}, result={result}"
+            )
+
+            awaitable.set_result(result)
+            return result
+
+        step = CallableStep(name="pay_invoice", timeout=10)
+        step.setup_callback(self._probes, _call_pay_invoice)
         self._steps.append(step)
         return awaitable
 
