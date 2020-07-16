@@ -95,6 +95,7 @@ class ProbeStepBuilder:
             result = probe.agent_logs.add_assertion(assertion)
             step.add_assertion(result)
         self._steps.append(step)
+                    "golem.srv.comp.wasm.task_package": package,
 
 
 # --- ASSERTIONS --- #
