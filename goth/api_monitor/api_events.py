@@ -118,6 +118,9 @@ class APIError(APIEvent):
         """Time of the error."""
         return self.error.timestamp
 
+    def __str__(self):
+        return f"{self.request} -> {self.error}"
+
 
 def _match_event(
     event: APIEvent,
