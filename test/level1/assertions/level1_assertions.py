@@ -78,6 +78,10 @@ async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
         # shut down, and hence some API requests may get no response
         if any(api.is_invoice_send_response(e) for e in stream.past_events):
             logger.warning("API error occurred after invoice send response, ignoring")
+        elif "/payment-api/v1/provider/invoiceEvents" in str(err):
+            logger.warning("Suppress payment invoice error")
+        elif "/activity-api/v1/events" in str(err):
+            logger.warning("Suppress activity event error")
         else:
             logger.warning("API error occurred before invoice send response")
             raise err
