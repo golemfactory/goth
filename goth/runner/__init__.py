@@ -64,7 +64,7 @@ class Runner:
 
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
-        self._run_nodes()
+        self._create_probes()
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
@@ -113,14 +113,11 @@ class Runner:
             # "at the end of events".
             self.check_assertion_errors()
 
-    def _run_nodes(self) -> None:
+    def _create_probes(self) -> None:
 
         docker_client = docker.from_env()
         scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
         scenario_dir.mkdir(exist_ok=True)
-
-        self.proxy = Proxy(assertions_module=self.api_assertions_module)
-        self.proxy.start()
 
         for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
@@ -135,7 +132,6 @@ class Runner:
                     probe = ProviderProbe(
                         docker_client, config, log_config, self.assets_path
                     )
-
                 self.probes[config.role].append(probe)
 
     def _get_test_log_dir_name(self):
@@ -147,8 +143,26 @@ class Runner:
         return test_name
 
     def _start_nodes(self):
+
+        node_names: Dict[str, str] = {}
+
+        # Start the probes' containers and obtain their IP addresses
         for probe in chain.from_iterable(self.probes.values()):
-            probe.start()
+            probe.start_container()
+            assert probe.ip_address
+            node_names[probe.ip_address] = probe.name
+
+        # Start the proxy node. The containers should not make API calls
+        # up to this point.
+        self.proxy = Proxy(
+            node_names=node_names, assertions_module=self.api_assertions_module
+        )
+        self.proxy.start()
+
+        # The proxy is ready to route the API calls. Start the agents.
+        for role, probes in self.probes.items():
+            for probe in probes:
+                probe.start_agent()
 
     def get_probes_by_role(self, role):
         """Create a ProbeStepBuilder for the requested role."""

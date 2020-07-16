@@ -4,6 +4,7 @@ Also, adds caller and callee information to request headers.
 """
 
 import logging
+from typing import Mapping
 
 from mitmproxy.http import HTTPFlow
 from goth.address import (
@@ -29,9 +30,11 @@ class RouterAddon:
     """
 
     _logger: logging.Logger
+    _node_names: Mapping[str, str]
 
-    def __init__(self):
+    def __init__(self, node_names: Mapping[str, str]):
         self._logger = logging.getLogger(__name__)
+        self._node_names = node_names
 
     # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow) -> None:
@@ -43,8 +46,7 @@ class RouterAddon:
             server_addr = req.headers["X-Server-Addr"]
             server_port = int(req.headers["X-Server-Port"])
             remote_addr = req.headers["X-Remote-Addr"]
-            # node_num is the last section of the node's IP v4 address
-            node_num = remote_addr.rsplit(".", 1)[-1]
+            node_name = self._node_names[remote_addr]
 
             if server_port == MARKET_PORT:
                 # It's a yagna daemon calling the central market API.
@@ -52,7 +54,7 @@ class RouterAddon:
                 # market API container is mapped to the same port on the host.
                 req.host = "127.0.0.1"
                 req.port = MARKET_PORT
-                req.headers[CALLER_HEADER] = f"Daemon-{node_num}"
+                req.headers[CALLER_HEADER] = f"{node_name} daemon"
                 req.headers[CALLEE_HEADER] = "MarketAPI"
 
             elif server_port == YAGNA_REST_PORT:
@@ -61,8 +63,8 @@ class RouterAddon:
                 # request is bounced back to the caller.
                 req.host = remote_addr
                 req.port = YAGNA_REST_PORT
-                req.headers[CALLER_HEADER] = f"Agent-{node_num}"
-                req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
+                req.headers[CALLER_HEADER] = f"{node_name} agent"
+                req.headers[CALLEE_HEADER] = f"{node_name} daemon"
 
             elif HOST_REST_PORT_START <= server_port <= HOST_REST_PORT_END:
                 # It's a requestor agent calling a yagna daemon.
@@ -71,8 +73,8 @@ class RouterAddon:
                 # chosen from the specified range.
                 req.host = "127.0.0.1"
                 req.port = server_port
-                req.headers[CALLER_HEADER] = f"Agent-{node_num}"
-                req.headers[CALLEE_HEADER] = f"Daemon-{node_num}"
+                req.headers[CALLER_HEADER] = f"{node_name} agent"
+                req.headers[CALLEE_HEADER] = f"{node_name} daemon"
 
             else:
                 flow.kill()
@@ -94,9 +96,5 @@ class RouterAddon:
             )
 
         except (KeyError, ValueError) as ex:
-            self._logger.error("Invalid request: %s", ex.args[0])
-            self._logger.error("Headers: %s", req.headers)
-
-
-# This is used by mitmproxy to install add-ons
-addons = [RouterAddon()]
+            self._logger.error("Invalid request: %s, error: %s", req, ex.args[0])
+            flow.kill()
