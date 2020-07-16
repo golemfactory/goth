@@ -122,8 +122,8 @@ class TestLevel1:
         provider.wait_for_activity_created()
         batch_id = requestor.call_exec(activity_id)
         provider.wait_for_exeunit_started()
-        provider.wait_for_exeunit_finished()
         requestor.collect_results(activity_id, batch_id)
+        provider.wait_for_exeunit_finished()
         # requestor.destroy_activity(activity_id)
 
         # Payment
