@@ -370,18 +370,8 @@ class ProbeStepBuilder:
                 )  # TODO: requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
                 logger.debug(f"poll batch results. result={results}")
 
-            batch_id = fut_batch_id.result()
-            my_path = os.path.abspath(os.path.dirname(__file__))
-            exe_script_file = Path(my_path + "/../asset/exe_script.json")
-            logger.debug(f"exe_script read. contents={exe_script_file}")
-            exe_script_txt = exe_script_file.read_text()
-            logger.debug(f"exe_script read. contents={exe_script_txt}")
-
-            batch_id = probe.activity.control.collect_results(
-                batch_id, ExeScriptRequest(exe_script_txt)
-            )
-            awaitable.set_result(batch_id)
-            return batch_id
+            awaitable.set_result(results)
+            return results
 
         step = CallableStep(name="collect_results", timeout=10)
         step.setup_callback(self._probes, _call_collect_results)
