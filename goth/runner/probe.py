@@ -132,8 +132,10 @@ class Probe(abc.ABC):
 
         Once stopped, a probe cannot be restarted.
         """
-        if self.container.logs is not None:
+        if self.container.logs:
             await self.container.logs.stop()
+        if self.agent_logs:
+            await self.agent_logs.stop()
         self.container.remove(force=True)
 
 
