@@ -98,7 +98,7 @@ class Runner:
 
                 while not step.tick():
                     if deadline < datetime.now():
-                        raise TimeoutError
+                        raise TimeoutError(f"Step timeout. step={str(step)}")
                     await asyncio.sleep(0.1)
 
         finally:
