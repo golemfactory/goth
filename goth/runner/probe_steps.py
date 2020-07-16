@@ -156,6 +156,8 @@ class ProbeStepBuilder:
         """Call collect_offers on the requestor market api."""
 
         def _call_init_payment(probe):
+            # TODO: replace with wait for daemon to be started?
+            time.sleep(5.0)
             result = probe.cli.payment_init(requestor_mode=True)
             return result
 
