@@ -7,13 +7,11 @@ from goth.api_monitor.api_events import APIResponse
 import goth.api_monitor.api_events as api
 
 from goth.assertions import AssertionFunction, TemporalAssertionError
-from goth.assertions.operators import eventually
-
-from .common_assertions import (
+from goth.assertions.common import (
     APIEvents,
     assert_no_api_errors,
 )
-
+from goth.assertions.operators import eventually
 
 logger = logging.getLogger("proxy")
 
