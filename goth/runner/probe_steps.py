@@ -1,7 +1,7 @@
 """Helpers to build steps on the runner attached to different probes."""
 
 import abc
-import asyncio
+from asyncio import Future
 from datetime import datetime, timedelta
 import logging
 import json
@@ -9,15 +9,15 @@ import os
 from pathlib import Path
 import re
 import time
-from typing import List
+from typing import List, Tuple
 
 from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
 
 from openapi_market_client import Demand, Proposal, AgreementProposal
-from openapi_activity_client import ExeScriptRequest
-from openapi_payment_client import Allocation, Acceptance
+from openapi_activity_client import ExeScriptRequest, ExeScriptCommandResult
+from openapi_payment_client import Allocation, Acceptance, InvoiceEvent
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,9 @@ class CallableStep(Step):
     probes: List[Probe]
     """Probes to execute `callable(probe)` for."""
     callback: callable
+    """Callable to be executed for each probe when the step is ticked"""
 
-    def setup_callback(self, probes, callback):
+    def setup_callback(self, probes: List[Probe], callback: callable):
         """Configure this step, set probes and callback to be executed on tick()."""
 
         self.probes = probes
@@ -85,10 +86,9 @@ class CallableStep(Step):
 
         For the CallableStep this means the callback is executed for each probe
         """
-        logger.debug("tick()")
         for probe in self.probes:
             res = self.callback(probe)
-            logger.debug("result=%r", res)
+            logger.debug("step=%s, probe=%s result=%r", self, probe, res)
         return True
 
 
@@ -103,16 +103,16 @@ class ProbeStepBuilder:
         my_path = os.path.abspath(os.path.dirname(__file__))
         exe_script_file = Path(my_path + "/../../test/level0/asset/exe_script.json")
         self.exe_script_txt = exe_script_file.read_text()
-        logger.debug(f"exe_script read. contents={self.exe_script_txt}")
+        logger.debug("exe_script read. contents=%s", self.exe_script_txt)
 
-    def log(self, fut):
+    def log(self, fut: Future):
         """Log the contents of the future."""
 
-        def _call_log(probe):
+        def _call_log(probe: Probe):
             contents = fut.result()
-            logger.debug("probe= %r, contents=%r", probe, contents)
+            logger.debug("probe=%s, contents=%r", probe, contents)
 
-        step = CallableStep(name="wait_for_proposal", timeout=10)
+        step = CallableStep(name="log", timeout=10)
         step.setup_callback(self._probes, _call_log)
         self._steps.append(step)
 
@@ -150,7 +150,7 @@ class ProbeStepBuilder:
         self._wait_for_log("wait_for_invoice_sent", r"Invoice (.+) sent")
 
     def wait_for_invoice_paid(self):
-        """Wait until the invoice is sent."""
+        """Wait until the invoice is paid."""
         self._wait_for_log(
             "wait_for_invoice_paid",
             "Invoice .+? for agreement .+? was paid",
@@ -168,9 +168,9 @@ class ProbeStepBuilder:
     # --- REQUESTOR --- #
 
     def init_payment(self):
-        """Call collect_offers on the requestor market api."""
+        """Call init_payment on the requestor CLI."""
 
-        def _call_init_payment(probe):
+        def _call_init_payment(probe: Probe):
             result = probe.cli.payment_init(requestor_mode=True)
             return result
 
@@ -178,8 +178,11 @@ class ProbeStepBuilder:
         step.setup_callback(self._probes, _call_init_payment)
         self._steps.append(step)
 
-    def subscribe_demand(self):
+    def subscribe_demand(self) -> "Future[Tuple[str, Demand]]":
         """Call subscribe demand on the requestor market api."""
+
+        awaitable = Future()
+
         package = (
             "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
             ":http://34.244.4.185:8000/rust-wasi-tutorial.zip"
@@ -189,9 +192,7 @@ class ProbeStepBuilder:
             "(golem.com.pricing.model=linear))"
         )
 
-        awaitable = asyncio.Future()
-
-        def _call_subscribe_demand(probe):
+        def _call_subscribe_demand(probe: Probe) -> Tuple[str, Demand]:
             demand = Demand(
                 requestor_id=probe.address,
                 properties={
@@ -203,7 +204,9 @@ class ProbeStepBuilder:
                 },
                 constraints=constraints,
             )
+
             subscription_id = probe.market.subscribe_demand(demand)
+
             awaitable.set_result((subscription_id, demand))
             return (subscription_id, demand)
 
@@ -212,42 +215,51 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def wait_for_proposal(self, fut_subscription_id):
-        """Call collect_offers on the requestor market api."""
+    def wait_for_proposal(
+        self, fut_subscription_id: "Future[Tuple[str, Demand]]"
+    ) -> "Future[Proposal]":
+        """Call collect_offers on the requestor market api.
 
-        awaitable = asyncio.Future()
+        Return the first proposal.
+        """
 
-        def _call_subscribe_demand(probe):
+        awaitable = Future()
+
+        def _call_wait_for_proposal(probe: Probe) -> Proposal:
             subscription_id, _ = fut_subscription_id.result()
             proposal = None
+
             while proposal is None:
                 result_offers = probe.market.collect_offers(subscription_id)
                 logger.debug(
-                    f"collect_offers({subscription_id}). proposal={result_offers}"
+                    "collect_offers(%s). proposal=%r", subscription_id, result_offers,
                 )
                 if result_offers:
                     proposal = result_offers[0].proposal
                 else:
-                    logger.debug(f"Waiting on proposal... {result_offers}")
+                    logger.debug("Waiting on proposal... %r", result_offers)
                     time.sleep(1.0)
+
             awaitable.set_result(proposal)
             return proposal
 
         step = CallableStep(name="wait_for_proposal", timeout=10)
-        step.setup_callback(self._probes, _call_subscribe_demand)
+        step.setup_callback(self._probes, _call_wait_for_proposal)
         self._steps.append(step)
         return awaitable
 
-    def counter_proposal(self, fut_subscription_id, fut_proposal):
-        """Call collect_offers on the requestor market api."""
+    def counter_proposal(
+        self,
+        fut_subscription_id: "Future[Tuple[str, Demand]]",
+        fut_proposal: "Future[Proposal]",
+    ) -> "Future[Proposal]":
+        """Call counter_proposal_demand on the requestor market api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_subscribe_demand(probe):
+        def _call_counter_proposal(probe: Probe) -> Proposal:
             subscription_id, demand = fut_subscription_id.result()
             provider_proposal = fut_proposal.result()
-
-            # TODO: Would be nice to have the original demand here
             proposal = Proposal(
                 constraints=demand.constraints,
                 properties=demand.properties,
@@ -259,29 +271,34 @@ class ProbeStepBuilder:
                 proposal_id=provider_proposal.proposal_id,
                 proposal=proposal,
             )
+
             awaitable.set_result(counter_proposal)
             return counter_proposal
 
         step = CallableStep(name="counter_proposal", timeout=10)
-        step.setup_callback(self._probes, _call_subscribe_demand)
+        step.setup_callback(self._probes, _call_counter_proposal)
         self._steps.append(step)
         return awaitable
 
-    def create_agreement(self, fut_proposal):
-        """Call collect_offers on the requestor market api."""
+    def create_agreement(self, fut_proposal: "Future[Proposal]") -> "Future[str]":
+        """Call create_agreement on the requestor market api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_create_agreement(probe):
+        def _call_create_agreement(probe: Probe) -> str:
             proposal = fut_proposal.result()
-
             valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
-            logger.debug(f"valid_to={valid_to}")
+            logger.debug(
+                "Creatiing agreement, proposal_id=%s, valid_to=%s",
+                proposal.proposal_id,
+                valid_to,
+            )
             agreement_proposal = AgreementProposal(
                 proposal_id=proposal.proposal_id, valid_to=valid_to
             )
 
             agreement_id = probe.market.create_agreement(agreement_proposal)
+
             awaitable.set_result(agreement_id)
             return agreement_id
 
@@ -290,14 +307,16 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def confirm_agreement(self, fut_agreement_id):
-        """Call collect_offers on the requestor market api."""
+    def confirm_agreement(self, fut_agreement_id: "Future[str]") -> Future:
+        """Call confirm_agreement on the requestor market api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_confirm_agreement(probe):
+        def _call_confirm_agreement(probe: Probe):
             agreement_id = fut_agreement_id.result()
+
             result = probe.market.confirm_agreement(agreement_id)
+
             awaitable.set_result(result)
             return result
 
@@ -306,16 +325,16 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def create_activity(self, fut_agreement_id):
+    def create_activity(self, fut_agreement_id: "Future[str]") -> "Future[str]":
         """Call create_activity on the requestor activity api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_create_activity(probe):
+        def _call_create_activity(probe: Probe) -> str:
             agreement_id = fut_agreement_id.result()
-            logger.debug("Creating activity... agreement_id=%s", agreement_id)
+
             activity_id = probe.activity.control.create_activity(agreement_id)
-            logger.debug("Activity created agreement_id=%s", agreement_id)
+
             awaitable.set_result(activity_id)
             return activity_id
 
@@ -324,17 +343,18 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def call_exec(self, fut_activity_id):
+    def call_exec(self, fut_activity_id: "Future[str]") -> "Future[str]":
         """Call call_exec on the requestor activity api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_call_exec(probe):
+        def _call_call_exec(probe: Probe) -> str:
             activity_id = fut_activity_id.result()
 
             batch_id = probe.activity.control.call_exec(
                 activity_id, ExeScriptRequest(self.exe_script_txt)
             )
+
             awaitable.set_result(batch_id)
             return batch_id
 
@@ -343,31 +363,28 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def collect_results(self, fut_activity_id, fut_batch_id):
+    def collect_results(
+        self, fut_activity_id: "Future[str]", fut_batch_id: "Future[str]"
+    ) -> "Future[List[ExeScriptCommandResult]]":
         """Call collect_results on the requestor activity api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_collect_results(probe):
+        def _call_collect_results(probe: Probe) -> List[ExeScriptCommandResult]:
             activity_id = fut_activity_id.result()
             batch_id = fut_batch_id.result()
 
             commands_cnt = len(json.loads(self.exe_script_txt))
-            state = probe.activity.state.get_activity_state(activity_id)
-            logger.debug(f"state. result={state}")
+            # probe.activity.state.get_activity_state(activity_id)
             results = probe.activity.control.get_exec_batch_results(
                 activity_id, batch_id
             )
-            logger.debug(f"poll batch results. result={results}")
-
             while len(results) < commands_cnt:
                 time.sleep(1.0)
-                state = probe.activity.state.get_activity_state(activity_id)
-                logger.debug(f"state. result={state}")
+                # probe.activity.state.get_activity_state(activity_id)
                 results = probe.activity.control.get_exec_batch_results(
                     activity_id, batch_id
-                )  # TODO: requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
-                logger.debug(f"poll batch results. result={results}")
+                )
 
             awaitable.set_result(results)
             return results
@@ -377,12 +394,12 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def destroy_activity(self, fut_activity_id):
+    def destroy_activity(self, fut_activity_id: "Future[str]") -> Future:
         """Call destroy_activity on the requestor activity api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_destroy_activity(probe):
+        def _call_destroy_activity(probe: Probe):
             activity_id = fut_activity_id.result()
 
             result = probe.activity.control.destroy_activity(activity_id)
@@ -394,12 +411,12 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def gather_invoice(self, fut_agreement_id):
-        """Call gather_invoice on the requestor activity api."""
+    def gather_invoice(self, fut_agreement_id: "Future[str]") -> "Future[InvoiceEvent]":
+        """Call gather_invoice on the requestor payment api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_gather_invoice(probe):
+        def _call_gather_invoice(probe: Probe) -> InvoiceEvent:
             agreement_id = fut_agreement_id.result()
 
             invoice_events = []
@@ -423,12 +440,12 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
-    def pay_invoice(self, fut_invoice_event):
-        """Call gather_invoice on the requestor activity api."""
+    def pay_invoice(self, fut_invoice_event: "Future[InvoiceEvent]") -> Future:
+        """Call accept_invoice on the requestor payment api."""
 
-        awaitable = asyncio.Future()
+        awaitable = Future()
 
-        def _call_pay_invoice(probe):
+        def _call_pay_invoice(probe: Probe):
             invoice_event = fut_invoice_event.result()
 
             allocation = Allocation(
