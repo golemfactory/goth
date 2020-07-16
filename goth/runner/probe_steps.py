@@ -100,10 +100,11 @@ class ProbeStepBuilder:
 
         # Requestor only
         my_path = os.path.abspath(os.path.dirname(__file__))
-        self.exe_script_file = Path(
+        exe_script_file = Path(
             my_path + "/../../test/level0/asset/exe_script.json"
         )
-        logger.debug(f"exe_script read. contents={self.exe_script_file}")
+        self.exe_script_txt = exe_script_file.read_text()
+        logger.debug(f"exe_script read. contents={self.exe_script_txt}")
 
     def log(self, fut):
         """Log the contents of the future."""
@@ -331,11 +332,9 @@ class ProbeStepBuilder:
 
         def _call_call_exec(probe):
             activity_id = fut_activity_id.result()
-            exe_script_txt = self.exe_script_file.read_text()
-            logger.debug(f"exe_script read. contents={exe_script_txt}")
 
             batch_id = probe.activity.control.call_exec(
-                activity_id, ExeScriptRequest(exe_script_txt)
+                activity_id, ExeScriptRequest(self.exe_script_txt)
             )
             awaitable.set_result(batch_id)
             return batch_id
