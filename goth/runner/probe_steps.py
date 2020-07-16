@@ -97,9 +97,9 @@ class ProbeStepBuilder:
     def log(self, fut):
         """Log the contents of the future."""
 
-        def _call_log():
+        def _call_log(probe):
             contents = fut.result()
-            logger.debug("contents=%r", contents)
+            logger.debug("probe= %r, contents=%r", probe, contents)
 
         step = CallableStep(name="wait_for_proposal", timeout=10)
         step.setup_callback(self._probes, _call_log)
