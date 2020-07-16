@@ -92,7 +92,7 @@ class ProbeStepBuilder:
         """Wait until the invoice is sent."""
         self._wait_for_log(
             "wait_for_invoice_paid",
-            r"Invoice (.+?) for agreement (.+?) was paid",
+            "Invoice .+? for agreement .+? was paid",
             timeout=60 * 5,
         )
 
