@@ -123,8 +123,8 @@ class TestLevel1:
         batch_id = requestor.call_exec(activity_id)
         provider.wait_for_exeunit_started()
         requestor.collect_results(activity_id, batch_id)
+        requestor.destroy_activity(activity_id)
         provider.wait_for_exeunit_finished()
-        # requestor.destroy_activity(activity_id)
 
         # Payment
         # provider.wait_for_invoice_sent()

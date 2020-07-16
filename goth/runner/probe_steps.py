@@ -388,6 +388,23 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
+    def destroy_activity(self, fut_activity_id):
+        """Call destroy_activity on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_destroy_activity(probe):
+            activity_id = fut_activity_id.result()
+
+            result = probe.activity.control.destroy_activity(activity_id)
+            awaitable.set_result(result)
+            return result
+
+        step = CallableStep(name="destroy_activity", timeout=10)
+        step.setup_callback(self._probes, _call_destroy_activity)
+        self._steps.append(step)
+        return awaitable
+
 
 # --- ASSERTIONS --- #
 # TODO: Move to own file
