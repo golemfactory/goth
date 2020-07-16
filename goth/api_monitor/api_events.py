@@ -3,7 +3,6 @@
 import abc
 import json
 import re
-import time
 from typing import Optional, Type
 
 from mitmproxy.flow import Error
@@ -20,17 +19,14 @@ class APIEvent(abc.ABC):
     def timestamp(self) -> float:
         """Return event's time."""
 
-
-class APIClockTick(APIEvent):
-    """A dummy event representing clock ticks, used for timeouts in API monitor."""
-
-    def __init__(self, timestamp: Optional[float] = None):
-        self._timestamp = timestamp or time.time()
-
     @property
-    def timestamp(self) -> float:
-        """Time of the clock tick."""
-        return self._timestamp
+    @abc.abstractmethod
+    def content(self) -> str:
+        """Return the content of this event.
+
+        For a request/response event, it's the request/response body.
+        For an error event, it's the error message.
+        """
 
 
 class APIRequest(APIEvent):
@@ -70,8 +66,18 @@ class APIRequest(APIEvent):
         """Return the callee name."""
         return self.http_request.headers.get(CALLEE_HEADER)
 
-    def __str__(self):
-        return f"{self.caller} -> {self.callee}.{self.method}({self.path})"
+    @property
+    def content(self) -> str:
+        """Return the request body."""
+        return self.http_request.content.decode("utf-8")
+
+    @property
+    def header_str(self) -> str:
+        """Return the string representation of this request without the body."""
+        return f"{self.caller} -> {self.callee}: {self.method} {self.path}"
+
+    def __str__(self) -> str:
+        return f"[request] {self.header_str}; body: {self.content}"
 
 
 class APIResponse(APIEvent):
@@ -94,6 +100,17 @@ class APIResponse(APIEvent):
         """Return the HTTP status code."""
 
         return self.http_response.status_code
+
+    @property
+    def content(self) -> str:
+        """Return the request body."""
+        return self.http_response.content.decode("utf-8")
+
+    def __str__(self) -> str:
+        return (
+            f"[response ({self.status_code})] "
+            f"{self.request.header_str}; body: {self.content}"
+        )
 
 
 class APIError(APIEvent):
@@ -118,8 +135,13 @@ class APIError(APIEvent):
         """Time of the error."""
         return self.error.timestamp
 
-    def __str__(self):
-        return f"{self.request} -> {self.error}"
+    @property
+    def content(self) -> str:
+        """Return self."""
+        return self.error.msg
+
+    def __str__(self) -> str:
+        return f"[error] {self.request.header_str}: {self.content}"
 
 
 def _match_event(
