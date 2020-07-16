@@ -120,10 +120,10 @@ class TestLevel1:
         # Activity
         activity_id = requestor.create_activity(agreement_id)
         requestor.log(activity_id)
-        # batch_id = requestor.call_exec(activity_id)
-        # provider.wait_for_exeunit_started()
-        # provider.wait_for_exeunit_finished()
-        # requestor.collect_results(batch_id)
+        batch_id = requestor.call_exec(activity_id)
+        provider.wait_for_exeunit_started()
+        provider.wait_for_exeunit_finished()
+        requestor.collect_results(activity_id, batch_id)
         # requestor.destroy_activity(activity_id)
 
         # Payment

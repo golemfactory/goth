@@ -4,6 +4,9 @@ import abc
 import asyncio
 from datetime import datetime, timedelta
 import logging
+import json
+import os
+from pathlib import Path
 import re
 import time
 from typing import List
@@ -13,6 +16,7 @@ from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import Probe
 
 from openapi_market_client import Demand, Proposal, AgreementProposal
+from openapi_activity_client import ExeScriptRequest
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +97,13 @@ class ProbeStepBuilder:
     def __init__(self, steps, probes: List[Probe]):
         self._steps: List[Step] = steps
         self._probes = probes
+
+        # Requestor only
+        my_path = os.path.abspath(os.path.dirname(__file__))
+        self.exe_script_file = Path(
+            my_path + "/../../test/level0/asset/exe_script.json"
+        )
+        logger.debug(f"exe_script read. contents={self.exe_script_file}")
 
     def log(self, fut):
         """Log the contents of the future."""
@@ -207,7 +218,9 @@ class ProbeStepBuilder:
             proposal = None
             while proposal is None:
                 result_offers = probe.market.collect_offers(subscription_id)
-                logger.debug(f"collect_offers({subscription_id}). proposal={result_offers}")
+                logger.debug(
+                    f"collect_offers({subscription_id}). proposal={result_offers}"
+                )
                 if result_offers:
                     proposal = result_offers[0].proposal
                 else:
@@ -304,6 +317,71 @@ class ProbeStepBuilder:
 
         step = CallableStep(name="create_activity", timeout=10)
         step.setup_callback(self._probes, _call_create_activity)
+        self._steps.append(step)
+        return awaitable
+
+    def call_exec(self, fut_activity_id):
+        """Call call_exec on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_call_exec(probe):
+            activity_id = fut_activity_id.result()
+            exe_script_txt = self.exe_script_file.read_text()
+            logger.debug(f"exe_script read. contents={exe_script_txt}")
+
+            batch_id = probe.activity.control.call_exec(
+                activity_id, ExeScriptRequest(exe_script_txt)
+            )
+            awaitable.set_result(batch_id)
+            return batch_id
+
+        step = CallableStep(name="call_exec", timeout=10)
+        step.setup_callback(self._probes, _call_call_exec)
+        self._steps.append(step)
+        return awaitable
+
+    def collect_results(self, fut_activity_id, fut_batch_id):
+        """Call collect_results on the requestor activity api."""
+
+        awaitable = asyncio.Future()
+
+        def _call_collect_results(probe):
+            activity_id = fut_batch_id.result()
+            batch_id = fut_activity_id.result()
+
+            commands_cnt = len(json.loads(self.exe_script_txt))
+            state = probe.activity.state.get_activity_state(activity_id)
+            logger.debug(f"state. result={state}")
+            results = probe.activity.control.get_exec_batch_results(
+                activity_id, batch_id
+            )
+            logger.debug(f"poll batch results. result={results}")
+
+            while len(results) < commands_cnt:
+                time.sleep(1.0)
+                state = probe.activity.state.get_activity_state(activity_id)
+                logger.debug(f"state. result={state}")
+                results = probe.activity.control.get_exec_batch_results(
+                    activity_id, batch_id
+                )  # TODO: requestor.events.waitUntil(ExecScriptCommandFinishedEvent)
+                logger.debug(f"poll batch results. result={results}")
+
+            batch_id = fut_batch_id.result()
+            my_path = os.path.abspath(os.path.dirname(__file__))
+            exe_script_file = Path(my_path + "/../asset/exe_script.json")
+            logger.debug(f"exe_script read. contents={exe_script_file}")
+            exe_script_txt = exe_script_file.read_text()
+            logger.debug(f"exe_script read. contents={exe_script_txt}")
+
+            batch_id = probe.activity.control.collect_results(
+                batch_id, ExeScriptRequest(exe_script_txt)
+            )
+            awaitable.set_result(batch_id)
+            return batch_id
+
+        step = CallableStep(name="collect_results", timeout=10)
+        step.setup_callback(self._probes, _call_collect_results)
         self._steps.append(step)
         return awaitable
 
