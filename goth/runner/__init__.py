@@ -1,7 +1,6 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from itertools import chain
 import logging
@@ -14,7 +13,7 @@ import docker
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
-from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
+from goth.runner.probe import Probe, Role
 from goth.runner.probe_steps import ProbeStepBuilder, Step
 from goth.runner.proxy import Proxy
 
@@ -31,8 +30,8 @@ class Runner:
     base_log_dir: Path
     """Base directory for all log files created during this test run."""
 
-    probes: Dict[Role, List[Probe]]
-    """Probes used for the test run, identified by their role names."""
+    probes: List[Probe]
+    """Probes used for the test run."""
 
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
@@ -53,7 +52,7 @@ class Runner:
         self.topology = topology
         self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path
-        self.probes = defaultdict(list)
+        self.probes = []
         self.proxy = None
         self.steps = []
 
@@ -69,11 +68,10 @@ class Runner:
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
-        probes = chain.from_iterable(self.probes.values())
         monitors = chain.from_iterable(
             (
-                (probe.container.logs for probe in probes),
-                (probe.agent_logs for probe in probes),
+                (probe.container.logs for probe in self.probes),
+                (probe.agent_logs for probe in self.probes),
                 [self.proxy.monitor],
             )
         )
@@ -104,7 +102,7 @@ class Runner:
         finally:
             # Sleep to let the logs be saved
             await asyncio.sleep(2.0)
-            for probe in chain.from_iterable(self.probes.values()):
+            for probe in self.probes:
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
 
@@ -124,15 +122,8 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             if isinstance(config, YagnaContainerConfig):
-                if config.role == Role.requestor:
-                    probe = RequestorProbe(
-                        docker_client, config, log_config, self.assets_path
-                    )
-                else:
-                    probe = ProviderProbe(
-                        docker_client, config, log_config, self.assets_path
-                    )
-                self.probes[config.role].append(probe)
+                probe = config.role(docker_client, config, log_config, self.assets_path)
+                self.probes.append(probe)
 
     def _get_test_log_dir_name(self):
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
@@ -147,7 +138,7 @@ class Runner:
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses
-        for probe in chain.from_iterable(self.probes.values()):
+        for probe in self.probes:
             probe.start_container()
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
@@ -162,10 +153,17 @@ class Runner:
         self.proxy.start()
 
         # The proxy is ready to route the API calls. Start the agents.
-        for role, probes in self.probes.items():
-            for probe in probes:
-                probe.start_agent()
+        for probe in self.probes:
+            probe.start_agent()
 
-    def get_probes_by_role(self, role):
-        """Create a ProbeStepBuilder for the requested role."""
-        return ProbeStepBuilder(steps=self.steps, probes=self.probes[role])
+    def get_probes(
+        self, role: Optional[Role] = None, name: Optional[str] = ""
+    ) -> ProbeStepBuilder:
+        """Create a ProbeStepBuilder for probes with the specified criteria."""
+        probes = self.probes
+        if role:
+            probes = [p for p in probes if type(p) == role]
+        if name:
+            probes = [p for p in probes if p.name == name]
+
+        return ProbeStepBuilder(self.steps, probes)

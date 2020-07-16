@@ -1,11 +1,10 @@
 """Classes and helpers for managing Probes."""
 
 import abc
-from enum import Enum
 import logging
 from pathlib import Path
 import time
-from typing import Optional
+from typing import Optional, Type
 
 from docker import DockerClient
 
@@ -28,13 +27,6 @@ from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 
 logger = logging.getLogger(__name__)
-
-
-class Role(Enum):
-    """Role of the probe."""
-
-    requestor = 0
-    provider = 1
 
 
 class ProbeLoggingAdapter(logging.LoggerAdapter):
@@ -295,3 +287,8 @@ class ProviderProbe(Probe):
         if self.agent_logs is not None:
             await self.agent_logs.stop()
         await super().stop()
+
+
+Provider = ProviderProbe
+Requestor = RequestorProbe
+Role = Type[Probe]
