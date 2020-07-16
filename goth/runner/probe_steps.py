@@ -28,6 +28,9 @@ class Step(abc.ABC):
         Implemented in sub-classes of Step
         """
 
+    def __str__(self):
+        return f"{self.name}(timeout={self.timeout})"
+
     def __repr__(self):
         return f"<{type(self).__name__} name={self.name} timeout={self.timeout}>"
 
@@ -48,10 +51,7 @@ class AssertionStep(Step):
 
         For the AssertionStep this means all assertions are marked as done
         """
-        for a in self._assertions:
-            if not a.done:
-                return False
-        return True
+        return all(a.done for a in self._assertions)
 
 
 class ProbeStepBuilder:

@@ -93,7 +93,7 @@ class Runner:
         self._start_nodes()
         try:
             for step in self.steps:
-                self.logger.info("running step. step=%r", step)
+                self.logger.info("running step. step=%s", step)
                 deadline = datetime.now() + timedelta(seconds=step.timeout)
 
                 while not step.is_done():
