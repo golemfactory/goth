@@ -68,7 +68,7 @@ CONTAINER ID        IMAGE                                  COMMAND              
 #### Running the integration tests
 With the Yagna test network running locally we can now launch the integration tests. To do so, navigate to the project's root directory and run:
 ```
-python -m pytest test/level0 -svx --assets-path test/level0/asset
+python -m pytest test/level1 -svx --assets-path test/level0/asset
 ```
 
 The path passed in `--assets-path` is used to define assets to be mounted in Yagna Docker containers for the tests. These files include e.g. the provider presets or the exe script definition to be used.
