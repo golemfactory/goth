@@ -21,7 +21,7 @@ from goth.address import (
 from goth.runner import Runner
 
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.probe import Role
+from goth.runner.probe import Provider, Requestor
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,13 @@ VOLUMES = {
 LEVEL0_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
-        role=Role.requestor,
+        role=Requestor,
         environment=node_environment(),
         volumes=VOLUMES,
     ),
     YagnaContainerConfig(
         name="provider_1",
-        role=Role.provider,
+        role=Provider,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -78,7 +78,7 @@ LEVEL0_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_2",
-        role=Role.provider,
+        role=Provider,
         # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -99,7 +99,7 @@ class TestLevel0:
             LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
         )
 
-        all_providers = runner.get_probes_by_role(Role.provider)
+        all_providers = runner.get_probes(role=Provider)
 
         all_providers.wait_for_offer_subscribed()
         all_providers.wait_for_proposal_accepted()
