@@ -152,6 +152,8 @@ class Runner:
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
+        node_names["172.19.0.1"] = 'Pytest-Requestor-Agent'
+
         # Start the proxy node. The containers should not make API calls
         # up to this point.
         self.proxy = Proxy(
