@@ -157,10 +157,10 @@ class ProbeStepBuilder:
             timeout=60 * 5,
         )
 
-    def _wait_for_log(self, name: str, message: str, timeout: int = 10):
+    def _wait_for_log(self, name: str, pattern: str, timeout: int = 10):
         step = AssertionStep(name, timeout)
         for probe in self._probes:
-            assertion = assert_message_starts_with(message)
+            assertion = assert_message_starts_with(pattern)
             result = probe.agent_logs.add_assertion(assertion)
             step.add_assertion(result)
         self._steps.append(step)
