@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import re
 import time
-from typing import List, Tuple
+from typing import Any, Callable, List, Tuple
 
 from goth.assertions import EventStream, Assertion
 from goth.runner.log_monitor import LogEvent
@@ -68,16 +68,21 @@ class AssertionStep(Step):
 
 
 class CallableStep(Step):
-    """Step that executes apython function call on all `probes`."""
+    """Step that executes a python function call on all `probes`."""
 
     probes: List[Probe]
     """Probes to execute `callable(probe)` for."""
-    callback: callable
+    callback: Callable[[Probe], Any]
     """Callable to be executed for each probe when the step is ticked"""
 
-    def setup_callback(self, probes: List[Probe], callback: callable):
-        """Configure this step, set probes and callback to be executed on tick()."""
-
+    def __init__(
+        self,
+        name: str,
+        timeout: int,
+        probes: List[Probe],
+        callback: Callable[[Probe], Any],
+    ):
+        super().__init__(name, timeout)
         self.probes = probes
         self.callback = callback
 
@@ -112,8 +117,9 @@ class ProbeStepBuilder:
             contents = fut.result()
             logger.debug("probe=%s, contents=%r", probe, contents)
 
-        step = CallableStep(name="log", timeout=10)
-        step.setup_callback(self._probes, _call_log)
+        step = CallableStep(
+            name="log", timeout=10, probes=self._probes, callback=_call_log
+        )
         self._steps.append(step)
 
     # --- PROVIDER --- #
@@ -174,8 +180,12 @@ class ProbeStepBuilder:
             result = probe.cli.payment_init(requestor_mode=True)
             return result
 
-        step = CallableStep(name="init_payment", timeout=120)
-        step.setup_callback(self._probes, _call_init_payment)
+        step = CallableStep(
+            name="init_payment",
+            timeout=120,
+            probes=self._probes,
+            callback=_call_init_payment,
+        )
         self._steps.append(step)
 
     def subscribe_demand(self) -> "Future[Tuple[str, Demand]]":
@@ -210,8 +220,12 @@ class ProbeStepBuilder:
             awaitable.set_result((subscription_id, demand))
             return (subscription_id, demand)
 
-        step = CallableStep(name="subscribe_demand", timeout=10)
-        step.setup_callback(self._probes, _call_subscribe_demand)
+        step = CallableStep(
+            name="subscribe_demand",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_subscribe_demand,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -243,8 +257,12 @@ class ProbeStepBuilder:
             awaitable.set_result(proposal)
             return proposal
 
-        step = CallableStep(name="wait_for_proposal", timeout=10)
-        step.setup_callback(self._probes, _call_wait_for_proposal)
+        step = CallableStep(
+            name="wait_for_proposal",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_wait_for_proposal,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -275,8 +293,12 @@ class ProbeStepBuilder:
             awaitable.set_result(counter_proposal)
             return counter_proposal
 
-        step = CallableStep(name="counter_proposal", timeout=10)
-        step.setup_callback(self._probes, _call_counter_proposal)
+        step = CallableStep(
+            name="counter_proposal",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_counter_proposal,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -302,8 +324,12 @@ class ProbeStepBuilder:
             awaitable.set_result(agreement_id)
             return agreement_id
 
-        step = CallableStep(name="create_agreement", timeout=10)
-        step.setup_callback(self._probes, _call_create_agreement)
+        step = CallableStep(
+            name="create_agreement",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_create_agreement,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -320,8 +346,12 @@ class ProbeStepBuilder:
             awaitable.set_result(result)
             return result
 
-        step = CallableStep(name="confirm_agreement", timeout=10)
-        step.setup_callback(self._probes, _call_confirm_agreement)
+        step = CallableStep(
+            name="confirm_agreement",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_confirm_agreement,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -338,8 +368,12 @@ class ProbeStepBuilder:
             awaitable.set_result(activity_id)
             return activity_id
 
-        step = CallableStep(name="create_activity", timeout=10)
-        step.setup_callback(self._probes, _call_create_activity)
+        step = CallableStep(
+            name="create_activity",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_create_activity,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -358,8 +392,9 @@ class ProbeStepBuilder:
             awaitable.set_result(batch_id)
             return batch_id
 
-        step = CallableStep(name="call_exec", timeout=10)
-        step.setup_callback(self._probes, _call_call_exec)
+        step = CallableStep(
+            name="call_exec", timeout=10, probes=self._probes, callback=_call_call_exec
+        )
         self._steps.append(step)
         return awaitable
 
@@ -389,8 +424,12 @@ class ProbeStepBuilder:
             awaitable.set_result(results)
             return results
 
-        step = CallableStep(name="collect_results", timeout=10)
-        step.setup_callback(self._probes, _call_collect_results)
+        step = CallableStep(
+            name="collect_results",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_collect_results,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -406,8 +445,12 @@ class ProbeStepBuilder:
             awaitable.set_result(result)
             return result
 
-        step = CallableStep(name="destroy_activity", timeout=10)
-        step.setup_callback(self._probes, _call_destroy_activity)
+        step = CallableStep(
+            name="destroy_activity",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_destroy_activity,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -435,8 +478,12 @@ class ProbeStepBuilder:
             awaitable.set_result(invoice_event)
             return invoice_event
 
-        step = CallableStep(name="gather_invoice", timeout=10)
-        step.setup_callback(self._probes, _call_gather_invoice)
+        step = CallableStep(
+            name="gather_invoice",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_gather_invoice,
+        )
         self._steps.append(step)
         return awaitable
 
@@ -469,8 +516,12 @@ class ProbeStepBuilder:
             awaitable.set_result(result)
             return result
 
-        step = CallableStep(name="pay_invoice", timeout=10)
-        step.setup_callback(self._probes, _call_pay_invoice)
+        step = CallableStep(
+            name="pay_invoice",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_pay_invoice,
+        )
         self._steps.append(step)
         return awaitable
 
