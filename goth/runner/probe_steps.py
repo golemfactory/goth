@@ -33,7 +33,7 @@ class Step(abc.ABC):
 
     @abc.abstractmethod
     def tick(self) -> bool:
-        """Return `True` iff this step has been completed.
+        """Handle required action and return `True` iff this step has been completed.
 
         Implemented in sub-classes of Step
         """
@@ -60,9 +60,9 @@ class AssertionStep(Step):
         self.assertions.append(assertion)
 
     def tick(self) -> bool:
-        """Check if all required awaitables are done for this step.
+        """Handle required action and return `True` iff this step has been completed.
 
-        For the AssertionStep this means all assertions are marked as done
+        For the AssertionStep this means all assertions are marked as done.
         """
         return all(a.done for a in self.assertions)
 
@@ -87,9 +87,9 @@ class CallableStep(Step):
         self.callback = callback
 
     def tick(self) -> bool:
-        """Check if all required awaitables are done for this step.
+        """Handle required action and return `True` iff this step has been completed.
 
-        For the CallableStep this means the callback is executed for each probe
+        For the CallableStep this means the callback is executed for each probe.
         """
         for probe in self.probes:
             res = self.callback(probe)

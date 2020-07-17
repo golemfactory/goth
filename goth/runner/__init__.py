@@ -96,8 +96,10 @@ class Runner:
 
                 while not step.tick():
                     if deadline < datetime.now():
-                        raise TimeoutError(f"Step timeout. step={str(step)}")
+                        raise TimeoutError(f"Step timeout. step={step}")
                     await asyncio.sleep(0.1)
+
+                self.logger.debug("finished step. step=%s", step)
 
         finally:
             # Sleep to let the logs be saved
