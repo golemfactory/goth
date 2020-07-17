@@ -1,7 +1,7 @@
 """Helpers to build steps on the runner attached to different probes."""
 
 import abc
-from asyncio import Future
+from asyncio import Future, sleep
 from datetime import datetime, timedelta
 import logging
 import json
@@ -32,8 +32,8 @@ class Step(abc.ABC):
         self.timeout = timeout
 
     @abc.abstractmethod
-    def tick(self) -> bool:
-        """Handle required action and return `True` iff this step has been completed.
+    async def tick(self):
+        """Wait untill this step is complete.
 
         Implemented in sub-classes of Step
         """
@@ -59,12 +59,13 @@ class AssertionStep(Step):
         """Add an assertion to be awaited in this step."""
         self.assertions.append(assertion)
 
-    def tick(self) -> bool:
+    async def tick(self) -> bool:
         """Handle required action and return `True` iff this step has been completed.
 
         For the AssertionStep this means all assertions are marked as done.
         """
-        return all(a.done for a in self.assertions)
+        while not all(a.done for a in self.assertions):
+            await sleep(0.1)
 
 
 class CallableStep(Step):
@@ -86,7 +87,7 @@ class CallableStep(Step):
         self.probes = probes
         self.callback = callback
 
-    def tick(self) -> bool:
+    async def tick(self) -> bool:
         """Handle required action and return `True` iff this step has been completed.
 
         For the CallableStep this means the callback is executed for each probe.
@@ -94,6 +95,9 @@ class CallableStep(Step):
         for probe in self.probes:
             res = self.callback(probe)
             logger.debug("step=%s, probe=%s result=%r", self, probe, res)
+            if not probe == self.probes[-1]:
+                # Sleep to allow other asyncio Tasks to continue
+                await sleep(0.1)
         return True
 
 

@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from itertools import chain
 import logging
 import os
@@ -92,13 +92,7 @@ class Runner:
         try:
             for step in self.steps:
                 self.logger.info("running step. step=%s", step)
-                deadline = datetime.now() + timedelta(seconds=step.timeout)
-
-                while not step.tick():
-                    if deadline < datetime.now():
-                        raise TimeoutError(f"Step timeout. step={step}")
-                    await asyncio.sleep(0.1)
-
+                await asyncio.wait_for(step.tick(), step.timeout)
                 self.logger.debug("finished step. step=%s", step)
 
         finally:
