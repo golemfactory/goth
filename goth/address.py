@@ -7,6 +7,13 @@ from string import Template
 from typing import Dict, Mapping, Optional
 
 
+def ensure_no_trailing_slash(input: str) -> str:
+    """Remove the trailing slash from `input`."""
+    if input[-1] == "/":
+        input = input[:-1]
+    return input
+
+
 class DefaultTemplate(Template):
     """Extend `Template` to allow for default values for template fields."""
 

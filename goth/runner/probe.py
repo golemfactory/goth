@@ -1,11 +1,10 @@
 """Classes and helpers for managing Probes."""
 
 import abc
-from enum import Enum
 import logging
 from pathlib import Path
 import time
-from typing import Optional
+from typing import Optional, Type
 
 from docker import DockerClient
 
@@ -13,6 +12,7 @@ import openapi_activity_client as activity
 import openapi_market_client as market
 import openapi_payment_client as payment
 from goth.address import (
+    ensure_no_trailing_slash,
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
@@ -28,13 +28,6 @@ from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 
 logger = logging.getLogger(__name__)
-
-
-class Role(Enum):
-    """Role of the probe."""
-
-    requestor = 0
-    provider = 1
 
 
 class ProbeLoggingAdapter(logging.LoggerAdapter):
@@ -171,6 +164,7 @@ class ActivityApiClient:
 
     def __init__(self, app_key: str, address: str, logger: logging.Logger):
         api_url = ACTIVITY_API_URL.substitute(base=address)
+        api_url = ensure_no_trailing_slash(str(api_url))
         config = activity.Configuration(host=api_url)
         config.access_token = app_key
         client = activity.ApiClient(config)
@@ -221,12 +215,12 @@ class RequestorProbe(Probe):
         self._init_market_api()
 
         # TODO Remove once agent calls are implemented via probe
-        self.start_requestor_agent()
+        # self.start_requestor_agent()
 
     # TODO Remove once agent calls are implemented via probe
     def start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        self.cli.payment_init(requestor_mode=True)
+        # self.cli.payment_init(requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -239,6 +233,7 @@ class RequestorProbe(Probe):
 
     def _init_market_api(self):
         api_url = MARKET_API_URL.substitute(base=self._api_base_host)
+        api_url = ensure_no_trailing_slash(str(api_url))
         config = market.Configuration(host=api_url)
         config.access_token = self.app_key
         client = market.ApiClient(config)
@@ -247,6 +242,7 @@ class RequestorProbe(Probe):
 
     def _init_payment_api(self):
         api_url = PAYMENT_API_URL.substitute(base=self._api_base_host)
+        api_url = ensure_no_trailing_slash(str(api_url))
         config = payment.Configuration(host=api_url)
         config.access_token = self.app_key
         client = payment.ApiClient(config)
@@ -292,3 +288,8 @@ class ProviderProbe(Probe):
         if self.agent_logs is not None:
             await self.agent_logs.stop()
         await super().stop()
+
+
+Provider = ProviderProbe
+Requestor = RequestorProbe
+Role = Type[Probe]

@@ -1,4 +1,4 @@
-"""Level 0 test to be ran from pytest."""
+"""Level 1 test to be ran from pytest."""
 
 import logging
 from pathlib import Path
@@ -38,6 +38,7 @@ def node_environment(
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "ETH_FAUCET_ADDRESS": "http://faucet.testnet.golem.network:4000/donate",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
+        "RUST_LOG": "debug,trust_dns_proto=info",
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
     }
     node_env = daemon_env
@@ -59,7 +60,7 @@ VOLUMES = {
 }
 
 
-LEVEL0_TOPOLOGY = [
+LEVEL1_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         role=Requestor,
@@ -76,37 +77,59 @@ LEVEL0_TOPOLOGY = [
         ),
         volumes=VOLUMES,
     ),
-    YagnaContainerConfig(
-        name="provider_2",
-        role=Provider,
-        # Configure the second provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        ),
-        volumes=VOLUMES,
-    ),
+    # YagnaContainerConfig(
+    #     name="provider_2",
+    #     role=Provider,
+    #     # Configure the second provider node to communicate via proxy
+    #     environment=node_environment(
+    #         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+    #         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+    #     ),
+    #     volumes=VOLUMES,
+    # ),
 ]
 
 
-class TestLevel0:
-    """TestCase running Level0Scenario."""
+class TestLevel1:
+    """TestCase running Level1Scenario."""
 
     @pytest.mark.asyncio
-    async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
-        """Test running Level0Scenario."""
+    async def test_level1(self, logs_path: Path, assets_path: Optional[Path]):
+        """Test running Level1Scenario."""
         runner = Runner(
-            LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+            LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
-        all_providers = runner.get_probes(role=Provider)
+        provider = runner.get_probes(role=Provider)
+        requestor = runner.get_probes(role=Requestor)
 
-        all_providers.wait_for_offer_subscribed()
-        all_providers.wait_for_proposal_accepted()
-        all_providers.wait_for_agreement_approved()
-        all_providers.wait_for_exeunit_started()
-        all_providers.wait_for_exeunit_finished()
-        all_providers.wait_for_invoice_sent()
-        all_providers.wait_for_invoice_paid()
+        requestor.init_payment()
+
+        # Market
+        provider.wait_for_offer_subscribed()
+        subscription_id = requestor.subscribe_demand()
+        proposal = requestor.wait_for_proposal(subscription_id)
+        requestor.counter_proposal(subscription_id, proposal)
+        provider.wait_for_proposal_accepted()
+        requestor.wait_for_proposal(subscription_id)
+        agreement_id = requestor.create_agreement(proposal)
+        requestor.confirm_agreement(agreement_id)
+        provider.wait_for_agreement_approved()
+        # requestor.wait_for_approval() ???
+
+        # Activity
+        activity_id = requestor.create_activity(agreement_id)
+        provider.wait_for_activity_created()
+        batch_id = requestor.call_exec(activity_id)
+        provider.wait_for_exeunit_started()
+        requestor.collect_results(activity_id, batch_id)
+        requestor.destroy_activity(activity_id)
+        provider.wait_for_exeunit_finished()
+
+        # Payment
+        provider.wait_for_invoice_sent()
+        invoice = requestor.gather_invoice(agreement_id)
+        requestor.pay_invoice(invoice)
+        provider.wait_for_invoice_paid()
 
         await runner.run_scenario()
