@@ -33,7 +33,7 @@ class Step(abc.ABC):
 
     @abc.abstractmethod
     async def tick(self):
-        """Wait untill this step is complete.
+        """Wait until this step is complete.
 
         Implemented in sub-classes of Step
         """
@@ -109,6 +109,7 @@ class ProbeStepBuilder:
         self._probes = probes
 
         # Requestor only
+        # FIXME: exe_script should be an argument to `call_exec`
         my_path = os.path.abspath(os.path.dirname(__file__))
         exe_script_file = Path(my_path + "/../../test/level0/asset/exe_script.json")
         self.exe_script_txt = exe_script_file.read_text()
@@ -315,7 +316,7 @@ class ProbeStepBuilder:
             proposal = fut_proposal.result()
             valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
             logger.debug(
-                "Creatiing agreement, proposal_id=%s, valid_to=%s",
+                "Creating agreement, proposal_id=%s, valid_to=%s",
                 proposal.proposal_id,
                 valid_to,
             )
@@ -414,13 +415,11 @@ class ProbeStepBuilder:
             batch_id = fut_batch_id.result()
 
             commands_cnt = len(json.loads(self.exe_script_txt))
-            # probe.activity.state.get_activity_state(activity_id)
             results = probe.activity.control.get_exec_batch_results(
                 activity_id, batch_id
             )
             while len(results) < commands_cnt:
                 time.sleep(1.0)
-                # probe.activity.state.get_activity_state(activity_id)
                 results = probe.activity.control.get_exec_batch_results(
                     activity_id, batch_id
                 )
