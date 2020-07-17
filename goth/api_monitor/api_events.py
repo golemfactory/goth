@@ -103,7 +103,7 @@ class APIResponse(APIEvent):
 
     @property
     def content(self) -> str:
-        """Return the request body."""
+        """Return the response body."""
         return self.http_response.content.decode("utf-8")
 
     def __str__(self) -> str:

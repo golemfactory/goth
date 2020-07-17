@@ -63,8 +63,8 @@ LOGGING_CONFIG = {
         "goth.api_monitor": {
             "handlers": ["proxy_file"],
             "propagate": False,
-            # Changing this to "DEBUG" can help in diagnosing issues with routing
-            # in the proxy. Using "INFO" by default to avoid verbose output.
+            # Setting this to "DEBUG" can help in diagnosing issues with routing
+            # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
         "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
