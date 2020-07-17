@@ -100,3 +100,4 @@ class RouterAddon:
         except (KeyError, ValueError) as ex:
             self._logger.error("Invalid request: %s, error: %s", req, ex.args[0])
             flow.kill()
+            raise
