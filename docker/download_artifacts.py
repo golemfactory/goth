@@ -19,7 +19,6 @@ ENV_API_TOKEN = "GITHUB_API_TOKEN"
 
 ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
 BRANCH = "master"
-COMMIT = "8ecbe5f53441ba1a739ee14f10b26fa830a28ca0"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
 WORKFLOW_NAME = "Build .deb"
@@ -65,9 +64,7 @@ def get_latest_run(workflow_id: str, branch: str) -> dict:
     logger.debug("workflow_runs=%s", workflow_runs)
     result = next(
         filter(
-            lambda r: r["conclusion"] == "success"
-            and r["head_branch"] == branch
-            and COMMIT is None or COMMIT == r['head_sha'],
+            lambda r: r["conclusion"] == "success" and r["head_branch"] == branch,
             workflow_runs,
         )
     )
