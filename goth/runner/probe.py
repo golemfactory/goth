@@ -12,6 +12,7 @@ import openapi_activity_client as activity
 import openapi_market_client as market
 import openapi_payment_client as payment
 from goth.address import (
+    ensure_no_tailing_slash,
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
@@ -163,7 +164,7 @@ class ActivityApiClient:
 
     def __init__(self, app_key: str, address: str, logger: logging.Logger):
         api_url = ACTIVITY_API_URL.substitute(base=address)
-        api_url = str(api_url)[:-1]
+        api_url = ensure_no_tailing_slash(str(api_url))
         config = activity.Configuration(host=api_url)
         config.access_token = app_key
         client = activity.ApiClient(config)
@@ -232,7 +233,7 @@ class RequestorProbe(Probe):
 
     def _init_market_api(self):
         api_url = MARKET_API_URL.substitute(base=self._api_base_host)
-        api_url = str(api_url)[:-1]
+        api_url = ensure_no_tailing_slash(str(api_url))
         config = market.Configuration(host=api_url)
         config.access_token = self.app_key
         client = market.ApiClient(config)
@@ -241,7 +242,7 @@ class RequestorProbe(Probe):
 
     def _init_payment_api(self):
         api_url = PAYMENT_API_URL.substitute(base=self._api_base_host)
-        api_url = str(api_url)[:-1]
+        api_url = ensure_no_tailing_slash(str(api_url))
         config = payment.Configuration(host=api_url)
         config.access_token = self.app_key
         client = payment.ApiClient(config)
