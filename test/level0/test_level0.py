@@ -36,6 +36,7 @@ def node_environment(
     daemon_env = {
         "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template_params),
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
+        "ETH_FAUCET_ADDRESS": "http://faucet.testnet.golem.network:4000/donate",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
     }
@@ -106,5 +107,6 @@ class TestLevel0:
         all_providers.wait_for_exeunit_started()
         all_providers.wait_for_exeunit_finished()
         all_providers.wait_for_invoice_sent()
+        all_providers.wait_for_invoice_paid()
 
         await runner.run_scenario()

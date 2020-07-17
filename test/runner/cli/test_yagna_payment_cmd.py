@@ -17,26 +17,13 @@ def test_payment_init(yagna_container):
     yagna.payment_init()
 
 
-def test_payment_init_with_address(yagna_container):
-    """Test `payment init` with explicit node address."""
-
-    yagna = Cli(yagna_container).yagna
-
-    default_identity = yagna.id_show()
-    yagna.payment_init(address=default_identity.address)
-
-    another_identity = yagna.id_create()
-    yagna.payment_init(address=another_identity.address)
-
-
 @pytest.mark.skip(reason="Not sure what is the expected behaviour")
 def test_payment_init_provider_mode(yagna_container):
     """Test `payment init -p`."""
 
     yagna = Cli(yagna_container).yagna
 
-    default_identity = yagna.id_show()
-    yagna.payment_init(provider_mode=True, address=default_identity.address)
+    yagna.payment_init(provider_mode=True)
 
 
 @pytest.mark.skip(reason="Not sure what is the expected behaviour")
@@ -45,8 +32,7 @@ def test_payment_init_requestor_mode(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    default_identity = yagna.id_show()
-    yagna.payment_init(requestor_mode=True, address=default_identity.address)
+    yagna.payment_init(requestor_mode=True)
 
 
 def test_payment_status(yagna_container):
@@ -65,6 +51,5 @@ def test_payment_status_with_address(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    default_id = yagna.id_show()
-    status = yagna.payment_status(address=default_id.address)
+    status = yagna.payment_status()
     assert status

@@ -35,14 +35,14 @@ class YagnaPaymentMixin:
         requestor_mode: bool = False,
         provider_mode: bool = False,
         data_dir: str = "",
-        address: str = "",
+        payment_driver: str = "gnt",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
         """
 
-        args = make_args("payment", "init", address, data_dir=data_dir)
+        args = make_args("payment", "init", payment_driver, data_dir=data_dir)
         if requestor_mode:
             args.append("-r")
         if provider_mode:
@@ -50,14 +50,14 @@ class YagnaPaymentMixin:
         return self.run_command(*args)[0]
 
     def payment_status(
-        self: CommandRunner, data_dir: str = "", address: str = ""
+        self: CommandRunner, data_dir: str = "", driver: str = "gnt"
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 
         Parse the command's output as a `PatmentStatus` and return it.
         """
 
-        args = make_args("payment", "status", address, data_dir=data_dir)
+        args = make_args("payment", "status", driver, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
         return PaymentStatus(
             amount=float(output["amount"]),
