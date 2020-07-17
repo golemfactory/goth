@@ -95,9 +95,8 @@ class CallableStep(Step):
         for probe in self.probes:
             res = self.callback(probe)
             logger.debug("step=%s, probe=%s result=%r", self, probe, res)
-            if not probe == self.probes[-1]:
-                # Sleep to allow other asyncio Tasks to continue
-                await sleep(0.0)
+            # Sleep to allow other asyncio Tasks to continue
+            await sleep(0.0)
         return True
 
 
