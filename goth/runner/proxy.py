@@ -27,6 +27,7 @@ class Proxy:
     _logger: logging.Logger
     _loop: Optional[asyncio.AbstractEventLoop]
     _node_names: Mapping[str, str]
+    """Mapping of IP addresses to node names"""
 
     def __init__(
         self, node_names: Mapping[str, str], assertions_module: Optional[str] = None,

@@ -30,7 +30,9 @@ class RouterAddon:
     """
 
     _logger: logging.Logger
+
     _node_names: Mapping[str, str]
+    """Mapping of IP addresses to node names"""
 
     def __init__(self, node_names: Mapping[str, str]):
         self._logger = logging.getLogger(__name__)
@@ -54,7 +56,7 @@ class RouterAddon:
                 # market API container is mapped to the same port on the host.
                 req.host = "127.0.0.1"
                 req.port = MARKET_PORT
-                req.headers[CALLER_HEADER] = f"{node_name} daemon"
+                req.headers[CALLER_HEADER] = f"{node_name}:daemon"
                 req.headers[CALLEE_HEADER] = "MarketAPI"
 
             elif server_port == YAGNA_REST_PORT:
@@ -63,8 +65,8 @@ class RouterAddon:
                 # request is bounced back to the caller.
                 req.host = remote_addr
                 req.port = YAGNA_REST_PORT
-                req.headers[CALLER_HEADER] = f"{node_name} agent"
-                req.headers[CALLEE_HEADER] = f"{node_name} daemon"
+                req.headers[CALLER_HEADER] = f"{node_name}:agent"
+                req.headers[CALLEE_HEADER] = f"{node_name}:daemon"
 
             elif HOST_REST_PORT_START <= server_port <= HOST_REST_PORT_END:
                 # It's a requestor agent calling a yagna daemon.
@@ -73,8 +75,8 @@ class RouterAddon:
                 # chosen from the specified range.
                 req.host = "127.0.0.1"
                 req.port = server_port
-                req.headers[CALLER_HEADER] = f"{node_name} agent"
-                req.headers[CALLEE_HEADER] = f"{node_name} daemon"
+                req.headers[CALLER_HEADER] = f"{node_name}:agent"
+                req.headers[CALLEE_HEADER] = f"{node_name}:daemon"
 
             else:
                 flow.kill()
