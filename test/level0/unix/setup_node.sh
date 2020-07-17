@@ -26,9 +26,6 @@ echo "Create app key"
 yagna app-key drop "$KEY_NAME"
 yagna app-key create "$KEY_NAME"
 
-echo "Init payment"
-yagna payment init ${PAYMENT_INIT_FLAG}
-
 echo "Stop the daemon"
 sh ./stop_daemon.sh
 rm -f $DAEMON_LOG
