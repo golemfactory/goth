@@ -28,11 +28,16 @@ parser.add_argument("-b", "--branch", default=BRANCH)
 parser.add_argument("-r", "--repo", default=REPO_NAME)
 parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
 parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
+parser.add_argument(
+    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
+)
 parser.add_argument("artifacts", nargs="*", default=ARTIFACT_NAMES)
 args = parser.parse_args()
 
 if not args.token:
     raise ValueError("GitHub token was not provided.")
+if args.verbose:
+    logger.setLevel(logging.DEBUG)
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
