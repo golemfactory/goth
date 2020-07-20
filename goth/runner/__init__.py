@@ -6,6 +6,7 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
+import time
 from typing import Dict, List, Optional
 
 import docker
@@ -88,13 +89,28 @@ class Runner:
 
     async def run_scenario(self):
         """Start the nodes, run the scenario, then stop the nodes and clean up."""
+
         self._start_nodes()
         try:
             for step in self.steps:
+                start_time = time.time()
                 self.logger.info("running step. step=%s", step)
-                await asyncio.wait_for(step.tick(), step.timeout)
-                self.logger.debug("finished step. step=%s", step)
-
+                try:
+                    await asyncio.wait_for(step.tick(), step.timeout)
+                    self.check_assertion_errors()
+                    step_time = time.time() - start_time
+                    self.logger.debug(
+                        "finished step. step=%s, time=%s", step, step_time
+                    )
+                except Exception as exc:
+                    step_time = time.time() - start_time
+                    self.logger.error(
+                        "step %s raised %s in %s",
+                        step,
+                        exc.__class__.__name__,
+                        step_time,
+                    )
+                    raise
         finally:
             # Sleep to let the logs be saved
             await asyncio.sleep(2.0)
@@ -103,8 +119,8 @@ class Runner:
                 await probe.stop()
 
             self.proxy.stop()
-            # Stopping the proxy triggered evaluation of assertions
-            # "at the end of events".
+            # Stopping the proxy and probe log monitors triggered evaluation
+            # of assertions at the "end of events". There may be some new failures.
             self.check_assertion_errors()
 
     def _create_probes(self) -> None:

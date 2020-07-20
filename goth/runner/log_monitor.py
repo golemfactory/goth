@@ -124,6 +124,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
     def __init__(self, log_config: LogConfig):
         super().__init__()
         self.logger = _create_file_logger(log_config)
+        self._buffer_task = None
 
     def start(self, in_stream: Iterator[bytes]):
         """Start reading the logs."""

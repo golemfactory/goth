@@ -66,6 +66,7 @@ class AssertionStep(Step):
         """
         while not all(a.done for a in self.assertions):
             await sleep(0.1)
+        return True
 
 
 class CallableStep(Step):
@@ -172,6 +173,7 @@ class ProbeStepBuilder:
         for probe in self._probes:
             assertion = assert_message_starts_with(pattern)
             result = probe.agent_logs.add_assertion(assertion)
+            result.name = f"assert_message_starts_with({pattern})"
             step.add_assertion(result)
         self._steps.append(step)
 
