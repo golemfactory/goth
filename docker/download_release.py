@@ -50,10 +50,8 @@ def get_latest_release() -> dict:
 
     releases = response.json()
     logger.debug("releases=%s", releases)
-    latest = releases[0]
-    logger.info("got latest release. release=%s", latest)
 
-    return latest
+    return releases[0]
 
 
 def download_asset(release: dict, content_type: str, output_path: str):

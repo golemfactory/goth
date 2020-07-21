@@ -17,6 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
+ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
 ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
 BRANCH = "master"
@@ -26,7 +27,7 @@ WORKFLOW_NAME = "Build .deb"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--branch", default=BRANCH)
-parser.add_argument("-c", "--commit", default=None)
+parser.add_argument("-c", "--commit", default=os.getenv(ENV_YAGNA_COMMIT))
 parser.add_argument("-r", "--repo", default=REPO_NAME)
 parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
 parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
@@ -163,7 +164,12 @@ def download_artifacts(artifacts_url: str, artifact_names: List[str]):
 
 
 if __name__ == "__main__":
-    logger.info("workflow=%s, artifacts=%s", args.workflow, args.artifacts)
+    logger.info(
+        "workflow=%s, artifacts=%s, commit=%s",
+        args.workflow,
+        args.artifacts,
+        args.commit,
+    )
 
     workflow = get_workflow(args.workflow)
     last_run = get_latest_run(workflow["id"], args.branch, args.commit)

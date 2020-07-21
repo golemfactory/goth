@@ -9,6 +9,7 @@ services:
             dockerfile: yagna-goth.Dockerfile
             args:
                 GITHUB_API_TOKEN: $GITHUB_API_TOKEN
+                YAGNA_COMMIT_HASH: $YAGNA_COMMIT_HASH
         entrypoint: /usr/bin/ya_sb_router
         command: ["-l", "tcp://0.0.0.0:7477"]
 
