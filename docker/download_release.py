@@ -24,12 +24,17 @@ parser.add_argument(
     "-o", "--output", help="Name of the output file. Default: {repo_name}.deb."
 )
 parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
+parser.add_argument(
+    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
+)
 parser.add_argument("repo", help="Name of the git repository to be used.")
 args = parser.parse_args()
 
 args.output = args.output or f"{args.repo}.deb"
 if not args.token:
     raise ValueError("GitHub token was not provided.")
+if args.verbose:
+    logger.setLevel(logging.DEBUG)
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
@@ -45,10 +50,8 @@ def get_latest_release() -> dict:
 
     releases = response.json()
     logger.debug("releases=%s", releases)
-    latest = releases[0]
-    logger.info("got latest release. release=%s", latest)
 
-    return latest
+    return releases[0]
 
 
 def download_asset(release: dict, content_type: str, output_path: str):
