@@ -62,8 +62,20 @@ Assuming you have no other Docker containers currently running, the output of th
 ```
 CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                    NAMES
 1735fd81d742        golemfactory/golem-client-mock:0.1.2   "dotnet GolemClientM…"   5 seconds ago       Up 2 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
-9127e534e86b        yagna                                  "/usr/bin/ya_sb_rout…"   5 seconds ago       Up 3 seconds                                 docker_router_1
+9127e534e86b        yagna-goth:latest                                  "/usr/bin/ya_sb_rout…"   5 seconds ago       Up 3 seconds                                 docker_router_1
+c74a24962c11        proxy                                  "/docker-entrypoint.…"   5 seconds ago          Up 3 seconds         80/tcp                   docker_proxy_1
 ```
+
+#### Using a specific yagna build
+Running the `docker-compose` network includes a step which builds the `yagna-goth` image. By default, this image is created using the latest `.deb` package from the yagna repo [GitHub Actions build workflow](https://github.com/golemfactory/yagna/actions?query=workflow%3A%22Build+.deb%22).
+
+In some cases we may want to use a specific build of Yagna rather than the latest one. To achieve this, it's possible to use a git commit hash being the head for one of the build workflow runs. The commit hash needs to be available under the variable `YAGNA_COMMIT_HASH` in the environment of the shell from which we run `docker-compose`:
+```
+YAGNA_COMMIT_HASH=b0ac62f docker-compose -f docker/docker-compose.yml up -d --build
+```
+
+The flag `--build` is passed to `docker-compose` here to force rebuilding the required images (including `yagna-goth`).
+
 
 #### Running the integration tests
 With the Yagna test network running locally we can now launch the integration tests. To do so, navigate to the project's root directory and run:
