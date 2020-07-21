@@ -61,9 +61,9 @@ docker ps
 Assuming you have no other Docker containers currently running, the output of this command should look similar to this:
 ```
 CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                    NAMES
-1735fd81d742        golemfactory/golem-client-mock:0.1.2   "dotnet GolemClientM…"   5 seconds ago       Up 2 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
-9127e534e86b        yagna-goth:latest                                  "/usr/bin/ya_sb_rout…"   5 seconds ago       Up 3 seconds                                 docker_router_1
-c74a24962c11        proxy                                  "/docker-entrypoint.…"   5 seconds ago          Up 3 seconds         80/tcp                   docker_proxy_1
+62b7b648fee0        yagna-goth:latest                      "/usr/bin/ya_sb_rout…"   6 seconds ago       Up 3 seconds                                 docker_router_1
+ac8abb60e2a9        golemfactory/golem-client-mock:0.1.2   "dotnet GolemClientM…"   6 seconds ago       Up 5 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
+3ca69f966418        proxy                                  "/docker-entrypoint.…"   6 seconds ago       Up 4 seconds        80/tcp                   docker_proxy_1
 ```
 
 #### Using a specific yagna build
