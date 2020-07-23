@@ -65,6 +65,7 @@ LEVEL0_TOPOLOGY = [
         role=Requestor,
         environment=node_environment(),
         volumes=VOLUMES,
+        use_requestor_agent=True,
     ),
     YagnaContainerConfig(
         name="provider_1",
