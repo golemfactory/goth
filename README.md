@@ -78,10 +78,29 @@ The flag `--build` is passed to `docker-compose` here to force rebuilding the re
 
 
 #### Running the integration tests
-With the Yagna test network running locally we can now launch the integration tests. To do so, navigate to the project's root directory and run:
+With the Yagna test network running locally we can now launch the integration tests. The repo currently includes two versions of the same test scenario (level0 and level1).
+
+The level0 test scenario is considered deprecated and may be removed in the future. It's maintained to enable testing the `ya-requestor` binary, which acts as a requestor agent, performing a set of fixed commands on its requestor node.
+
+In level1, the test author has full control over their requestor nodes, since all commands are issued from the `goth` test scenario, without the need for an external binary.
+
+To run the level1 test scenario, navigate to the project's root directory and run:
 ```
-python -m pytest test/level0 -svx --assets-path test/level0/asset
+python -m pytest test/level1 -svx
 ```
 
-The path passed in `--assets-path` is used to define assets to be mounted in Yagna Docker containers for the tests. These files include e.g. the provider presets or the exe script definition to be used.
-You should be able to see the tests' progress being reported in the command's output.
+If you'd like to run level0 instead, simply replace `test/level1` with `test/level0` in the above command.
+
+##### Setting the log level
+By default, the test runner will use `INFO` log level. To override it and enable more verbose logging, use the `--log-cli-level` parameter in the `pytest` invocation:
+```
+python -m pytest test/level1 -svx --log-cli-level DEBUG
+```
+
+##### Overriding default assets
+It's possible to provide a custom assets directory which will be mounted in all Yagna containers used for the test. The assets include files such as the exe script definition to be used by the node.
+
+To override the default path, use the `--assets-path` parameter, passing in the custom path:
+```
+python -m pytest test/level1 -svx --assets-path test/custom_assets/some_directory
+```
