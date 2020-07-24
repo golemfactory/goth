@@ -108,11 +108,11 @@ class TestLevel1:
         # Market
         provider.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
-        proposal = requestor.wait_for_proposal(subscription_id)
-        requestor.counter_proposal(subscription_id, proposal)
+        proposals = requestor.wait_for_proposal(subscription_id, provider._probes)
+        requestor.counter_proposal(subscription_id, proposals)
         provider.wait_for_proposal_accepted()
-        requestor.wait_for_proposal(subscription_id)
-        agreement_id = requestor.create_agreement(proposal)
+        requestor.wait_for_proposal(subscription_id, provider._probes)
+        agreement_id = requestor.create_agreement(proposals)
         requestor.confirm_agreement(agreement_id)
         provider.wait_for_agreement_approved()
         # requestor.wait_for_approval() ???
@@ -120,9 +120,9 @@ class TestLevel1:
         # Activity
         activity_id = requestor.create_activity(agreement_id)
         provider.wait_for_activity_created()
-        batch_id = requestor.call_exec(activity_id)
+        activity_batches = requestor.call_exec(activity_id)
         provider.wait_for_exeunit_started()
-        requestor.collect_results(activity_id, batch_id)
+        requestor.collect_results(activity_batches)
         requestor.destroy_activity(activity_id)
         provider.wait_for_exeunit_finished()
 
