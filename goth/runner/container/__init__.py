@@ -187,6 +187,10 @@ class DockerContainer:
         """Proxy to `Container.exec_run`."""
         return self._container.exec_run(*args, **kwargs)
 
+    def restart(self):
+        """Restart the container."""
+        self._container.restart()
+
     def _start(self, **kwargs):
         self._container.start(**kwargs)
         if self.logs:

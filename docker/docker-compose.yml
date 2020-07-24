@@ -26,6 +26,10 @@ services:
         build:
             context: ../
             dockerfile: docker/proxy.Dockerfile
+    ethereum:
+        image: docker.pkg.github.com/golemfactory/gnt2/docker-yagna-gnt2:latest
+        ports:
+            - "8545:8545"
 
 networks:
     default:

@@ -39,6 +39,9 @@ def node_environment(
         "ETH_FAUCET_ADDRESS": "http://faucet.testnet.golem.network:4000/donate",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
+        "CHAIN": "mainnet",
+        "GETH_ADDRESS": "http://ethereum:8545",
+        "GNT2_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
     }
     node_env = daemon_env
 
@@ -65,6 +68,7 @@ LEVEL0_TOPOLOGY = [
         role=Requestor,
         environment=node_environment(),
         volumes=VOLUMES,
+        key_file="/asset/key/001.json",
         use_requestor_agent=True,
     ),
     YagnaContainerConfig(

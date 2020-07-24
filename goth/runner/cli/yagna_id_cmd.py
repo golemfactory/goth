@@ -20,10 +20,23 @@ class Identity:
 class YagnaIdMixin:
     """A mixin class that adds support for `<yagna-cmd> id` commands."""
 
-    def id_create(self: CommandRunner, data_dir: str = "", alias: str = "") -> Identity:
+    def id_create(
+        self: CommandRunner, data_dir: str = "", alias: str = "", key_file: str = None
+    ) -> Identity:
         """Run `<yagna-cmd> id create` command."""
 
-        args = make_args("id", "create", "--no-password", alias, data_dir=data_dir)
+        if key_file:
+            args = make_args(
+                "id",
+                "create",
+                "--no-password",
+                "--from-keystore",
+                key_file,
+                alias,
+                data_dir=data_dir,
+            )
+        else:
+            args = make_args("id", "create", "--no-password", alias, data_dir=data_dir,)
         output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
         return Identity(
@@ -56,3 +69,26 @@ class YagnaIdMixin:
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"],)
             for r in parse_json_table(output)
         ]
+
+    def id_update(
+        self: CommandRunner,
+        alias_or_addr: str,
+        data_dir: str = "",
+        set_default: Optional[bool] = None,
+    ) -> Optional[Identity]:
+        """Return the output of `<yagna-cmd> id update`."""
+
+        set_default_str = "--set-default" if set_default else None
+        args = make_args(
+            "id", "update", alias_or_addr, set_default_str, data_dir=data_dir
+        )
+        output = self.run_json_command(Dict, *args)
+        result = unwrap_ok_err_json(output)
+        if result is not None:
+            return Identity(
+                result["alias"],
+                result["isDefault"],
+                result["isLocked"],
+                result["nodeId"],
+            )
+        return None

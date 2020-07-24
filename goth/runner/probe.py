@@ -76,6 +76,7 @@ class Probe(abc.ABC):
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
         self.ip_address = None
+        self.key_file = config.key_file
 
     def __str__(self):
         return self.name
@@ -121,8 +122,28 @@ class Probe(abc.ABC):
         The key name can be specified via `key_name` parameter.
         Return the key as string.
         """
+        address = None
+        if self.key_file:
+            self._logger.debug(
+                "create_id(alias=%s, key_file=%s", key_name, self.key_file
+            )
+            try:
+                db_id = self.cli.id_create(alias=key_name, key_file=self.key_file)
+                address = db_id.address
+                self._logger.debug("create_id. alias=%s, address=%s", id, address)
+            except KeyAlreadyExistsError as e:
+                logger.critical("Id already exists : (%r)", e)
+                raise
+                # db_id = next(
+                #     filter(lambda i: i.id == e.TODO_extract_id(), self.cli.id_list())
+                # )
+                # address = db_id.address
+            db_id = self.cli.id_update(address, set_default=True)
+            self._logger.debug("update_id. result=%r", db_id)
+            self.container.restart()
+            time.sleep(1)
         try:
-            key = self.cli.app_key_create(key_name)
+            key = self.cli.app_key_create(name=key_name, alias_or_addr=address)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
         except KeyAlreadyExistsError:
             app_key = next(
@@ -227,7 +248,7 @@ class RequestorProbe(Probe):
 
     def _start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        self.cli.payment_init(requestor_mode=True)
+        self.cli.payment_init(address=self.address, requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -283,7 +304,7 @@ class ProviderProbe(Probe):
         """Start the agent and attach the log monitor."""
 
         self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
-        self.cli.payment_init(provider_mode=True)
+        self.cli.payment_init(address=self.address, provider_mode=True)
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,

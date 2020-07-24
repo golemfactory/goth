@@ -36,13 +36,14 @@ class YagnaPaymentMixin:
         provider_mode: bool = False,
         data_dir: str = "",
         payment_driver: str = "ngnt",
+        address: str = "",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
         """
 
-        args = make_args("payment", "init", payment_driver, data_dir=data_dir)
+        args = make_args("payment", "init", payment_driver, address, data_dir=data_dir)
         if requestor_mode:
             args.append("-r")
         if provider_mode:

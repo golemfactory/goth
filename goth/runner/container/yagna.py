@@ -40,11 +40,13 @@ class YagnaContainerConfig(DockerContainerConfig):
         volumes: Optional[Dict[Template, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
+        key_file: Optional[str] = None,
         use_requestor_agent: bool = False,
     ):
         super().__init__(name, volumes or {}, log_config)
         self.role = role
         self.environment = environment or {}
+        self.key_file = key_file
         self.use_requestor_agent = use_requestor_agent
 
 
