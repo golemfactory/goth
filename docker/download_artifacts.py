@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Script to download artefacts from a github repository."""
+"""Script to download artifacts from a github repository."""
 
 import argparse
 import logging
 import os
+import re
 import shutil
 import tempfile
-import typing
+from typing import Any, Callable, List, Optional
 
 import requests
 
@@ -16,6 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
+ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
 ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
 BRANCH = "master"
@@ -25,18 +27,79 @@ WORKFLOW_NAME = "Build .deb"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--branch", default=BRANCH)
+parser.add_argument("-c", "--commit", default=os.getenv(ENV_YAGNA_COMMIT))
 parser.add_argument("-r", "--repo", default=REPO_NAME)
 parser.add_argument("-t", "--token", default=os.getenv(ENV_API_TOKEN))
 parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
+parser.add_argument(
+    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
+)
 parser.add_argument("artifacts", nargs="*", default=ARTIFACT_NAMES)
 args = parser.parse_args()
 
 if not args.token:
     raise ValueError("GitHub token was not provided.")
+if args.verbose:
+    logger.setLevel(logging.DEBUG)
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
 session.headers["Authorization"] = f"token {args.token}"
+
+
+def _search_with_pagination(
+    initial_request: requests.PreparedRequest,
+    selector: Callable[[requests.Response], Any],
+):
+    """Search response data with `Link` header pagination support.
+
+    First request is made using `initial_request`. Consecutive requests are made based
+    on the `Link` header until the last page is reached (i.e. no `next` URL is present).
+    The `selector` function is called for each response received. If the result from
+    `selector` is non-null, this function exits early returning that result.
+    """
+    response = session.send(initial_request)
+    logger.debug("_search_with_pagination. initial_url=%s", response.url)
+
+    while True:
+        response.raise_for_status()
+
+        result = selector(response)
+        if result:
+            logger.debug("_search_with_pagination. result=%s", result)
+            return result
+
+        relation_to_url = _parse_link_header(response.headers["Link"])
+        logger.debug("_search_with_pagination. relation_to_url=%s", relation_to_url)
+        next_url = relation_to_url.get("next")
+        if next_url:
+            logger.debug("_search_with_pagination. next_url=%s", next_url)
+            response = session.get(next_url)
+        else:
+            return None
+
+
+def _parse_link_header(header_value: str) -> dict:
+    """Parse URLs and their relative positions from a `Link` header value.
+
+    The value of a `Link` header consists of comma-separated tuples, where each tuple
+    has a pagination URL and its `rel` attribute. `rel` describes its URL's relation to
+    the request the header originates from. The value of the `rel` attribute is one of
+    the following: `first`, `prev`, `next`, `last`.
+    """
+    relation_to_url = {}
+    links = [link.strip() for link in header_value.split(",")]
+
+    for link in links:
+        result = re.search(r'<(\S+)>; rel="(\S+)"', link)
+        if not result:
+            raise LookupError
+
+        url = result.group(1)
+        relation = result.group(2)
+        relation_to_url[relation] = url
+
+    return relation_to_url
 
 
 def get_workflow(workflow_name: str) -> dict:
@@ -48,31 +111,33 @@ def get_workflow(workflow_name: str) -> dict:
 
     workflows = response.json()["workflows"]
     logger.debug("workflows=%s", workflows)
-    result = next(filter(lambda w: w["name"] == workflow_name, workflows))
-    logger.debug("result=%s", result)
-    return result
+    workflow = next(filter(lambda w: w["name"] == workflow_name, workflows))
+    logger.debug("workflow=%s", workflow)
+    return workflow
 
 
-def get_latest_run(workflow_id: str, branch: str) -> dict:
+def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) -> dict:
     """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
-    logger.info("fetching worflow runs. url=%s", url)
-    response = session.get(url)
-    response.raise_for_status()
+    params = {"branch": branch, "status": "success"}
+    request = session.prepare_request(requests.Request("GET", url, params=params))
+    logger.info("fetching workflow runs. url=%s", request.url)
 
-    workflow_runs = response.json()["workflow_runs"]
-    logger.debug("workflow_runs=%s", workflow_runs)
-    result = next(
-        filter(
-            lambda r: r["conclusion"] == "success" and r["head_branch"] == branch,
-            workflow_runs,
-        )
-    )
-    logger.debug("result=%s", result)
-    return result
+    def _filter_workflows(response: requests.Response) -> Optional[dict]:
+        workflow_runs = response.json()["workflow_runs"]
+        if commit:
+            return next(
+                filter(lambda r: r["head_sha"].startswith(commit), workflow_runs), None
+            )
+        else:
+            return workflow_runs[0]
+
+    workflow_run = _search_with_pagination(request, _filter_workflows)
+    logger.debug("workflow_run=%s", workflow_run)
+    return workflow_run
 
 
-def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
+def download_artifacts(artifacts_url: str, artifact_names: List[str]):
     """Download an artifact from a specific github workflow."""
     logger.info("fetching artifacts. url=%s", artifacts_url)
     response = session.get(artifacts_url)
@@ -99,8 +164,13 @@ def download_artifacts(artifacts_url: str, artifact_names: typing.List[str]):
 
 
 if __name__ == "__main__":
-    logger.info("workflow=%s, artifacts=%s", args.workflow, args.artifacts)
+    logger.info(
+        "workflow=%s, artifacts=%s, commit=%s",
+        args.workflow,
+        args.artifacts,
+        args.commit,
+    )
 
     workflow = get_workflow(args.workflow)
-    last_run = get_latest_run(workflow["id"], args.branch)
+    last_run = get_latest_run(workflow["id"], args.branch, args.commit)
     download_artifacts(last_run["artifacts_url"], args.artifacts)

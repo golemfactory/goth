@@ -192,6 +192,13 @@ class RequestorProbe(Probe):
     _api_base_host: str
     """Base hostname for the Yagna API clients."""
 
+    _use_agent: bool = False
+    """Indicates whether ya-requestor binary should be started in this node.
+
+    The use of ya-requestor is deprecated and supported for the sake of level 0 test
+    scenario compatibility.
+    """
+
     def __init__(
         self,
         client: DockerClient,
@@ -204,23 +211,23 @@ class RequestorProbe(Probe):
         host_port = self.container.ports[YAGNA_REST_PORT]
         proxy_ip = get_container_address(client, PROXY_HOST)
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
+        self._use_agent = config.use_requestor_agent
 
     def start_agent(self):
         """Start the yagna container and initialize the requestor agent."""
 
-        self.activity = ActivityApiClient(
-            self.app_key, self._api_base_host, self._logger
-        )
-        self._init_payment_api()
-        self._init_market_api()
+        if self._use_agent:
+            self._start_requestor_agent()
+        else:
+            self.activity = ActivityApiClient(
+                self.app_key, self._api_base_host, self._logger
+            )
+            self._init_payment_api()
+            self._init_market_api()
 
-        # TODO Remove once agent calls are implemented via probe
-        # self.start_requestor_agent()
-
-    # TODO Remove once agent calls are implemented via probe
-    def start_requestor_agent(self):
+    def _start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        # self.cli.payment_init(requestor_mode=True)
+        self.cli.payment_init(requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
