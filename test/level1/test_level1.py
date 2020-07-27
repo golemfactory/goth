@@ -36,13 +36,12 @@ def node_environment(
     daemon_env = {
         "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template_params),
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
-        "ETH_FAUCET_ADDRESS": "http://faucet.testnet.golem.network:4000/donate",
+        "CHAIN": "mainnet",
+        "GETH_ADDRESS": "http://ethereum:8545",
+        "GNT2_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
-        "RUST_LOG": "debug,trust_dns_proto=info",
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
-        # "CHAIN":"mainnet",
-        # "GETH_ADDRESS":"http://ethereum:8545",
-        # "GNT2_CONTRACT_ADDRESS":"0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        "RUST_LOG": "debug,trust_dns_proto=info",
     }
     node_env = daemon_env
 
