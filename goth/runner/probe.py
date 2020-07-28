@@ -1,31 +1,25 @@
 """Classes and helpers for managing Probes."""
 
 import abc
+import asyncio
 import logging
 from pathlib import Path
+import re
 import time
-from typing import Optional, Type
+from typing import Optional, Type, TYPE_CHECKING
 
 from docker import DockerClient
 
-import openapi_activity_client as activity
-import openapi_market_client as market
-import openapi_payment_client as payment
-from goth.address import (
-    ensure_no_trailing_slash,
-    ACTIVITY_API_URL,
-    MARKET_API_URL,
-    PAYMENT_API_URL,
-    PROXY_HOST,
-    YAGNA_REST_PORT,
-    YAGNA_REST_URL,
-)
+from goth.assertions.operators import eventually
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
-from goth.runner.log_monitor import LogEventMonitor
+from goth.runner.log_monitor import LogEvent, LogEventMonitor
+
+if TYPE_CHECKING:
+    from goth.runner import Runner
 
 logger = logging.getLogger(__name__)
 
@@ -47,29 +41,45 @@ class Probe(abc.ABC):
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
 
+    runner: "Runner"
+    """A runner that created this probe."""
+
     cli: YagnaDockerCli
     """A module which enables calling the Yagna CLI on the daemon being tested."""
+
     container: YagnaContainer
     """A module which handles the lifecycle of the daemon's Docker container."""
+
     ip_address: Optional[str]
     """An IP address of the daemon's container in the Docker network."""
+
     agent_logs: LogEventMonitor
     """Monitor and buffer for provider agent logs, enables asserting for certain lines
     to be present in the log buffer.
     """
 
-    _docker_client: DockerClient
-    """A docker client used to create the deamon's container."""
     key_file: Optional[str]
     """Keyfile to be imported into the yagna daemon id service."""
 
+    _last_checked_line: int
+    """The index of the last line examined while waiting for log messages.
+
+    Subsequent calls to `_wait_for_log()` will only look at lines that
+    were logged after this line.
+    """
+
+    _docker_client: DockerClient
+    """A docker client used to create the deamon's container."""
+
     def __init__(
         self,
+        runner: "Runner",
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
         assets_path: Optional[Path] = None,
     ):
+        self.runner = runner
         self._docker_client = client
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
@@ -85,6 +95,7 @@ class Probe(abc.ABC):
         )
         self.ip_address = None
         self.key_file = config.key_file
+        self._last_checked_line = -1
 
     def __str__(self):
         return self.name
@@ -180,85 +191,50 @@ class Probe(abc.ABC):
         await self.agent_logs.stop()
         self.container.remove(force=True)
 
+    async def _wait_for_log(self, pattern: str, timeout: float = 1000) -> LogEvent:
+        """Look for a log line with the message matching `pattern`."""
 
-class ActivityApiClient:
-    """
-    Client for the activity API of a Yagna daemon.
+        regex = re.compile(pattern)
 
-    The activity API is divided into two domains: control and state. This division is
-    reflected in the inner client objects of this class.
-    """
+        def predicate(log_event) -> bool:
+            return regex.match(log_event.message) is not None
 
-    control: activity.RequestorControlApi
-    """Client for the control part of the activity API."""
+        # First examine log lines already seen
+        while self._last_checked_line + 1 < len(self.agent_logs.events):
+            self._last_checked_line += 1
+            event = self.agent_logs.events[self._last_checked_line]
+            if predicate(event):
+                return event
 
-    state: activity.RequestorStateApi
-    """Client for the state part of the activity API."""
+        # Otherwise create an assertion that waits for a matching line...
+        async def coro(stream) -> LogEvent:
+            try:
+                log_event = await eventually(stream, predicate, timeout=timeout)
+                return log_event
+            finally:
+                self._last_checked_line = len(stream.past_events) - 1
 
-    def __init__(self, app_key: str, address: str, logger: logging.Logger):
-        api_url = ACTIVITY_API_URL.substitute(base=address)
-        api_url = ensure_no_trailing_slash(str(api_url))
-        config = activity.Configuration(host=api_url)
-        config.access_token = app_key
-        client = activity.ApiClient(config)
+        assertion = self.agent_logs.add_assertion(coro)
 
-        self.control = activity.RequestorControlApi(client)
-        self.state = activity.RequestorStateApi(client)
-        logger.debug("activity API initialized. url=%s", api_url)
+        # ... and wait until the assertion completes
+        while not assertion.done:
+            await asyncio.sleep(0.1)
+
+        if assertion.failed:
+            raise assertion.result
+        return assertion.result
 
 
+# TODO: consider moving `start_agent()` to a separated mixin class, to make it clear
+# that starting an agent does not depend on other optional features (API clients).
 class RequestorProbe(Probe):
+    """A probe subclass that can run a requestor agent.
+
+    Can be used to select probes by role in a runner.
+    Can be used in Level 0 scenarios.
     """
-    Provides a testing interface for a Yagna node acting as a requestor.
-
-    This includes activity, market and payment API clients which can be used to
-    directly control the requestor daemon.
-    """
-
-    activity: ActivityApiClient
-    """Activity API client for the requestor daemon."""
-    market: market.ApiClient
-    """Market API client for the requestor daemon."""
-    payment: payment.ApiClient
-    """Payment API client for the requestor daemon."""
-
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
-
-    _use_agent: bool = False
-    """Indicates whether ya-requestor binary should be started in this node.
-
-    The use of ya-requestor is deprecated and supported for the sake of level 0 test
-    scenario compatibility.
-    """
-
-    def __init__(
-        self,
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-        assets_path: Optional[Path] = None,
-    ):
-        super().__init__(client, config, log_config, assets_path)
-
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = get_container_address(client, PROXY_HOST)
-        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-        self._use_agent = config.use_requestor_agent
 
     def start_agent(self):
-        """Start the yagna container and initialize the requestor agent."""
-
-        if self._use_agent:
-            self._start_requestor_agent()
-        else:
-            self.activity = ActivityApiClient(
-                self.app_key, self._api_base_host, self._logger
-            )
-            self._init_payment_api()
-            self._init_market_api()
-
-    def _start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
         log_stream = self.container.exec_run(
             "ya-requestor"
@@ -270,40 +246,27 @@ class RequestorProbe(Probe):
         )
         self.agent_logs.start(log_stream.output)
 
-    def _init_market_api(self):
-        api_url = MARKET_API_URL.substitute(base=self._api_base_host)
-        api_url = ensure_no_trailing_slash(str(api_url))
-        config = market.Configuration(host=api_url)
-        config.access_token = self.app_key
-        client = market.ApiClient(config)
-        self.market = market.RequestorApi(client)
-        self._logger.debug("market API initialized. url=%s", api_url)
-
-    def _init_payment_api(self):
-        api_url = PAYMENT_API_URL.substitute(base=self._api_base_host)
-        api_url = ensure_no_trailing_slash(str(api_url))
-        config = payment.Configuration(host=api_url)
-        config.access_token = self.app_key
-        client = payment.ApiClient(config)
-        self.payment = payment.RequestorApi(client)
-        self._logger.debug("payment API initialized. url=%s", api_url)
-
 
 class ProviderProbe(Probe):
-    """Provides a testing interface for a Yagna node acting as a provider."""
+    """A probe subclass that can run a provider agent.
+
+    Can be used to select probes by role in a runner.
+    Can be used in `ProbeStepBuilder`.
+    """
 
     agent_preset: str
     """Name of the preset to be used when placing a market offer."""
 
     def __init__(
         self,
+        runner: "Runner",
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
         assets_path: Optional[Path] = None,
         preset_name: str = "default",
     ):
-        super().__init__(client, config, log_config, assets_path=assets_path)
+        super().__init__(runner, client, config, log_config, assets_path=assets_path)
         self.agent_preset = preset_name
 
     def start_agent(self):

@@ -1,12 +1,10 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
-import asyncio
 from datetime import datetime, timezone
 from itertools import chain
 import logging
 import os
 from pathlib import Path
-import time
 from typing import Dict, List, Optional
 
 import docker
@@ -14,8 +12,7 @@ import docker
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import configure_logging, LogConfig
-from goth.runner.probe import Probe, Role
-from goth.runner.probe_steps import ProbeStepBuilder, Step
+from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.proxy import Proxy
 
 
@@ -40,9 +37,6 @@ class Runner:
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
-    steps: List[Step]
-    """The list of steps to be awaited, steps of the scenario to be executed."""
-
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
@@ -55,7 +49,6 @@ class Runner:
         self.assets_path = assets_path
         self.probes = []
         self.proxy = None
-        self.steps = []
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -66,6 +59,15 @@ class Runner:
         self.logger = logging.getLogger(__name__)
         self._create_probes()
 
+    def get_probes(self, role: Optional[Role] = None, name: str = "") -> List[Probe]:
+        """Get probes by name or role."""
+        probes = self.probes
+        if role:
+            probes = [p for p in probes if isinstance(p, role)]
+        if name:
+            probes = [p for p in probes if p.name == name]
+        return probes
+
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
@@ -73,7 +75,7 @@ class Runner:
             (
                 (probe.container.logs for probe in self.probes),
                 (probe.agent_logs for probe in self.probes),
-                [self.proxy.monitor],
+                [self.proxy.monitor] if self.proxy else [],
             )
         )
         failed = chain.from_iterable(
@@ -87,42 +89,6 @@ class Runner:
                 f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
             )
 
-    async def run_scenario(self):
-        """Start the nodes, run the scenario, then stop the nodes and clean up."""
-
-        self._start_nodes()
-        try:
-            for step in self.steps:
-                start_time = time.time()
-                self.logger.info("running step. step=%s", step)
-                try:
-                    await asyncio.wait_for(step.tick(), step.timeout)
-                    self.check_assertion_errors()
-                    step_time = time.time() - start_time
-                    self.logger.debug(
-                        "finished step. step=%s, time=%s", step, step_time
-                    )
-                except Exception as exc:
-                    step_time = time.time() - start_time
-                    self.logger.error(
-                        "step %s raised %s in %s",
-                        step,
-                        exc.__class__.__name__,
-                        step_time,
-                    )
-                    raise
-        finally:
-            # Sleep to let the logs be saved
-            await asyncio.sleep(2.0)
-            for probe in self.probes:
-                self.logger.info("stopping probe. name=%s", probe.name)
-                await probe.stop()
-
-            self.proxy.stop()
-            # Stopping the proxy and probe log monitors triggered evaluation
-            # of assertions at the "end of events". There may be some new failures.
-            self.check_assertion_errors()
-
     def _create_probes(self) -> None:
 
         docker_client = docker.from_env()
@@ -134,7 +100,9 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             if isinstance(config, YagnaContainerConfig):
-                probe = config.role(docker_client, config, log_config, self.assets_path)
+                probe = config.role(
+                    self, docker_client, config, log_config, self.assets_path
+                )
                 self.probes.append(probe)
 
     def _get_test_log_dir_name(self):
@@ -167,15 +135,3 @@ class Runner:
         # The proxy is ready to route the API calls. Start the agents.
         for probe in self.probes:
             probe.start_agent()
-
-    def get_probes(
-        self, role: Optional[Role] = None, name: Optional[str] = ""
-    ) -> ProbeStepBuilder:
-        """Create a ProbeStepBuilder for probes with the specified criteria."""
-        probes = self.probes
-        if role:
-            probes = [p for p in probes if type(p) == role]
-        if name:
-            probes = [p for p in probes if p.name == name]
-
-        return ProbeStepBuilder(self.steps, probes)
