@@ -53,6 +53,11 @@ class Probe(abc.ABC):
     """A module which handles the lifecycle of the daemon's Docker container."""
     ip_address: Optional[str]
     """An IP address of the daemon's container in the Docker network."""
+    agent_logs: LogEventMonitor
+    """Monitor and buffer for provider agent logs, enables asserting for certain lines
+    to be present in the log buffer.
+    """
+
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
 
@@ -143,8 +148,7 @@ class Probe(abc.ABC):
         """
         if self.container.logs:
             await self.container.logs.stop()
-        if self.agent_logs:
-            await self.agent_logs.stop()
+        await self.agent_logs.stop()
         self.container.remove(force=True)
 
 
@@ -260,11 +264,6 @@ class RequestorProbe(Probe):
 class ProviderProbe(Probe):
     """Provides a testing interface for a Yagna node acting as a provider."""
 
-    agent_logs: Optional[LogEventMonitor]
-    """
-    Monitor and buffer for provider agent logs, enables asserting for certain lines to
-    be present in the log buffer.
-    """
     agent_preset: str
     """Name of the preset to be used when placing a market offer."""
 
@@ -289,12 +288,6 @@ class ProviderProbe(Probe):
             stream=True,
         )
         self.agent_logs.start(log_stream.output)
-
-    async def stop(self):
-        """Stop the agent and the log monitor."""
-        if self.agent_logs is not None:
-            await self.agent_logs.stop()
-        await super().stop()
 
 
 Provider = ProviderProbe
