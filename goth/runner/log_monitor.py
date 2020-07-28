@@ -6,7 +6,7 @@ from enum import Enum
 import logging
 import re
 import time
-from typing import Iterator, Optional
+from typing import Coroutine, Iterator, Optional, Sequence
 
 from goth.assertions.monitor import EventMonitor
 from goth.runner.log import LogConfig
@@ -120,11 +120,16 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
     in_stream: Iterator[bytes]
     logger: logging.Logger
+    _buffer_task: Optional[Coroutine]
 
     def __init__(self, log_config: LogConfig):
         super().__init__()
         self.logger = _create_file_logger(log_config)
         self._buffer_task = None
+
+    @property
+    def events(self) -> Sequence[LogEvent]:
+        return self._events
 
     def start(self, in_stream: Iterator[bytes]):
         """Start reading the logs."""

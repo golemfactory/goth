@@ -90,11 +90,11 @@ LEVEL1_TOPOLOGY = [
 ]
 
 
-class TestLevel1:
+class _TestLevel1:
     """TestCase running Level1Scenario."""
 
     @pytest.mark.asyncio
-    async def test_level1(self, logs_path: Path, assets_path: Optional[Path]):
+    async def _test_level1(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level1Scenario."""
         runner = Runner(
             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
@@ -134,3 +134,43 @@ class TestLevel1:
         provider.wait_for_invoice_paid()
 
         await runner.run_scenario()
+
+
+from goth.runner.immediate import ImmediateRunner, ProviderProbeOperations, RequestorProbeOperations
+
+
+class TestLevel1Immediate:
+
+    @pytest.mark.asyncio
+    async def test_level_1(self, logs_path: Path, assets_path: Optional[Path]):
+        """Test running Level1Scenario."""
+
+        runner = ImmediateRunner(
+            LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+        )
+
+        async with runner:
+
+            requestor = runner.get_probe("requestor")
+            assert isinstance(requestor, RequestorProbeOperations)
+
+            provider = runner.get_probe("provider_1")
+            assert isinstance(provider, ProviderProbeOperations)
+
+            # await requestor.init_payment()
+
+            # Market
+            await provider.wait_for_offer_subscribed()
+            subscription_id, demand = await requestor.subscribe_demand()
+            provider_proposal = await requestor.wait_for_proposal(subscription_id)
+            counterproposal_id = await requestor.counter_proposal(subscription_id, demand, provider_proposal)
+            await provider.wait_for_proposal_accepted() # timeout=10000)
+            new_proposal = await requestor.wait_for_proposal(subscription_id)
+            assert new_proposal.prev_proposal_id == counterproposal_id
+            print(new_proposal)
+
+            # agreement_id = requestor.create_agreement(proposal)
+
+        logger.info("Test finished")
+
+
