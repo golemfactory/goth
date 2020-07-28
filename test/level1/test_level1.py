@@ -116,6 +116,7 @@ class TestLevel1:
         requestor.confirm_agreement(agreement_id)
         provider.wait_for_agreement_approved()
         # requestor.wait_for_approval() ???
+        requestor.unsubscribe_demand(subscription_id)
 
         # Activity
         activity_id = requestor.create_activity(agreement_id)

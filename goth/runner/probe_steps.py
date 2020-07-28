@@ -233,6 +233,30 @@ class ProbeStepBuilder:
         self._steps.append(step)
         return awaitable
 
+    def unsubscribe_demand(
+        self, fut_subscription_id: "Future[Tuple[str, Demand]]"
+    ) -> Future:
+        """Call unsubscribe demand on the requestor market api."""
+
+        awaitable = Future()
+
+        def _call_unsubscribe_demand(probe: Probe):
+            subscription_id, demand = fut_subscription_id.result()
+
+            result = probe.market.unsubscribe_demand(subscription_id)
+
+            awaitable.set_result(result)
+            return result
+
+        step = CallableStep(
+            name="unsubscribe_demand",
+            timeout=10,
+            probes=self._probes,
+            callback=_call_unsubscribe_demand,
+        )
+        self._steps.append(step)
+        return awaitable
+
     def wait_for_proposal(
         self, fut_subscription_id: "Future[Tuple[str, Demand]]"
     ) -> "Future[Proposal]":
