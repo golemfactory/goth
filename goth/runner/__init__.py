@@ -119,6 +119,7 @@ class Runner:
                 await probe.stop()
 
             self.proxy.stop()
+
             # Stopping the proxy and probe log monitors triggered evaluation
             # of assertions at the "end of events". There may be some new failures.
             self.check_assertion_errors()
