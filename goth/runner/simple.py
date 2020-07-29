@@ -1,3 +1,4 @@
+"""A minimal POC runner implementation."""
 import abc
 import asyncio
 from datetime import datetime, timedelta
@@ -19,10 +20,40 @@ from openapi_market_client import AgreementProposal, Demand, Proposal
 from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
 
 
+logger = logging.getLogger(__name__)
+
+
+def step(default_timeout: float = 10.0):
+    """Wrap a step function to provide logging."""
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        async def wrapper(*args, timeout: Optional[float] = None):
+            timeout = timeout if timeout is not None else default_timeout
+            start_time = time.time()
+            logger.info("Running step '%s', timeout: %s", func.__name__, timeout)
+            try:
+                result = await asyncio.wait_for(func(*args), timeout=timeout)
+                logger.info(
+                    "Finished step '%s', result: %s, time: %s",
+                    func.__name__, result, time.time() - start_time
+                )
+            except asyncio.TimeoutError as te:
+                logger.exception(te)
+                raise
+            return result
+
+        return wrapper
+
+    return decorator
+
+
 R = TypeVar("R", ProviderProbe, RequestorProbe)
 
 
-class ProbeOperations(Generic[R], abc.ABC):
+class ProbeSteps(Generic[R], abc.ABC):
+    """Wraps a probe and adds test scenario steps."""
 
     probe: R
 
@@ -63,35 +94,8 @@ class ProbeOperations(Generic[R], abc.ABC):
         return assertion.result
 
 
-logger = logging.getLogger(__name__)
-
-
-def step(default_timeout: float = 10.0):
-
-    def decorator(func):
-
-        @functools.wraps(func)
-        async def wrapper(*args, timeout: Optional[float] = None):
-            timeout = timeout if timeout is not None else default_timeout
-            start_time = time.time()
-            logger.info("Running step '%s', timeout: %s", func.__name__, timeout)
-            try:
-                result = await asyncio.wait_for(func(*args), timeout=timeout)
-                logger.info(
-                    "Finished step '%s', result: %s, time: %s",
-                    func.__name__, result, time.time() - start_time
-                )
-            except asyncio.TimeoutError as te:
-                logger.exception(te)
-                raise
-            return result
-
-        return wrapper
-
-    return decorator
-
-
-class ProviderProbeOperations(ProbeOperations[ProviderProbe]):
+class ProviderSteps(ProbeSteps[ProviderProbe]):
+    """Adds steps specific to provider nodes."""
 
     def __init__(self, probe: ProviderProbe):
         super().__init__(probe)
@@ -137,7 +141,8 @@ class ProviderProbeOperations(ProbeOperations[ProviderProbe]):
         await self._wait_for_log("Invoice .+? for agreement .+? was paid")
 
 
-class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
+class RequestorSteps(ProbeSteps[RequestorProbe]):
+    """Adds steps specific to requestor nodes."""
 
     def __init__(self, probe: RequestorProbe):
         super().__init__(probe)
@@ -291,14 +296,14 @@ class SimpleRunner(Runner):
     ):
         super().__init__(topology, api_assertions_module, logs_path, assets_path)
 
-    def get_probe(self, name: str) -> ProbeOperations:
+    def get_probe(self, name: str) -> ProbeSteps:
 
         for probe in self.probes:
             if probe.name == name:
                 if isinstance(probe, ProviderProbe):
-                    wrapper_class = ProviderProbeOperations
+                    wrapper_class = ProviderSteps
                 elif isinstance(probe, RequestorProbe):
-                    wrapper_class = RequestorProbeOperations
+                    wrapper_class = RequestorSteps
                 else:
                     assert False
                 return wrapper_class(probe)

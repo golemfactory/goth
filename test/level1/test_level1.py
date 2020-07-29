@@ -1,5 +1,6 @@
 """Level 1 test to be ran from pytest."""
 
+import json
 import logging
 from pathlib import Path
 from string import Template
@@ -22,6 +23,7 @@ from goth.runner import Runner
 
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Provider, Requestor
+from goth.runner.simple import SimpleRunner, ProviderSteps, RequestorSteps
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +92,7 @@ LEVEL1_TOPOLOGY = [
 ]
 
 
-class _TestLevel1:
+class TestLevel1:
     """TestCase running Level1Scenario."""
 
     @pytest.mark.asyncio
@@ -135,27 +137,30 @@ class _TestLevel1:
 
         await runner.run_scenario()
 
-
-from goth.runner.immediate import ImmediateRunner, ProviderProbeOperations, RequestorProbeOperations
-
-
-class TestLevel1Immediate:
-
     @pytest.mark.asyncio
-    async def test_level_1(self, logs_path: Path, assets_path: Optional[Path]):
-        """Test running Level1Scenario."""
+    async def test_level_1_simple(self, logs_path: Path, assets_path: Optional[Path]):
+        """Test running Level1Scenario with SimpleRunner."""
 
-        runner = ImmediateRunner(
+        # TODO: provide an exe script in a fixture
+        if assets_path is None:
+            level1_dir = Path(__file__).parent
+            level0_dir = level1_dir.parent / "level0"
+            assets_path = level0_dir / "asset"
+        exe_script_path = Path(assets_path / "exe_script.json")
+        exe_script = exe_script_path.read_text()
+        num_commands = len(json.loads(exe_script))
+
+        runner = SimpleRunner(
             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
         async with runner:
 
             requestor = runner.get_probe("requestor")
-            assert isinstance(requestor, RequestorProbeOperations)
+            assert isinstance(requestor, RequestorSteps)
 
             provider = runner.get_probe("provider_1")
-            assert isinstance(provider, ProviderProbeOperations)
+            assert isinstance(provider, ProviderSteps)
 
             # await requestor.init_payment()
 
@@ -164,12 +169,30 @@ class TestLevel1Immediate:
             subscription_id, demand = await requestor.subscribe_demand()
             provider_proposal = await requestor.wait_for_proposal(subscription_id)
             counterproposal_id = await requestor.counter_proposal(subscription_id, demand, provider_proposal)
-            await provider.wait_for_proposal_accepted() # timeout=10000)
+            await provider.wait_for_proposal_accepted()
             new_proposal = await requestor.wait_for_proposal(subscription_id)
             assert new_proposal.prev_proposal_id == counterproposal_id
-            print(new_proposal)
+            agreement_id = await requestor.create_agreement(new_proposal)
+            await requestor.confirm_agreement(agreement_id)
+            await provider.wait_for_agreement_approved()
+            # requestor.wait_for_approval() ???
+            await requestor.unsubscribe_demand(subscription_id)
 
-            # agreement_id = requestor.create_agreement(proposal)
+            # Activity
+            activity_id = await requestor.create_activity(agreement_id)
+            await provider.wait_for_activity_created()
+            batch_id = await requestor.call_exec(activity_id, exe_script)
+            await provider.wait_for_exeunit_started()
+            await requestor.collect_results(activity_id, batch_id, num_commands, timeout=30)
+            await requestor.destroy_activity(activity_id)
+            await provider.wait_for_exeunit_finished()
+
+            # Payment
+            await provider.wait_for_invoice_sent()
+            # TODO:
+            # invoice = requestor.gather_invoice(agreement_id)
+            # requestor.pay_invoice(invoice)
+            # provider.wait_for_invoice_paid()
 
         logger.info("Test finished")
 
