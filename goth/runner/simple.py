@@ -187,25 +187,22 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
         self.probe.market.unsubscribe_demand(subscription_id)
 
     @step()
-    async def wait_for_proposal(self, subscription_id: str) -> Proposal:
-        """Call collect_offers on the requestor market api.
+    async def wait_for_proposals(self, subscription_id: str) -> List[Proposal]:
+        """Call collect_offers on the requestor market api."""
+        proposals = None
 
-        Return the first proposal.
-        """
-        proposal = None
-
-        while proposal is None:
+        while proposals is None:
             result_offers = self.probe.market.collect_offers(subscription_id)
             logger.debug(
                 "collect_offers(%s). proposal=%r", subscription_id, result_offers,
             )
             if result_offers:
-                proposal = result_offers[0].proposal
+                proposals = [offer.proposal for offer in result_offers]
             else:
                 logger.debug("Waiting on proposal... %r", result_offers)
                 await asyncio.sleep(1.0)
 
-        return proposal
+        return proposals
 
     @step()
     async def counter_proposal(

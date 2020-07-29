@@ -79,16 +79,16 @@ LEVEL1_TOPOLOGY = [
         ),
         volumes=VOLUMES,
     ),
-    # YagnaContainerConfig(
-    #     name="provider_2",
-    #     role=Provider,
-    #     # Configure the second provider node to communicate via proxy
-    #     environment=node_environment(
-    #         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-    #         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-    #     ),
-    #     volumes=VOLUMES,
-    # ),
+    YagnaContainerConfig(
+        name="provider_2",
+        role=Provider,
+        # Configure the second provider node to communicate via proxy
+        environment=node_environment(
+            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        ),
+        volumes=VOLUMES,
+    ),
 ]
 
 
@@ -159,40 +159,60 @@ class TestLevel1:
             requestor = runner.get_probe("requestor")
             assert isinstance(requestor, RequestorSteps)
 
-            provider = runner.get_probe("provider_1")
-            assert isinstance(provider, ProviderSteps)
+            provider_1 = runner.get_probe("provider_1")
+            assert isinstance(provider_1, ProviderSteps)
+            provider_1_id = provider_1.probe.address
+
+            provider_2 = runner.get_probe("provider_1")
+            assert isinstance(provider_2, ProviderSteps)
+
+            providers = (provider_1, provider_2)
 
             # await requestor.init_payment()
 
             # Market
-            await provider.wait_for_offer_subscribed()
+            for provider in providers:
+                await provider.wait_for_offer_subscribed()
+
             subscription_id, demand = await requestor.subscribe_demand()
-            provider_proposal = await requestor.wait_for_proposal(subscription_id)
-            counterproposal_id = await requestor.counter_proposal(subscription_id, demand, provider_proposal)
-            await provider.wait_for_proposal_accepted()
-            new_proposal = await requestor.wait_for_proposal(subscription_id)
-            assert new_proposal.prev_proposal_id == counterproposal_id
-            agreement_id = await requestor.create_agreement(new_proposal)
-            await requestor.confirm_agreement(agreement_id)
-            await provider.wait_for_agreement_approved()
-            # requestor.wait_for_approval() ???
+
+            proposals = await requestor.wait_for_proposals(subscription_id)
+            logger.info("Collected {len(proposals)} proposals")
+            assert len(proposals) == len(providers)
+
+            for proposal in proposals:
+                issuers = [p for p in providers if p.probe.address == proposal.issuer_id]
+                assert len(issuers) == 1
+                provider = issuers[0]
+                logger.info("Negotiating proposal from provider %s", provider.probe.address)
+
+                counterproposal_id = await requestor.counter_proposal(subscription_id, demand, proposal)
+                await provider.wait_for_proposal_accepted()
+                new_proposal = await requestor.wait_for_proposal(subscription_id)
+                assert new_proposal.prev_proposal_id == counterproposal_id
+                agreement_id = await requestor.create_agreement(new_proposal)
+                await requestor.confirm_agreement(agreement_id)
+                await provider.wait_for_agreement_approved()
+                # # requestor.wait_for_approval() ???
+
             await requestor.unsubscribe_demand(subscription_id)
 
-            # Activity
-            activity_id = await requestor.create_activity(agreement_id)
-            await provider.wait_for_activity_created()
-            batch_id = await requestor.call_exec(activity_id, exe_script)
-            await provider.wait_for_exeunit_started()
-            await requestor.collect_results(activity_id, batch_id, num_commands, timeout=30)
-            await requestor.destroy_activity(activity_id)
-            await provider.wait_for_exeunit_finished()
-
-            # Payment
-            await provider.wait_for_invoice_sent()
-            # TODO:
-            # invoice = requestor.gather_invoice(agreement_id)
-            # requestor.pay_invoice(invoice)
-            # provider.wait_for_invoice_paid()
+            #
+            # # Activity
+            # activity_id = await requestor.create_activity(agreement_id)
+            # await provider.wait_for_activity_created()
+            # batch_id = await requestor.call_exec(activity_id, exe_script)
+            # await provider.wait_for_exeunit_started()
+            # await requestor.collect_results(activity_id, batch_id, num_commands, timeout=30)
+            # await requestor.destroy_activity(activity_id)
+            # await provider.wait_for_exeunit_finished()
+            #
+            # # Payment
+            # await provider.wait_for_invoice_sent()
+            # # TODO:
+            # # invoice = requestor.gather_invoice(agreement_id)
+            # # requestor.pay_invoice(invoice)
+            # # provider.wait_for_invoice_paid()
 
         logger.info("Test finished")
 
