@@ -15,7 +15,8 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log_monitor import LogEvent
 from goth.runner.probe import ProviderProbe, RequestorProbe
 
-from openapi_market_client import Demand, Proposal
+from openapi_market_client import AgreementProposal, Demand, Proposal
+from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
 
 
 R = TypeVar("R", ProviderProbe, RequestorProbe)
@@ -96,12 +97,44 @@ class ProviderProbeOperations(ProbeOperations[ProviderProbe]):
         super().__init__(probe)
 
     @step()
-    async def wait_for_offer_subscribed(self, timeout: float = 10.0):
-        return await self._wait_for_log("Subscribed offer")
+    async def wait_for_offer_subscribed(self):
+        """Wait until the provider agent subscribes to the offer."""
+        await self._wait_for_log("Subscribed offer")
 
     @step()
     async def wait_for_proposal_accepted(self):
-        return await self._wait_for_log("Decided to AcceptProposal")
+        """Wait until the provider agent subscribes to the offer."""
+        await self._wait_for_log("Decided to AcceptProposal")
+
+    @step()
+    async def wait_for_agreement_approved(self):
+        """Wait until the provider agent subscribes to the offer."""
+        await self._wait_for_log("Decided to ApproveAgreement")
+
+    @step()
+    async def wait_for_activity_created(self):
+        """Wait until the provider agent subscribes to the offer."""
+        await self._wait_for_log("Activity created")
+
+    @step()
+    async def wait_for_exeunit_started(self):
+        """Wait until the provider agent starts the exe-unit."""
+        await self._wait_for_log(r"\[ExeUnit\](.+)Started$")
+
+    @step()
+    async def wait_for_exeunit_finished(self):
+        """Wait until exe-unit finishes."""
+        await self._wait_for_log("ExeUnit process exited with status Finished - exit code: 0")
+
+    @step()
+    async def wait_for_invoice_sent(self):
+        """Wait until the invoice is sent."""
+        await self._wait_for_log("Invoice (.+) sent")
+
+    @step(default_timeout=300)
+    async def wait_for_invoice_paid(self):
+        """Wait until the invoice is paid."""
+        await self._wait_for_log("Invoice .+? for agreement .+? was paid")
 
 
 class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
@@ -111,11 +144,13 @@ class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
 
     @step()
     async def init_payment(self) -> str:
+        """Call init_payment on the requestor CLI."""
         result = self.probe.cli.payment_init(requestor_mode=True)
         return result
 
     @step()
     async def subscribe_demand(self) -> Tuple[str, Demand]:
+        """Call subscribe demand on the requestor market api."""
 
         package = (
             "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
@@ -142,8 +177,16 @@ class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
         return subscription_id, demand
 
     @step()
-    async def wait_for_proposal(self, subscription_id: str) -> Proposal:
+    async def unsubscribe_demand(self, subscription_id: str) -> None:
+        """Call unsubscribe demand on the requestor market api."""
+        self.probe.market.unsubscribe_demand(subscription_id)
 
+    @step()
+    async def wait_for_proposal(self, subscription_id: str) -> Proposal:
+        """Call collect_offers on the requestor market api.
+
+        Return the first proposal.
+        """
         proposal = None
 
         while proposal is None:
@@ -163,6 +206,7 @@ class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
     async def counter_proposal(
             self, subscription_id: str, demand: Demand, provider_proposal: Proposal
     ) -> str:
+        """Call counter_proposal_demand on the requestor market api."""
 
         proposal = Proposal(
             constraints=demand.constraints,
@@ -178,8 +222,65 @@ class RequestorProbeOperations(ProbeOperations[RequestorProbe]):
 
         return counter_proposal
 
+    @step()
+    async def create_agreement(self, proposal: Proposal) -> str:
+        """Call create_agreement on the requestor market api."""
 
-class ImmediateRunner(Runner):
+        valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
+        logger.debug(
+            "Creating agreement, proposal_id=%s, valid_to=%s",
+            proposal.proposal_id,
+            valid_to,
+        )
+        agreement_proposal = AgreementProposal(
+            proposal_id=proposal.proposal_id, valid_to=valid_to
+        )
+
+        agreement_id = self.probe.market.create_agreement(agreement_proposal)
+        return agreement_id
+
+    @step()
+    async def confirm_agreement(self, agreement_id: str) -> None:
+        """Call confirm_agreement on the requestor market api."""
+        self.probe.market.confirm_agreement(agreement_id)
+
+    @step()
+    async def create_activity(self, agreement_id: str) -> str:
+        """Call create_activity on the requestor activity api."""
+        activity_id = self.probe.activity.control.create_activity(agreement_id)
+        return activity_id
+
+    @step()
+    async def call_exec(self, activity_id: str, exe_script: str) -> str:
+        """Call call_exec on the requestor activity api."""
+        script_request = ExeScriptRequest(exe_script)
+        batch_id = self.probe.activity.control.call_exec(activity_id, script_request)
+        return batch_id
+
+    @step()
+    async def collect_results(
+            self, activity_id: str, batch_id: str, num_results: int
+    ) -> List[ExeScriptCommandResult]:
+        """Call collect_results on the requestor activity api."""
+
+        results = self.probe.activity.control.get_exec_batch_results(
+            activity_id, batch_id
+        )
+        while len(results) < num_results:
+            time.sleep(1.0)
+            results = self.probe.activity.control.get_exec_batch_results(
+                activity_id, batch_id
+            )
+        return results
+
+    @step()
+    async def destroy_activity(self, activity_id: str) -> None:
+        """Call destroy_activity on the requestor activity api."""
+        self.probe.activity.control.destroy_activity(activity_id)
+
+
+class SimpleRunner(Runner):
+    """A minimal runner"""
 
     def __init__(
             self,

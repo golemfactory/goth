@@ -188,9 +188,9 @@ class RequestorProbe(Probe):
 
     activity: ActivityApiClient
     """Activity API client for the requestor daemon."""
-    market: market.ApiClient
+    market: market.RequestorApi
     """Market API client for the requestor daemon."""
-    payment: payment.ApiClient
+    payment: payment.RequestorApi
     """Payment API client for the requestor daemon."""
 
     _api_base_host: str
