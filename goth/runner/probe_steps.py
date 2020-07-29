@@ -269,12 +269,12 @@ class ProbeStepBuilder:
 
         awaitable = Future()
 
-        def _call_wait_for_proposal(probe: Probe) -> Dict[str, Proposal]:
+        def _call_wait_for_proposal(probe: Probe) -> List[Proposal]:
             subscription_id, _ = fut_subscription_id.result()
             provider_ids = {p.address for p in providers}
             result: List[Proposal] = []
 
-            while len(result) > len(provider_ids):
+            while len(result) < len(provider_ids):
                 result_offers = probe.market.collect_offers(subscription_id)
                 if result_offers:
                     proposal = result_offers[0].proposal
@@ -511,7 +511,7 @@ class ProbeStepBuilder:
         def _call_gather_invoice(probe: Probe) -> InvoiceEvent:
             agreement_ids = fut_agreement_id.result()
 
-            invoice_events: Set[InvoiceEvent] = set()
+            invoice_events: Dict[str, InvoiceEvent] = {}
             while len(invoice_events) < len(agreement_ids):
                 time.sleep(2.0)
                 events = probe.payment.get_received_invoices()
@@ -519,11 +519,14 @@ class ProbeStepBuilder:
                 filtered_events = list(
                     filter(lambda x: x.agreement_id in agreement_ids, events)
                 )
-                logger.debug(f"filtered invoice_event {invoice_events}")
-                invoice_events.update(filtered_events)
+                logger.debug(f"filtered invoice_event {filtered_events}")
+                for event in filtered_events:
+                    invoice_events[event.invoice_id] = event
+                logger.debug("invoice_events: %s", invoice_events)
 
-            awaitable.set_result(invoice_events)
-            return invoice_events
+            result = invoice_events.values()
+            awaitable.set_result(result)
+            return result
 
         step = CallableStep(
             name="gather_invoice",
