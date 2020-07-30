@@ -35,12 +35,17 @@ def step(default_timeout: float = 10.0):
             logger.info("Running step '%s', timeout: %s", func.__name__, timeout)
             try:
                 result = await asyncio.wait_for(func(*args), timeout=timeout)
-                logger.info(
+                step_time = time.time() - start_time
+                logger.debug(
                     "Finished step '%s', result: %s, time: %s",
-                    func.__name__, result, time.time() - start_time
+                    func.__name__, result, step_time
                 )
-            except asyncio.TimeoutError as te:
-                logger.exception(te)
+            except Exception as exc:
+                step_time = time.time() - start_time
+                logger.error(
+                    "step %s raised %s in %s",
+                    step, exc.__class__.__name__, step_time,
+                )
                 raise
             return result
 
@@ -187,17 +192,17 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
         self.probe.market.unsubscribe_demand(subscription_id)
 
     @step()
-    async def wait_for_proposals(self, subscription_id: str) -> List[Proposal]:
+    async def wait_for_proposals(self, subscription_id: str, min_proposals: int = 1) -> List[Proposal]:
         """Call collect_offers on the requestor market api."""
-        proposals = None
+        proposals = []
 
-        while proposals is None:
+        while len(proposals) < min_proposals:
             result_offers = self.probe.market.collect_offers(subscription_id)
             logger.debug(
                 "collect_offers(%s). proposal=%r", subscription_id, result_offers,
             )
             if result_offers:
-                proposals = [offer.proposal for offer in result_offers]
+                proposals.extend([offer.proposal for offer in result_offers])
             else:
                 logger.debug("Waiting on proposal... %r", result_offers)
                 await asyncio.sleep(1.0)

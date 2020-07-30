@@ -141,17 +141,16 @@ class TestLevel1:
     async def test_level_1_simple(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level1Scenario with SimpleRunner."""
 
-        # TODO: provide an exe script in a fixture
+        # TODO: provide the exe script in a fixture?
         if assets_path is None:
             level1_dir = Path(__file__).parent
             level0_dir = level1_dir.parent / "level0"
             assets_path = level0_dir / "asset"
         exe_script_path = Path(assets_path / "exe_script.json")
         exe_script = exe_script_path.read_text()
-        num_commands = len(json.loads(exe_script))
 
         runner = SimpleRunner(
-            LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
         async with runner:
@@ -161,41 +160,46 @@ class TestLevel1:
 
             provider_1 = runner.get_probe("provider_1")
             assert isinstance(provider_1, ProviderSteps)
-            provider_1_id = provider_1.probe.address
 
-            provider_2 = runner.get_probe("provider_1")
+            provider_2 = runner.get_probe("provider_2")
             assert isinstance(provider_2, ProviderSteps)
 
             providers = (provider_1, provider_2)
 
+            # Skip this step for now, it takes too much time
             # await requestor.init_payment()
 
-            # Market
+            ### Market ###
+
             for provider in providers:
                 await provider.wait_for_offer_subscribed()
 
             subscription_id, demand = await requestor.subscribe_demand()
 
-            proposals = await requestor.wait_for_proposals(subscription_id)
-            logger.info("Collected {len(proposals)} proposals")
-            assert len(proposals) == len(providers)
+            proposals = await requestor.wait_for_proposals(subscription_id, len(providers))
+            logger.info("Collected %s proposals", len(proposals))
+            agreement_ids = []
 
             for proposal in proposals:
                 issuers = [p for p in providers if p.probe.address == proposal.issuer_id]
                 assert len(issuers) == 1
                 provider = issuers[0]
-                logger.info("Negotiating proposal from provider %s", provider.probe.address)
+                logger.info("Received proposal from provider %s", provider.probe.name)
 
                 counterproposal_id = await requestor.counter_proposal(subscription_id, demand, proposal)
                 await provider.wait_for_proposal_accepted()
-                new_proposal = await requestor.wait_for_proposal(subscription_id)
+                new_proposals = await requestor.wait_for_proposals(subscription_id)
+                assert len(new_proposals) == 1
+                new_proposal = new_proposals[0]
+                assert new_proposal.issuer_id == proposal.issuer_id
                 assert new_proposal.prev_proposal_id == counterproposal_id
                 agreement_id = await requestor.create_agreement(new_proposal)
                 await requestor.confirm_agreement(agreement_id)
                 await provider.wait_for_agreement_approved()
-                # # requestor.wait_for_approval() ???
+                agreement_ids.append(agreement_id)
 
             await requestor.unsubscribe_demand(subscription_id)
+            logger.info("Got %s agreements", len(agreement_ids))
 
             #
             # # Activity
@@ -203,6 +207,7 @@ class TestLevel1:
             # await provider.wait_for_activity_created()
             # batch_id = await requestor.call_exec(activity_id, exe_script)
             # await provider.wait_for_exeunit_started()
+            # num_commands = len(json.loads(exe_script))
             # await requestor.collect_results(activity_id, batch_id, num_commands, timeout=30)
             # await requestor.destroy_activity(activity_id)
             # await provider.wait_for_exeunit_finished()
