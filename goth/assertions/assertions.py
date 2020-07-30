@@ -51,7 +51,7 @@ class Assertion(AsyncIterable[E]):
     An instance of this class wraps a coroutine function (called the
     "assertion coroutine") and provides an asynchronous generator of
     events that the assertion coroutine processes.
-    After creating an instance of this class, it's client should await
+    After creating an instance of this class, its client should await
     the `update_events()` method each time a new event is appended to the list
     of events (the list is passed as an argument to `Assertion()`).
     After `update_events()` returns, the state of the assertion is updated
@@ -81,7 +81,7 @@ class Assertion(AsyncIterable[E]):
     """An event object used for synchronising the client and the assertion coroutine."""
 
     _generator: Optional[AsyncIterator[E]]
-    """An asynchronous generator that provider events to the assertion coroutine."""
+    """An asynchronous generator that provides events to the assertion coroutine."""
 
     def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
         self.past_events = events
@@ -103,10 +103,7 @@ class Assertion(AsyncIterable[E]):
             raise RuntimeError("Assertion already started")
 
         def on_done(*args) -> None:
-            """Notify the tasks waiting until this assertion updates.
-
-            The tasks may wait in `update_events()` or `wait_until_done()`.
-            """
+            """Notify the tasks waiting until this assertion updates."""
             self._notify_update_events()
 
         assert self._func is not None
