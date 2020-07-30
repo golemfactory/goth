@@ -83,7 +83,7 @@ jobs:
 
   level1:
     name: Run integration tests (level 1)
-    needs: [level0]
+    # needs: [level0]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
