@@ -127,7 +127,7 @@ jobs:
         run: docker ps
 
       - name: Run test suite
-        run: python -m pytest test/level1 -svx --log-cli-level=DEBUG
+        run: python -m pytest test/level1 -svx --log-cli-level=INFO
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2
