@@ -129,6 +129,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
     @property
     def events(self) -> Sequence[LogEvent]:
+        """Return the events that occurred so far."""
         return self._events
 
     def start(self, in_stream: Iterator[bytes]):

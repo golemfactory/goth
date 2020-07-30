@@ -95,47 +95,47 @@ LEVEL1_TOPOLOGY = [
 class TestLevel1:
     """TestCase running Level1Scenario."""
 
-    @pytest.mark.asyncio
-    async def _test_level1(self, logs_path: Path, assets_path: Optional[Path]):
-        """Test running Level1Scenario."""
-        runner = Runner(
-            LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
-        )
-
-        provider = runner.get_probes(role=Provider)
-        requestor = runner.get_probes(role=Requestor)
-
-        requestor.init_payment()
-
-        # Market
-        provider.wait_for_offer_subscribed()
-        subscription_id = requestor.subscribe_demand()
-        proposal = requestor.wait_for_proposal(subscription_id)
-        requestor.counter_proposal(subscription_id, proposal)
-        provider.wait_for_proposal_accepted()
-        requestor.wait_for_proposal(subscription_id)
-        agreement_id = requestor.create_agreement(proposal)
-        requestor.confirm_agreement(agreement_id)
-        provider.wait_for_agreement_approved()
-        # requestor.wait_for_approval() ???
-        requestor.unsubscribe_demand(subscription_id)
-
-        # Activity
-        activity_id = requestor.create_activity(agreement_id)
-        provider.wait_for_activity_created()
-        batch_id = requestor.call_exec(activity_id)
-        provider.wait_for_exeunit_started()
-        requestor.collect_results(activity_id, batch_id)
-        requestor.destroy_activity(activity_id)
-        provider.wait_for_exeunit_finished()
-
-        # Payment
-        provider.wait_for_invoice_sent()
-        invoice = requestor.gather_invoice(agreement_id)
-        requestor.pay_invoice(invoice)
-        provider.wait_for_invoice_paid()
-
-        await runner.run_scenario()
+    # @pytest.mark.asyncio
+    # async def test_level1(self, logs_path: Path, assets_path: Optional[Path]):
+    #     """Test running Level1Scenario."""
+    #     runner = Runner(
+    #         LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+    #     )
+    #
+    #     provider = runner.get_probes(role=Provider)
+    #     requestor = runner.get_probes(role=Requestor)
+    #
+    #     requestor.init_payment()
+    #
+    #     # Market
+    #     provider.wait_for_offer_subscribed()
+    #     subscription_id = requestor.subscribe_demand()
+    #     proposal = requestor.wait_for_proposal(subscription_id)
+    #     requestor.counter_proposal(subscription_id, proposal)
+    #     provider.wait_for_proposal_accepted()
+    #     requestor.wait_for_proposal(subscription_id)
+    #     agreement_id = requestor.create_agreement(proposal)
+    #     requestor.confirm_agreement(agreement_id)
+    #     provider.wait_for_agreement_approved()
+    #     # requestor.wait_for_approval() ???
+    #     requestor.unsubscribe_demand(subscription_id)
+    #
+    #     # Activity
+    #     activity_id = requestor.create_activity(agreement_id)
+    #     provider.wait_for_activity_created()
+    #     batch_id = requestor.call_exec(activity_id)
+    #     provider.wait_for_exeunit_started()
+    #     requestor.collect_results(activity_id, batch_id)
+    #     requestor.destroy_activity(activity_id)
+    #     provider.wait_for_exeunit_finished()
+    #
+    #     # Payment
+    #     provider.wait_for_invoice_sent()
+    #     invoice = requestor.gather_invoice(agreement_id)
+    #     requestor.pay_invoice(invoice)
+    #     provider.wait_for_invoice_paid()
+    #
+    #     await runner.run_scenario()
 
     @pytest.mark.asyncio
     async def test_level_1_simple(self, logs_path: Path, assets_path: Optional[Path]):
@@ -169,24 +169,31 @@ class TestLevel1:
             # Skip this step for now, it takes too much time
             # await requestor.init_payment()
 
-            ### Market ###
+            # Market
 
             for provider in providers:
                 await provider.wait_for_offer_subscribed()
 
             subscription_id, demand = await requestor.subscribe_demand()
 
-            proposals = await requestor.wait_for_proposals(subscription_id, len(providers))
+            proposals = await requestor.wait_for_proposals(
+                subscription_id, len(providers)
+            )
             logger.info("Collected %s proposals", len(proposals))
-            agreement_ids = []
+
+            agreement_providers = []
 
             for proposal in proposals:
-                issuers = [p for p in providers if p.probe.address == proposal.issuer_id]
+                issuers = [
+                    p for p in providers if p.probe.address == proposal.issuer_id
+                ]
                 assert len(issuers) == 1
                 provider = issuers[0]
                 logger.info("Received proposal from provider %s", provider.probe.name)
 
-                counterproposal_id = await requestor.counter_proposal(subscription_id, demand, proposal)
+                counterproposal_id = await requestor.counter_proposal(
+                    subscription_id, demand, proposal
+                )
                 await provider.wait_for_proposal_accepted()
                 new_proposals = await requestor.wait_for_proposals(subscription_id)
                 assert len(new_proposals) == 1
@@ -196,29 +203,34 @@ class TestLevel1:
                 agreement_id = await requestor.create_agreement(new_proposal)
                 await requestor.confirm_agreement(agreement_id)
                 await provider.wait_for_agreement_approved()
-                agreement_ids.append(agreement_id)
+                agreement_providers.append((agreement_id, provider))
 
             await requestor.unsubscribe_demand(subscription_id)
-            logger.info("Got %s agreements", len(agreement_ids))
+            logger.info("Got %s agreements", len(agreement_providers))
 
-            #
-            # # Activity
-            # activity_id = await requestor.create_activity(agreement_id)
-            # await provider.wait_for_activity_created()
-            # batch_id = await requestor.call_exec(activity_id, exe_script)
-            # await provider.wait_for_exeunit_started()
-            # num_commands = len(json.loads(exe_script))
-            # await requestor.collect_results(activity_id, batch_id, num_commands, timeout=30)
-            # await requestor.destroy_activity(activity_id)
-            # await provider.wait_for_exeunit_finished()
-            #
-            # # Payment
-            # await provider.wait_for_invoice_sent()
-            # # TODO:
-            # # invoice = requestor.gather_invoice(agreement_id)
-            # # requestor.pay_invoice(invoice)
-            # # provider.wait_for_invoice_paid()
+            #  Activity
+
+            num_commands = len(json.loads(exe_script))
+
+            for agreement_id, provider in agreement_providers:
+                logger.info("Running activity at provider %s", provider.probe.name)
+                activity_id = await requestor.create_activity(agreement_id)
+                await provider.wait_for_activity_created()
+                batch_id = await requestor.call_exec(activity_id, exe_script)
+                await provider.wait_for_exeunit_started()
+                await requestor.collect_results(
+                    activity_id, batch_id, num_commands, timeout=30
+                )
+                await requestor.destroy_activity(activity_id)
+                await provider.wait_for_exeunit_finished()
+
+            # Payment
+
+            for agreement_id, provider in agreement_providers:
+                await provider.wait_for_invoice_sent()
+                invoice = requestor.gather_invoice(agreement_id)
+                # TODO:
+                # requestor.pay_invoice(invoice)
+                # provider.wait_for_invoice_paid()
 
         logger.info("Test finished")
-
-

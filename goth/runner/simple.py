@@ -18,13 +18,14 @@ from goth.runner.probe import ProviderProbe, RequestorProbe
 
 from openapi_market_client import AgreementProposal, Demand, Proposal
 from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
+from openapi_payment_client import InvoiceEvent
 
 
 logger = logging.getLogger(__name__)
 
 
 def step(default_timeout: float = 10.0):
-    """Wrap a step function to provide logging."""
+    """Wrap a step function to provide logging, facilitate debugging, etc."""
 
     def decorator(func):
 
@@ -61,14 +62,21 @@ class ProbeSteps(Generic[R], abc.ABC):
     """Wraps a probe and adds test scenario steps."""
 
     probe: R
+    """A probe on which these steps operate."""
 
     last_checked_line: int
+    """The number of the last line examined while waiting for log messages.
+
+    Subsequent calls to `_wait_for_log()` will only look at lines that
+    were logged after this line.
+    """
 
     def __init__(self, probe: R):
         self.probe = probe
         self.last_checked_line = -1
 
     async def _wait_for_log(self, pattern: str, timeout: float = 1000):
+        """Look for a log line with the message matching `pattern`."""
 
         regex = re.compile(pattern)
 
@@ -91,6 +99,7 @@ class ProbeSteps(Generic[R], abc.ABC):
 
         assertion = self.probe.agent_logs.add_assertion(coro)
 
+        # ... and wait until the assertion completes
         while not assertion.done:
             await asyncio.sleep(0.1)
 
@@ -133,7 +142,9 @@ class ProviderSteps(ProbeSteps[ProviderProbe]):
     @step()
     async def wait_for_exeunit_finished(self):
         """Wait until exe-unit finishes."""
-        await self._wait_for_log("ExeUnit process exited with status Finished - exit code: 0")
+        await self._wait_for_log(
+            "ExeUnit process exited with status Finished - exit code: 0"
+        )
 
     @step()
     async def wait_for_invoice_sent(self):
@@ -147,7 +158,11 @@ class ProviderSteps(ProbeSteps[ProviderProbe]):
 
 
 class RequestorSteps(ProbeSteps[RequestorProbe]):
-    """Adds steps specific to requestor nodes."""
+    """Adds steps specific to requestor nodes.
+
+    TODO: There is a large overlap of code with `probe_steps.py`.
+    This common code should be shared.
+    """
 
     def __init__(self, probe: RequestorProbe):
         super().__init__(probe)
@@ -192,7 +207,9 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
         self.probe.market.unsubscribe_demand(subscription_id)
 
     @step()
-    async def wait_for_proposals(self, subscription_id: str, min_proposals: int = 1) -> List[Proposal]:
+    async def wait_for_proposals(
+            self, subscription_id: str, min_proposals: int = 1
+    ) -> List[Proposal]:
         """Call collect_offers on the requestor market api."""
         proposals = []
 
@@ -285,9 +302,27 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
         """Call destroy_activity on the requestor activity api."""
         self.probe.activity.control.destroy_activity(activity_id)
 
+    @step()
+    async def gather_invoice(self, agreement_id: str) -> InvoiceEvent:
+        """Call gather_invoice on the requestor payment api."""
+
+        invoice_events = []
+
+        while not invoice_events:
+            time.sleep(2.0)
+            invoice_events = (
+                self.probe.payment.get_received_invoices()
+            )  # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
+            invoice_events = [
+                e for e in invoice_events if e.agreement_id == agreement_id
+            ]
+
+        invoice_event = invoice_events[0]
+        return invoice_event
+
 
 class SimpleRunner(Runner):
-    """A minimal runner"""
+    """A minimal runner."""
 
     def __init__(
             self,
@@ -299,6 +334,7 @@ class SimpleRunner(Runner):
         super().__init__(topology, api_assertions_module, logs_path, assets_path)
 
     def get_probe(self, name: str) -> ProbeSteps:
+        """Return a `ProbeSteps` instance wrapping the probe identified by `name`."""
 
         for probe in self.probes:
             if probe.name == name:
