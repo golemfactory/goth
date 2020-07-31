@@ -353,8 +353,9 @@ class SimpleRunner(Runner):
 
         raise KeyError(f"No such probe: {name}")
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "SimpleRunner":
         self._start_nodes()
+        return self
 
     async def __aexit__(self, *args):
         await asyncio.sleep(2.0)

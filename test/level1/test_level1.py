@@ -19,6 +19,7 @@ from goth.address import (
     YAGNA_BUS_URL,
     YAGNA_REST_URL,
 )
+
 # from goth.runner import Runner
 
 from goth.runner.container.yagna import YagnaContainerConfig
@@ -149,11 +150,9 @@ class TestLevel1:
         exe_script_path = Path(assets_path / "exe_script.json")
         exe_script = exe_script_path.read_text()
 
-        runner = SimpleRunner(
+        async with SimpleRunner(
             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
-        )
-
-        async with runner:
+        ) as runner:
 
             requestor = runner.get_probe("requestor")
             assert isinstance(requestor, RequestorSteps)
