@@ -19,7 +19,7 @@ from goth.address import (
     YAGNA_BUS_URL,
     YAGNA_REST_URL,
 )
-from goth.runner import Runner
+# from goth.runner import Runner
 
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Provider, Requestor
@@ -150,7 +150,7 @@ class TestLevel1:
         exe_script = exe_script_path.read_text()
 
         runner = SimpleRunner(
-             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+            LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
         async with runner:
@@ -228,7 +228,8 @@ class TestLevel1:
 
             for agreement_id, provider in agreement_providers:
                 await provider.wait_for_invoice_sent()
-                invoice = requestor.gather_invoice(agreement_id)
+                invoice = await requestor.gather_invoice(agreement_id)
+                assert invoice.agreement_id == agreement_id
                 # TODO:
                 # requestor.pay_invoice(invoice)
                 # provider.wait_for_invoice_paid()

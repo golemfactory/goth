@@ -25,27 +25,32 @@ logger = logging.getLogger(__name__)
 
 
 def step(default_timeout: float = 10.0):
-    """Wrap a step function to provide logging, facilitate debugging, etc."""
+    """Wrap a step function to implement timeout and log progress."""
 
     def decorator(func):
-
         @functools.wraps(func)
-        async def wrapper(*args, timeout: Optional[float] = None):
+        async def wrapper(self: ProbeSteps, *args, timeout: Optional[float] = None):
             timeout = timeout if timeout is not None else default_timeout
+            step_name = f"{self.probe.name}.{func.__name__}(timeout={timeout})"
             start_time = time.time()
-            logger.info("Running step '%s', timeout: %s", func.__name__, timeout)
+
+            logger.info("Running step '%s'", step_name)
             try:
-                result = await asyncio.wait_for(func(*args), timeout=timeout)
+                result = await asyncio.wait_for(func(self, *args), timeout=timeout)
                 step_time = time.time() - start_time
                 logger.debug(
                     "Finished step '%s', result: %s, time: %s",
-                    func.__name__, result, step_time
+                    step_name,
+                    result,
+                    step_time,
                 )
             except Exception as exc:
                 step_time = time.time() - start_time
                 logger.error(
-                    "step %s raised %s in %s",
-                    step, exc.__class__.__name__, step_time,
+                    "step '%s' raised %s in %s",
+                    step_name,
+                    exc.__class__.__name__,
+                    step_time,
                 )
                 raise
             return result
@@ -208,7 +213,7 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
 
     @step()
     async def wait_for_proposals(
-            self, subscription_id: str, min_proposals: int = 1
+        self, subscription_id: str, min_proposals: int = 1
     ) -> List[Proposal]:
         """Call collect_offers on the requestor market api."""
         proposals = []
@@ -228,7 +233,7 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
 
     @step()
     async def counter_proposal(
-            self, subscription_id: str, demand: Demand, provider_proposal: Proposal
+        self, subscription_id: str, demand: Demand, provider_proposal: Proposal
     ) -> str:
         """Call counter_proposal_demand on the requestor market api."""
 
@@ -283,7 +288,7 @@ class RequestorSteps(ProbeSteps[RequestorProbe]):
 
     @step()
     async def collect_results(
-            self, activity_id: str, batch_id: str, num_results: int
+        self, activity_id: str, batch_id: str, num_results: int
     ) -> List[ExeScriptCommandResult]:
         """Call collect_results on the requestor activity api."""
 
@@ -325,11 +330,11 @@ class SimpleRunner(Runner):
     """A minimal runner."""
 
     def __init__(
-            self,
-            topology: List[YagnaContainerConfig],
-            api_assertions_module: Optional[str],
-            logs_path: Path,
-            assets_path: Optional[Path],
+        self,
+        topology: List[YagnaContainerConfig],
+        api_assertions_module: Optional[str],
+        logs_path: Path,
+        assets_path: Optional[Path],
     ):
         super().__init__(topology, api_assertions_module, logs_path, assets_path)
 
