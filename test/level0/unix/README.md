@@ -69,7 +69,7 @@ Setup exe-unit:
    ```
    $ cat ~/TOKEN.txt | docker login docker.pkg.github.com -u USERNAME --password-stdin
    ```
-   `TOKEN.txt` contains a github app token
+   `TOKEN.txt` contains a [github api token](https://github.com/golemfactory/yagna-integration#getting-a-github-api-token)
    `USERNAME` should be replaced by your github user name
 
 ## Run
