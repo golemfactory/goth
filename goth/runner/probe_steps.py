@@ -164,7 +164,7 @@ class ProbeStepBuilder:
         self._wait_for_log(
             "wait_for_invoice_paid",
             "Invoice .+? for agreement .+? was paid",
-            timeout=60 * 5,
+            timeout=60 * 10,
         )
 
     def _wait_for_log(self, name: str, pattern: str, timeout: int = 10):
