@@ -353,7 +353,7 @@ class ProbeStepBuilder:
     ) -> "Future[List[str]]":
         """Call create_agreement on the requestor market api.
 
-        Return a list of agreement IDS created during this step.
+        Return a list of agreement IDs created during this step.
         """
 
         awaitable = Future()
