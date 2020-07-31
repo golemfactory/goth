@@ -272,26 +272,30 @@ class ProbeStepBuilder:
         def _call_wait_for_proposal(probe: Probe) -> List[Proposal]:
             subscription_id, _ = fut_subscription_id.result()
             provider_ids = {p.address for p in providers}
-            result: List[Proposal] = []
+            proposals: Dict[str, Proposal] = {}
 
-            while len(result) < len(provider_ids):
-                result_offers = probe.market.collect_offers(subscription_id)
-                if result_offers:
-                    proposal = result_offers[0].proposal
-                    if proposal.issuer_id not in provider_ids:
-                        raise
-                    result.append(proposal)
+            while len(proposals) < len(provider_ids):
+                collected_offers = probe.market.collect_offers(subscription_id)
+                if collected_offers:
                     logger.debug(
-                        "collect_offers(%s). proposal=%r",
+                        "collect_offers(%s). collected_offers=%r",
                         subscription_id,
-                        result_offers,
+                        collected_offers,
                     )
+                    collected_proposals = [
+                        offer.proposal
+                        for offer in collected_offers
+                        if offer.proposal.issuer_id in provider_ids
+                    ]
+                    for proposal in collected_proposals:
+                        proposals[proposal.issuer_id] = proposal
                 else:
                     logger.debug(
                         "Waiting for proposals. subscription_id=%s", subscription_id
                     )
                     time.sleep(1.0)
 
+            result = proposals.values()
             awaitable.set_result(result)
             return result
 
