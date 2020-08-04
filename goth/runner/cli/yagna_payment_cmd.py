@@ -35,7 +35,7 @@ class YagnaPaymentMixin:
         requestor_mode: bool = False,
         provider_mode: bool = False,
         data_dir: str = "",
-        payment_driver: str = "gnt",
+        payment_driver: str = "ngnt",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
 
@@ -50,7 +50,7 @@ class YagnaPaymentMixin:
         return self.run_command(*args)[0]
 
     def payment_status(
-        self: CommandRunner, data_dir: str = "", driver: str = "gnt"
+        self: CommandRunner, data_dir: str = "", driver: str = "ngnt"
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 
