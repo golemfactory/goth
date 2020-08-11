@@ -20,7 +20,7 @@ ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
 ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
-BRANCH = "mwu/fix/confirmations"
+BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
 WORKFLOW_NAME = "Build .deb"

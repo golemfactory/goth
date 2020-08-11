@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - mwu/local-gnt-docker    # put your branch name here to test it @ GH Actions
+      # - <your-branch>    # put your branch name here to test it @ GH Actions
   pull_request:
     branches:
       - master
