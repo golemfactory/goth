@@ -77,16 +77,16 @@ LEVEL1_TOPOLOGY = [
         ),
         volumes=VOLUMES,
     ),
-    # YagnaContainerConfig(
-    #     name="provider_2",
-    #     role=Provider,
-    #     # Configure the second provider node to communicate via proxy
-    #     environment=node_environment(
-    #         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-    #         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-    #     ),
-    #     volumes=VOLUMES,
-    # ),
+    YagnaContainerConfig(
+        name="provider_2",
+        role=Provider,
+        # Configure the second provider node to communicate via proxy
+        environment=node_environment(
+            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        ),
+        volumes=VOLUMES,
+    ),
 ]
 
 
@@ -100,36 +100,36 @@ class TestLevel1:
             LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
         )
 
-        provider = runner.get_probes(role=Provider)
+        providers = runner.get_probes(role=Provider)
         requestor = runner.get_probes(role=Requestor)
 
         requestor.init_payment()
 
         # Market
-        provider.wait_for_offer_subscribed()
+        providers.wait_for_offer_subscribed()
         subscription_id = requestor.subscribe_demand()
-        proposal = requestor.wait_for_proposal(subscription_id)
-        requestor.counter_proposal(subscription_id, proposal)
-        provider.wait_for_proposal_accepted()
-        requestor.wait_for_proposal(subscription_id)
-        agreement_id = requestor.create_agreement(proposal)
-        requestor.confirm_agreement(agreement_id)
-        provider.wait_for_agreement_approved()
-        # requestor.wait_for_approval() ???
+        proposals = requestor.wait_for_proposals(subscription_id, providers._probes)
+        requestor.counter_proposals(subscription_id, proposals)
+        providers.wait_for_proposal_accepted()
+        requestor.wait_for_proposals(subscription_id, providers._probes)
+        agreement_ids = requestor.create_agreements(proposals)
+        requestor.confirm_agreements(agreement_ids)
+        providers.wait_for_agreement_approved()
+        requestor.unsubscribe_demand(subscription_id)
 
         # Activity
-        activity_id = requestor.create_activity(agreement_id)
-        provider.wait_for_activity_created()
-        batch_id = requestor.call_exec(activity_id)
-        provider.wait_for_exeunit_started()
-        requestor.collect_results(activity_id, batch_id)
-        requestor.destroy_activity(activity_id)
-        provider.wait_for_exeunit_finished()
+        activity_ids = requestor.create_activities(agreement_ids)
+        providers.wait_for_activity_created()
+        activity_batches = requestor.call_exec(activity_ids)
+        providers.wait_for_exeunit_started()
+        requestor.collect_results(activity_batches)
+        requestor.destroy_activities(activity_ids)
+        providers.wait_for_exeunit_finished()
 
         # Payment
-        provider.wait_for_invoice_sent()
-        invoice = requestor.gather_invoice(agreement_id)
-        requestor.pay_invoice(invoice)
-        provider.wait_for_invoice_paid()
+        providers.wait_for_invoice_sent()
+        invoices = requestor.gather_invoices(agreement_ids)
+        requestor.pay_invoices(invoices)
+        providers.wait_for_invoice_paid()
 
         await runner.run_scenario()

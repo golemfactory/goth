@@ -283,74 +283,73 @@ async def test_past_events():
     assert assertion.result == [3, 2, 1]
 
 
+@pytest.mark.parametrize(
+    "timeout, accept, result_predicate",
+    [
+        (None, True, lambda res: res == 4),
+        (0.4, True, lambda res: res == 4),
+        (0.2, False, lambda res: isinstance(res, asyncio.TimeoutError)),
+    ],
+)
 @pytest.mark.asyncio
-async def test_eventually_without_timeout():
-    """Test if the `eventually` operator works without timeout."""
-
+async def test_eventually_with_timeout(timeout, accept, result_predicate):
+    """Test whether the `eventually` operator handles timeouts correctly."""
     events = []
 
-    async def func(stream):
-        return await eventually(stream, lambda e: e % 2 == 0)
+    if timeout is not None:
+
+        async def func(stream):
+            return await eventually(stream, lambda e: e % 2 == 0, timeout=timeout)
+
+    else:
+
+        async def func(stream):
+            return await eventually(stream, lambda e: e % 2 == 0)
 
     assertion = Assertion(events, func)
     assertion.start()
 
-    for n in [1, 2, 3]:
+    for n in [1, 3, 4, 5]:
         await asyncio.sleep(0.1)
         events.append(n)
         await assertion.update_events()
     await assertion.update_events(events_ended=True)
 
-    assert assertion.accepted
-    assert assertion.result == 2
+    assert assertion.accepted is accept
+    assert result_predicate(assertion.result)
 
 
+@pytest.mark.parametrize("timeout, accept", [(1.0, True), (0.1, False)])
 @pytest.mark.asyncio
-async def test_eventually_within_timeout():
-    """Test if the `eventually` operator works with timeout set.
+async def test_while_eventually(timeout, accept):
+    """Test an assertion that calls `eventually` in a `while` loop.
 
-    The assertion should accept within timeout in this test.
+    This test used to fail when the implementation of assertions was not
+    guaranteed to update the assertion state (in particular, set it as
+    done) before returning from the `update_events()` method.
     """
     events = []
 
     async def func(stream):
-        return await eventually(stream, lambda e: e % 2 == 0, timeout=0.3)
+        while not stream.events_ended:
+            try:
+                await eventually(stream, lambda e: e % 2 == 0, timeout=timeout)
+            except asyncio.TimeoutError:
+                raise AssertionError("Timeout")
+        return True
 
     assertion = Assertion(events, func)
     assertion.start()
 
-    for n in [1, 2, 3, 5]:
-        await asyncio.sleep(0.1)
+    for n in range(5):
+        await asyncio.sleep(0.2)
         events.append(n)
         await assertion.update_events()
+    await asyncio.sleep(0.2)
     await assertion.update_events(events_ended=True)
 
-    assert assertion.accepted
-    assert assertion.result == 2
-
-
-@pytest.mark.asyncio
-async def test_eventually_with_timeout():
-    """Test if the `eventually` operator works with timeout set.
-
-    The assertion should fail because of timeout in this test.
-    """
-    events = []
-
-    async def func(stream):
-        return await eventually(stream, lambda e: e % 2 == 0, timeout=0.1)
-
-    assertion = Assertion(events, func)
-    assertion.start()
-
-    for n in [1, 3, 2]:
-        events.append(n)
-        await assertion.update_events()
-        await asyncio.sleep(0.1)
-    await assertion.update_events(events_ended=True)
-
-    assert assertion.failed
-    assert isinstance(assertion.result, asyncio.TimeoutError)
+    assert assertion.done
+    assert assertion.accepted == accept
 
 
 @pytest.mark.asyncio
@@ -389,3 +388,17 @@ async def test_composite_assertion():
     await assertion.update_events(events_ended=True)
 
     assert assertion.result == (True, False, False)
+
+
+@pytest.mark.asyncio
+async def test_start_twice_raises():
+    """Test whether starting an already started assertion raises a `RuntimeError`."""
+    events = []
+
+    async def func(stream):
+        return
+
+    assertion = Assertion(events, func)
+    assertion.start()
+    with pytest.raises(RuntimeError):
+        assertion.start()
