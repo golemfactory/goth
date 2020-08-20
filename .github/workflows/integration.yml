@@ -30,16 +30,16 @@ jobs:
         run: python --version && pip --version
 
       - name: Get yagna deb file
-        run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.GITHUB_TOKEN }}
+        run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
 
       - name: Get version of yagna deb file
         run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna.deb Version)
 
-      - run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
+      - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
       - name: Build the docker-compose stack
         env:
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
           YAGNA_DEB: ${{ env.YAGNA_DEB }}
         run: |
           docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
@@ -98,16 +98,16 @@ jobs:
         run: python --version && pip --version
 
       - name: Get yagna deb file
-        run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.GITHUB_TOKEN }}
+        run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
 
       - name: Get version of yagna deb file
         run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna.deb Version)
 
-      - run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
+      - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
       - name: Build the docker-compose stack
         env:
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
           YAGNA_DEB: ${{ env.YAGNA_DEB }}
         run: |
           docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
