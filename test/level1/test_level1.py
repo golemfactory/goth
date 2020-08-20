@@ -23,7 +23,7 @@ LEVEL1_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         role=Requestor,
-        environment=node_environment(),
+        environment=node_environment(account_list="/asset/key/001-accounts.json"),
         key_file="/asset/key/001.json",
         volumes=VOLUMES,
     ),

@@ -20,7 +20,7 @@ VOLUMES = {
 
 
 def node_environment(
-    market_url_base: str = "", rest_api_url_base: str = ""
+    market_url_base: str = "", rest_api_url_base: str = "", account_list: str = ""
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
     # Use custom base if given, default otherwise
@@ -37,6 +37,8 @@ def node_environment(
         "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info",
         "REQUIRED_CONFIRMATIONS": "1",
     }
+    if account_list:
+        daemon_env["ACCOUNT_LIST"] = account_list
     node_env = daemon_env
 
     if rest_api_url_base:
