@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      # - <your-branch>    # put your branch name here to test it @ GH Actions
+      - km/revert-github-token
   pull_request:
     branches:
       - master
