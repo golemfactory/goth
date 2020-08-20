@@ -29,7 +29,7 @@ EXE_UNIT_PATH="/usr/lib/yagna/plugins/exeunits-descriptor.json"
 export RUST_LOG=info
 
 echo "Init payment"
-yagna payment init gnt -p
+yagna payment init ngnt -p ${NODE_ID}
 
 ya-provider preset activate "$PRESET_NAME"
 

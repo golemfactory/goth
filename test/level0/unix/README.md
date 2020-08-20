@@ -65,30 +65,42 @@ Setup exe-unit:
    $ ./stop_net_mk1_hub.sh
    ```
 
+7. Log in to github package registry in your local docker
+   ```
+   $ cat ~/TOKEN.txt | docker login docker.pkg.github.com -u USERNAME --password-stdin
+   ```
+   `TOKEN.txt` contains a [github api token](https://github.com/golemfactory/yagna-integration#getting-a-github-api-token)
+   `USERNAME` should be replaced by your github user name
 
 ## Run
 
 1. Start the network hub (as in **Setup**)
 
-2. Start the provider and the requestor daemons:
+2. Start the `gnt2-docker-yagna` image
+   ```
+   $ docker run -d --rm -ti -p 8545:8545 --name docker_ethereum docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:latest
+   ```
+
+
+3. Start the provider and the requestor daemons:
    ```
    $ ./with_env.sh provider.env start_daemon.sh &
    $ ./with_env.sh requestor.env start_daemon.sh &
    ```
 
-3. Start the provider and the requestor agents:
+4. Start the provider and the requestor agents:
    ```
    $ ./start_provider.sh &
    $ ./start_requestor.sh
    ```
 
-4. Wait for the activity to complete and stop the agents:
+5. Wait for the activity to complete and stop the agents:
    __TODO__
 
-5. Stop the daemons:
+6. Stop the daemons:
    ```
    $ ./with_env.sh provider.env stop_daemon.sh
    $ ./with_env.sh requestor.env stop_daemon.sh
    ```
 
-6. Stop the network hub (as in **Setup**)
+7. Stop the network hub (as in **Setup**)

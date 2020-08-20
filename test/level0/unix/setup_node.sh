@@ -22,6 +22,24 @@ trap "kill $!" EXIT
 echo "Wait until the daemon is ready to create keys"
 tail -f $DAEMON_LOG | grep -m1 'Market service successfully activated'
 
+DEFAULT_KEY=$(sh get_node_id.sh)
+echo "Default key=${DEFAULT_KEY}"
+
+echo "Creating key from keystore ${YAGNA_KEY_FILE}"
+CREATE_KEY_RESULT=$(yagna id create --json --no-password --from-keystore ${YAGNA_KEY_FILE})
+echo "Create key completed, result=${CREATE_KEY_RESULT}"
+
+echo "Setting created key as default"
+SCRIPT="\
+import json, sys; \
+j = json.load(sys.stdin); \
+print(j['Ok']['nodeId'])"
+NEW_KEY=$(echo ${CREATE_KEY_RESULT} | python3 -c "${SCRIPT}")
+yagna id update --set-default "${NEW_KEY}"
+
+echo "Dropping old key ${DEFAULT_KEY}"
+yagna id drop ${DEFAULT_KEY}
+
 echo "Create app key"
 yagna app-key drop "$KEY_NAME"
 yagna app-key create "$KEY_NAME"
