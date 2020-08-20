@@ -189,7 +189,11 @@ class DockerContainer:
 
     def restart(self):
         """Restart the container."""
+        if self.logs:
+            self.logs.stop()
         self._container.restart()
+        if self.logs:
+            self.logs.start(self._container.logs(stream=True, follow=True))
 
     def _start(self, **kwargs):
         self._container.start(**kwargs)
