@@ -56,3 +56,24 @@ class YagnaIdMixin:
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"],)
             for r in parse_json_table(output)
         ]
+
+    def id_update(
+        self: CommandRunner,
+        alias_or_addr: str,
+        data_dir: str = "",
+        new_alias: str = "",
+        set_default: bool = False,
+    ) -> Identity:
+        """Run `<yagna-cmd> id update` command."""
+
+        args = make_args(
+            "id", "update", alias_or_addr, data_dir=data_dir, alias=new_alias
+        )
+        if set_default:
+            args.append("--set-default")
+
+        output = self.run_json_command(Dict, *args)
+        result = unwrap_ok_err_json(output)
+        return Identity(
+            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"],
+        )

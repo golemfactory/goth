@@ -97,6 +97,10 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
+    @abc.abstractmethod
+    def setup_account(self) -> None:
+        """Set up the account: initialize payment, create the app key."""
+
     def start_container(self) -> None:
         """
         Start the probe's Docker container.
@@ -107,7 +111,7 @@ class Probe(abc.ABC):
         self.container.start()
         # Give the daemon some time to start before asking it for an app key.
         time.sleep(1)
-        self.create_app_key()
+        self.setup_account()
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(
@@ -213,6 +217,24 @@ class RequestorProbe(Probe):
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
         self._use_agent = config.use_requestor_agent
 
+    def setup_account(self) -> None:
+        """Set up the account: initialize payment, create the app key."""
+
+        # When the daemon is started for the first time, an identity is created
+        # and the account for this identity is initialized in the provider mode
+        # (to accept payments but no to send them).
+
+        # We create a new identity, set it as default, restart the daemon to switch
+        # to this new identity and initialize payment in the requestor mode:
+        new_id = self.cli.id_create()
+        self.cli.id_update(new_id.address, set_default=True)
+        self.container.stop()
+        self.container.start()
+        self.cli.payment_init(requestor_mode=True)
+
+        # Payment setup is done. Now create the app key:
+        self.create_app_key()
+
     def start_agent(self):
         """Start the yagna container and initialize the requestor agent."""
 
@@ -278,6 +300,13 @@ class ProviderProbe(Probe):
     ):
         super().__init__(client, config, log_config, assets_path=assets_path)
         self.agent_preset = preset_name
+
+    def setup_account(self) -> None:
+        """Set up the account: initialize payment, create the app key."""
+
+        # The account is already initialized in the provider mode automatically,
+        # so we just need to create the app key.
+        self.create_app_key()
 
     def start_agent(self):
         """Start the agent and attach the log monitor."""
