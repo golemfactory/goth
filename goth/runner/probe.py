@@ -248,7 +248,7 @@ class RequestorProbe(Probe):
 
     def _start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        self.cli.payment_init(address=self.address, requestor_mode=True)
+        # self.cli.payment_init(address=self.address, requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -304,7 +304,7 @@ class ProviderProbe(Probe):
         """Start the agent and attach the log monitor."""
 
         self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
-        self.cli.payment_init(address=self.address, provider_mode=True)
+        # self.cli.payment_init(address=self.address, provider_mode=True)
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
