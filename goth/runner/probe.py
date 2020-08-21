@@ -55,6 +55,8 @@ class Probe(abc.ABC):
     """An IP address of the daemon's container in the Docker network."""
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
+    key_file: Optional[str]
+    """Keyfile to be imported into the yagna daemon id service."""
 
     def __init__(
         self,
@@ -143,7 +145,7 @@ class Probe(abc.ABC):
             self.container.restart()
             time.sleep(1)
         try:
-            key = self.cli.app_key_create(name=key_name, alias_or_addr=address)
+            key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
         except KeyAlreadyExistsError:
             app_key = next(
@@ -248,7 +250,6 @@ class RequestorProbe(Probe):
 
     def _start_requestor_agent(self):
         """Start provider agent on the container and initialize its LogMonitor."""
-        # self.cli.payment_init(address=self.address, requestor_mode=True)
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -304,7 +305,6 @@ class ProviderProbe(Probe):
         """Start the agent and attach the log monitor."""
 
         self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
-        # self.cli.payment_init(address=self.address, provider_mode=True)
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,

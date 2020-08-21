@@ -1,5 +1,6 @@
 """Classes and utilties to manage docker Containers."""
 
+import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -190,7 +191,7 @@ class DockerContainer:
     def restart(self):
         """Restart the container."""
         if self.logs:
-            self.logs.stop()
+            asyncio.run(self.logs.stop())
         self._container.restart()
         if self.logs:
             self.logs.start(self._container.logs(stream=True, follow=True))

@@ -33,6 +33,9 @@ class YagnaContainerConfig(DockerContainerConfig):
     test scenario. It is consumed only by requestor nodes.
     """
 
+    key_file: Optional[str]
+    """Keyfile to be imported into the yagna id service."""
+
     def __init__(
         self,
         name: str,
