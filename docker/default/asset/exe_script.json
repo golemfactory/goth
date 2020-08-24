@@ -6,7 +6,7 @@
   }},
   {
     "transfer": {
-      "from": "http://34.244.4.185:8000/LICENSE",
+      "from": "http://3.249.139.167:8000/LICENSE",
       "to": "container:/input/file_in"
     }
   },
@@ -17,7 +17,7 @@
   {
     "transfer": {
       "from": "container:/output/file_cp",
-      "to": "http://34.244.4.185:8000/upload/file_up"
+      "to": "http://3.249.139.167:8000/upload/file_up"
     }
   }
 ]

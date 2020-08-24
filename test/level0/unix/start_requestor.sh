@@ -24,4 +24,4 @@ ya-requestor --activity-url "$YAGNA_ACTIVITY_URL" \
        --app-key "$APP_KEY" \
        --exe-script "../asset/exe_script.json" \
        --market-url "$YAGNA_MARKET_URL" \
-       --task-package "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:http://34.244.4.185:8000/rust-wasi-tutorial.zip"
+       --task-package "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:http://3.249.139.167:8000/rust-wasi-tutorial.zip"
