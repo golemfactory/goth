@@ -170,6 +170,12 @@ class DockerContainer:
                     "dest": State.dead,
                     "before": self._container.remove,
                 },
+                {
+                    "trigger": "restart",
+                    "source": [State.running, State.paused, State.exited],
+                    "dest": State.running,
+                    "before": self._restart,
+                },
             ],
             initial=State.created,
             model_attribute="_state",  # name of the field under which state is stored
@@ -187,16 +193,17 @@ class DockerContainer:
         """Proxy to `Container.exec_run`."""
         return self._container.exec_run(*args, **kwargs)
 
-    def restart(self):
+    def _start(self, **kwargs):
+        """Start the container."""
+        self._container.start(**kwargs)
+        if self.logs:
+            self.logs.start(self._container.logs(stream=True, follow=True))
+
+    def _restart(self):
         """Restart the container."""
         self._container.restart()
         if self.logs:
             self.logs.update_stream(self._container.logs(stream=True, follow=True))
-
-    def _start(self, **kwargs):
-        self._container.start(**kwargs)
-        if self.logs:
-            self.logs.start(self._container.logs(stream=True, follow=True))
 
     def _update_state(self, *_args, **_kwargs):
         """Update the state machine.

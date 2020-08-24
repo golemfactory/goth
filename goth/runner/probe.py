@@ -123,6 +123,11 @@ class Probe(abc.ABC):
 
         The key name can be specified via `key_name` parameter.
         Return the key as string.
+
+        When `self.key_file` is set, this method also:
+        - creates ID based on `self.key_file`
+        - sets this new ID as default
+        - restarts the container ( https://github.com/golemfactory/yagna/issues/458 )
         """
         address = None
         if self.key_file:
