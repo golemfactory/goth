@@ -154,7 +154,6 @@ class ProbeStepBuilder:
         self._wait_for_log(
             "wait_for_exeunit_finished",
             "ExeUnit process exited with status Finished - exit code: 0",
-            timeout=30,
         )
 
     def wait_for_invoice_sent(self):
@@ -166,7 +165,7 @@ class ProbeStepBuilder:
         self._wait_for_log(
             "wait_for_invoice_paid",
             "Invoice .+? for agreement .+? was paid",
-            timeout=60 * 10,
+            timeout=30,
         )
 
     def _wait_for_log(self, name: str, pattern: str, timeout: int = 10):
