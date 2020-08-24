@@ -33,21 +33,21 @@ LEVEL0_TOPOLOGY = [
         role=Provider,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
-            # market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            # rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
         ),
         volumes=VOLUMES,
     ),
-    # YagnaContainerConfig(
-    #     name="provider_2",
-    #     role=Provider,
-    #     # Configure the second provider node to communicate via proxy
-    #     environment=node_environment(
-    #         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-    #         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-    #     ),
-    #     volumes=VOLUMES,
-    # ),
+    YagnaContainerConfig(
+        name="provider_2",
+        role=Provider,
+        # Configure the second provider node to communicate via proxy
+        environment=node_environment(
+            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        ),
+        volumes=VOLUMES,
+    ),
 ]
 
 
