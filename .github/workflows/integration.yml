@@ -69,7 +69,9 @@ jobs:
         run: pip freeze
 
       - name: Check running containers
-        run: docker ps
+        run: |
+          docker ps
+          docker network inspect docker_default
 
       - name: Run test suite
         run: python -m pytest test/level0 --assets-path=test/level0/asset -svx --log-cli-level=DEBUG
