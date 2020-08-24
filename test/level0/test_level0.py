@@ -58,7 +58,8 @@ class TestLevel0:
     async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
         """Test running Level0Scenario."""
         runner = Runner(
-            LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+            # LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+            LEVEL0_TOPOLOGY, "", logs_path, assets_path
         )
 
         all_providers = runner.get_probes(role=Provider)
