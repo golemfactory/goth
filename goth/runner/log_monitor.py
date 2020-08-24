@@ -138,6 +138,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
         )
 
     def update_stream(self, in_stream: Iterator[bytes]):
+        """Update the stream when restarting a container."""
         if self._buffer_task:
             self._buffer_task.cancel()
         self.in_stream = in_stream
