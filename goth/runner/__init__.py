@@ -163,6 +163,7 @@ class Runner:
             node_names=node_names, assertions_module=self.api_assertions_module
         )
         self.proxy.start()
+        time.sleep(5)
 
         # The proxy is ready to route the API calls. Start the agents.
         for probe in self.probes:
