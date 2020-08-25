@@ -44,7 +44,7 @@ def node_environment(
 
     if rest_api_url_base:
         agent_env = {
-            "YAGNA_MARKET_URL": MARKET_API_URL.substitute(base=rest_api_url_base),
+            # "YAGNA_MARKET_URL": MARKET_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_ACTIVITY_URL": ACTIVITY_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_PAYMENT_URL": PAYMENT_API_URL.substitute(base=rest_api_url_base),
         }
