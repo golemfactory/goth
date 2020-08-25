@@ -137,7 +137,7 @@ class Probe(abc.ABC):
             try:
                 db_id = self.cli.id_create(alias=key_name, key_file=self.key_file)
                 address = db_id.address
-                self._logger.debug("create_id. alias=%s, address=%s", id, address)
+                self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
             except KeyAlreadyExistsError as e:
                 logger.critical("Id already exists : (%r)", e)
                 raise
