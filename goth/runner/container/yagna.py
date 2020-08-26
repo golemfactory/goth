@@ -33,6 +33,9 @@ class YagnaContainerConfig(DockerContainerConfig):
     test scenario. It is consumed only by requestor nodes.
     """
 
+    key_file: Optional[str]
+    """Keyfile to be imported into the yagna id service."""
+
     def __init__(
         self,
         name: str,
@@ -40,11 +43,13 @@ class YagnaContainerConfig(DockerContainerConfig):
         volumes: Optional[Dict[Template, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
+        key_file: Optional[str] = None,
         use_requestor_agent: bool = False,
     ):
         super().__init__(name, volumes or {}, log_config)
         self.role = role
         self.environment = environment or {}
+        self.key_file = key_file
         self.use_requestor_agent = use_requestor_agent
 
 
