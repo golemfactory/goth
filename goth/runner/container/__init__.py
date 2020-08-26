@@ -1,6 +1,7 @@
 """Classes and utilties to manage docker Containers."""
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from string import Template
@@ -203,7 +204,9 @@ class DockerContainer:
         """Restart the container."""
         self._container.restart()
         if self.logs:
-            self.logs.update_stream(self._container.logs(stream=True, follow=True))
+            self.logs.update_stream(
+                self._container.logs(stream=True, follow=True, since=datetime.now())
+            )
 
     def _update_state(self, *_args, **_kwargs):
         """Update the state machine.
