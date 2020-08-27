@@ -7,6 +7,9 @@ from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
 
 
+DEFAULT_PAYMENT_DRIVER = "ngnt"
+
+
 @dataclass(frozen=True)
 class Payments:
     """Information about payment amounts."""
@@ -35,14 +38,15 @@ class YagnaPaymentMixin:
         requestor_mode: bool = False,
         provider_mode: bool = False,
         data_dir: str = "",
-        payment_driver: str = "ngnt",
+        payment_driver: str = DEFAULT_PAYMENT_DRIVER,
+        address: str = "",
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
         """
 
-        args = make_args("payment", "init", payment_driver, data_dir=data_dir)
+        args = make_args("payment", "init", payment_driver, address, data_dir=data_dir)
         if requestor_mode:
             args.append("-r")
         if provider_mode:
@@ -50,7 +54,7 @@ class YagnaPaymentMixin:
         return self.run_command(*args)[0]
 
     def payment_status(
-        self: CommandRunner, data_dir: str = "", driver: str = "ngnt"
+        self: CommandRunner, data_dir: str = "", driver: str = DEFAULT_PAYMENT_DRIVER
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 

@@ -165,10 +165,10 @@ class ProbeStepBuilder:
         self._wait_for_log(
             "wait_for_invoice_paid",
             "Invoice .+? for agreement .+? was paid",
-            timeout=60 * 10,
+            timeout=30,
         )
 
-    def _wait_for_log(self, name: str, pattern: str, timeout: int = 10):
+    def _wait_for_log(self, name: str, pattern: str, timeout: int = 20):
         step = AssertionStep(name, timeout)
         for probe in self._probes:
             assertion = assert_message_starts_with(pattern)
