@@ -99,7 +99,9 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
     """
 
     handler = logging.FileHandler(
-        (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
+        (config.base_dir / config.file_name).with_suffix(".log"),
+        encoding="utf-8",
+        delay=True,
     )
     handler.setFormatter(config.formatter)
     logger_ = logging.getLogger(str(config.file_name))

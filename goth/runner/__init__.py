@@ -12,8 +12,11 @@ from typing import Dict, List, Optional
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.container.compose import COMPOSE_TOPOLOGY
 from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
+from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.probe import Probe, Role
 from goth.runner.probe_steps import ProbeStepBuilder, Step
 from goth.runner.proxy import Proxy
@@ -43,6 +46,9 @@ class Runner:
     steps: List[Step]
     """The list of steps to be awaited, steps of the scenario to be executed."""
 
+    _static_monitors: Dict[str, LogEventMonitor]
+    """Log monitors for containers running as part of docker-compose."""
+
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
@@ -56,6 +62,7 @@ class Runner:
         self.probes = []
         self.proxy = None
         self.steps = []
+        self._static_monitors = {}
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -64,7 +71,11 @@ class Runner:
 
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
-        self._create_probes()
+
+        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
+        scenario_dir.mkdir(exist_ok=True)
+        self._create_probes(scenario_dir)
+        self._start_static_monitors(scenario_dir)
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
@@ -117,17 +128,40 @@ class Runner:
             for probe in self.probes:
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
+            for name, monitor in self._static_monitors.items():
+                self.logger.info("stopping monitor. name=%s", name)
+                await monitor.stop()
 
             self.proxy.stop()
             # Stopping the proxy and probe log monitors triggered evaluation
             # of assertions at the "end of events". There may be some new failures.
             self.check_assertion_errors()
 
-    def _create_probes(self) -> None:
-
+    def _start_static_monitors(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
+
+        for config in COMPOSE_TOPOLOGY:
+            log_config = config.log_config or LogConfig(config.name)
+            log_config.base_dir = scenario_dir
+            monitor = LogEventMonitor(log_config)
+
+            container = docker_client.containers.list(filters={"name": config.name})
+            if not container:
+                # try:
+                #     container = docker_client.containers.get(config.name)
+                # except docker.errors.NotFound:
+                raise ContainerNotFoundError(config.name)
+            container = container[0]
+
+            monitor.start(
+                container.logs(
+                    follow=True, since=datetime.now(), stream=True, timestamps=True
+                )
+            )
+            self._static_monitors[config.name] = monitor
+
+    def _create_probes(self, scenario_dir: Path) -> None:
+        docker_client = docker.from_env()
 
         for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
