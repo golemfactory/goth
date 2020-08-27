@@ -43,7 +43,7 @@ Docker Compose is a separate binary which needs to be available on your system i
 #### Getting a GitHub API token
 In the current setup, the Yagna Docker image is built locally when the test network is first started. To install the Yagna binary in the Docker image, a .deb package is downloaded from GitHub Actions. Since access to this package is currently restricted, before building the Docker image we need to obtain a GitHub API token with appropriate rights.
 
-To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens) and generate a new token (giving it the `repo` OAuth scope is enough).
+To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens). You will need to grant your new token the full `repo` scope, as well as the `read:packages` scope (this is required in order to pull the Docker image from the [gnt2 repo](https://github.com/golemfactory/gnt2), which is currently private).
 
 Once your token is generated, create an environment variable named `GITHUB_API_TOKEN` and store the token as its value. This environment variable will need to be available in the terminal from which you run `docker-compose`.
 
