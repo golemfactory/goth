@@ -1,5 +1,5 @@
 # Requirements file for developing the `yagna-integrations` tests
 --extra-index-url https://builds.golem.network --trusted-host build.golem.network
-black
+black==20.8b1
 flake8
 flake8-docstrings
