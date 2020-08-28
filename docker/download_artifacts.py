@@ -12,7 +12,7 @@ from typing import Any, Callable, List, Optional
 import requests
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-30s %(message)s", level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)-30s %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
