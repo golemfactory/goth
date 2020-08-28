@@ -30,7 +30,7 @@ jobs:
         run: python --version && pip --version
 
       - name: Install developer requirements
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev-frozen.txt
 
       - name: Print installed package versions
         run: pip freeze
