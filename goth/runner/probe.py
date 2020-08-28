@@ -69,7 +69,8 @@ class Probe(abc.ABC):
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
         agent_log_config = LogConfig(
-            file_name=f"{self.name}_agent", base_dir=self.container.log_config.base_dir,
+            file_name=f"{self.name}_agent",
+            base_dir=self.container.log_config.base_dir,
         )
         # FIXME: Move agent logs to ProviderProbe when level0 is removed
         self.agent_logs = LogEventMonitor(agent_log_config)
@@ -309,7 +310,9 @@ class ProviderProbe(Probe):
     def start_agent(self):
         """Start the agent and attach the log monitor."""
 
-        self.container.exec_run(f"ya-provider preset activate {self.agent_preset}",)
+        self.container.exec_run(
+            f"ya-provider preset activate {self.agent_preset}",
+        )
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
