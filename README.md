@@ -41,19 +41,22 @@ Docker Compose is a separate binary which needs to be available on your system i
 ### Running the test network
 
 #### Getting a GitHub API token
-In the current setup, the Yagna Docker image is built locally when the test network is first started. To install the Yagna binary in the Docker image, a .deb package is downloaded from GitHub Actions. Since access to this package is currently restricted, before building the Docker image we need to obtain a GitHub API token with appropriate rights.
+In the current setup, the Yagna Docker image is built locally when the test network is first started. To install the Yagna binary a .deb package is downloaded from GitHub. Downloading artifacts requires authentication, therefore we need to use a GitHub API personal token with appropriate permissions.
 
-To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens). You will need to grant your new token the full `repo` scope, as well as the `read:packages` scope (this is required in order to pull the Docker image from the [gnt2 repo](https://github.com/golemfactory/gnt2), which is currently private).
+To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens).
+You will need to grant your new token the full `repo` scope, as well as the `read:packages` scope. The packages scope is required in order to pull a Docker image from the [gnt2 repo](https://github.com/golemfactory/gnt2), which is currently private.
 
-Once your token is generated, create an environment variable named `GITHUB_API_TOKEN` and store the token as its value. This environment variable will need to be available in the terminal from which you run `docker-compose`.
+Once your token is generated you need to do two things:
+1. Log in to GitHub's Docker registry by calling: `docker login docker.pkg.github.com -u {username}`, replacing `{username}` with your GitHub username and pasting in your access token as the password. You only need to do this once on your development machine.
+2. Create an environment variable named `GITHUB_API_TOKEN` and store the access token as its value. This environment variable will need to be available in the terminal from which you run `docker-compose`.
 
 #### Starting the Docker Compose network
 Having the GitHub API token available in your environment, navigate to this project's root directory and run the following command:
 ```
-docker-compose -f docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml up -d --build
 ```
 
-This command starts the network defined by the `.yml` file in detached mode (running in the background). If everything is correctly configured you should see log output about building the Yagna Docker image. Once the network is up, you can verify it by checking the currently active docker containers:
+This command starts the network defined by the `.yml` file in detached mode (running in the background). The flag `--build` forces a re-build of all images used in the network. If everything is correctly configured you should see log output about building the Yagna Docker image. Once the network is up, you can verify it by checking the currently active docker containers:
 ```
 docker ps
 ```
