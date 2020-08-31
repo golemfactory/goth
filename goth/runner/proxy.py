@@ -30,7 +30,9 @@ class Proxy:
     """Mapping of IP addresses to node names"""
 
     def __init__(
-        self, node_names: Mapping[str, str], assertions_module: Optional[str] = None,
+        self,
+        node_names: Mapping[str, str],
+        assertions_module: Optional[str] = None,
     ):
         self._node_names = node_names
         self._logger = logging.getLogger(__name__)

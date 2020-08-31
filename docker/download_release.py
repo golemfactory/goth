@@ -9,7 +9,8 @@ from pathlib import Path
 import requests
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)-8s %(name)-30s %(message)s", level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)-30s %(message)s",
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 

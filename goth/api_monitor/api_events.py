@@ -197,7 +197,10 @@ def is_invoice_send_response(event: APIEvent) -> bool:
     """Check if `event` is a response for InvoiceSend operation."""
 
     return _match_event(
-        event, APIResponse, "POST", "^/payment-api/v1/provider/invoices/.*/send$",
+        event,
+        APIResponse,
+        "POST",
+        "^/payment-api/v1/provider/invoices/.*/send$",
     )
 
 
