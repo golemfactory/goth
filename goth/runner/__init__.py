@@ -155,7 +155,10 @@ class Runner:
 
             monitor.start(
                 container.logs(
-                    follow=True, since=datetime.now(), stream=True, timestamps=True
+                    follow=True,
+                    since=datetime.utcnow(),
+                    stream=True,
+                    timestamps=True,
                 )
             )
             self._static_monitors[config.name] = monitor
