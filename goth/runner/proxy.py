@@ -8,6 +8,7 @@ from mitmproxy import options
 import mitmproxy.utils.debug
 from mitmproxy.tools import _main, cmdline, dump
 
+from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
 from goth.api_monitor.api_events import APIEvent
 from goth.api_monitor.router_addon import RouterAddon
@@ -30,9 +31,7 @@ class Proxy:
     """Mapping of IP addresses to node names"""
 
     def __init__(
-        self,
-        node_names: Mapping[str, str],
-        assertions_module: Optional[str] = None,
+        self, node_names: Mapping[str, str], assertions_module: Optional[str] = None
     ):
         self._node_names = node_names
         self._logger = logging.getLogger(__name__)
@@ -83,6 +82,6 @@ class Proxy:
                 inner_self.addons.add(RouterAddon(self._node_names))
                 inner_self.addons.add(MonitorAddon(self.monitor))
 
-        args = "-q --mode reverse:http://127.0.0.1 --listen-port 9000".split()
-        _main.run(MITMProxyRunner, cmdline.mitmdump, args)
+        args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
+        _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
         self._logger.info("Embedded mitmproxy exited")

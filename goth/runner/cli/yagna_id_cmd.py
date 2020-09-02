@@ -35,10 +35,7 @@ class YagnaIdMixin:
         output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
         return Identity(
-            result["alias"],
-            result["isDefault"],
-            result["isLocked"],
-            result["nodeId"],
+            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"]
         )
 
     def id_show(
@@ -64,12 +61,16 @@ class YagnaIdMixin:
         args = make_args("id", "list", data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
         return [
+<<<<<<< HEAD
             Identity(
                 r["alias"],
                 r["default"] == "X",
                 r["locked"] == "X",
                 r["address"],
             )
+=======
+            Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"])
+>>>>>>> master
             for r in parse_json_table(output)
         ]
 
@@ -88,8 +89,12 @@ class YagnaIdMixin:
         output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
         return Identity(
+<<<<<<< HEAD
             result["alias"],
             result["isDefault"],
             result["isLocked"],
             result["nodeId"],
+=======
+            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"]
+>>>>>>> master
         )
