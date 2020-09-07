@@ -59,7 +59,8 @@ def download_asset(release: dict, content_type: str, output_path: str):
     assets = release["assets"]
     logger.debug("assets=%s", assets)
     asset = next(filter(lambda a: a["content_type"] == content_type, assets))
-    logger.info("found matching asset. asset=%s", asset)
+    logger.info("found matching asset. name=%s", asset["name"])
+    logger.debug("asset=%s", asset)
 
     download_url = asset["browser_download_url"]
     with session.get(download_url) as response:
