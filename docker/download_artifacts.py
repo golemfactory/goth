@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-ARTIFACT_NAMES = ["yagna.deb", "ya-sb-router.deb"]
+ARTIFACT_NAMES = ["yagna", "ya-sb-router"]
 BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
@@ -34,7 +34,13 @@ parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
 parser.add_argument(
     "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
 )
-parser.add_argument("artifacts", nargs="*", default=ARTIFACT_NAMES)
+parser.add_argument(
+    "artifacts",
+    nargs="*",
+    default=ARTIFACT_NAMES,
+    help="List of artifact names which should be downloaded. \
+            These can be substrings, as well as exact names (with extensions).",
+)
 args = parser.parse_args()
 
 if not args.token:
@@ -146,7 +152,7 @@ def download_artifacts(artifacts_url: str, artifact_names: List[str]):
     artifacts = response.json()["artifacts"]
     logger.debug("artifacts=%s", artifacts)
     for name in artifact_names:
-        artifact = next(filter(lambda a: a["name"] == name, artifacts), None)
+        artifact = next(filter(lambda a: name in a["name"], artifacts), None)
         if not artifact:
             logger.warning("failed to find artifact. artifact_name=%s", name)
             continue
@@ -160,7 +166,7 @@ def download_artifacts(artifacts_url: str, artifact_names: List[str]):
                 fd.write(response.content)
                 logger.debug("extracting zip archive. path=%s", fd.name)
                 shutil.unpack_archive(fd.name, format="zip")
-        logger.info("extracted package. path=%s", name)
+        logger.info("extracted package. path=%s", artifact["name"])
 
 
 if __name__ == "__main__":
