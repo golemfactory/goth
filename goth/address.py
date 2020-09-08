@@ -2,6 +2,10 @@
 
 Module containing constants and templates related to addresses commonly used in
 the context of yagna and the test harness.
+
+Note: the variables defining ports are also used in the `nginx.conf` file
+in the proxy container. If you rename any of them here then make sure to also
+apply the same renaming in `nginx.conf`.
 """
 from string import Template
 from typing import Dict, Mapping, Optional
@@ -60,6 +64,7 @@ class DefaultTemplate(Template):
 _BASE_URL_TEMPLATE = "$protocol://$host:$port"
 
 MARKET_HOST = "mock-api"
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
 MARKET_PORT = 5001
 MARKET_PROTOCOL = "http"
 MARKET_BASE_URL = DefaultTemplate(
@@ -89,6 +94,7 @@ YAGNA_BUS_URL = DefaultTemplate(
     _BASE_URL_TEMPLATE, default={"port": YAGNA_BUS_PORT, "protocol": YAGNA_BUS_PROTOCOL}
 )
 
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
 YAGNA_REST_PORT = 6000
 YAGNA_REST_PROTOCOL = "http"
 YAGNA_REST_URL = DefaultTemplate(
@@ -97,5 +103,12 @@ YAGNA_REST_URL = DefaultTemplate(
 )
 
 # Range of ports on the host which can be mapped to yagna daemons' REST API port
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
 HOST_REST_PORT_START = 6001
-HOST_REST_PORT_END = 7000
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
+HOST_REST_PORT_END = 6100
+
+
+# Port used by the mitmproxy instance
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
+MITM_PROXY_PORT = 9000
