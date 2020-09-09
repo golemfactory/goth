@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 import docker
 
 from goth.assertions import TemporalAssertionError
-from goth.runner.container.compose import COMPOSE_TOPOLOGY
+from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
@@ -129,7 +129,7 @@ class Runner:
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
             for name, monitor in self._static_monitors.items():
-                self.logger.info("stopping monitor. name=%s", name)
+                self.logger.debug("stopping static monitor. name=%s", name)
                 await monitor.stop()
 
             self.proxy.stop()
@@ -140,17 +140,14 @@ class Runner:
     def _start_static_monitors(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
 
-        for config in COMPOSE_TOPOLOGY:
-            log_config = config.log_config or LogConfig(config.name)
+        for service_name in get_compose_services():
+            log_config = LogConfig(service_name)
             log_config.base_dir = scenario_dir
             monitor = LogEventMonitor(log_config)
 
-            container = docker_client.containers.list(filters={"name": config.name})
+            container = docker_client.containers.list(filters={"name": service_name})
             if not container:
-                # try:
-                #     container = docker_client.containers.get(config.name)
-                # except docker.errors.NotFound:
-                raise ContainerNotFoundError(config.name)
+                raise ContainerNotFoundError(service_name)
             container = container[0]
 
             monitor.start(
@@ -161,7 +158,7 @@ class Runner:
                     timestamps=True,
                 )
             )
-            self._static_monitors[config.name] = monitor
+            self._static_monitors[service_name] = monitor
 
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
