@@ -1,6 +1,5 @@
 """Classes and utilities to use a Monitor for log events."""
 
-import asyncio
 from datetime import datetime
 from enum import Enum
 import logging

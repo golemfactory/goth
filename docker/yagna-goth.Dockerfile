@@ -11,6 +11,6 @@ RUN pip install requests \
 FROM debian:bullseye-slim
 COPY default/asset /asset
 COPY default/asset/presets.json /presets.json
-COPY --from=downloader /yagna.deb /ya-sb-router.deb ya-runtime-wasi.deb ./
-RUN apt update && apt install -y ./yagna.deb ./ya-sb-router.deb ./ya-runtime-wasi.deb
+COPY --from=downloader /*.deb ./
+RUN apt update && apt install -y ./*.deb
 ENTRYPOINT /usr/bin/yagna

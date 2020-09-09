@@ -1,10 +1,8 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
-from pathlib import Path
 
 import yaml
 
 from goth.project import DOCKER_DIR
-from goth.runner.container import DockerContainerConfig
 
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
 
