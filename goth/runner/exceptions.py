@@ -25,3 +25,9 @@ class TimeoutError(Exception):
     """Exception for when a timeout occurs."""
 
     pass
+
+
+class StopThreadException(Exception):
+    """Exception used to stop a running `StoppableThread`."""
+
+    pass

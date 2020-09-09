@@ -8,7 +8,10 @@ import re
 import time
 from typing import Iterator, Optional
 
+from func_timeout.StoppableThread import StoppableThread
+
 from goth.assertions.monitor import EventMonitor
+from goth.runner.exceptions import StopThreadException
 from goth.runner.log import LogConfig
 
 logger = logging.getLogger(__name__)
@@ -139,22 +142,31 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             self.logger,
         )
 
+    async def stop(self) -> None:
+        """Stop the monitor."""
+        await super().stop()
+        if self._buffer_task:
+            self._buffer_task.stop(StopThreadException)
+
     def update_stream(self, in_stream: Iterator[bytes]):
         """Update the stream when restarting a container."""
         if self._buffer_task:
-            self._buffer_task.cancel()
+            self._buffer_task.stop(StopThreadException)
         self.in_stream = in_stream
-        loop = asyncio.get_event_loop()
-        self._buffer_task = loop.run_in_executor(None, self._buffer_input)
+        self._buffer_task = StoppableThread(target=self._buffer_input, daemon=True)
+        self._buffer_task.start()
 
     def _buffer_input(self):
         logger.debug("Start reading input. name=%s", self.logger.name)
 
-        for chunk in self.in_stream:
-            chunk = chunk.decode()
-            for line in chunk.splitlines():
-                self.logger.info(line)
+        try:
+            for chunk in self.in_stream:
+                chunk = chunk.decode()
+                for line in chunk.splitlines():
+                    self.logger.info(line)
 
-                event = LogEvent(line)
-                logger.debug("[%s] event=%s", self.logger.name, event)
-                self.add_event(event)
+                    event = LogEvent(line)
+                    logger.debug("[%s] event=%s", self.logger.name, event)
+                    self.add_event(event)
+        except StopThreadException:
+            return
