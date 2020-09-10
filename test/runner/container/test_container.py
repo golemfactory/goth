@@ -124,4 +124,5 @@ def test_yagna_container_create(yagna_container, mock_docker_client):
         ports=ANY,
         volumes={},
         detach=True,
+        privileged=True,
     )
