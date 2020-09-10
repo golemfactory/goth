@@ -50,8 +50,6 @@ LEVEL1_TOPOLOGY = [
 ]
 
 
-
-
 @pytest.mark.asyncio
 async def test_level1(logs_path: Path, assets_path: Optional[Path]):
     """Test running Level1Scenario."""

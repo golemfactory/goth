@@ -50,10 +50,10 @@ SIMPLE_TOPOLOGY = [
 ]
 
 
-
-
 @pytest.mark.asyncio
-async def test_e2e_wasm_simple_flow_succeeds(logs_path: Path, assets_path: Optional[Path]):
+async def test_e2e_wasm_simple_flow_succeeds(
+    logs_path: Path, assets_path: Optional[Path]
+):
     """Test simple successful computation flow on 3 node network."""
     runner = Runner(
         SIMPLE_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
@@ -91,8 +91,11 @@ async def test_e2e_wasm_simple_flow_succeeds(logs_path: Path, assets_path: Optio
 
     await runner.run_scenario()
 
+
 @pytest.mark.asyncio
-async def test_e2e_wasm_simple_flow_reject_invoices(logs_path: Path, assets_path: Optional[Path]):
+async def test_e2e_wasm_simple_flow_reject_invoices(
+    logs_path: Path, assets_path: Optional[Path]
+):
     """Test simple successful computation flow on 3 node network."""
     runner = Runner(
         SIMPLE_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
