@@ -1,10 +1,11 @@
 """Module with information on the project itself, e.g. project root directory."""
 from pathlib import Path
+from typing import Optional
 
 import goth
 
 
-def _find_parent_with(start: Path, child_name: str):
+def _find_parent_with(start: Path, child_name: str) -> Optional[Path]:
     """Walk filesystem upwards from `start` looking for dir containing `child_name`.
 
     Return first dir with item named `child_name` or None if no matches were found.
@@ -22,4 +23,6 @@ def _find_parent_with(start: Path, child_name: str):
 
 
 PROJECT_ROOT = _find_parent_with(Path(goth.__file__).parent, ".git")
+if not PROJECT_ROOT:
+    raise RuntimeError("Failed to find project root.")
 DOCKER_DIR = PROJECT_ROOT / "docker"
