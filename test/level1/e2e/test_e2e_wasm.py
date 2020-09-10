@@ -19,7 +19,7 @@ from goth.runner.probe import Provider, Requestor
 
 logger = logging.getLogger(__name__)
 
-LEVEL1_TOPOLOGY = [
+SIMPLE_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         role=Requestor,
@@ -53,10 +53,10 @@ LEVEL1_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level1(logs_path: Path, assets_path: Optional[Path]):
-    """Test running Level1Scenario."""
+async def test_e2e_wasm_simple_flow_succeeds(logs_path: Path, assets_path: Optional[Path]):
+    """Test simple successful computation flow on 3 node network."""
     runner = Runner(
-        LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+        SIMPLE_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
     )
 
     providers = runner.get_probes(role=Provider)
@@ -88,5 +88,44 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
     invoices = requestor.gather_invoices(agreement_ids)
     requestor.pay_invoices(invoices)
     providers.wait_for_invoice_paid()
+
+    await runner.run_scenario()
+
+@pytest.mark.asyncio
+async def test_e2e_wasm_simple_flow_reject_invoices(logs_path: Path, assets_path: Optional[Path]):
+    """Test simple successful computation flow on 3 node network."""
+    runner = Runner(
+        SIMPLE_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+    )
+
+    providers = runner.get_probes(role=Provider)
+    requestor = runner.get_probes(role=Requestor)
+
+    # Market
+    providers.wait_for_offer_subscribed()
+    subscription_id = requestor.subscribe_demand()
+    proposals = requestor.wait_for_proposals(subscription_id, providers._probes)
+    requestor.counter_proposals(subscription_id, proposals)
+    providers.wait_for_proposal_accepted()
+    requestor.wait_for_proposals(subscription_id, providers._probes)
+    agreement_ids = requestor.create_agreements(proposals)
+    requestor.confirm_agreements(agreement_ids)
+    providers.wait_for_agreement_approved()
+    requestor.unsubscribe_demand(subscription_id)
+
+    # Activity
+    activity_ids = requestor.create_activities(agreement_ids)
+    providers.wait_for_activity_created()
+    activity_batches = requestor.call_exec(activity_ids)
+    providers.wait_for_exeunit_started()
+    requestor.collect_results(activity_batches)
+    requestor.destroy_activities(activity_ids)
+    providers.wait_for_exeunit_finished()
+
+    # Payment
+    providers.wait_for_invoice_sent()
+    invoices = requestor.gather_invoices(agreement_ids)
+    requestor.reject_invoices(invoices)
+    providers.wait_for_invoice_rejected()
 
     await runner.run_scenario()
