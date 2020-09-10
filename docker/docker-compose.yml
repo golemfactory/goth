@@ -14,7 +14,11 @@ services:
         command: ["-l", "tcp://0.0.0.0:7477"]
 
     mock-api:
-        image: golemfactory/golem-client-mock:0.1.2
+        image: golem-client-mock
+        build:
+            context: .
+            dockerfile: mock-api.Dockerfile
+        command: dotnet GolemClientMocksaAPI.dll --Logging:LogLevel:Default=Debug
         ports:
             - "5001:5001"
 
