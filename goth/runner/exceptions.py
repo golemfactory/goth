@@ -17,10 +17,17 @@ class KeyAlreadyExistsError(CommandError):
 class ContainerNotFoundError(Exception):
     """Exception for when the container is not found."""
 
-    pass
+    def __init__(self, name: str):
+        super().__init__(f"No container with name containing '{name}' was found.")
 
 
 class TimeoutError(Exception):
     """Exception for when a timeout occurs."""
+
+    pass
+
+
+class StopThreadException(Exception):
+    """Exception used to stop a running `StoppableThread`."""
 
     pass
