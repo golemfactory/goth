@@ -9,9 +9,9 @@ from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
 from openapi_market_client import AgreementProposal, Demand, Proposal
 from openapi_payment_client import Acceptance, Allocation, Invoice
 
-from goth.runner import Probe
+from goth.runner import step
 from goth.runner.api_client import ApiEnabledRequestorProbe
-from goth.runner.simple import step
+from goth.runner.probe import Probe
 
 
 logger = logging.getLogger(__name__)

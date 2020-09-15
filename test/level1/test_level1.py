@@ -13,11 +13,11 @@ from goth.address import (
     YAGNA_REST_URL,
 )
 from goth.node import node_environment, VOLUMES
+from goth.runner import Runner
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Provider, Requestor
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
-from goth.runner.simple import SimpleRunner
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ LEVEL1_TOPOLOGY = [
 
 @pytest.mark.asyncio
 async def test_level1(logs_path: Path, assets_path: Optional[Path]):
-    """Test running Level1Scenario with SimpleRunner."""
+    """Test running level 1 scenario."""
 
     # TODO: provide the exe script in a fixture?
     if assets_path is None:
@@ -65,7 +65,7 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
     exe_script_path = Path(assets_path / "exe_script.json")
     exe_script = exe_script_path.read_text()
 
-    async with SimpleRunner(
+    async with Runner(
         LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
     ) as runner:
 

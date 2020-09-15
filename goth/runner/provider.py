@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Optional
 from docker import DockerClient
 
-from goth.runner import Runner, YagnaContainerConfig
+from goth.runner import step, Runner
+from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe
 from goth.runner.log import LogConfig
-from goth.runner.simple import step
 
 
 class ProviderProbeWithLogSteps(ProviderProbe):
