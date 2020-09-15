@@ -26,9 +26,7 @@ class ActivityOperationsMixin:
     """Provides high-level steps that rely on Yagna Activity API."""
 
     @step()
-    async def create_activity(
-        self: ApiEnabledRequestorProbe, agreement_id: str
-    ) -> str:
+    async def create_activity(self: ApiEnabledRequestorProbe, agreement_id: str) -> str:
         """Call create_activity on the requestor activity api."""
 
         activity_id = self.activity.control.create_activity(agreement_id)
@@ -49,7 +47,7 @@ class ActivityOperationsMixin:
         self: ApiEnabledRequestorProbe,
         activity_id: str,
         batch_id: str,
-        num_results: int
+        num_results: int,
     ) -> List[ExeScriptCommandResult]:
         """Call collect_results on the requestor activity api."""
 
@@ -112,9 +110,7 @@ class MarketOperationsMixin:
 
     @step()
     async def wait_for_proposals(
-        self: ApiEnabledRequestorProbe,
-        subscription_id: str,
-        providers: Sequence[Probe]
+        self: ApiEnabledRequestorProbe, subscription_id: str, providers: Sequence[Probe]
     ) -> List[Proposal]:
         """Call collect_offers on the requestor market api.
 
@@ -151,7 +147,7 @@ class MarketOperationsMixin:
         self: ApiEnabledRequestorProbe,
         subscription_id: str,
         demand: Demand,
-        provider_proposal: Proposal
+        provider_proposal: Proposal,
     ) -> str:
         """Call counter_proposal_demand on the requestor market api."""
 
@@ -212,9 +208,7 @@ class PaymentOperationsMixin:
             invoices = (
                 self.payment.get_received_invoices()
             )  # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
-            invoices = [
-                inv for inv in invoices if inv.agreement_id == agreement_id
-            ]
+            invoices = [inv for inv in invoices if inv.agreement_id == agreement_id]
 
         return invoices
 
@@ -246,7 +240,7 @@ class RequestorProbeWithApiSteps(
     ApiEnabledRequestorProbe,
     ActivityOperationsMixin,
     MarketOperationsMixin,
-    PaymentOperationsMixin
+    PaymentOperationsMixin,
 ):
     """A testing interface for a Yagna requestor node, with all bells and whistles.
 

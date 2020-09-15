@@ -164,9 +164,7 @@ async def test_level1_simple(logs_path: Path, assets_path: Optional[Path]):
         agreement_providers = []
 
         for proposal in proposals:
-            provider = next(
-                p for p in providers if p.address == proposal.issuer_id
-            )
+            provider = next(p for p in providers if p.address == proposal.issuer_id)
             logger.info("Processing proposal from %s", provider.name)
 
             counterproposal_id = await requestor.counter_proposal(

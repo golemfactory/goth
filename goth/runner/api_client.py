@@ -14,7 +14,10 @@ from goth.address import (
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
-    ensure_no_trailing_slash, YAGNA_REST_PORT, PROXY_HOST, YAGNA_REST_URL
+    ensure_no_trailing_slash,
+    YAGNA_REST_PORT,
+    PROXY_HOST,
+    YAGNA_REST_URL,
 )
 from goth.runner import Runner, YagnaContainerConfig
 from goth.runner.container.utils import get_container_address
@@ -33,6 +36,7 @@ class ActivityApiClient:
     The activity API is divided into two domains: control and state. This division is
     reflected in the inner client objects of this class.
     """
+
     control: activity.RequestorControlApi
     """Client for the control part of the activity API."""
 
@@ -44,6 +48,7 @@ class ActivityApiClient:
 # `ConfTVar` and `ClientTVar` are used just for typing the method
 # `ApiClientMixin._create_api_client()`. Not sure if it's worth it?
 
+
 class ConfigurationProto(Protocol):
 
     access_token: str
@@ -54,10 +59,11 @@ ClientTVar = TypeVar("ClientTVar", covariant=True)
 
 
 class ApiModule(Protocol[ConfTVar, ClientTVar]):
+    def Configuration(self, host: str) -> ConfTVar:
+        pass
 
-    def Configuration(self, host: str) -> ConfTVar: pass
-
-    def ApiClient(self, conf: ConfTVar) -> ClientTVar: pass
+    def ApiClient(self, conf: ConfTVar) -> ClientTVar:
+        pass
 
 
 # TODO: This class is used as a base class for mixin classes
@@ -77,9 +83,9 @@ class ApiClientMixin:
     """Payment API client for the requestor daemon."""
 
     def _create_api_client(
-            self: Probe,
-            api_module: ApiModule[ConfTVar, ClientTVar],
-            api_url: str,
+        self: Probe,
+        api_module: ApiModule[ConfTVar, ClientTVar],
+        api_url: str,
     ) -> ClientTVar:
         api_url = ensure_no_trailing_slash(str(api_url))
         config: ConfTVar = api_module.Configuration(api_url)

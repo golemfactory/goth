@@ -22,9 +22,7 @@ class ProviderProbeWithLogSteps(ProviderProbe):
         assets_path: Optional[Path] = None,
         preset_name: str = "default",
     ):
-        super().__init__(
-            runner, client, config, log_config, assets_path, preset_name
-        )
+        super().__init__(runner, client, config, log_config, assets_path, preset_name)
 
     @step()
     async def wait_for_offer_subscribed(self):
