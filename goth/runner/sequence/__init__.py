@@ -67,6 +67,8 @@ class SequenceRunner(Runner):
                 self.logger.info("stopping probe. name=%s", probe.name)
                 await probe.stop()
 
+            await self._stop_static_monitors()
+
             self.proxy.stop()
 
             # Stopping the proxy and probe log monitors triggered evaluation

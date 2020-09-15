@@ -10,8 +10,11 @@ from typing import Dict, List, Optional
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
+from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.probe import Probe, ProviderProbe, RequestorProbe, Role
 from goth.runner.proxy import Proxy
 
@@ -37,6 +40,9 @@ class Runner:
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
+    _static_monitors: Dict[str, LogEventMonitor]
+    """Log monitors for containers running as part of docker-compose."""
+
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
@@ -49,6 +55,7 @@ class Runner:
         self.assets_path = assets_path
         self.probes = []
         self.proxy = None
+        self._static_monitors = {}
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -57,7 +64,11 @@ class Runner:
 
         configure_logging(self.base_log_dir)
         self.logger = logging.getLogger(__name__)
-        self._create_probes()
+
+        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
+        scenario_dir.mkdir(exist_ok=True)
+        self._create_probes(scenario_dir)
+        self._start_static_monitors(scenario_dir)
 
     def get_probes(self, role: Optional[Role] = None, name: str = "") -> List[Probe]:
         """Get probes by name or role."""
@@ -89,11 +100,8 @@ class Runner:
                 f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
             )
 
-    def _create_probes(self) -> None:
-
+    def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
 
         for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
@@ -113,8 +121,35 @@ class Runner:
         self.logger.debug("Cleaned current test dir name=%s", test_name)
         return test_name
 
-    def _start_nodes(self):
+    def _start_static_monitors(self, scenario_dir: Path) -> None:
+        docker_client = docker.from_env()
 
+        for service_name in get_compose_services():
+            log_config = LogConfig(service_name)
+            log_config.base_dir = scenario_dir
+            monitor = LogEventMonitor(log_config)
+
+            container = docker_client.containers.list(filters={"name": service_name})
+            if not container:
+                raise ContainerNotFoundError(service_name)
+            container = container[0]
+
+            monitor.start(
+                container.logs(
+                    follow=True,
+                    since=datetime.utcnow(),
+                    stream=True,
+                    timestamps=True,
+                )
+            )
+            self._static_monitors[service_name] = monitor
+
+    async def _stop_static_monitors(self) -> None:
+        for name, monitor in self._static_monitors.items():
+            self.logger.debug("stopping static monitor. name=%s", name)
+            await monitor.stop()
+
+    def _start_nodes(self):
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses

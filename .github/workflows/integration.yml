@@ -34,7 +34,7 @@ jobs:
         run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
 
       - name: Get version of yagna deb file
-        run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna.deb Version)
+        run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna*.deb Version)
 
       - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
@@ -104,7 +104,7 @@ jobs:
         run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
 
       - name: Get version of yagna deb file
-        run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna.deb Version)
+        run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna*.deb Version)
 
       - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
