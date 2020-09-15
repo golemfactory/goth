@@ -13,9 +13,9 @@ from goth.address import (
 )
 from goth.node import node_environment, VOLUMES
 from goth.runner import Runner
-
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Provider, Requestor
+from goth.runner.provider import ProviderProbeWithLogSteps
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ LEVEL0_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_1",
-        role=Provider,
+        role=ProviderProbeWithLogSteps,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -40,7 +40,7 @@ LEVEL0_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_2",
-        role=Provider,
+        role=ProviderProbeWithLogSteps,
         # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -51,24 +51,26 @@ LEVEL0_TOPOLOGY = [
 ]
 
 
-class TestLevel0:
-    """TestCase running Level0Scenario."""
+@pytest.mark.asyncio
+async def test_level0(logs_path: Path, assets_path: Optional[Path]):
+    """Test running level 0 scenario."""
 
-    @pytest.mark.asyncio
-    async def test_level0(self, logs_path: Path, assets_path: Optional[Path]):
-        """Test running Level0Scenario."""
-        runner = Runner(
-            LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
-        )
+    async with Runner(
+        LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+    ) as runner:
 
-        all_providers = runner.get_probes(role=Provider)
+        providers = runner.get_probes(role=Provider)
 
-        all_providers.wait_for_offer_subscribed()
-        all_providers.wait_for_proposal_accepted()
-        all_providers.wait_for_agreement_approved()
-        all_providers.wait_for_exeunit_started()
-        all_providers.wait_for_exeunit_finished()
-        all_providers.wait_for_invoice_sent()
-        all_providers.wait_for_invoice_paid()
+        steps = [
+            ProviderProbeWithLogSteps.wait_for_offer_subscribed,
+            ProviderProbeWithLogSteps.wait_for_proposal_accepted,
+            ProviderProbeWithLogSteps.wait_for_agreement_approved,
+            ProviderProbeWithLogSteps.wait_for_exeunit_started,
+            ProviderProbeWithLogSteps.wait_for_exeunit_finished,
+            ProviderProbeWithLogSteps.wait_for_invoice_sent,
+            ProviderProbeWithLogSteps.wait_for_invoice_paid,
+        ]
 
-        await runner.run_scenario()
+        for step in steps:
+            for provider in providers:
+                await step(provider)
