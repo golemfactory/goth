@@ -1,3 +1,4 @@
+"""Module for adding yagna agent functionality to `Probe` subclasses."""
 import abc
 import asyncio
 import logging
@@ -15,7 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class AgentMixin(abc.ABC):
-    """ """
+    """Mixin class which extends a `Probe` to allow for running an agent.
+
+    The agent can be an arbitrary binary executed within the container. The abstract
+    method `start_agent` is where this binary should be started.
+    This mixin also includes logic for saving and monitoring the agent logs.
+    """
 
     agent_logs: LogEventMonitor
     """Monitor and buffer for agent logs, enables asserting for certain lines to be
@@ -31,13 +37,19 @@ class AgentMixin(abc.ABC):
 
     @abc.abstractmethod
     def start_agent(self: "Probe") -> None:
-        """Start the agent and attach to its log stream."""
+        """Start the agent binary.
+
+        To enable the log monitor, this method must call `start` on `agent_logs`,
+        passing in the log stream from the agent binary.
+        """
 
     def start(self: "Probe") -> None:
+        """Start the probe and initialize the log monitor."""
         super().start()
         self._init_log_monitor()
 
     async def stop(self: "Probe") -> None:
+        """Stop the probe and the log monitor."""
         await super().stop()
         await self.agent_logs.stop()
 

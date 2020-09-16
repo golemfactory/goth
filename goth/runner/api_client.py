@@ -1,3 +1,4 @@
+"""Module containing classes related to the yagna REST API client."""
 import dataclasses
 import logging
 from typing import TypeVar, TYPE_CHECKING
@@ -37,32 +38,31 @@ class ActivityApiClient:
     """Client for the state part of the activity API."""
 
 
-# Protocols `ConfigurationProtocol` and `ApiModule` and type variables
-# `ConfTVar` and `ClientTVar` are used just for typing the method
-# `ApiClientMixin._create_api_client()`. Not sure if it's worth it?
-
-
-class ConfigurationProto(Protocol):
+class ConfigurationProtocol(Protocol):
+    """Protocol representing the `Configuration` field of a given REST API module."""
 
     access_token: str
 
 
-ConfTVar = TypeVar("ConfTVar", bound=ConfigurationProto)
+ConfTVar = TypeVar("ConfTVar", bound=ConfigurationProtocol)
 ClientTVar = TypeVar("ClientTVar", covariant=True)
 
 
 class ApiModule(Protocol[ConfTVar, ClientTVar]):
+    """Representation of a REST API module.
+
+    Used for typing `ApiClientMixin._create_api_client`.
+    """
+
     def Configuration(self, host: str) -> ConfTVar:
+        """Config instance for this API module."""
         pass
 
     def ApiClient(self, conf: ConfTVar) -> ClientTVar:
+        """Client instance for this API module."""
         pass
 
 
-# TODO: This class is used as a base class for mixin classes
-# with high-level market/activity/payment steps. Each subclass
-# relies on a single API, so maybe we should split this base class
-# into three classes? (see also TODO comments in requestor.py)
 class ApiClientMixin:
     """Provides client objects for Yagna REST APIs."""
 
@@ -79,6 +79,8 @@ class ApiClientMixin:
     """Base hostname for the Yagna API clients."""
 
     def start(self: "Probe") -> None:
+        """Start the probe and initialize the API clients."""
+
         super().start()
         self._init_activity_api(self._api_base_host)
         self._init_payment_api(self._api_base_host)
