@@ -13,6 +13,7 @@ from typing import Dict, List, Optional
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
@@ -126,7 +127,7 @@ class Runner:
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.probes),
+                (probe.agent_logs for probe in self.get_probes(role=AgentMixin)),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
@@ -185,17 +186,12 @@ class Runner:
             )
             self._static_monitors[service_name] = monitor
 
-    async def _stop_static_monitors(self) -> None:
-        for name, monitor in self._static_monitors.items():
-            logger.debug("stopping static monitor. name=%s", name)
-            await monitor.stop()
-
     def _start_nodes(self):
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            probe.start_container()
+            probe.start()
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
@@ -208,8 +204,7 @@ class Runner:
         )
         self.proxy.start()
 
-        # The proxy is ready to route the API calls. Start the agents.
-        for probe in self.probes:
+        for probe in self.get_probes(role=AgentMixin):
             probe.start_agent()
 
     async def __aenter__(self) -> "Runner":
@@ -224,7 +219,9 @@ class Runner:
             logger.info("stopping probe. name=%s", probe.name)
             await probe.stop()
 
-        await self._stop_static_monitors()
+        for name, monitor in self._static_monitors.items():
+            logger.debug("stopping static monitor. name=%s", name)
+            await monitor.stop()
 
         self.proxy.stop()
         # Stopping the proxy triggered evaluation of assertions

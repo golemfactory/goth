@@ -1,9 +1,7 @@
 import dataclasses
 import logging
-from pathlib import Path
-from typing import Optional, TypeVar
+from typing import TypeVar, TYPE_CHECKING
 
-from docker import DockerClient
 from typing_extensions import Protocol
 
 import openapi_activity_client as activity
@@ -11,19 +9,14 @@ import openapi_market_client as market
 import openapi_payment_client as payment
 
 from goth.address import (
+    ensure_no_trailing_slash,
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
-    ensure_no_trailing_slash,
-    YAGNA_REST_PORT,
-    PROXY_HOST,
-    YAGNA_REST_URL,
 )
-from goth.runner import Runner, YagnaContainerConfig
-from goth.runner.container.utils import get_container_address
-from goth.runner.log import LogConfig
-from goth.runner.probe import Probe, RequestorProbe
 
+if TYPE_CHECKING:
+    from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +75,17 @@ class ApiClientMixin:
     payment: payment.RequestorApi
     """Payment API client for the requestor daemon."""
 
+    _api_base_host: str
+    """Base hostname for the Yagna API clients."""
+
+    def start(self: "Probe") -> None:
+        super().start()
+        self._init_activity_api(self._api_base_host)
+        self._init_payment_api(self._api_base_host)
+        self._init_market_api(self._api_base_host)
+
     def _create_api_client(
-        self: Probe,
+        self: "Probe",
         api_module: ApiModule[ConfTVar, ClientTVar],
         api_url: str,
     ) -> ClientTVar:
@@ -114,56 +116,3 @@ class ApiClientMixin:
         client = self._create_api_client(payment, api_url)
         self.payment = payment.RequestorApi(client)
         logger.debug("payment API initialized. url=%s", api_url)
-
-
-# TODO: If we split `ApiClientMixin` into three separated classes, one
-# for each API, then we'd also have `Activity/Market/PaymentEnabledProbe`
-# instead of just `ApiEnabledProbe`. The advantage of this would better
-# control over what features are needed for a particular step, for example
-# steps in `MarketOperationsMixin` should only need `self: MarketEnabledProbe`.
-# The drawback of this would be proliferation of classes/mixin, possibly hard
-# to manage and understand.
-class ApiEnabledRequestorProbe(RequestorProbe, ApiClientMixin):
-    """A requestor probe that can make calls to Yagna REST APIs.
-
-    This class is used in Level 1 scenarios and as a type of `self`
-    argument for `Market/Payment/ActivityOperationsMixin` methods.
-    """
-
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
-
-    _use_agent: bool = False
-    """Indicates whether ya-requestor binary should be started in this node.
-
-    The use of ya-requestor is deprecated and supported for the sake of level 0 test
-    scenario compatibility.
-    """
-
-    def __init__(
-        self,
-        runner: Runner,
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-        assets_path: Optional[Path] = None,
-    ):
-        super().__init__(runner, client, config, log_config, assets_path)
-
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = get_container_address(client, PROXY_HOST)
-        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-        self._use_agent = config.use_requestor_agent
-
-    # TODO: Consider making starting the agent independent from initialising
-    # API clients: one may want to start an agent and still be able to make
-    # API calls.
-    def start_agent(self):
-        """Start the requestor agent or initialize the API clients."""
-
-        if self._use_agent:
-            super().start_agent()
-        else:
-            self._init_activity_api(self._api_base_host)
-            self._init_payment_api(self._api_base_host)
-            self._init_market_api(self._api_base_host)

@@ -15,7 +15,6 @@ from goth.address import (
 from goth.node import node_environment, VOLUMES
 from goth.runner import Runner
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.probe import Provider, Requestor
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
@@ -69,10 +68,10 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
         LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
     ) as runner:
 
-        requestor = runner.get_probes(role=Requestor)[0]
+        requestor = runner.get_probes(role=RequestorProbeWithApiSteps)[0]
         assert isinstance(requestor, RequestorProbeWithApiSteps)
 
-        provider_1, provider_2 = runner.get_probes(role=Provider)
+        provider_1, provider_2 = runner.get_probes(role=ProviderProbeWithLogSteps)
         assert isinstance(provider_1, ProviderProbeWithLogSteps)
         assert isinstance(provider_2, ProviderProbeWithLogSteps)
 
