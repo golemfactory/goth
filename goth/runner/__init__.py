@@ -95,7 +95,10 @@ class Runner:
     """Log monitors for containers running as part of docker-compose."""
 
     yagna_commit_hash: Optional[str]
-    """The hash of a specific commit in the yagna repository that the tests should be run for"""
+    """
+    The hash of a specific commit in the yagna repository
+    that the tests should be run for
+    """
 
     def __init__(
         self,
@@ -239,8 +242,8 @@ class Runner:
         out_queue = helpers.IOStreamQueue(p.stdout)
 
         while time.time() < starttime + timeout and returncode is None:
-            for l in out_queue.lines:
-                logger.debug("%s%s", log_prefix, l.decode("utf-8").rstrip())
+            for line in out_queue.lines:
+                logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
             returncode = p.poll()
             if returncode is None:
@@ -254,7 +257,8 @@ class Runner:
         if returncode is None:
             p.kill()
             raise TimeoutError(
-                f"Timeout exceeded while running command. args={args}, timeout={timeout}"
+                f"Timeout exceeded while running command. "
+                f"args={args}, timeout={timeout}"
             )
 
     def _setup_docker_compose(self):

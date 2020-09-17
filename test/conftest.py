@@ -21,6 +21,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture()
 def yagna_commit_hash(request) -> Optional[str]:
+    """Fixture that passes the --yagna-commit-hash CLI parameter to the test suite."""
     return request.config.option.yagna_commit_hash
 
 

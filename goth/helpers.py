@@ -1,3 +1,4 @@
+"""helper classes and functions used by the test harness."""
 import queue
 import threading
 import typing
@@ -5,7 +6,7 @@ import typing
 
 class IOStreamQueue:
     """
-    Maintains a queue for an output stream - e.g. a launched process' stdout
+    Maintains a queue for an output stream - e.g. a launched process' stdout.
 
     example:
     ```
@@ -38,6 +39,7 @@ class IOStreamQueue:
 
     @property
     def lines(self) -> typing.List[bytes]:
+        """Get the lines of the output that have been captured so far."""
         lines = []
         while True:
             try:
