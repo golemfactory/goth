@@ -26,13 +26,6 @@ class YagnaContainerConfig(DockerContainerConfig):
     environment: Dict[str, str]
     """Environment variables to be set for this container"""
 
-    use_requestor_agent: bool
-    """Indicates whether ya-requestor should be started by the given node.
-
-    This config field exists for the sake of backwards compatibility with the level 0
-    test scenario. It is consumed only by requestor nodes.
-    """
-
     key_file: Optional[str]
     """Keyfile to be imported into the yagna id service."""
 
@@ -44,13 +37,11 @@ class YagnaContainerConfig(DockerContainerConfig):
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
         key_file: Optional[str] = None,
-        use_requestor_agent: bool = False,
     ):
         super().__init__(name, volumes or {}, log_config)
         self.probe_type = probe_type
         self.environment = environment or {}
         self.key_file = key_file
-        self.use_requestor_agent = use_requestor_agent
 
 
 class YagnaContainer(DockerContainer):

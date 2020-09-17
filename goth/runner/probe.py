@@ -188,13 +188,6 @@ class RequestorProbe(ApiClientMixin, Probe):
     _api_base_host: str
     """Base hostname for the Yagna API clients."""
 
-    _use_agent: bool = False
-    """Indicates whether ya-requestor binary should be started in this node.
-
-    The use of ya-requestor is deprecated and supported for the sake of level 0 test
-    scenario compatibility.
-    """
-
     def __init__(
         self,
         runner: "Runner",
