@@ -1,22 +1,25 @@
 """Classes and helpers for managing Probes."""
 
 import abc
-import asyncio
 import logging
 from pathlib import Path
-import re
 import time
-from typing import Optional, Type, TYPE_CHECKING
+from typing import Optional, TypeVar, TYPE_CHECKING
 
 from docker import DockerClient
 
-from goth.assertions.operators import eventually
+from goth.address import (
+    YAGNA_REST_PORT,
+    PROXY_HOST,
+    YAGNA_REST_URL,
+)
+from goth.runner.agent import AgentMixin
+from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
-from goth.runner.log_monitor import LogEvent, LogEventMonitor
 
 if TYPE_CHECKING:
     from goth.runner import Runner
@@ -53,20 +56,8 @@ class Probe(abc.ABC):
     ip_address: Optional[str]
     """An IP address of the daemon's container in the Docker network."""
 
-    agent_logs: LogEventMonitor
-    """Monitor and buffer for provider agent logs, enables asserting for certain lines
-    to be present in the log buffer.
-    """
-
     key_file: Optional[str]
     """Keyfile to be imported into the yagna daemon id service."""
-
-    _last_checked_line: int
-    """The index of the last line examined while waiting for log messages.
-
-    Subsequent calls to `_wait_for_log()` will only look at lines that
-    were logged after this line.
-    """
 
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
@@ -83,19 +74,11 @@ class Probe(abc.ABC):
         self._docker_client = client
         self.container = YagnaContainer(client, config, log_config, assets_path)
         self.cli = Cli(self.container).yagna
-        agent_log_config = LogConfig(
-            file_name=f"{self.name}_agent",
-            base_dir=self.container.log_config.base_dir,
-        )
-        # FIXME: Move agent logs to ProviderProbe when level0 is removed
-        self.agent_logs = LogEventMonitor(agent_log_config)
-
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
         self.ip_address = None
         self.key_file = config.key_file
-        self._last_checked_line = -1
 
     def __str__(self):
         return self.name
@@ -117,7 +100,25 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
-    def start_container(self) -> None:
+    def start(self) -> None:
+        """Start the probe.
+
+        This method is extended in subclasses and mixins.
+        """
+
+        self._start_container()
+
+    async def stop(self):
+        """
+        Stop the probe, removing the Docker container of the daemon being tested.
+
+        Once stopped, a probe cannot be restarted.
+        """
+        if self.container.logs:
+            await self.container.logs.stop()
+        self.container.remove(force=True)
+
+    def _start_container(self) -> None:
         """
         Start the probe's Docker container.
 
@@ -176,66 +177,44 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-    @abc.abstractmethod
-    def start_agent(self):
-        """Start the agent."""
 
-    async def stop(self):
-        """
-        Stop the probe, removing the Docker container of the daemon being tested.
+class RequestorProbe(ApiClientMixin, Probe):
+    """A requestor probe that can make calls to Yagna REST APIs.
 
-        Once stopped, a probe cannot be restarted.
-        """
-        if self.container.logs:
-            await self.container.logs.stop()
-        await self.agent_logs.stop()
-        self.container.remove(force=True)
+    This class is used in Level 1 scenarios and as a type of `self`
+    argument for `Market/Payment/ActivityOperationsMixin` methods.
+    """
 
-    async def _wait_for_log(self, pattern: str, timeout: float = 1000) -> LogEvent:
-        """Look for a log line with the message matching `pattern`."""
+    _api_base_host: str
+    """Base hostname for the Yagna API clients."""
 
-        regex = re.compile(pattern)
+    def __init__(
+        self,
+        runner: "Runner",
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        assets_path: Optional[Path] = None,
+    ):
+        super().__init__(runner, client, config, log_config, assets_path)
 
-        def predicate(log_event) -> bool:
-            return regex.match(log_event.message) is not None
-
-        # First examine log lines already seen
-        while self._last_checked_line + 1 < len(self.agent_logs.events):
-            self._last_checked_line += 1
-            event = self.agent_logs.events[self._last_checked_line]
-            if predicate(event):
-                return event
-
-        # Otherwise create an assertion that waits for a matching line...
-        async def coro(stream) -> LogEvent:
-            try:
-                log_event = await eventually(stream, predicate, timeout=timeout)
-                return log_event
-            finally:
-                self._last_checked_line = len(stream.past_events) - 1
-
-        assertion = self.agent_logs.add_assertion(coro)
-
-        # ... and wait until the assertion completes
-        while not assertion.done:
-            await asyncio.sleep(0.1)
-
-        if assertion.failed:
-            raise assertion.result
-        return assertion.result
+        host_port = self.container.ports[YAGNA_REST_PORT]
+        proxy_ip = get_container_address(client, PROXY_HOST)
+        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
 
-# TODO: consider moving `start_agent()` to a separated mixin class, to make it clear
-# that starting an agent does not depend on other optional features (API clients).
-class RequestorProbe(Probe):
+class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
     """A probe subclass that can run a requestor agent.
 
-    Can be used to select probes by role in a runner.
-    Can be used in Level 0 scenarios.
+    The use of ya-requestor is deprecated and supported for the sake of level 0 test
+    scenario compatibility.
     """
 
     def start_agent(self):
-        """Start provider agent on the container and initialize its LogMonitor."""
+        """Start the requestor agent and attach to its log stream."""
+
+        # TODO: Serve the package from a local server
+        # https://github.com/golemfactory/yagna-integration/issues/249
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
@@ -247,30 +226,14 @@ class RequestorProbe(Probe):
         self.agent_logs.start(log_stream.output)
 
 
-class ProviderProbe(Probe):
-    """A probe subclass that can run a provider agent.
+class ProviderProbe(AgentMixin, Probe):
+    """A probe subclass that can run a provider agent."""
 
-    Can be used to select probes by role in a runner.
-    Can be used in `ProbeStepBuilder`.
-    """
-
-    agent_preset: str
+    agent_preset: str = "default"
     """Name of the preset to be used when placing a market offer."""
 
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-        assets_path: Optional[Path] = None,
-        preset_name: str = "default",
-    ):
-        super().__init__(runner, client, config, log_config, assets_path=assets_path)
-        self.agent_preset = preset_name
-
-    def start_agent(self):
-        """Start the agent and attach the log monitor."""
+    def start_agent(self) -> None:
+        """Start the provider agent and attach to its log stream."""
 
         self.container.exec_run(
             f"ya-provider preset activate {self.agent_preset}",
@@ -282,6 +245,4 @@ class ProviderProbe(Probe):
         self.agent_logs.start(log_stream.output)
 
 
-Provider = ProviderProbe
-Requestor = RequestorProbe
-Role = Type[Probe]
+ProbeType = TypeVar("ProbeType")

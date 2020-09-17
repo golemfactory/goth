@@ -10,32 +10,24 @@ from openapi_market_client import AgreementProposal, Demand, Proposal
 from openapi_payment_client import Acceptance, Allocation, Invoice
 
 from goth.runner import step
-from goth.runner.api_client import ApiEnabledRequestorProbe
-from goth.runner.probe import Probe
+from goth.runner.probe import Probe, RequestorProbe
 
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: steps in this module are based on steps defined in
-#  `runner/sequence/builder.py`. There's a lot of code in both
-# step implementations that should be shared, not duplicated.
 
 
 class ActivityOperationsMixin:
     """Provides high-level steps that rely on Yagna Activity API."""
 
     @step()
-    async def create_activity(self: ApiEnabledRequestorProbe, agreement_id: str) -> str:
+    async def create_activity(self: RequestorProbe, agreement_id: str) -> str:
         """Call create_activity on the requestor activity api."""
 
         activity_id = self.activity.control.create_activity(agreement_id)
         return activity_id
 
     @step()
-    async def call_exec(
-        self: ApiEnabledRequestorProbe, activity_id: str, exe_script: str
-    ) -> str:
+    async def call_exec(self: RequestorProbe, activity_id: str, exe_script: str) -> str:
         """Call call_exec on the requestor activity api."""
 
         script_request = ExeScriptRequest(exe_script)
@@ -44,7 +36,7 @@ class ActivityOperationsMixin:
 
     @step()
     async def collect_results(
-        self: ApiEnabledRequestorProbe,
+        self: RequestorProbe,
         activity_id: str,
         batch_id: str,
         num_results: int,
@@ -61,9 +53,7 @@ class ActivityOperationsMixin:
         return results
 
     @step()
-    async def destroy_activity(
-        self: ApiEnabledRequestorProbe, activity_id: str
-    ) -> None:
+    async def destroy_activity(self: RequestorProbe, activity_id: str) -> None:
         """Call destroy_activity on the requestor activity api."""
 
         self.activity.control.destroy_activity(activity_id)
@@ -73,7 +63,7 @@ class MarketOperationsMixin:
     """Provides high-level steps that rely on Yagna Market API."""
 
     @step()
-    async def subscribe_demand(self: ApiEnabledRequestorProbe) -> Tuple[str, Demand]:
+    async def subscribe_demand(self: RequestorProbe) -> Tuple[str, Demand]:
         """Call subscribe demand on the requestor market api."""
 
         # TODO: `package` and `constraints` should be arguments
@@ -91,7 +81,7 @@ class MarketOperationsMixin:
             properties={
                 "golem.node.id.name": "test1",
                 "golem.srv.comp.expiration": int(
-                    (datetime.now() + timedelta(days=1)).timestamp() * 1000
+                    (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
                 ),
                 "golem.srv.comp.task_package": package,
             },
@@ -102,15 +92,13 @@ class MarketOperationsMixin:
         return subscription_id, demand
 
     @step()
-    async def unsubscribe_demand(
-        self: ApiEnabledRequestorProbe, subscription_id: str
-    ) -> None:
+    async def unsubscribe_demand(self: RequestorProbe, subscription_id: str) -> None:
         """Call unsubscribe demand on the requestor market api."""
         self.market.unsubscribe_demand(subscription_id)
 
     @step()
     async def wait_for_proposals(
-        self: ApiEnabledRequestorProbe, subscription_id: str, providers: Sequence[Probe]
+        self: RequestorProbe, subscription_id: str, providers: Sequence[Probe]
     ) -> List[Proposal]:
         """Call collect_offers on the requestor market api.
 
@@ -144,7 +132,7 @@ class MarketOperationsMixin:
 
     @step()
     async def counter_proposal(
-        self: ApiEnabledRequestorProbe,
+        self: RequestorProbe,
         subscription_id: str,
         demand: Demand,
         provider_proposal: Proposal,
@@ -166,9 +154,7 @@ class MarketOperationsMixin:
         return counter_proposal
 
     @step()
-    async def create_agreement(
-        self: ApiEnabledRequestorProbe, proposal: Proposal
-    ) -> str:
+    async def create_agreement(self: RequestorProbe, proposal: Proposal) -> str:
         """Call create_agreement on the requestor market api."""
 
         valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
@@ -185,9 +171,7 @@ class MarketOperationsMixin:
         return agreement_id
 
     @step()
-    async def confirm_agreement(
-        self: ApiEnabledRequestorProbe, agreement_id: str
-    ) -> None:
+    async def confirm_agreement(self: RequestorProbe, agreement_id: str) -> None:
         """Call confirm_agreement on the requestor market api."""
         self.market.confirm_agreement(agreement_id)
 
@@ -196,9 +180,7 @@ class PaymentOperationsMixin:
     """Provides high-level steps that rely on Yagna Payment API."""
 
     @step()
-    async def gather_invoices(
-        self: ApiEnabledRequestorProbe, agreement_id: str
-    ) -> List[Invoice]:
+    async def gather_invoices(self: RequestorProbe, agreement_id: str) -> List[Invoice]:
         """Call gather_invoice on the requestor payment api."""
 
         invoices: List[Invoice] = []
@@ -214,7 +196,7 @@ class PaymentOperationsMixin:
 
     @step()
     async def pay_invoices(
-        self: ApiEnabledRequestorProbe, invoice_events: Iterable[Invoice]
+        self: RequestorProbe, invoice_events: Iterable[Invoice]
     ) -> None:
         """Call accept_invoice on the requestor payment api."""
 
@@ -237,7 +219,7 @@ class PaymentOperationsMixin:
 
 
 class RequestorProbeWithApiSteps(
-    ApiEnabledRequestorProbe,
+    RequestorProbe,
     ActivityOperationsMixin,
     MarketOperationsMixin,
     PaymentOperationsMixin,

@@ -14,24 +14,17 @@ from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
-    from goth.runner.probe import Role
+    from goth.runner.probe import ProbeType
 
 
 class YagnaContainerConfig(DockerContainerConfig):
     """Configuration to be used for creating a new `YagnaContainer`."""
 
-    role: "Role"
-    """Role this container has in a test scenario"""
+    probe_type: "ProbeType"
+    """Python type of the probe to be instantiated from this config"""
 
     environment: Dict[str, str]
     """Environment variables to be set for this container"""
-
-    use_requestor_agent: bool
-    """Indicates whether ya-requestor should be started by the given node.
-
-    This config field exists for the sake of backwards compatibility with the level 0
-    test scenario. It is consumed only by requestor nodes.
-    """
 
     key_file: Optional[str]
     """Keyfile to be imported into the yagna id service."""
@@ -39,18 +32,16 @@ class YagnaContainerConfig(DockerContainerConfig):
     def __init__(
         self,
         name: str,
-        role: "Role",
+        probe_type: "ProbeType",
         volumes: Optional[Dict[Template, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
         key_file: Optional[str] = None,
-        use_requestor_agent: bool = False,
     ):
         super().__init__(name, volumes or {}, log_config)
-        self.role = role
+        self.probe_type = probe_type
         self.environment = environment or {}
         self.key_file = key_file
-        self.use_requestor_agent = use_requestor_agent
 
 
 class YagnaContainer(DockerContainer):

@@ -9,17 +9,18 @@ import os
 from pathlib import Path
 import subprocess
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import LogEventMonitor
-from goth.runner.probe import Probe, Role
+from goth.runner.probe import Probe, ProbeType
 from goth.runner.proxy import Proxy
 from goth import helpers
 
@@ -119,11 +120,16 @@ class Runner:
 
         configure_logging(self.base_log_dir)
 
-    def get_probes(self, role: Optional[Role] = None, name: str = "") -> List[Probe]:
-        """Get probes by name or role."""
+    def get_probes(
+        self, probe_type: Type[ProbeType], name: str = ""
+    ) -> List[ProbeType]:
+        """Get probes by name or type.
+
+        `probe_type` can be a type directly inheriting from `Probe`, as well as a
+        mixin type used with probes. This type is used in an `isinstance` check.
+        """
         probes = self.probes
-        if role:
-            probes = [p for p in probes if isinstance(p, role)]
+        probes = [p for p in probes if isinstance(p, probe_type)]
         if name:
             probes = [p for p in probes if p.name == name]
         return probes
@@ -134,7 +140,7 @@ class Runner:
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.probes),
+                (probe.agent_logs for probe in self.get_probes(probe_type=AgentMixin)),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
@@ -157,7 +163,7 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             if isinstance(config, YagnaContainerConfig):
-                probe = config.role(
+                probe = config.probe_type(
                     self, docker_client, config, log_config, self.assets_path
                 )
                 self.probes.append(probe)
@@ -194,17 +200,12 @@ class Runner:
             )
             self._static_monitors[service_name] = monitor
 
-    async def _stop_static_monitors(self) -> None:
-        for name, monitor in self._static_monitors.items():
-            logger.debug("stopping static monitor. name=%s", name)
-            await monitor.stop()
-
     def _start_nodes(self):
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            probe.start_container()
+            probe.start()
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
@@ -217,8 +218,7 @@ class Runner:
         )
         self.proxy.start()
 
-        # The proxy is ready to route the API calls. Start the agents.
-        for probe in self.probes:
+        for probe in self.get_probes(probe_type=AgentMixin):
             probe.start_agent()
 
     @staticmethod
@@ -286,7 +286,9 @@ class Runner:
             logger.info("stopping probe. name=%s", probe.name)
             await probe.stop()
 
-        await self._stop_static_monitors()
+        for name, monitor in self._static_monitors.items():
+            logger.debug("stopping static monitor. name=%s", name)
+            await monitor.stop()
 
         self.proxy.stop()
 

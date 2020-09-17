@@ -15,7 +15,6 @@ from goth.address import (
 from goth.node import node_environment, VOLUMES
 from goth.runner import Runner
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.probe import Provider, Requestor
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
@@ -25,14 +24,14 @@ logger = logging.getLogger(__name__)
 LEVEL1_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
-        role=RequestorProbeWithApiSteps,
+        probe_type=RequestorProbeWithApiSteps,
         environment=node_environment(account_list="/asset/key/001-accounts.json"),
         key_file="/asset/key/001.json",
         volumes=VOLUMES,
     ),
     YagnaContainerConfig(
         name="provider_1",
-        role=ProviderProbeWithLogSteps,
+        probe_type=ProviderProbeWithLogSteps,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -42,7 +41,7 @@ LEVEL1_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_2",
-        role=ProviderProbeWithLogSteps,
+        probe_type=ProviderProbeWithLogSteps,
         # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -75,13 +74,9 @@ async def test_level1(
         yagna_commit_hash=yagna_commit_hash,
     ) as runner:
 
-        requestor = runner.get_probes(role=Requestor)[0]
-        assert isinstance(requestor, RequestorProbeWithApiSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
 
-        provider_1, provider_2 = runner.get_probes(role=Provider)
-        assert isinstance(provider_1, ProviderProbeWithLogSteps)
-        assert isinstance(provider_2, ProviderProbeWithLogSteps)
-
+        provider_1, provider_2 = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
         providers = (provider_1, provider_2)
 
         # Market
