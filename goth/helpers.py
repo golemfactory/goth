@@ -5,7 +5,7 @@ import typing
 
 class IOStreamQueue:
     """
-    Maintains an queue for an output stream - e.g. a launched process' stdout
+    Maintains a queue for an output stream - e.g. a launched process' stdout
 
     example:
     ```
