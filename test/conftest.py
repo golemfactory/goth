@@ -13,9 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def pytest_addoption(parser):
-    """Add the optional parameter --assets-path to pytest CLI invocations."""
+    """Add the optional parameters to pytest CLI invocations."""
     parser.addoption("--assets-path", action="store")
     parser.addoption("--logs-path", action="store")
+    parser.addoption("--yagna-commit-hash", action="store")
+
+
+@pytest.fixture()
+def yagna_commit_hash(request) -> Optional[str]:
+    return request.config.option.yagna_commit_hash
 
 
 @pytest.fixture()

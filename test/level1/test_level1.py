@@ -54,7 +54,9 @@ LEVEL1_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level1(logs_path: Path, assets_path: Optional[Path]):
+async def test_level1(
+    logs_path: Path, assets_path: Optional[Path], yagna_commit_hash: Optional[str]
+):
     """Test running level 1 scenario."""
 
     # TODO: provide the exe script in a fixture?
@@ -66,7 +68,11 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
     exe_script = exe_script_path.read_text()
 
     async with Runner(
-        LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+        LEVEL1_TOPOLOGY,
+        "assertions.level1_assertions",
+        logs_path,
+        assets_path,
+        yagna_commit_hash=yagna_commit_hash,
     ) as runner:
 
         requestor = runner.get_probes(role=Requestor)[0]

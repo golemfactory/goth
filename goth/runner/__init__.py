@@ -7,6 +7,7 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
+import subprocess
 import time
 from typing import Dict, List, Optional
 
@@ -15,13 +16,20 @@ import docker
 from goth.assertions import TemporalAssertionError
 from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.exceptions import ContainerNotFoundError
+from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.probe import Probe, Role
 from goth.runner.proxy import Proxy
+from goth import helpers
 
 logger = logging.getLogger(__name__)
+
+DOCKER_COMPOSE_FILE = str(
+    (Path(__file__).parents[2] / "docker/docker-compose.yml").resolve()
+)
+RUN_COMMAND_SLEEP_INTERVAL = 0.1
+RUN_COMMAND_DEFAULT_TIMEOUT = 3600
 
 
 def step(default_timeout: float = 10.0):
@@ -85,16 +93,21 @@ class Runner:
     _static_monitors: Dict[str, LogEventMonitor]
     """Log monitors for containers running as part of docker-compose."""
 
+    yagna_commit_hash: Optional[str]
+    """The hash of a specific commit in the yagna repository that the tests should be run for"""
+
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Optional[Path],
+        yagna_commit_hash: Optional[str],
     ):
         self.topology = topology
         self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path
+        self.yagna_commit_hash = yagna_commit_hash
         self.probes = []
         self.proxy = None
         self._static_monitors = {}
@@ -105,11 +118,6 @@ class Runner:
         self.base_log_dir.mkdir(parents=True)
 
         configure_logging(self.base_log_dir)
-
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
-        self._create_probes(scenario_dir)
-        self._start_static_monitors(scenario_dir)
 
     def get_probes(self, role: Optional[Role] = None, name: str = "") -> List[Probe]:
         """Get probes by name or role."""
@@ -154,7 +162,8 @@ class Runner:
                 )
                 self.probes.append(probe)
 
-    def _get_test_log_dir_name(self):
+    @staticmethod
+    def _get_test_log_dir_name():
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
         logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
@@ -212,7 +221,60 @@ class Runner:
         for probe in self.probes:
             probe.start_agent()
 
+    @staticmethod
+    def _run_command(
+        args, env=None, log_prefix=None, timeout=RUN_COMMAND_DEFAULT_TIMEOUT
+    ):
+        logger.info("Running local command: %s", " ".join(args))
+
+        if log_prefix is None:
+            log_prefix = f"[{args[0]}] "
+
+        starttime = time.time()
+        returncode = None
+
+        p = subprocess.Popen(
+            args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        out_queue = helpers.IOStreamQueue(p.stdout)
+
+        while time.time() < starttime + timeout and returncode is None:
+            for l in out_queue.lines:
+                logger.debug("%s%s", log_prefix, l.decode("utf-8").rstrip())
+
+            returncode = p.poll()
+            if returncode is None:
+                time.sleep(RUN_COMMAND_SLEEP_INTERVAL)
+
+            if returncode:
+                raise CommandError(
+                    f"Command exited abnormally. args={args}, returncode={returncode}"
+                )
+
+        if returncode is None:
+            p.kill()
+            raise TimeoutError(
+                f"Timeout exceeded while running command. args={args}, timeout={timeout}"
+            )
+
+    def _setup_docker_compose(self):
+        self._run_command(
+            ["docker-compose", "-f", DOCKER_COMPOSE_FILE, "up", "-d", "--build"],
+            env={"YAGNA_COMMIT_HASH": self.yagna_commit_hash}
+            if self.yagna_commit_hash
+            else None,
+        )
+
+    def _shutdown_docker_compose(self):
+        self._run_command(["docker-compose", "-f", DOCKER_COMPOSE_FILE, "stop"])
+        self._run_command(["docker-compose", "-f", DOCKER_COMPOSE_FILE, "rm", "-f"])
+
     async def __aenter__(self) -> "Runner":
+        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
+        scenario_dir.mkdir(exist_ok=True)
+        self._setup_docker_compose()
+        self._create_probes(scenario_dir)
+        self._start_static_monitors(scenario_dir)
         self._start_nodes()
         return self
 
@@ -227,6 +289,9 @@ class Runner:
         await self._stop_static_monitors()
 
         self.proxy.stop()
+
+        self._shutdown_docker_compose()
+
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
