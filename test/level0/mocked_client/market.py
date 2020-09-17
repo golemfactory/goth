@@ -38,7 +38,7 @@ def level0_market():
         properties={
             "golem.node.id.name": "test1",
             "golem.srv.comp.expiration": int(
-                (datetime.now() + timedelta(days=1)).timestamp() * 1000
+                (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
             ),
             "golem.srv.comp.task_package": package,
         },
