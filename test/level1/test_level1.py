@@ -69,12 +69,8 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        assert isinstance(requestor, RequestorProbeWithApiSteps)
 
         provider_1, provider_2 = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
-        assert isinstance(provider_1, ProviderProbeWithLogSteps)
-        assert isinstance(provider_2, ProviderProbeWithLogSteps)
-
         providers = (provider_1, provider_2)
 
         # Market
