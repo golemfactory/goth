@@ -59,6 +59,7 @@ class AgentMixin(abc.ABC):
             log_config.base_dir = self.container.log_config.base_dir
 
         self.agent_logs = LogEventMonitor(log_config)
+        self._last_checked_line = -1
 
     async def _wait_for_agent_log(
         self: "Probe", pattern: str, timeout: float = 1000

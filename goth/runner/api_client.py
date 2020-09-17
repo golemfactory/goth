@@ -97,7 +97,6 @@ class ApiClientMixin:
         return api_module.ApiClient(config)
 
     def _init_activity_api(self, api_base_host: str) -> None:
-
         api_url = ACTIVITY_API_URL.substitute(base=api_base_host)
         client = self._create_api_client(activity, api_url)
         control = activity.RequestorControlApi(client)
@@ -106,14 +105,12 @@ class ApiClientMixin:
         logger.debug("activity API initialized. url=%s", api_url)
 
     def _init_market_api(self, api_base_host: str) -> None:
-
         api_url = MARKET_API_URL.substitute(base=api_base_host)
         client = self._create_api_client(market, api_url)
         self.market = market.RequestorApi(client)
         logger.debug("market API initialized. url=%s", api_url)
 
     def _init_payment_api(self, api_base_host: str) -> None:
-
         api_url = PAYMENT_API_URL.substitute(base=api_base_host)
         client = self._create_api_client(payment, api_url)
         self.payment = payment.RequestorApi(client)

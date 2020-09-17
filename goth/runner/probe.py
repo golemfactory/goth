@@ -79,7 +79,6 @@ class Probe(abc.ABC):
         )
         self.ip_address = None
         self.key_file = config.key_file
-        self._last_checked_line = -1
 
     def __str__(self):
         return self.name
