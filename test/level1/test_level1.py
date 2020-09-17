@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 LEVEL1_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
-        role=RequestorProbeWithApiSteps,
+        probe_type=RequestorProbeWithApiSteps,
         environment=node_environment(account_list="/asset/key/001-accounts.json"),
         key_file="/asset/key/001.json",
         volumes=VOLUMES,
     ),
     YagnaContainerConfig(
         name="provider_1",
-        role=ProviderProbeWithLogSteps,
+        probe_type=ProviderProbeWithLogSteps,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -41,7 +41,7 @@ LEVEL1_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_2",
-        role=ProviderProbeWithLogSteps,
+        probe_type=ProviderProbeWithLogSteps,
         # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -68,10 +68,10 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
         LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
     ) as runner:
 
-        requestor = runner.get_probes(role=RequestorProbeWithApiSteps)[0]
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
         assert isinstance(requestor, RequestorProbeWithApiSteps)
 
-        provider_1, provider_2 = runner.get_probes(role=ProviderProbeWithLogSteps)
+        provider_1, provider_2 = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
         assert isinstance(provider_1, ProviderProbeWithLogSteps)
         assert isinstance(provider_2, ProviderProbeWithLogSteps)
 

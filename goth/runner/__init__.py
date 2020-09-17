@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import docker
 
@@ -19,7 +19,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import LogEventMonitor
-from goth.runner.probe import Probe, Role
+from goth.runner.probe import Probe, ProbeType
 from goth.runner.proxy import Proxy
 
 logger = logging.getLogger(__name__)
@@ -112,11 +112,16 @@ class Runner:
         self._create_probes(scenario_dir)
         self._start_static_monitors(scenario_dir)
 
-    def get_probes(self, role: Optional[Role] = None, name: str = "") -> List[Probe]:
-        """Get probes by name or role."""
+    def get_probes(
+        self, probe_type: Type[ProbeType], name: str = ""
+    ) -> List[ProbeType]:
+        """Get probes by name or type.
+
+        `probe_type` can be a type directly inheriting from `Probe`, as well as a
+        mixin type used with probes. This type is used in an `isinstance` check.
+        """
         probes = self.probes
-        if role:
-            probes = [p for p in probes if isinstance(p, role)]
+        probes = [p for p in probes if isinstance(p, probe_type)]
         if name:
             probes = [p for p in probes if p.name == name]
         return probes
@@ -127,7 +132,7 @@ class Runner:
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.get_probes(role=AgentMixin)),
+                (probe.agent_logs for probe in self.get_probes(probe_type=AgentMixin)),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
@@ -150,7 +155,7 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             if isinstance(config, YagnaContainerConfig):
-                probe = config.role(
+                probe = config.probe_type(
                     self, docker_client, config, log_config, self.assets_path
                 )
                 self.probes.append(probe)
@@ -204,7 +209,7 @@ class Runner:
         )
         self.proxy.start()
 
-        for probe in self.get_probes(role=AgentMixin):
+        for probe in self.get_probes(probe_type=AgentMixin):
             probe.start_agent()
 
     async def __aenter__(self) -> "Runner":

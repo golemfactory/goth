@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 LEVEL0_TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
-        role=RequestorProbeWithAgent,
+        probe_type=RequestorProbeWithAgent,
         environment=node_environment(account_list="/asset/key/001-accounts.json"),
         volumes=VOLUMES,
         key_file="/asset/key/001.json",
@@ -30,7 +30,7 @@ LEVEL0_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_1",
-        role=ProviderProbe,
+        probe_type=ProviderProbe,
         # Configure this provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -40,7 +40,7 @@ LEVEL0_TOPOLOGY = [
     ),
     YagnaContainerConfig(
         name="provider_2",
-        role=ProviderProbe,
+        probe_type=ProviderProbe,
         # Configure the second provider node to communicate via proxy
         environment=node_environment(
             market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
@@ -59,7 +59,7 @@ async def test_level0(logs_path: Path, assets_path: Optional[Path]):
         LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
     ) as runner:
 
-        providers = runner.get_probes(role=ProviderProbe)
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         steps = [
             ProviderProbeWithLogSteps.wait_for_offer_subscribed,
