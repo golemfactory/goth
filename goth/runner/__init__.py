@@ -103,7 +103,7 @@ class Runner:
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Optional[Path],
-        yagna_commit_hash: Optional[str],
+        yagna_commit_hash: Optional[str] = None,
     ):
         self.topology = topology
         self.api_assertions_module = api_assertions_module

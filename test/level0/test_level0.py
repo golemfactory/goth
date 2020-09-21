@@ -51,11 +51,17 @@ LEVEL0_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level0(logs_path: Path, assets_path: Optional[Path]):
+async def test_level0(
+    logs_path: Path, assets_path: Optional[Path], yagna_commit_hash: Optional[str]
+):
     """Test running level 0 scenario."""
 
     async with Runner(
-        LEVEL0_TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+        LEVEL0_TOPOLOGY,
+        "assertions.level0_assertions",
+        logs_path,
+        assets_path,
+        yagna_commit_hash=yagna_commit_hash,
     ) as runner:
 
         providers = runner.get_probes(probe_type=ProviderProbe)
