@@ -239,6 +239,7 @@ class Runner:
         p = subprocess.Popen(
             args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
+        assert p.stdout  # silence mypy
         out_queue = helpers.IOStreamQueue(p.stdout)
 
         while time.time() < starttime + timeout and returncode is None:
