@@ -14,7 +14,7 @@ class IOStreamQueue:
     out_queue = helpers.IOStreamQueue(p.stdout)
 
     while True:
-        for l in out_queue.lines:
+        for l in out_queue.lines():
             print(l.decode('utf-8'), end='')
 
         if p.poll() is not None:
@@ -37,13 +37,10 @@ class IOStreamQueue:
 
         self._output_queue = q
 
-    @property
     def lines(self) -> typing.List[bytes]:
-        """Get the lines of the output that have been captured so far."""
-        lines = []
+        """Generator yielding the lines of the output that have been captured so far."""
         while True:
             try:
-                lines.append(self._output_queue.get_nowait())
+                yield self._output_queue.get_nowait()
             except queue.Empty:
                 break
-        return lines

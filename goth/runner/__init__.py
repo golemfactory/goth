@@ -15,7 +15,7 @@ import docker
 
 from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
-from goth.runner.container.compose import get_compose_services
+from goth.runner.container.compose import get_compose_services, COMPOSE_FILE
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
 from goth.runner.log import configure_logging, LogConfig
@@ -26,9 +26,6 @@ from goth import helpers
 
 logger = logging.getLogger(__name__)
 
-DOCKER_COMPOSE_FILE = str(
-    (Path(__file__).parents[2] / "docker/docker-compose.yml").resolve()
-)
 RUN_COMMAND_SLEEP_INTERVAL = 0.1
 RUN_COMMAND_DEFAULT_TIMEOUT = 3600
 
@@ -226,7 +223,10 @@ class Runner:
 
     @staticmethod
     def _run_command(
-        args, env=None, log_prefix=None, timeout=RUN_COMMAND_DEFAULT_TIMEOUT
+        args,
+        env: Optional[dict] = None,
+        log_prefix: Optional[str] = None,
+        timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
     ):
         logger.info("Running local command: %s", " ".join(args))
 
@@ -242,7 +242,7 @@ class Runner:
         out_queue = helpers.IOStreamQueue(p.stdout)
 
         while time.time() < starttime + timeout and returncode is None:
-            for line in out_queue.lines:
+            for line in out_queue.lines():
                 logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
             returncode = p.poll()
@@ -263,15 +263,15 @@ class Runner:
 
     def _setup_docker_compose(self):
         self._run_command(
-            ["docker-compose", "-f", DOCKER_COMPOSE_FILE, "up", "-d", "--build"],
+            ["docker-compose", "-f", str(COMPOSE_FILE), "up", "-d", "--build"],
             env={"YAGNA_COMMIT_HASH": self.yagna_commit_hash}
             if self.yagna_commit_hash
             else None,
         )
 
     def _shutdown_docker_compose(self):
-        self._run_command(["docker-compose", "-f", DOCKER_COMPOSE_FILE, "stop"])
-        self._run_command(["docker-compose", "-f", DOCKER_COMPOSE_FILE, "rm", "-f"])
+        self._run_command(["docker-compose", "-f", str(COMPOSE_FILE), "stop"])
+        self._run_command(["docker-compose", "-f", str(COMPOSE_FILE), "rm", "-f"])
 
     async def __aenter__(self) -> "Runner":
         scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
