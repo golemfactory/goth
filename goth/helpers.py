@@ -38,7 +38,7 @@ class IOStreamQueue:
         self._output_queue = q
 
     def lines(self) -> typing.List[bytes]:
-        """Generator yielding the lines of the output that have been captured so far."""
+        """Yield the lines of the output that have been captured so far."""
         while True:
             try:
                 yield self._output_queue.get_nowait()
