@@ -115,9 +115,8 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
         for agreement_id, provider in agreement_providers:
             logger.info("Running activity on %s", provider.name)
             activity_id = await requestor.create_activity(agreement_id)
-            await provider.wait_for_activity_created()
-            batch_id = await requestor.call_exec(activity_id, exe_script)
             await provider.wait_for_exeunit_started()
+            batch_id = await requestor.call_exec(activity_id, exe_script)
             await requestor.collect_results(
                 activity_id, batch_id, num_commands, timeout=30
             )

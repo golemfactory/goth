@@ -23,11 +23,6 @@ class ProviderProbeWithLogSteps(ProviderProbe):
         await self._wait_for_agent_log("Decided to ApproveAgreement")
 
     @step()
-    async def wait_for_activity_created(self):
-        """Wait until the provider agent subscribes to the offer."""
-        await self._wait_for_agent_log("Activity created")
-
-    @step()
     async def wait_for_exeunit_started(self):
         """Wait until the provider agent starts the exe-unit."""
         await self._wait_for_agent_log(r"\[ExeUnit\](.+)Started$")
