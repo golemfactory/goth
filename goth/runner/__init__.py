@@ -129,10 +129,12 @@ class Runner:
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
+        agent_probes = self.get_probes(probe_type=AgentMixin)  # type: ignore
+
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.get_probes(probe_type=AgentMixin)),
+                (probe.agent_logs for probe in agent_probes),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
