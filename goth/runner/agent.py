@@ -3,7 +3,6 @@ import abc
 import asyncio
 import logging
 import re
-from typing import TYPE_CHECKING
 
 from goth.assertions.operators import eventually
 from goth.runner.log import LogConfig
