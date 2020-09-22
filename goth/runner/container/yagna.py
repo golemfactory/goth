@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from string import Template
-from typing import ClassVar, Dict, Iterator, Optional, TYPE_CHECKING
+from typing import ClassVar, Dict, Iterator, Optional, Type, TYPE_CHECKING
 
 from docker import DockerClient
 from goth.address import (
@@ -14,13 +14,13 @@ from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
-    from goth.runner.probe import ProbeType
+    from goth.runner.probe import Probe
 
 
 class YagnaContainerConfig(DockerContainerConfig):
     """Configuration to be used for creating a new `YagnaContainer`."""
 
-    probe_type: "ProbeType"
+    probe_type: Type["Probe"]
     """Python type of the probe to be instantiated from this config"""
 
     environment: Dict[str, str]
@@ -32,7 +32,7 @@ class YagnaContainerConfig(DockerContainerConfig):
     def __init__(
         self,
         name: str,
-        probe_type: "ProbeType",
+        probe_type: Type["Probe"],
         volumes: Optional[Dict[Template, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,

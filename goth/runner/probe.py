@@ -4,7 +4,7 @@ import abc
 import logging
 from pathlib import Path
 import time
-from typing import Optional, TypeVar, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -243,6 +243,3 @@ class ProviderProbe(AgentMixin, Probe):
             stream=True,
         )
         self.agent_logs.start(log_stream.output)
-
-
-ProbeType = TypeVar("ProbeType")

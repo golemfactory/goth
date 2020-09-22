@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import cast, Dict, List, Optional, Type
+from typing import cast, Dict, List, Optional, Type, TypeVar
 
 import docker
 
@@ -19,10 +19,12 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
 from goth.runner.log_monitor import LogEventMonitor
-from goth.runner.probe import Probe, ProbeType
+from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
 
 logger = logging.getLogger(__name__)
+
+ProbeType = TypeVar("ProbeType", bound=Probe)
 
 
 def step(default_timeout: float = 10.0):
@@ -156,11 +158,10 @@ class Runner:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            if isinstance(config, YagnaContainerConfig):
-                probe = config.probe_type(
-                    self, docker_client, config, log_config, self.assets_path
-                )
-                self.probes.append(probe)
+            probe = config.probe_type(
+                self, docker_client, config, log_config, self.assets_path
+            )
+            self.probes.append(probe)
 
     def _get_test_log_dir_name(self):
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
