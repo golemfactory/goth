@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import Dict, List, Optional, Type
+from typing import cast, Dict, List, Optional, Type
 
 import docker
 
@@ -121,10 +121,10 @@ class Runner:
         mixin type used with probes. This type is used in an `isinstance` check.
         """
         probes = self.probes
-        probes = [p for p in probes if isinstance(p, probe_type)]
         if name:
             probes = [p for p in probes if p.name == name]
-        return probes
+        probes = [p for p in probes if isinstance(p, probe_type)]
+        return cast(List[ProbeType], probes)
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
