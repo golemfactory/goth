@@ -5,7 +5,7 @@ from enum import Enum
 import logging
 import re
 import time
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Sequence
 
 from func_timeout.StoppableThread import StoppableThread
 
@@ -124,11 +124,17 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
     in_stream: Iterator[bytes]
     logger: logging.Logger
+    _buffer_task: Optional[StoppableThread]
 
     def __init__(self, log_config: LogConfig):
         super().__init__()
         self.logger = _create_file_logger(log_config)
         self._buffer_task = None
+
+    @property
+    def events(self) -> Sequence[LogEvent]:
+        """Return the events that occurred so far."""
+        return self._events
 
     def start(self, in_stream: Iterator[bytes]):
         """Start reading the logs."""
