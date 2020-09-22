@@ -14,7 +14,7 @@ from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
-    from goth.runner.probe import Probe
+    from goth.runner.probe import Probe  # noqa: F401
 
 
 class YagnaContainerConfig(DockerContainerConfig):
