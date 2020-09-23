@@ -187,6 +187,15 @@ def is_subscribe_offer_request(event: APIEvent) -> bool:
     return _match_event(event, APIRequest, "POST", "^/market-api/v1/offers$")
 
 
+def is_unsubscribe_offer_request(event: APIEvent, sub_id: str = "") -> bool:
+    """Check if `event` is a request of UnsubscribeOffer operation."""
+
+    sub_id_re = sub_id if sub_id else "[^/]+"
+    return _match_event(
+        event, APIRequest, "DELETE", f"^/market-api/v1/offers/{sub_id_re}$"
+    )
+
+
 def is_subscribe_offer_response(event: APIEvent) -> bool:
     """Check if `event` is a response of SubscribeOffer operation."""
 

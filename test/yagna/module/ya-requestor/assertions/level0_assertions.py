@@ -3,7 +3,7 @@ import asyncio
 import logging
 from typing import Sequence
 
-from goth.api_monitor.api_events import APIResponse
+from goth.api_monitor.api_events import APIEvent, APIResponse
 import goth.api_monitor.api_events as api
 
 from goth.assertions import AssertionFunction, TemporalAssertionError
@@ -49,13 +49,18 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
 
     interval = 10.0
 
-    # Ensure that `CollectDemands(sub_id)` is called within each `interval`
-    while not stream.events_ended:
+    def _is_collect_or_unsubscribe(event: APIEvent) -> bool:
+        is_collect = api.is_collect_demands_request(event, sub_id)
+        is_unsubscribe = api.is_unsubscribe_offer_request(event, sub_id)
+        return is_collect or is_unsubscribe
 
+    # Ensure that `CollectDemands(sub_id)` is called within each `interval`, until
+    # `UnsubscribeOffer(sub_id)` is called.
+    while not stream.events_ended:
         try:
-            req = await eventually(
-                stream, lambda e: api.is_collect_demands_request(e, sub_id), interval
-            )
+            req = await eventually(stream, _is_collect_or_unsubscribe, interval)
+            if req and api.is_unsubscribe_offer_request(req, sub_id):
+                break
         except asyncio.TimeoutError:
             raise TemporalAssertionError(
                 f"CollectDemands not called within the last {interval}s"

@@ -13,6 +13,7 @@ env:
   DOCKER_PKG: docker.pkg.github.com/${{github.repository}}/yagna-goth
 
 jobs:
+
   level0:
     name: Run integration tests (level 0)
     runs-on: ubuntu-latest
