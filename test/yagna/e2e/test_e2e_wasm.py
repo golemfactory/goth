@@ -1,4 +1,4 @@
-"""Level 1 test to be ran from pytest."""
+"""End to end tests for requesting WASM tasks using goth REST API clients."""
 
 import json
 import logging
@@ -52,8 +52,8 @@ TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_e2e_basic_flow_success(logs_path: Path, assets_path: Optional[Path]):
-    """Test running level 1 scenario."""
+async def test_e2e_wasm_success(logs_path: Path, assets_path: Optional[Path]):
+    """Test successful flow requesting WASM tasks with goth REST API client."""
 
     # TODO: provide the exe script in a fixture?
     if assets_path is None:
