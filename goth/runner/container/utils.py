@@ -22,7 +22,7 @@ def get_container_address(
 
     matching_containers = client.containers.list(filters={"name": container_name})
     if not matching_containers:
-        raise ContainerNotFoundError()
+        raise ContainerNotFoundError(container_name)
 
     container = matching_containers[0]
     container_networks = container.attrs["NetworkSettings"]["Networks"]

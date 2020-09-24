@@ -2,21 +2,66 @@
 
 import asyncio
 from datetime import datetime, timezone
+import functools
 from itertools import chain
 import logging
 import os
 from pathlib import Path
 import time
-from typing import Dict, List, Optional
+from typing import cast, Dict, List, Optional, Type, TypeVar
 
 import docker
 
 from goth.assertions import TemporalAssertionError
+from goth.runner.agent import AgentMixin
+from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import configure_logging, LogConfig
-from goth.runner.probe import Probe, Role
-from goth.runner.probe_steps import ProbeStepBuilder, Step
+from goth.runner.log_monitor import LogEventMonitor
+from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
+
+logger = logging.getLogger(__name__)
+
+ProbeType = TypeVar("ProbeType", bound=Probe)
+
+
+def step(default_timeout: float = 10.0):
+    """Wrap a step function to implement timeout and log progress."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(self: Probe, *args, timeout: Optional[float] = None):
+            timeout = timeout if timeout is not None else default_timeout
+            step_name = f"{self.name}.{func.__name__}(timeout={timeout})"
+            start_time = time.time()
+
+            logger.info("Running step '%s'", step_name)
+            try:
+                result = await asyncio.wait_for(func(self, *args), timeout=timeout)
+                self.runner.check_assertion_errors()
+                step_time = time.time() - start_time
+                logger.debug(
+                    "Finished step '%s', result: %s, time: %s",
+                    step_name,
+                    result,
+                    step_time,
+                )
+            except Exception as exc:
+                step_time = time.time() - start_time
+                logger.error(
+                    "Step '%s' raised %s in %s",
+                    step_name,
+                    exc.__class__.__name__,
+                    step_time,
+                )
+                raise
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 class Runner:
@@ -40,8 +85,8 @@ class Runner:
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
-    steps: List[Step]
-    """The list of steps to be awaited, steps of the scenario to be executed."""
+    _static_monitors: Dict[str, LogEventMonitor]
+    """Log monitors for containers running as part of docker-compose."""
 
     def __init__(
         self,
@@ -55,7 +100,7 @@ class Runner:
         self.assets_path = assets_path
         self.probes = []
         self.proxy = None
-        self.steps = []
+        self._static_monitors = {}
 
         # Create a unique subdirectory for this test run
         date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
@@ -63,17 +108,36 @@ class Runner:
         self.base_log_dir.mkdir(parents=True)
 
         configure_logging(self.base_log_dir)
-        self.logger = logging.getLogger(__name__)
-        self._create_probes()
+
+        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
+        scenario_dir.mkdir(exist_ok=True)
+        self._create_probes(scenario_dir)
+        self._start_static_monitors(scenario_dir)
+
+    def get_probes(
+        self, probe_type: Type[ProbeType], name: str = ""
+    ) -> List[ProbeType]:
+        """Get probes by name or type.
+
+        `probe_type` can be a type directly inheriting from `Probe`, as well as a
+        mixin type used with probes. This type is used in an `isinstance` check.
+        """
+        probes = self.probes
+        if name:
+            probes = [p for p in probes if p.name == name]
+        probes = [p for p in probes if isinstance(p, probe_type)]
+        return cast(List[ProbeType], probes)
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
+        agent_probes = self.get_probes(probe_type=AgentMixin)  # type: ignore
+
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.probes),
-                [self.proxy.monitor],
+                (probe.agent_logs for probe in agent_probes),
+                [self.proxy.monitor] if self.proxy else [],
             )
         )
         failed = chain.from_iterable(
@@ -87,71 +151,55 @@ class Runner:
                 f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
             )
 
-    async def run_scenario(self):
-        """Start the nodes, run the scenario, then stop the nodes and clean up."""
-
-        self._start_nodes()
-        try:
-            for step in self.steps:
-                start_time = time.time()
-                self.logger.info("running step. step=%s", step)
-                try:
-                    await asyncio.wait_for(step.tick(), step.timeout)
-                    self.check_assertion_errors()
-                    step_time = time.time() - start_time
-                    self.logger.debug(
-                        "finished step. step=%s, time=%s", step, step_time
-                    )
-                except Exception as exc:
-                    step_time = time.time() - start_time
-                    self.logger.error(
-                        "step %s raised %s in %s",
-                        step,
-                        exc.__class__.__name__,
-                        step_time,
-                    )
-                    raise
-        finally:
-            # Sleep to let the logs be saved
-            await asyncio.sleep(2.0)
-            for probe in self.probes:
-                self.logger.info("stopping probe. name=%s", probe.name)
-                await probe.stop()
-
-            self.proxy.stop()
-            # Stopping the proxy and probe log monitors triggered evaluation
-            # of assertions at the "end of events". There may be some new failures.
-            self.check_assertion_errors()
-
-    def _create_probes(self) -> None:
-
+    def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
 
         for config in self.topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            if isinstance(config, YagnaContainerConfig):
-                probe = config.role(docker_client, config, log_config, self.assets_path)
-                self.probes.append(probe)
+            probe = config.probe_type(
+                self, docker_client, config, log_config, self.assets_path
+            )
+            self.probes.append(probe)
 
     def _get_test_log_dir_name(self):
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
-        self.logger.debug("Raw current pytest test=%s", test_name)
+        logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
         test_name = test_name.split("::")[-1].split()[0]
-        self.logger.debug("Cleaned current test dir name=%s", test_name)
+        logger.debug("Cleaned current test dir name=%s", test_name)
         return test_name
 
-    def _start_nodes(self):
+    def _start_static_monitors(self, scenario_dir: Path) -> None:
+        docker_client = docker.from_env()
 
+        for service_name in get_compose_services():
+            log_config = LogConfig(service_name)
+            log_config.base_dir = scenario_dir
+            monitor = LogEventMonitor(log_config)
+
+            container = docker_client.containers.list(filters={"name": service_name})
+            if not container:
+                raise ContainerNotFoundError(service_name)
+            container = container[0]
+
+            monitor.start(
+                container.logs(
+                    follow=True,
+                    since=datetime.utcnow(),
+                    stream=True,
+                    timestamps=True,
+                )
+            )
+            self._static_monitors[service_name] = monitor
+
+    def _start_nodes(self):
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            probe.start_container()
+            probe.start()
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
@@ -164,18 +212,26 @@ class Runner:
         )
         self.proxy.start()
 
-        # The proxy is ready to route the API calls. Start the agents.
-        for probe in self.probes:
+        for probe in self.get_probes(probe_type=AgentMixin):
             probe.start_agent()
 
-    def get_probes(
-        self, role: Optional[Role] = None, name: Optional[str] = ""
-    ) -> ProbeStepBuilder:
-        """Create a ProbeStepBuilder for probes with the specified criteria."""
-        probes = self.probes
-        if role:
-            probes = [p for p in probes if type(p) == role]
-        if name:
-            probes = [p for p in probes if p.name == name]
+    async def __aenter__(self) -> "Runner":
+        self._start_nodes()
+        return self
 
-        return ProbeStepBuilder(self.steps, probes)
+    # Argument exception will be re-raised after exiting the context manager,
+    # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
+    async def __aexit__(self, _exc_type, _exc, _traceback):
+        await asyncio.sleep(2.0)
+        for probe in self.probes:
+            logger.info("stopping probe. name=%s", probe.name)
+            await probe.stop()
+
+        for name, monitor in self._static_monitors.items():
+            logger.debug("stopping static monitor. name=%s", name)
+            await monitor.stop()
+
+        self.proxy.stop()
+        # Stopping the proxy triggered evaluation of assertions
+        # "at the end of events".
+        self.check_assertion_errors()

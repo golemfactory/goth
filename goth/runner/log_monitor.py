@@ -1,14 +1,16 @@
 """Classes and utilities to use a Monitor for log events."""
 
-import asyncio
 from datetime import datetime
 from enum import Enum
 import logging
 import re
 import time
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Sequence
+
+from func_timeout.StoppableThread import StoppableThread
 
 from goth.assertions.monitor import EventMonitor
+from goth.runner.exceptions import StopThreadException
 from goth.runner.log import LogConfig
 
 logger = logging.getLogger(__name__)
@@ -99,7 +101,9 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
     """
 
     handler = logging.FileHandler(
-        (config.base_dir / config.file_name).with_suffix(".log"), encoding="utf-8"
+        (config.base_dir / config.file_name).with_suffix(".log"),
+        encoding="utf-8",
+        delay=True,
     )
     handler.setFormatter(config.formatter)
     logger_ = logging.getLogger(str(config.file_name))
@@ -120,11 +124,17 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
     in_stream: Iterator[bytes]
     logger: logging.Logger
+    _buffer_task: Optional[StoppableThread]
 
     def __init__(self, log_config: LogConfig):
         super().__init__()
         self.logger = _create_file_logger(log_config)
         self._buffer_task = None
+
+    @property
+    def events(self) -> Sequence[LogEvent]:
+        """Return the events that occurred so far."""
+        return self._events
 
     def start(self, in_stream: Iterator[bytes]):
         """Start reading the logs."""
@@ -137,22 +147,31 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             self.logger,
         )
 
+    async def stop(self) -> None:
+        """Stop the monitor."""
+        await super().stop()
+        if self._buffer_task:
+            self._buffer_task.stop(StopThreadException)
+
     def update_stream(self, in_stream: Iterator[bytes]):
         """Update the stream when restarting a container."""
         if self._buffer_task:
-            self._buffer_task.cancel()
+            self._buffer_task.stop(StopThreadException)
         self.in_stream = in_stream
-        loop = asyncio.get_event_loop()
-        self._buffer_task = loop.run_in_executor(None, self._buffer_input)
+        self._buffer_task = StoppableThread(target=self._buffer_input, daemon=True)
+        self._buffer_task.start()
 
     def _buffer_input(self):
         logger.debug("Start reading input. name=%s", self.logger.name)
 
-        for chunk in self.in_stream:
-            chunk = chunk.decode()
-            for line in chunk.splitlines():
-                self.logger.info(line)
+        try:
+            for chunk in self.in_stream:
+                chunk = chunk.decode()
+                for line in chunk.splitlines():
+                    self.logger.info(line)
 
-                event = LogEvent(line)
-                logger.debug("[%s] event=%s", self.logger.name, event)
-                self.add_event(event)
+                    event = LogEvent(line)
+                    logger.debug("[%s] event=%s", self.logger.name, event)
+                    self.add_event(event)
+        except StopThreadException:
+            return

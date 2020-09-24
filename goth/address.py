@@ -72,7 +72,7 @@ MARKET_BASE_URL = DefaultTemplate(
     {"host": MARKET_HOST, "port": MARKET_PORT, "protocol": MARKET_PROTOCOL},
 )
 
-PROXY_HOST = "proxy"
+PROXY_HOST = "proxy-nginx"
 
 ROUTER_HOST = "router"
 ROUTER_PORT = 7477

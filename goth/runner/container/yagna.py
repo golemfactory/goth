@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from string import Template
-from typing import ClassVar, Dict, Iterator, Optional, TYPE_CHECKING
+from typing import ClassVar, Dict, Iterator, Optional, Type, TYPE_CHECKING
 
 from docker import DockerClient
 from goth.address import (
@@ -14,24 +14,17 @@ from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
-    from goth.runner.probe import Role
+    from goth.runner.probe import Probe  # noqa: F401
 
 
 class YagnaContainerConfig(DockerContainerConfig):
     """Configuration to be used for creating a new `YagnaContainer`."""
 
-    role: "Role"
-    """Role this container has in a test scenario"""
+    probe_type: Type["Probe"]
+    """Python type of the probe to be instantiated from this config"""
 
     environment: Dict[str, str]
     """Environment variables to be set for this container"""
-
-    use_requestor_agent: bool
-    """Indicates whether ya-requestor should be started by the given node.
-
-    This config field exists for the sake of backwards compatibility with the level 0
-    test scenario. It is consumed only by requestor nodes.
-    """
 
     key_file: Optional[str]
     """Keyfile to be imported into the yagna id service."""
@@ -39,24 +32,22 @@ class YagnaContainerConfig(DockerContainerConfig):
     def __init__(
         self,
         name: str,
-        role: "Role",
+        probe_type: Type["Probe"],
         volumes: Optional[Dict[Template, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
         key_file: Optional[str] = None,
-        use_requestor_agent: bool = False,
     ):
         super().__init__(name, volumes or {}, log_config)
-        self.role = role
+        self.probe_type = probe_type
         self.environment = environment or {}
         self.key_file = key_file
-        self.use_requestor_agent = use_requestor_agent
 
 
 class YagnaContainer(DockerContainer):
     """Extension of DockerContainer to be configured for yagna daemons."""
 
-    COMMAND = ["service", "run", "-d", "/"]
+    COMMAND = ["service", "run", "-d", "/", "--accept-terms"]
     ENTRYPOINT = "/usr/bin/yagna"
     IMAGE = "yagna-goth"
 
@@ -89,6 +80,7 @@ class YagnaContainer(DockerContainer):
             name=config.name,
             ports=self.ports,
             volumes=config.get_volumes_spec(assets_path) if assets_path else {},
+            privileged=True,  # FIXME https://github.com/golemfactory/yagna/issues/550
             **kwargs,
         )
 
