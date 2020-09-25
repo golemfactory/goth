@@ -52,14 +52,10 @@ TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_e2e_wasm_success(logs_path: Path, assets_path: Optional[Path]):
+async def test_e2e_wasm_success(logs_path: Path, assets_path: Path):
     """Test successful flow requesting WASM tasks with goth REST API client."""
 
     # TODO: provide the exe script in a fixture?
-    if assets_path is None:
-        level1_dir = Path(__file__).parent
-        level0_dir = level1_dir.parent / "level0"
-        assets_path = level0_dir / "asset"
     exe_script_path = Path(assets_path / "exe_script.json")
     exe_script = exe_script_path.read_text()
 

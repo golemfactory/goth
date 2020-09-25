@@ -51,7 +51,7 @@ TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_e2e_wasm_agent_success(logs_path: Path, assets_path: Optional[Path]):
+async def test_e2e_wasm_agent_success(logs_path: Path, assets_path: Path):
     """Test succesful flow requesting WASM tasks with requestor agent."""
 
     async with Runner(

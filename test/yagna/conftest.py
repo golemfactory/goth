@@ -6,6 +6,7 @@ from typing import Optional
 
 import pytest
 
+from goth.project import DEFAULT_ASSETS_DIR
 from goth.runner.log import DEFAULT_LOG_DIR
 
 
@@ -19,15 +20,15 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture()
-def assets_path(request) -> Optional[Path]:
+def assets_path(request) -> Path:
     """Test fixture which tries to get the value of CLI parameter --assets-path.
 
-    If the value is not set, the test using this fixture will fail.
+    If this parameter is not present, `DEFAULT_ASSETS_DIR` is used as the return value.
     """
 
     path = request.config.option.assets_path
     if not path:
-        return None
+        return DEFAULT_ASSETS_DIR
 
     path = Path(path)
     if not path.is_dir():

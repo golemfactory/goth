@@ -68,7 +68,7 @@ class Probe(abc.ABC):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Optional[Path] = None,
+        assets_path: Path,
     ):
         self.runner = runner
         self._docker_client = client
@@ -194,7 +194,7 @@ class RequestorProbe(ApiClientMixin, Probe):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Optional[Path] = None,
+        assets_path: Path,
     ):
         super().__init__(runner, client, config, log_config, assets_path)
 
