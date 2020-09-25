@@ -55,7 +55,7 @@ async def test_e2e_wasm_agent_success(logs_path: Path, assets_path: Path):
     """Test succesful flow requesting WASM tasks with requestor agent."""
 
     async with Runner(
-        TOPOLOGY, "assertions.level0_assertions", logs_path, assets_path
+        TOPOLOGY, "assertions.e2e_wasm_assertions", logs_path, assets_path
     ) as runner:
 
         providers = runner.get_probes(probe_type=ProviderProbe)

@@ -60,7 +60,7 @@ async def test_e2e_wasm_success(logs_path: Path, assets_path: Path):
     exe_script = exe_script_path.read_text()
 
     async with Runner(
-        TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+        TOPOLOGY, "assertions.e2e_wasm_assertions", logs_path, assets_path
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
