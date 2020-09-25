@@ -42,9 +42,10 @@ jobs:
         env:
           GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
           YAGNA_DEB: ${{ env.YAGNA_DEB }}
-        run: |
-          docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
-          docker-compose -f docker/docker-compose.yml up -d
+        run: docker-compose -f docker/docker-compose.yml up -d --build
+        # run: |
+          # docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
+          # docker-compose -f docker/docker-compose.yml up -d
 
       # --ignore-pull-failures: if there is no cache in github packages
       # or latest cache is invalidated, this flag will prevent failing
@@ -112,9 +113,10 @@ jobs:
         env:
           GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
           YAGNA_DEB: ${{ env.YAGNA_DEB }}
-        run: |
-          docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
-          docker-compose -f docker/docker-compose.yml up -d
+        run: docker-compose -f docker/docker-compose.yml up -d --build
+        # run: |
+          # docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
+          # docker-compose -f docker/docker-compose.yml up -d
 
       # tagging as latest after push, so goth/runner/container/yagna.py#L35 wont complain
       - name: Update tag of yagna image with version of yagna.deb file
