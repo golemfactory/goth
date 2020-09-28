@@ -52,13 +52,3 @@ def logs_path(request) -> Path:
         pytest.fail("Provided logs path doesn't point to an existing directory.")
 
     return path.resolve()
-
-
-@pytest.fixture()
-def project_root() -> Path:
-    """Fixture that obtains the absolute path to the project's root directory.
-
-    (assuming it's the parent directory of the current file's directory).
-    """
-
-    return Path(__file__).parent.parent.resolve()
