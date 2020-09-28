@@ -122,7 +122,7 @@ def test_yagna_container_create(yagna_container, mock_docker_client):
         environment={},
         network=DockerContainer.DEFAULT_NETWORK,
         ports=ANY,
-        volumes={},
+        volumes=ANY,
         detach=True,
         privileged=True,
     )
