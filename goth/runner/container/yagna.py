@@ -10,6 +10,7 @@ from goth.address import (
     HOST_REST_PORT_START,
     YAGNA_REST_PORT,
 )
+from goth.project import DEFAULT_ASSETS_DIR
 from goth.runner.container import DockerContainer, DockerContainerConfig
 from goth.runner.log import LogConfig
 
@@ -65,7 +66,7 @@ class YagnaContainer(DockerContainer):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: Optional[LogConfig] = None,
-        assets_path: Optional[Path] = None,
+        assets_path: Path = DEFAULT_ASSETS_DIR,
         **kwargs,
     ):
         self.ports = {YAGNA_REST_PORT: YagnaContainer.host_rest_port()}
@@ -79,7 +80,7 @@ class YagnaContainer(DockerContainer):
             log_config=log_config,
             name=config.name,
             ports=self.ports,
-            volumes=config.get_volumes_spec(assets_path) if assets_path else {},
+            volumes=config.get_volumes_spec(assets_path),
             privileged=True,  # FIXME https://github.com/golemfactory/yagna/issues/550
             **kwargs,
         )

@@ -6,3 +6,4 @@ import goth
 
 PROJECT_ROOT = Path(goth.__file__).parent.parent
 DOCKER_DIR = PROJECT_ROOT / "docker"
+DEFAULT_ASSETS_DIR = DOCKER_DIR / "default/asset"

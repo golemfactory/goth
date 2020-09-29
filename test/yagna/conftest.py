@@ -2,10 +2,10 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
+from goth.project import DEFAULT_ASSETS_DIR
 from goth.runner.log import DEFAULT_LOG_DIR
 
 
@@ -19,15 +19,15 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture()
-def assets_path(request) -> Optional[Path]:
+def assets_path(request) -> Path:
     """Test fixture which tries to get the value of CLI parameter --assets-path.
 
-    If the value is not set, the test using this fixture will fail.
+    If this parameter is not present, `DEFAULT_ASSETS_DIR` is used as the return value.
     """
 
     path = request.config.option.assets_path
     if not path:
-        return None
+        return DEFAULT_ASSETS_DIR
 
     path = Path(path)
     if not path.is_dir():
@@ -52,13 +52,3 @@ def logs_path(request) -> Path:
         pytest.fail("Provided logs path doesn't point to an existing directory.")
 
     return path.resolve()
-
-
-@pytest.fixture()
-def project_root() -> Path:
-    """Fixture that obtains the absolute path to the project's root directory.
-
-    (assuming it's the parent directory of the current file's directory).
-    """
-
-    return Path(__file__).parent.parent.resolve()

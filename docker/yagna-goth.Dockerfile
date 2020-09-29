@@ -9,8 +9,6 @@ RUN pip install requests \
     && python ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
 
 FROM debian:bullseye-slim
-COPY default/asset /asset
-COPY default/asset/presets.json /presets.json
 COPY --from=downloader /*.deb ./
 RUN apt update && apt install -y ./*.deb
 ENTRYPOINT /usr/bin/yagna

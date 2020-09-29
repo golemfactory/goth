@@ -1,9 +1,8 @@
-"""Level 1 test to be ran from pytest."""
+"""End to end tests for requesting WASM tasks using goth REST API clients."""
 
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -20,8 +19,7 @@ from goth.runner.requestor import RequestorProbeWithApiSteps
 
 logger = logging.getLogger(__name__)
 
-
-LEVEL1_TOPOLOGY = [
+TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         probe_type=RequestorProbeWithApiSteps,
@@ -53,19 +51,15 @@ LEVEL1_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level1(logs_path: Path, assets_path: Optional[Path]):
-    """Test running level 1 scenario."""
+async def test_e2e_wasm_success(logs_path: Path, assets_path: Path):
+    """Test successful flow requesting WASM tasks with goth REST API client."""
 
     # TODO: provide the exe script in a fixture?
-    if assets_path is None:
-        level1_dir = Path(__file__).parent
-        level0_dir = level1_dir.parent / "level0"
-        assets_path = level0_dir / "asset"
     exe_script_path = Path(assets_path / "exe_script.json")
     exe_script = exe_script_path.read_text()
 
     async with Runner(
-        LEVEL1_TOPOLOGY, "assertions.level1_assertions", logs_path, assets_path
+        TOPOLOGY, "assertions.e2e_wasm_assertions", logs_path, assets_path
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
@@ -132,5 +126,3 @@ async def test_level1(logs_path: Path, assets_path: Optional[Path]):
             # TODO:
             await requestor.pay_invoices(invoices)
             await provider.wait_for_invoice_paid()
-
-    logger.info("Test finished")

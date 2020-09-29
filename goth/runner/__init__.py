@@ -70,7 +70,7 @@ class Runner:
     api_assertions_module: Optional[str]
     """Name of the module containing assertions to be loaded into the API monitor."""
 
-    assets_path: Optional[Path]
+    assets_path: Path
     """Path to directory containing yagna assets to be mounted in containers."""
 
     base_log_dir: Path
@@ -93,7 +93,7 @@ class Runner:
         topology: List[YagnaContainerConfig],
         api_assertions_module: Optional[str],
         logs_path: Path,
-        assets_path: Optional[Path],
+        assets_path: Path,
     ):
         self.topology = topology
         self.api_assertions_module = api_assertions_module
