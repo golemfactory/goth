@@ -1,1 +1,1 @@
-## PAyment API and Drivers tests
+## Payment API and Drivers tests
