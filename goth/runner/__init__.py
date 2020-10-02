@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 import functools
 from itertools import chain
 import logging
@@ -17,7 +17,7 @@ from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
-from goth.runner.log import configure_logging, LogConfig
+from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
