@@ -4,8 +4,10 @@ ARG YAGNA_COMMIT_HASH
 ARG YAGNA_DEB_PATH
 ENV YAGNA_COMMIT_HASH $YAGNA_COMMIT_HASH
 WORKDIR /
+# If YAGNA_DEB_PATH is not empty then copy whatever it's pointing to (either a file or a directory)
 COPY download_artifacts.py download_release.py ${YAGNA_DEB_PATH:-*.deb}* ./
 RUN pip install requests \
+    # If YAGNA_DEB_PATH is empty then download the `yagna` artifact from Actions
     && [[ -n "$YAGNA_DEB_PATH" ]] && yagna_artifact="" || yagna_artifact="yagna" \
     && python ./download_artifacts.py -t ${GITHUB_API_TOKEN} ya-sb-router $yagna_artifact \
     && python ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
