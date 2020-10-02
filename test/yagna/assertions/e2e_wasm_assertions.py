@@ -93,6 +93,6 @@ async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
 
 
 TEMPORAL_ASSERTIONS: Sequence[AssertionFunction] = [
-    assert_provider_periodically_collects_demands,
+    # assert_provider_periodically_collects_demands,
     assert_no_errors_until_invoice_sent,
 ]
