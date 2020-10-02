@@ -18,7 +18,7 @@ echo "YAGNA_MARKET_URL: $YAGNA_MARKET_URL" > /dev/stderr
 export RUST_LOG=info
 
 echo "Init payment"
-yagna payment init ngnt -r ${NODE_ID}
+yagna payment init -r ${NODE_ID}
 
 ya-requestor --activity-url "$YAGNA_ACTIVITY_URL" \
        --app-key "$APP_KEY" \
