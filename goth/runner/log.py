@@ -74,7 +74,7 @@ LOGGING_CONFIG = {
 }
 
 
-def configure_logging(base_dir: Path = DEFAULT_LOG_DIR):
+def configure_logging(base_dir: Path):
     """Configure the `logging` module.
 
     Updates config with `base_dir` before applying the global configuration.
@@ -86,7 +86,6 @@ def configure_logging(base_dir: Path = DEFAULT_LOG_DIR):
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
 
-    base_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
     logger.info("started logging. dir=%s", base_dir)
 

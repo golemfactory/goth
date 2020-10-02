@@ -102,15 +102,11 @@ class Runner:
         self.proxy = None
         self._static_monitors = {}
 
-        # Create a unique subdirectory for this test run
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
-        self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
-        self.base_log_dir.mkdir(parents=True)
+        test_name: str = self._get_current_test_name()
+        logger.info("Running test: %s", test_name)
 
-        configure_logging(self.base_log_dir)
-
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
+        scenario_dir = logs_path / test_name
+        scenario_dir.mkdir()
         self._create_probes(scenario_dir)
         self._start_static_monitors(scenario_dir)
 
@@ -163,7 +159,7 @@ class Runner:
             )
             self.probes.append(probe)
 
-    def _get_test_log_dir_name(self):
+    def _get_current_test_name(self):
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
         logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
