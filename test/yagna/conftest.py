@@ -1,6 +1,7 @@
 """Code common for all pytest modules in this package."""
 
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,7 @@ def pytest_addoption(parser):
     parser.addoption("--logs-path", action="store")
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def assets_path(request) -> Path:
     """Test fixture which tries to get the value of CLI parameter --assets-path.
 
@@ -31,6 +32,15 @@ def assets_path(request) -> Path:
         pytest.fail("Provided assets path doesn't point to an existing directory.")
 
     return path.resolve()
+
+
+@pytest.fixture(scope="session")
+def exe_script(assets_path: Path) -> dict:
+    """Fixture which parses the exe_script.json file from `assets_path` dir."""
+
+    exe_script_path = assets_path / "exe_script.json"
+    with exe_script_path.open() as fd:
+        return json.load(fd)
 
 
 @pytest.fixture(scope="session")
