@@ -63,10 +63,11 @@ docker ps
 
 Assuming you have no other Docker containers currently running, the output of this command should look similar to this:
 ```
-CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                    NAMES
-62b7b648fee0        yagna-goth:latest                      "/usr/bin/ya_sb_rout…"   6 seconds ago       Up 3 seconds                                 docker_router_1
-ac8abb60e2a9        golemfactory/golem-client-mock:0.1.2   "dotnet GolemClientM…"   6 seconds ago       Up 5 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
-3ca69f966418        proxy                                  "/docker-entrypoint.…"   6 seconds ago       Up 4 seconds        80/tcp                   docker_proxy_1
+CONTAINER ID        IMAGE                                                                    COMMAND                  CREATED             STATUS              PORTS                    NAMES
+2144da112b85        golem-client-mock                                                        "dotnet GolemClientM…"   29 minutes ago      Up 5 seconds        0.0.0.0:5001->5001/tcp   docker_mock-api_1
+0010c588486a        docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:c4a1fb9cbcf3   "docker-entrypoint.s…"   29 minutes ago      Up 2 seconds        0.0.0.0:8545->8545/tcp   docker_ethereum_1
+4dac01b1296d        yagna-goth:latest                                                        "/usr/bin/ya_sb_rout…"   29 minutes ago      Up 4 seconds                                 docker_router_1
+62ab87e02c17        proxy-nginx                                                              "/docker-entrypoint.…"   29 minutes ago      Up 3 seconds        80/tcp                   docker_proxy-nginx_1
 ```
 
 #### Using a specific yagna build
@@ -79,8 +80,29 @@ YAGNA_COMMIT_HASH=b0ac62f docker-compose -f docker/docker-compose.yml up -d --bu
 
 The flag `--build` is passed to `docker-compose` here to force rebuilding the required images (including `yagna-goth`).
 
+#### Using a local yagna build
+It's also possible to use a local yagna `.deb` file together with `goth`. This allows for running the integration tests on a version of `yagna` compiled directly from source.
 
-#### Running the integration tests
+Assuming we have set up the development environment for `yagna` on our machine, we can build a `.deb` package from source by using [`cargo-deb`](https://github.com/mmstick/cargo-deb). First, we need to install this extension via `cargo`:
+```
+cargo install cargo-deb
+```
+
+With `cargo-deb` installed we can build a `.deb` package of `yagna` by calling the below command from our `yagna` source root directory:
+```
+cargo deb -p yagna
+```
+
+Once built, we can find the result `.deb` package under: `target/debian` in our `yagna` source directory.
+
+In order to use this package together with `goth` we need to store its path under the environment variable `YAGNA_DEB_PATH` in the shell from which we run `docker-compose`:
+```
+YAGNA_DEB_PATH=/.../target/debian/yagna.deb docker-compose -f docker/docker-compose.yml up -d --build
+```
+
+With this variable set, the resulting Docker image will have our local version of `yagna` installed, rather than the one it would otherwise download from GitHub Actions artifacts.
+
+### Running the integration tests
 With the Yagna test network running locally we can now launch the integration tests.
 All tests related to `yagna` can be found under `test/yagna`.
 
