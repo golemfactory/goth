@@ -102,7 +102,7 @@ class Runner:
         self.proxy = None
         self._static_monitors = {}
 
-        test_name: str = self._get_current_test_name()
+        test_name = self._get_current_test_name()
         logger.info("Running test: %s", test_name)
 
         scenario_dir = logs_path / test_name
@@ -159,8 +159,9 @@ class Runner:
             )
             self.probes.append(probe)
 
-    def _get_current_test_name(self):
+    def _get_current_test_name(self) -> str:
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        assert test_name
         logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
         test_name = test_name.split("::")[-1].split()[0]
