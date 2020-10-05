@@ -40,7 +40,9 @@ def exe_script(assets_path: Path) -> dict:
 
     exe_script_path = assets_path / "exe_script.json"
     with exe_script_path.open() as fd:
-        return json.load(fd)
+        loaded = json.load(fd)
+        assert isinstance(loaded, dict)
+        return loaded
 
 
 @pytest.fixture(scope="session")
