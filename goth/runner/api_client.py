@@ -1,7 +1,7 @@
 """Module containing classes related to the yagna REST API client."""
 import dataclasses
 import logging
-from typing import TypeVar, TYPE_CHECKING
+from typing import TypeVar
 
 from typing_extensions import Protocol
 
@@ -15,9 +15,6 @@ from goth.address import (
     MARKET_API_URL,
     PAYMENT_API_URL,
 )
-
-if TYPE_CHECKING:
-    from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +75,7 @@ class ApiClientMixin:
     _api_base_host: str
     """Base hostname for the Yagna API clients."""
 
-    def start(self: "Probe") -> None:
+    def start(self):
         """Start the probe and initialize the API clients."""
 
         super().start()
@@ -87,7 +84,7 @@ class ApiClientMixin:
         self._init_market_api(self._api_base_host)
 
     def _create_api_client(
-        self: "Probe",
+        self,
         api_module: ApiModule[ConfTVar, ClientTVar],
         api_url: str,
     ) -> ClientTVar:

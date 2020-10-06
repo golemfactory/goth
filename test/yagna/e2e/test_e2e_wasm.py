@@ -1,4 +1,4 @@
-"""Level 1 test to be ran from pytest."""
+"""End to end tests for requesting WASM tasks using goth REST API clients."""
 
 import json
 import logging
@@ -20,8 +20,7 @@ from goth.runner.requestor import RequestorProbeWithApiSteps
 
 logger = logging.getLogger(__name__)
 
-
-LEVEL1_TOPOLOGY = [
+TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         probe_type=RequestorProbeWithApiSteps,
@@ -53,25 +52,20 @@ LEVEL1_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level1(
-    logs_path: Path, assets_path: Optional[Path], yagna_commit_hash: Optional[str]
+async def test_e2e_wasm_success(
+    logs_path: Path,
+    assets_path: Path,
+    exe_script: dict,
+    yagna_commit_hash: Optional[str],
 ):
-    """Test running level 1 scenario."""
-
-    # TODO: provide the exe script in a fixture?
-    if assets_path is None:
-        level1_dir = Path(__file__).parent
-        level0_dir = level1_dir.parent / "level0"
-        assets_path = level0_dir / "asset"
-    exe_script_path = Path(assets_path / "exe_script.json")
-    exe_script = exe_script_path.read_text()
+    """Test successful flow requesting WASM tasks with goth REST API client."""
 
     async with Runner(
-        LEVEL1_TOPOLOGY,
-        "assertions.level1_assertions",
+        TOPOLOGY,
+        "assertions.e2e_wasm_assertions",
         logs_path,
         assets_path,
-        yagna_commit_hash=yagna_commit_hash,
+        yagna_commit_hash,
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
@@ -116,14 +110,13 @@ async def test_level1(
 
         #  Activity
 
-        num_commands = len(json.loads(exe_script))
+        num_commands = len(exe_script)
 
         for agreement_id, provider in agreement_providers:
             logger.info("Running activity on %s", provider.name)
             activity_id = await requestor.create_activity(agreement_id)
-            await provider.wait_for_activity_created()
-            batch_id = await requestor.call_exec(activity_id, exe_script)
             await provider.wait_for_exeunit_started()
+            batch_id = await requestor.call_exec(activity_id, json.dumps(exe_script))
             await requestor.collect_results(
                 activity_id, batch_id, num_commands, timeout=30
             )
@@ -139,5 +132,3 @@ async def test_level1(
             # TODO:
             await requestor.pay_invoices(invoices)
             await provider.wait_for_invoice_paid()
-
-    logger.info("Test finished")

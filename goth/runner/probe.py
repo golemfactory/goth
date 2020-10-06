@@ -4,7 +4,7 @@ import abc
 import logging
 from pathlib import Path
 import time
-from typing import Optional, TypeVar, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -68,7 +68,7 @@ class Probe(abc.ABC):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Optional[Path] = None,
+        assets_path: Path,
     ):
         self.runner = runner
         self._docker_client = client
@@ -194,7 +194,7 @@ class RequestorProbe(ApiClientMixin, Probe):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Optional[Path] = None,
+        assets_path: Path,
     ):
         super().__init__(runner, client, config, log_config, assets_path)
 
@@ -243,6 +243,3 @@ class ProviderProbe(AgentMixin, Probe):
             stream=True,
         )
         self.agent_logs.start(log_stream.output)
-
-
-ProbeType = TypeVar("ProbeType")

@@ -3,14 +3,10 @@ import abc
 import asyncio
 import logging
 import re
-from typing import TYPE_CHECKING
 
 from goth.assertions.operators import eventually
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEvent, LogEventMonitor
-
-if TYPE_CHECKING:
-    from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -36,24 +32,24 @@ class AgentMixin(abc.ABC):
     """
 
     @abc.abstractmethod
-    def start_agent(self: "Probe") -> None:
+    def start_agent(self):
         """Start the agent binary.
 
         To enable the log monitor, this method must call `start` on `agent_logs`,
         passing in the log stream from the agent binary.
         """
 
-    def start(self: "Probe") -> None:
+    def start(self):
         """Start the probe and initialize the log monitor."""
         super().start()
         self._init_log_monitor()
 
-    async def stop(self: "Probe") -> None:
+    async def stop(self):
         """Stop the probe and the log monitor."""
         await super().stop()
         await self.agent_logs.stop()
 
-    def _init_log_monitor(self: "Probe") -> None:
+    def _init_log_monitor(self):
         log_config = LogConfig(file_name=f"{self.name}_agent")
         if self.container.log_config:
             log_config.base_dir = self.container.log_config.base_dir
@@ -62,7 +58,7 @@ class AgentMixin(abc.ABC):
         self._last_checked_line = -1
 
     async def _wait_for_agent_log(
-        self: "Probe", pattern: str, timeout: float = 1000
+        self, pattern: str, timeout: float = 1000
     ) -> LogEvent:
         """Search agent logs for a log line with the message matching `pattern`."""
 

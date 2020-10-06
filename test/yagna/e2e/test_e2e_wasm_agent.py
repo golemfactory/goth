@@ -1,4 +1,4 @@
-"""Level 0 test to be ran from pytest."""
+"""End to end tests for requesting WASM tasks using ya-requestor agent."""
 
 import logging
 from pathlib import Path
@@ -19,7 +19,7 @@ from goth.runner.provider import ProviderProbeWithLogSteps
 
 logger = logging.getLogger(__name__)
 
-LEVEL0_TOPOLOGY = [
+TOPOLOGY = [
     YagnaContainerConfig(
         name="requestor",
         probe_type=RequestorProbeWithAgent,
@@ -51,17 +51,17 @@ LEVEL0_TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_level0(
-    logs_path: Path, assets_path: Optional[Path], yagna_commit_hash: Optional[str]
+async def test_e2e_wasm_agent_success(
+    logs_path: Path, assets_path: Path, yagna_commit_hash: Optional[str]
 ):
-    """Test running level 0 scenario."""
+    """Test succesful flow requesting WASM tasks with requestor agent."""
 
     async with Runner(
-        LEVEL0_TOPOLOGY,
-        "assertions.level0_assertions",
+        TOPOLOGY,
+        "assertions.e2e_wasm_assertions",
         logs_path,
         assets_path,
-        yagna_commit_hash=yagna_commit_hash,
+        yagna_commit_hash,
     ) as runner:
 
         providers = runner.get_probes(probe_type=ProviderProbe)

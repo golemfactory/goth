@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 import functools
 from itertools import chain
 import logging
@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
-from typing import Dict, List, Optional, Type
+from typing import cast, Dict, List, Optional, Type, TypeVar
 
 import docker
 
@@ -18,13 +18,15 @@ from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import get_compose_services, COMPOSE_FILE
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
-from goth.runner.log import configure_logging, LogConfig
+from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
-from goth.runner.probe import Probe, ProbeType
+from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
 from goth import helpers
 
 logger = logging.getLogger(__name__)
+
+ProbeType = TypeVar("ProbeType", bound=Probe)
 
 RUN_COMMAND_SLEEP_INTERVAL = 0.1
 RUN_COMMAND_DEFAULT_TIMEOUT = 3600
@@ -73,7 +75,7 @@ class Runner:
     api_assertions_module: Optional[str]
     """Name of the module containing assertions to be loaded into the API monitor."""
 
-    assets_path: Optional[Path]
+    assets_path: Path
     """Path to directory containing yagna assets to be mounted in containers."""
 
     base_log_dir: Path
@@ -92,17 +94,14 @@ class Runner:
     """Log monitors for containers running as part of docker-compose."""
 
     yagna_commit_hash: Optional[str]
-    """
-    The hash of a specific commit in the yagna repository
-    that the tests should be run for
-    """
+    """Commit hash indicating the version of yagna which should be used."""
 
     def __init__(
         self,
         topology: List[YagnaContainerConfig],
         api_assertions_module: Optional[str],
         logs_path: Path,
-        assets_path: Optional[Path],
+        assets_path: Path,
         yagna_commit_hash: Optional[str] = None,
     ):
         self.topology = topology
@@ -113,12 +112,10 @@ class Runner:
         self.proxy = None
         self._static_monitors = {}
 
-        # Create a unique subdirectory for this test run
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
-        self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
-        self.base_log_dir.mkdir(parents=True)
+        test_name = self._get_current_test_name()
+        logger.info("Running test: %s", test_name)
 
-        configure_logging(self.base_log_dir)
+        self.base_log_dir = logs_path / test_name
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -129,18 +126,20 @@ class Runner:
         mixin type used with probes. This type is used in an `isinstance` check.
         """
         probes = self.probes
-        probes = [p for p in probes if isinstance(p, probe_type)]
         if name:
             probes = [p for p in probes if p.name == name]
-        return probes
+        probes = [p for p in probes if isinstance(p, probe_type)]
+        return cast(List[ProbeType], probes)
 
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
+        agent_probes = self.get_probes(probe_type=AgentMixin)  # type: ignore
+
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in self.get_probes(probe_type=AgentMixin)),
+                (probe.agent_logs for probe in agent_probes),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
@@ -162,15 +161,14 @@ class Runner:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            if isinstance(config, YagnaContainerConfig):
-                probe = config.probe_type(
-                    self, docker_client, config, log_config, self.assets_path
-                )
-                self.probes.append(probe)
+            probe = config.probe_type(
+                self, docker_client, config, log_config, self.assets_path
+            )
+            self.probes.append(probe)
 
-    @staticmethod
-    def _get_test_log_dir_name():
+    def _get_current_test_name(self) -> str:
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        assert test_name
         logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
         test_name = test_name.split("::")[-1].split()[0]
@@ -275,11 +273,13 @@ class Runner:
         self._run_command(["docker-compose", "-f", str(COMPOSE_FILE), "rm", "-f"])
 
     async def __aenter__(self) -> "Runner":
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
         self._setup_docker_compose()
+
+        scenario_dir = logs_path / test_name
+        scenario_dir.mkdir()
         self._create_probes(scenario_dir)
         self._start_static_monitors(scenario_dir)
+
         self._start_nodes()
         return self
 
