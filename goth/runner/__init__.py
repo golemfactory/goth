@@ -276,6 +276,7 @@ class Runner:
 
     async def __aenter__(self) -> "Runner":
         self._setup_docker_compose()
+        await asyncio.sleep(5)
 
         self.base_log_dir.mkdir()
         self._create_probes(self.base_log_dir)
