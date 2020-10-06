@@ -35,13 +35,13 @@ def assets_path(request) -> Path:
 
 
 @pytest.fixture(scope="session")
-def exe_script(assets_path: Path) -> dict:
+def exe_script(assets_path: Path) -> list:
     """Fixture which parses the exe_script.json file from `assets_path` dir."""
 
     exe_script_path = assets_path / "exe_script.json"
     with exe_script_path.open() as fd:
         loaded = json.load(fd)
-        assert isinstance(loaded, dict)
+        assert isinstance(loaded, list)
         return loaded
 
 
