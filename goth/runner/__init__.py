@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 import functools
 from itertools import chain
 import logging
@@ -17,7 +17,7 @@ from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import get_compose_services
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.exceptions import ContainerNotFoundError
-from goth.runner.log import configure_logging, LogConfig
+from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
@@ -102,15 +102,11 @@ class Runner:
         self.proxy = None
         self._static_monitors = {}
 
-        # Create a unique subdirectory for this test run
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
-        self.base_log_dir = logs_path / f"yagna_integration_{date_str}"
-        self.base_log_dir.mkdir(parents=True)
+        test_name = self._get_current_test_name()
+        logger.info("Running test: %s", test_name)
 
-        configure_logging(self.base_log_dir)
-
-        scenario_dir = self.base_log_dir / self._get_test_log_dir_name()
-        scenario_dir.mkdir(exist_ok=True)
+        scenario_dir = logs_path / test_name
+        scenario_dir.mkdir()
         self._create_probes(scenario_dir)
         self._start_static_monitors(scenario_dir)
 
@@ -163,8 +159,9 @@ class Runner:
             )
             self.probes.append(probe)
 
-    def _get_test_log_dir_name(self):
+    def _get_current_test_name(self) -> str:
         test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        assert test_name
         logger.debug("Raw current pytest test=%s", test_name)
         # Take only the function name of the currently running test
         test_name = test_name.split("::")[-1].split()[0]
