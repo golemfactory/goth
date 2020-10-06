@@ -275,10 +275,9 @@ class Runner:
     async def __aenter__(self) -> "Runner":
         self._setup_docker_compose()
 
-        scenario_dir = logs_path / test_name
-        scenario_dir.mkdir()
-        self._create_probes(scenario_dir)
-        self._start_static_monitors(scenario_dir)
+        self.base_log_dir.mkdir()
+        self._create_probes(self.base_log_dir)
+        self._start_static_monitors(self.base_log_dir)
 
         self._start_nodes()
         return self
