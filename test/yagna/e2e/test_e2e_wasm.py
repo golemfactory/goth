@@ -51,12 +51,8 @@ TOPOLOGY = [
 
 
 @pytest.mark.asyncio
-async def test_e2e_wasm_success(logs_path: Path, assets_path: Path):
+async def test_e2e_wasm_success(logs_path: Path, assets_path: Path, exe_script: dict):
     """Test successful flow requesting WASM tasks with goth REST API client."""
-
-    # TODO: provide the exe script in a fixture?
-    exe_script_path = Path(assets_path / "exe_script.json")
-    exe_script = exe_script_path.read_text()
 
     async with Runner(
         TOPOLOGY, "assertions.e2e_wasm_assertions", logs_path, assets_path
@@ -104,13 +100,13 @@ async def test_e2e_wasm_success(logs_path: Path, assets_path: Path):
 
         #  Activity
 
-        num_commands = len(json.loads(exe_script))
+        num_commands = len(exe_script)
 
         for agreement_id, provider in agreement_providers:
             logger.info("Running activity on %s", provider.name)
             activity_id = await requestor.create_activity(agreement_id)
             await provider.wait_for_exeunit_started()
-            batch_id = await requestor.call_exec(activity_id, exe_script)
+            batch_id = await requestor.call_exec(activity_id, json.dumps(exe_script))
             await requestor.collect_results(
                 activity_id, batch_id, num_commands, timeout=30
             )
