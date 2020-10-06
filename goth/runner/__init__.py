@@ -242,7 +242,7 @@ class Runner:
 
         while time.time() < starttime + timeout and returncode is None:
             for line in out_queue.lines():
-                logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
+                logger.info("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
             returncode = p.poll()
             if returncode is None:
@@ -261,11 +261,13 @@ class Runner:
             )
 
     def _setup_docker_compose(self):
+        env = os.environ
+        if self.yagna_commit_hash:
+            env["YAGNA_COMMIT_HASH"] = self.yagna_commit_hash
+
         self._run_command(
             ["docker-compose", "-f", str(COMPOSE_FILE), "up", "-d", "--build"],
-            env={"YAGNA_COMMIT_HASH": self.yagna_commit_hash}
-            if self.yagna_commit_hash
-            else None,
+            env=env,
         )
 
     def _shutdown_docker_compose(self):
