@@ -3,7 +3,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -56,16 +55,18 @@ async def test_e2e_wasm_success(
     logs_path: Path,
     assets_path: Path,
     exe_script: dict,
-    yagna_commit_hash: Optional[str],
+    compose_build_env: dict,
+    compose_file_path: Path,
 ):
     """Test successful flow requesting WASM tasks with goth REST API client."""
 
     async with Runner(
-        TOPOLOGY,
-        "assertions.e2e_wasm_assertions",
-        logs_path,
-        assets_path,
-        yagna_commit_hash,
+        topology=TOPOLOGY,
+        api_assertions_module="assertions.e2e_wasm_assertions",
+        logs_path=logs_path,
+        assets_path=assets_path,
+        compose_file_path=compose_file_path,
+        compose_build_env=compose_build_env,
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]

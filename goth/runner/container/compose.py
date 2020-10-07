@@ -11,12 +11,14 @@ from docker import DockerClient
 import yaml
 
 from goth.helpers import IOStreamQueue
+from goth.project import DOCKER_DIR
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
 RUN_COMMAND_SLEEP_INTERVAL = 0.1
 RUN_COMMAND_DEFAULT_TIMEOUT = 3600
 
@@ -128,7 +130,7 @@ class ComposeNetworkManager:
 
         while time.time() < starttime + timeout and returncode is None:
             for line in out_queue.lines():
-                logger.info("%s%s", log_prefix, line.decode("utf-8").rstrip())
+                logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
             returncode = p.poll()
             if returncode is None:
