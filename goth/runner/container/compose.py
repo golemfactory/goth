@@ -44,6 +44,9 @@ class ComposeNetworkManager:
     _log_monitors: Dict[str, LogEventMonitor]
     """Log monitors for containers running as part of docker-compose."""
 
+    _last_compose_path: Optional[Path] = None
+    """Class attribute storing the last compose file used by any manager instance."""
+
     def __init__(
         self,
         docker_client: DockerClient,
@@ -55,18 +58,19 @@ class ComposeNetworkManager:
         self._environment = environment
         self._log_monitors = {}
 
-    def start_network(self, log_dir: Path) -> None:
+    def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.
 
         This step may include (re)building the network docker images.
         """
-        env = os.environ.update(self._environment)
+        environment = os.environ.update(self._environment)
+        command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
 
-        # TODO Cache last used compose file path
-        self._run_command(
-            ["docker-compose", "-f", str(self.compose_path), "up", "-d", "--build"],
-            env=env,
-        )
+        if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
+            command.append("--build")
+
+        self._run_command(command, env=environment)
+        ComposeNetworkManager._last_compose_path = self.compose_path
 
         self._start_log_monitors(log_dir)
 
