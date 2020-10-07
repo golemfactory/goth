@@ -25,17 +25,17 @@ class IOStreamQueue:
     ```
     """
 
+    _output_queue: queue.Queue
+
     def __init__(self, stream: typing.IO[bytes]):
         def output_queue(s, q):
             for line in iter(s.readline, b""):
                 q.put(line)
 
-        q: queue.Queue = queue.Queue()
-        qt = threading.Thread(target=output_queue, args=[stream, q])
+        self._output_queue = queue.Queue()
+        qt = threading.Thread(target=output_queue, args=[stream, self._output_queue])
         qt.daemon = True
         qt.start()
-
-        self._output_queue = q
 
     def lines(self) -> typing.Iterator[bytes]:
         """Yield the lines of the output that have been captured so far."""
