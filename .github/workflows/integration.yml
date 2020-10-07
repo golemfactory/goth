@@ -51,11 +51,6 @@ jobs:
       - name: Print installed package versions
         run: pip freeze
 
-      - name: Check running containers
-        run: |
-          docker ps
-          docker network inspect docker_default
-
       - name: Run test suite
         env:
           GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
