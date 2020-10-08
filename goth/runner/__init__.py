@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
 
-RUN_COMMAND_SLEEP_INTERVAL = 0.1
-RUN_COMMAND_DEFAULT_TIMEOUT = 3600
-
 
 def step(default_timeout: float = 10.0):
     """Wrap a step function to implement timeout and log progress."""
@@ -192,7 +189,7 @@ class Runner:
         logger.info("Running test: %s", self._get_current_test_name())
 
         self.base_log_dir.mkdir()
-        self._compose_manager.start_network(self.base_log_dir)
+        await self._compose_manager.start_network(self.base_log_dir)
         await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
