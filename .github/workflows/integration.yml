@@ -9,9 +9,6 @@ on:
     branches:
       - master
 
-env:
-  DOCKER_PKG: docker.pkg.github.com/${{github.repository}}/yagna-goth
-
 jobs:
 
   yagna-e2e:
@@ -30,21 +27,6 @@ jobs:
       - name: Print python and pip version
         run: python --version && pip --version
 
-      - name: Get yagna deb file
-        run:  pip install requests && python ./docker/download_artifacts.py -t ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
-
-      - name: Get version of yagna deb file
-        run: echo ::set-env name=YAGNA_DEB::$(dpkg-deb -f ./yagna*.deb Version)
-
-      - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
-
-      # --ignore-pull-failures: if there is no cache in github packages
-      # or latest cache is invalidated, this flag will prevent failing.
-      - name: Pull cached Docker images
-        env:
-          YAGNA_DEB: ${{ env.YAGNA_DEB }}
-        run: docker-compose -f docker/docker-compose.yml pull --ignore-pull-failures
-
       - name: Run setuptools
         run: python setup.py develop
 
@@ -55,18 +37,6 @@ jobs:
         env:
           GITHUB_API_TOKEN: ${{ secrets.YAGNA_WORKFLOW_TOKEN }}
         run: python -m pytest test/yagna/e2e -svx
-
-      # --ignore-push-failures: if there is an image we wont be caching,
-      # "docker compose push" anyway will try to push but will get denied,
-      # so this flag will prevent command to fail.
-      # Until this pr merged in docker-compose: https://github.com/docker/compose/pull/7430
-      # it's the best option to use.
-      - name: Push docker images to Github Packages
-        run: docker-compose -f docker/docker-compose.yml push --ignore-push-failures
-
-      # tagging as latest after push, so goth/runner/container/yagna.py#L35 wont complain
-      - name: Update tag of yagna image with version of yagna.deb file
-        run: docker tag ${DOCKER_PKG}:${YAGNA_DEB} yagna-goth:latest
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2
