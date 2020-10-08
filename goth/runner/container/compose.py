@@ -4,13 +4,14 @@ import logging
 import os
 from pathlib import Path
 import subprocess
+import queue
+import threading
 import time
-from typing import Dict, Optional
+from typing import Dict, Iterator, IO, Optional
 
 from docker import DockerClient
 import yaml
 
-from goth.helpers import IOStreamQueue
 from goth.project import DOCKER_DIR
 from goth.runner.container.utils import get_container_address
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
@@ -70,7 +71,7 @@ class ComposeNetworkManager:
         if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
             command.append("--build")
 
-        self._run_command(command, env=environment)
+        _run_command(command, env=environment)
         ComposeNetworkManager._last_compose_path = self.compose_path
 
         self._log_running_containers()
@@ -82,8 +83,8 @@ class ComposeNetworkManager:
             logger.debug("stopping log monitor. name=%s", name)
             await monitor.stop()
 
-        self._run_command(["docker-compose", "-f", str(self.compose_path), "kill"])
-        self._run_command(["docker-compose", "-f", str(self.compose_path), "rm", "-f"])
+        _run_command(["docker-compose", "-f", str(self.compose_path), "kill"])
+        _run_command(["docker-compose", "-f", str(self.compose_path), "rm", "-f"])
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
@@ -122,43 +123,85 @@ class ComposeNetworkManager:
             )
             self._log_monitors[service_name] = monitor
 
-    @staticmethod
-    def _run_command(
-        args,
-        env: Optional[dict] = None,
-        log_prefix: Optional[str] = None,
-        timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
-    ):
-        logger.info("Running local command: %s", " ".join(args))
 
-        if log_prefix is None:
-            log_prefix = f"[{args[0]}] "
+def _run_command(
+    args,
+    env: Optional[dict] = None,
+    log_prefix: Optional[str] = None,
+    timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
+):
+    logger.info("Running local command: %s", " ".join(args))
 
-        starttime = time.time()
-        returncode = None
+    if log_prefix is None:
+        log_prefix = f"[{args[0]}] "
 
-        p = subprocess.Popen(
-            args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-        assert p.stdout  # silence mypy
-        out_queue = IOStreamQueue(p.stdout)
+    starttime = time.time()
+    returncode = None
 
-        while time.time() < starttime + timeout and returncode is None:
-            for line in out_queue.lines():
-                logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
+    p = subprocess.Popen(
+        args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
+    assert p.stdout  # silence mypy
+    out_queue = IOStreamQueue(p.stdout)
 
-            returncode = p.poll()
-            if returncode is None:
-                time.sleep(RUN_COMMAND_SLEEP_INTERVAL)
+    while time.time() < starttime + timeout and returncode is None:
+        for line in out_queue.lines():
+            logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
-            if returncode:
-                raise CommandError(
-                    f"Command exited abnormally. args={args}, returncode={returncode}"
-                )
-
+        returncode = p.poll()
         if returncode is None:
-            p.kill()
-            raise TimeoutError(
-                f"Timeout exceeded while running command. "
-                f"args={args}, timeout={timeout}"
+            time.sleep(RUN_COMMAND_SLEEP_INTERVAL)
+
+        if returncode:
+            raise CommandError(
+                f"Command exited abnormally. args={args}, returncode={returncode}"
             )
+
+    if returncode is None:
+        p.kill()
+        raise TimeoutError(
+            f"Timeout exceeded while running command. "
+            f"args={args}, timeout={timeout}"
+        )
+
+
+class IOStreamQueue:
+    """
+    Maintains a queue for an output stream - e.g. a launched process' stdout.
+
+    example:
+    ```
+    p = subprocess.Popen(args=['cmd'], stdout=subprocess.PIPE)
+    out_queue = helpers.IOStreamQueue(p.stdout)
+
+    while True:
+        for l in out_queue.lines():
+            print(l.decode('utf-8'), end='')
+
+        if p.poll() is not None:
+            break
+
+        time.sleep(0.1)
+
+    ```
+    """
+
+    _output_queue: queue.Queue
+
+    def __init__(self, stream: IO[bytes]):
+        def output_queue(s, q):
+            for line in iter(s.readline, b""):
+                q.put(line)
+
+        self._output_queue = queue.Queue()
+        qt = threading.Thread(target=output_queue, args=[stream, self._output_queue])
+        qt.daemon = True
+        qt.start()
+
+    def lines(self) -> Iterator[bytes]:
+        """Yield the lines of the output that have been captured so far."""
+        while True:
+            try:
+                yield self._output_queue.get_nowait()
+            except queue.Empty:
+                break
