@@ -81,7 +81,6 @@ class YagnaContainer(DockerContainer):
             name=config.name,
             ports=self.ports,
             volumes=config.get_volumes_spec(assets_path),
-            privileged=True,  # FIXME https://github.com/golemfactory/yagna/issues/550
             **kwargs,
         )
 
