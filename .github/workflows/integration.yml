@@ -34,7 +34,7 @@ jobs:
         run: pip freeze
 
       - name: Log in to GitHub Docker repository
-      - run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
+        run: echo ${{ secrets.YAGNA_WORKFLOW_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
       - name: Run test suite
         env:
