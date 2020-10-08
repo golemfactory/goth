@@ -12,6 +12,7 @@ import yaml
 
 from goth.helpers import IOStreamQueue
 from goth.project import DOCKER_DIR
+from goth.runner.container.utils import get_container_address
 from goth.runner.exceptions import ContainerNotFoundError, CommandError, TimeoutError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
@@ -61,7 +62,7 @@ class ComposeNetworkManager:
     def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.
 
-        This step may include (re)building the network docker images.
+        This step may include (re)building the network's docker images.
         """
         environment = os.environ.update(self._environment)
         command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
@@ -72,6 +73,7 @@ class ComposeNetworkManager:
         self._run_command(command, env=environment)
         ComposeNetworkManager._last_compose_path = self.compose_path
 
+        self._log_running_containers()
         self._start_log_monitors(log_dir)
 
     async def stop_network(self):
@@ -87,6 +89,15 @@ class ComposeNetworkManager:
         """Return services defined in docker-compose.yml."""
         with self.compose_path.open() as f:
             return yaml.safe_load(f)["services"]
+
+    def _log_running_containers(self):
+        for container in self._docker_client.containers.list():
+            logger.info(
+                "[%-25s] IP address: %-15s image: %s",
+                container.name,
+                get_container_address(self._docker_client, container.name),
+                container.image.tags[0],
+            )
 
     def _start_log_monitors(self, log_dir: Path) -> None:
         for service_name in self._get_compose_services():
