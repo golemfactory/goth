@@ -92,7 +92,7 @@ class Runner:
         logs_path: Path,
         assets_path: Path,
         compose_file_path: Path = DEFAULT_COMPOSE_FILE,
-        compose_build_env: dict = {},
+        compose_build_env: Optional[dict] = None,
     ):
         self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path

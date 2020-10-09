@@ -38,7 +38,7 @@ class ComposeNetworkManager:
     _docker_client: DockerClient
     """Docker client to be used for high-level Docker API calls."""
 
-    _environment: dict
+    _environment: Optional[dict]
     """Custom environment variables to be used when running docker-compose commands."""
 
     _log_monitors: Dict[str, LogEventMonitor]
@@ -51,7 +51,7 @@ class ComposeNetworkManager:
         self,
         docker_client: DockerClient,
         compose_path: Path,
-        environment: dict = {},
+        environment: Optional[dict] = None,
     ):
         self.compose_path = compose_path
         self._docker_client = docker_client
@@ -63,7 +63,9 @@ class ComposeNetworkManager:
 
         This step may include (re)building the network's docker images.
         """
-        environment = os.environ.update(self._environment)
+        environment = (
+            {**os.environ, **self._environment} if self._environment else {**os.environ}
+        )
         command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
 
         if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
