@@ -13,11 +13,27 @@ from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
 
 def pytest_addoption(parser):
-    """Add the optional parameter --assets-path to pytest CLI invocations."""
-    parser.addoption("--assets-path", action="store")
-    parser.addoption("--logs-path", action="store")
-    parser.addoption("--yagna-commit-hash", action="store")
-    parser.addoption("--yagna-deb-path", action="store")
+    """Add optional parameters to pytest CLI invocations."""
+    parser.addoption(
+        "--assets-path",
+        action="store",
+        help="path to custom assets to be used by yagna containers",
+    )
+    parser.addoption(
+        "--logs-path",
+        action="store",
+        help="path under which all test run logs should be stored",
+    )
+    parser.addoption(
+        "--yagna-commit-hash",
+        action="store",
+        help="git commit hash of yagna .deb package to be used in the tests",
+    )
+    parser.addoption(
+        "--yagna-deb-path",
+        action="store",
+        help="path to a yagna .deb package to be used in the tests",
+    )
 
 
 @pytest.fixture(scope="session")
