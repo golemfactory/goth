@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 import subprocess
-from typing import Dict, Optional
+from typing import ClassVar, Dict, Optional, Sequence
 
 from docker import DockerClient
 import yaml
@@ -44,7 +44,7 @@ class ComposeNetworkManager:
     _log_monitors: Dict[str, LogEventMonitor]
     """Log monitors for containers running as part of docker-compose."""
 
-    _last_compose_path: Optional[Path] = None
+    _last_compose_path: ClassVar[Optional[Path]] = None
     """Class attribute storing the last compose file used by any manager instance."""
 
     def __init__(
@@ -123,7 +123,7 @@ class ComposeNetworkManager:
 
 
 async def _run_command(
-    args,
+    args: Sequence[str],
     env: Optional[dict] = None,
     log_prefix: Optional[str] = None,
     timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
