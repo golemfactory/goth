@@ -53,7 +53,7 @@ class ComposeNetworkManager:
         compose_path: Path,
         environment: Optional[dict] = None,
     ):
-        self.compose_path = compose_path
+        self.compose_path = compose_path.resolve()
         self._docker_client = docker_client
         self._environment = environment
         self._log_monitors = {}
