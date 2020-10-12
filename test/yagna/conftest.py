@@ -3,17 +3,37 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
 from goth.project import DEFAULT_ASSETS_DIR
+from goth.runner.container.compose import DEFAULT_COMPOSE_FILE
 from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
 
 def pytest_addoption(parser):
-    """Add the optional parameter --assets-path to pytest CLI invocations."""
-    parser.addoption("--assets-path", action="store")
-    parser.addoption("--logs-path", action="store")
+    """Add optional parameters to pytest CLI invocations."""
+    parser.addoption(
+        "--assets-path",
+        action="store",
+        help="path to custom assets to be used by yagna containers",
+    )
+    parser.addoption(
+        "--logs-path",
+        action="store",
+        help="path under which all test run logs should be stored",
+    )
+    parser.addoption(
+        "--yagna-commit-hash",
+        action="store",
+        help="git commit hash of yagna .deb package to be used in the tests",
+    )
+    parser.addoption(
+        "--yagna-deb-path",
+        action="store",
+        help="path to a yagna .deb package to be used in the tests",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -65,3 +85,38 @@ def logs_path(request) -> Path:
     configure_logging(base_log_dir)
 
     return base_log_dir
+
+
+@pytest.fixture(scope="session")
+def yagna_commit_hash(request) -> Optional[str]:
+    """Fixture that passes the --yagna-commit-hash CLI parameter to the test suite."""
+    return request.config.option.yagna_commit_hash
+
+
+@pytest.fixture(scope="session")
+def yagna_deb_path(request) -> Optional[str]:
+    """Fixture that passes the --yagna-deb-path CLI parameter to the test suite."""
+    return request.config.option.yagna_deb_path
+
+
+@pytest.fixture(scope="session")
+def compose_build_env(
+    yagna_commit_hash: Optional[str], yagna_deb_path: Optional[str]
+) -> dict:
+    """Fixture which provides the build environment for docker-compose network."""
+    env = {}
+    if yagna_commit_hash:
+        env["YAGNA_COMMIT_HASH"] = yagna_commit_hash
+    if yagna_deb_path:
+        env["YAGNA_DEB_PATH"] = yagna_deb_path
+    return env
+
+
+@pytest.fixture(scope="session")
+def compose_file_path() -> Path:
+    """Fixture which provides the path to the default docker-compose file.
+
+    This fixture is intended to be overridden when a different compose file should be
+    used for a given set of tests.
+    """
+    return DEFAULT_COMPOSE_FILE
