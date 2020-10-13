@@ -7,7 +7,6 @@ from typing import Optional
 
 import pytest
 
-from goth.project import DEFAULT_ASSETS_DIR
 from goth.runner.container.compose import DEFAULT_COMPOSE_FILE
 from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
@@ -34,35 +33,6 @@ def pytest_addoption(parser):
         action="store",
         help="git commit hash in yagna repo for which to download binaries",
     )
-
-
-@pytest.fixture(scope="session")
-def assets_path(request) -> Path:
-    """Test fixture which tries to get the value of CLI parameter --assets-path.
-
-    If this parameter is not present, `DEFAULT_ASSETS_DIR` is used as the return value.
-    """
-
-    path = request.config.option.assets_path
-    if not path:
-        return DEFAULT_ASSETS_DIR
-
-    path = Path(path)
-    if not path.is_dir():
-        pytest.fail("Provided assets path doesn't point to an existing directory.")
-
-    return path.resolve()
-
-
-@pytest.fixture(scope="session")
-def exe_script(assets_path: Path) -> list:
-    """Fixture which parses the exe_script.json file from `assets_path` dir."""
-
-    exe_script_path = assets_path / "exe_script.json"
-    with exe_script_path.open() as fd:
-        loaded = json.load(fd)
-        assert isinstance(loaded, list)
-        return loaded
 
 
 @pytest.fixture(scope="session")
@@ -121,3 +91,61 @@ def compose_file_path() -> Path:
     used for a given set of tests.
     """
     return DEFAULT_COMPOSE_FILE
+
+
+@pytest.fixture(scope="module")
+def assets_path(request) -> Path:
+    """Test fixture which tries to get the value of CLI parameter --assets-path.
+
+    If this parameter is not present, the default "<module-dir>/assets" is used,
+    where `<module-dir>` is the directory containing the module that requested
+    this fixture.
+    """
+
+    path_arg = request.config.option.assets_path
+    if path_arg:
+        path = Path(path_arg)
+    else:
+        test_module_path = Path(request.module.__file__).resolve()
+        path = test_module_path.parent / "assets"
+
+    if not path.is_dir():
+        pytest.fail("Provided assets path doesn't point to an existing directory.")
+
+    return path.resolve()
+
+
+@pytest.fixture(scope="module")
+def exe_script(assets_path: Path) -> list:
+    """Fixture which parses the exe_script.json file from `assets_path` dir."""
+
+    exe_script_path = assets_path / "requestor" / "exe_script.json"
+    with exe_script_path.open() as fd:
+        loaded = json.load(fd)
+        assert isinstance(loaded, list)
+        return loaded
+
+
+@pytest.fixture(scope="module")
+def task_package_template() -> str:
+    """Fixture which provides the Demand's `golem.srv.comp.task_package` property.
+
+    The returned string contains placeholders `{web_server_addr}` and
+    `{web_server_port}`. Concrete values for them should be provider by the user.
+    """
+    return (
+        "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
+        ":http://{web_server_addr}:{web_server_port}/rust-wasi-tutorial.zip"
+    )
+
+
+@pytest.fixture(scope="module")
+def demand_constraints() -> str:
+    """Fixture which provides the value for the Demand's `constraints` parameter."""
+
+    return (
+        "(&"
+        "(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)"
+        "(golem.com.pricing.model=linear)"
+        ")"
+    )

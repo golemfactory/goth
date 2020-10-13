@@ -3,7 +3,6 @@
 import abc
 import asyncio
 import logging
-from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 from docker import DockerClient
@@ -68,11 +67,10 @@ class Probe(abc.ABC):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Path,
     ):
         self.runner = runner
         self._docker_client = client
-        self.container = YagnaContainer(client, config, log_config, assets_path)
+        self.container = YagnaContainer(client, config, log_config)
         self.cli = Cli(self.container).yagna
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
@@ -194,9 +192,8 @@ class RequestorProbe(ApiClientMixin, Probe):
         client: DockerClient,
         config: YagnaContainerConfig,
         log_config: LogConfig,
-        assets_path: Path,
     ):
-        super().__init__(runner, client, config, log_config, assets_path)
+        super().__init__(runner, client, config, log_config)
 
         host_port = self.container.ports[YAGNA_REST_PORT]
         proxy_ip = get_container_address(client, PROXY_HOST)
@@ -210,17 +207,34 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
     scenario compatibility.
     """
 
+    task_package: str
+    """Value of the `--task-package` argument to `ya-requestor` run by this probe.
+
+    This string may include `{web_server_addr}` and `{web_server_port}` placeholders
+    which will be replaced by the IP address and the port, respectively,
+    of the built-in web server.
+    """
+
+    def __init__(
+        self,
+        runner: "Runner",
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+    ):
+        super().__init__(runner, client, config, log_config)
+
     def start_agent(self):
         """Start the requestor agent and attach to its log stream."""
 
-        # TODO: Serve the package from a local server
-        # https://github.com/golemfactory/yagna-integration/issues/249
+        pkg_spec = self.task_package.format(
+            web_server_addr=self.runner.host_address,
+            web_server_port=self.runner.web_server_port,
+        )
         log_stream = self.container.exec_run(
             "ya-requestor"
             f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
-            " --task-package "
-            "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1:"
-            "http://3.249.139.167:8000/rust-wasi-tutorial.zip",
+            f" --task-package {pkg_spec}",
             stream=True,
         )
         self.agent_logs.start(log_stream.output)
@@ -235,9 +249,7 @@ class ProviderProbe(AgentMixin, Probe):
     def start_agent(self) -> None:
         """Start the provider agent and attach to its log stream."""
 
-        self.container.exec_run(
-            f"ya-provider preset activate {self.agent_preset}",
-        )
+        self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,

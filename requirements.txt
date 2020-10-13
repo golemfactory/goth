@@ -1,4 +1,4 @@
-
+aiohttp==3.6.2
 docker==4.2.0
 file:./model/activity#egg=openapi_activity_client
 file:./model/market#egg=openapi_market_client

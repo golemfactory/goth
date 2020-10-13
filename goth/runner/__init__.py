@@ -9,6 +9,7 @@ from pathlib import Path
 import time
 from typing import cast, Dict, List, Optional, Type, TypeVar
 
+from aiohttp import web, web_runner
 import docker
 
 from goth.assertions import TemporalAssertionError
@@ -61,6 +62,9 @@ def step(default_timeout: float = 10.0):
     return decorator
 
 
+DEFAULT_WEB_SERVER_PORT = 8080
+
+
 class Runner:
     """Manages the nodes and runs the scenario on them."""
 
@@ -82,8 +86,14 @@ class Runner:
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
+    web_root_path: Path
+
+    web_server_port: int
+
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
+
+    _web_server_task: Optional[asyncio.Task]
 
     def __init__(
         self,
@@ -93,6 +103,8 @@ class Runner:
         assets_path: Path,
         compose_file_path: Path = DEFAULT_COMPOSE_FILE,
         compose_build_env: Optional[dict] = None,
+        web_root_path: Optional[Path] = None,
+        web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path
@@ -105,6 +117,9 @@ class Runner:
             compose_path=compose_file_path,
             environment=compose_build_env,
         )
+        self.web_root_path = web_root_path or assets_path / "web-root"
+        self.web_server_port = web_server_port
+        self._web_server_task = None
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -150,9 +165,9 @@ class Runner:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            probe = config.probe_type(
-                self, docker_client, config, log_config, self.assets_path
-            )
+            probe = config.probe_type(self, docker_client, config, log_config)
+            for name, value in config.probe_properties.items():
+                probe.__setattr__(name, value)
             self.probes.append(probe)
 
     def _get_current_test_name(self) -> str:
@@ -173,7 +188,7 @@ class Runner:
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
-        node_names["172.19.0.1"] = "Pytest-Requestor-Agent"
+        node_names[self.host_address] = "Pytest-Requestor-Agent"
 
         # Start the proxy node. The containers should not make API calls
         # up to this point.
@@ -185,6 +200,30 @@ class Runner:
         for probe in self.get_probes(probe_type=AgentMixin):
             probe.start_agent()
 
+    async def _start_web_server(self) -> None:
+
+        app = web.Application()
+        app.router.add_static("/", path=Path(self.web_root_path), name="root")
+        runner = web_runner.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, self.host_address, self.web_server_port)
+        self._web_server_task = asyncio.create_task(site.start())
+        logger.info(
+            "Web server listening on %s:%s, root dir is %s",
+            self.host_address,
+            self.web_server_port,
+            self.web_root_path,
+        )
+
+    @property
+    def host_address(self) -> str:
+        """Return the host IP address in the docker network used by the containers.
+
+        Both the proxy server and the built-in web server are bound to this address.
+        """
+
+        return self._compose_manager.network_gateway_address
+
     async def __aenter__(self) -> "Runner":
         logger.info("Running test: %s", self._get_current_test_name())
 
@@ -193,6 +232,7 @@ class Runner:
         await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
+        await self._start_web_server()
         await self._start_nodes()
 
         return self
@@ -206,6 +246,11 @@ class Runner:
             await probe.stop()
 
         await self._compose_manager.stop_network()
+
+        if self._web_server_task:
+            self._web_server_task.cancel()
+            await self._web_server_task
+            logger.info("Stopped the web server")
 
         self.proxy.stop()
         # Stopping the proxy triggered evaluation of assertions

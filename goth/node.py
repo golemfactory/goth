@@ -1,6 +1,5 @@
 """Helper class for yagna node environment variables and Volumes."""
 
-from string import Template
 from typing import Dict
 
 from goth.address import (
@@ -13,16 +12,12 @@ from goth.address import (
     YAGNA_REST_URL,
 )
 
-VOLUMES = {
-    Template("$assets_path"): "/asset",
-    Template("$assets_path/presets.json"): "/presets.json",
-}
-
 
 def node_environment(
     market_url_base: str = "", rest_api_url_base: str = "", account_list: str = ""
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
+
     # Use custom base if given, default otherwise
     market_template_params = {"base": market_url_base} if market_url_base else {}
 
@@ -44,6 +39,7 @@ def node_environment(
 
     if rest_api_url_base:
         agent_env = {
+            # TODO: Why this is still disabled?!
             # "YAGNA_MARKET_URL": MARKET_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_ACTIVITY_URL": ACTIVITY_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_PAYMENT_URL": PAYMENT_API_URL.substitute(base=rest_api_url_base),

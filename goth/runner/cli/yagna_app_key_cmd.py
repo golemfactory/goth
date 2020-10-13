@@ -46,10 +46,7 @@ class YagnaAppKeyMixin:
             raise ce
 
     def app_key_drop(
-        self: CommandRunner,
-        name: str,
-        address: str = "",
-        data_dir: str = "",
+        self: CommandRunner, name: str, address: str = "", data_dir: str = ""
     ) -> str:
         """Run `<cmd> app-key drop <name>` with optional extra args.
 

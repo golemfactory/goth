@@ -11,6 +11,7 @@ from docker import DockerClient
 import yaml
 
 from goth.project import DOCKER_DIR
+from goth.runner.container import DockerContainer
 from goth.runner.container.utils import get_container_address
 from goth.runner.exceptions import ContainerNotFoundError, CommandError
 from goth.runner.log import LogConfig
@@ -47,6 +48,9 @@ class ComposeNetworkManager:
     _last_compose_path: ClassVar[Optional[Path]] = None
     """Class attribute storing the last compose file used by any manager instance."""
 
+    _network_gateway_address: str
+    """IP address of the gateway for the docker network."""
+
     def __init__(
         self,
         docker_client: DockerClient,
@@ -57,6 +61,7 @@ class ComposeNetworkManager:
         self._docker_client = docker_client
         self._environment = environment
         self._log_monitors = {}
+        self._network_gateway_address = ""
 
     async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.
@@ -91,6 +96,30 @@ class ComposeNetworkManager:
         with self.compose_path.open() as f:
             return yaml.safe_load(f)["services"]
 
+    @property
+    def network_gateway_address(self) -> str:
+        """Get the IP address of the gateway for the docker network."""
+
+        if not self._network_gateway_address:
+            # TODO: parse the docker compose file to get network name,
+            # use the default name as fallback
+            network_name = DockerContainer.DEFAULT_NETWORK
+            network = self._docker_client.networks.get(network_name)
+            network_cfg = network.attrs["IPAM"]["Config"][0]
+            if "Gateway" in network_cfg:
+                self._network_gateway_address = network_cfg["Gateway"]
+            else:
+                # Use the "subnet" with the last element replaced by "1",
+                # e.g. for subnet "172.19.0.0/16" return "172.19.0.1".
+                # Not sure if it's totally correct though...
+                subnet = network_cfg["Subnet"]
+                segments = subnet.split(".")
+                assert len(segments) == 4
+                segments[3] = "1"
+                self._network_gateway_address = ".".join(segments)
+
+        return self._network_gateway_address
+
     def _log_running_containers(self):
         for container in self._docker_client.containers.list():
             logger.info(
@@ -115,10 +144,7 @@ class ComposeNetworkManager:
 
             monitor.start(
                 container.logs(
-                    follow=True,
-                    since=datetime.utcnow(),
-                    stream=True,
-                    timestamps=True,
+                    follow=True, since=datetime.utcnow(), stream=True, timestamps=True
                 )
             )
             self._log_monitors[service_name] = monitor
