@@ -9,7 +9,6 @@ from pathlib import Path
 import time
 from typing import cast, Dict, List, Optional, Type, TypeVar
 
-from aiohttp import web, web_runner
 import docker
 
 from goth.assertions import TemporalAssertionError
@@ -19,6 +18,8 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
+from goth.runner.web_server import WebServer
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,14 +87,11 @@ class Runner:
     topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
-    web_root_path: Path
-
-    web_server_port: int
-
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
-    _web_server_task: Optional[asyncio.Task]
+    _web_server: WebServer
+    """A built-in web server."""
 
     def __init__(
         self,
@@ -103,7 +101,6 @@ class Runner:
         assets_path: Path,
         compose_file_path: Path = DEFAULT_COMPOSE_FILE,
         compose_build_env: Optional[dict] = None,
-        web_root_path: Optional[Path] = None,
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -117,9 +114,7 @@ class Runner:
             compose_path=compose_file_path,
             environment=compose_build_env,
         )
-        self.web_root_path = web_root_path or assets_path / "web-root"
-        self.web_server_port = web_server_port
-        self._web_server_task = None
+        self._web_server = WebServer(assets_path / "web-root", web_server_port)
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -200,29 +195,18 @@ class Runner:
         for probe in self.get_probes(probe_type=AgentMixin):
             probe.start_agent()
 
-    async def _start_web_server(self) -> None:
-
-        app = web.Application()
-        app.router.add_static("/", path=Path(self.web_root_path), name="root")
-        runner = web_runner.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, self.host_address, self.web_server_port)
-        self._web_server_task = asyncio.create_task(site.start())
-        logger.info(
-            "Web server listening on %s:%s, root dir is %s",
-            self.host_address,
-            self.web_server_port,
-            self.web_root_path,
-        )
-
     @property
     def host_address(self) -> str:
         """Return the host IP address in the docker network used by the containers.
 
         Both the proxy server and the built-in web server are bound to this address.
         """
-
         return self._compose_manager.network_gateway_address
+
+    @property
+    def web_server_port(self) -> int:
+        """Return the port of the build-in web server."""
+        return self._web_server.server_port
 
     async def __aenter__(self) -> "Runner":
         logger.info("Running test: %s", self._get_current_test_name())
@@ -232,7 +216,7 @@ class Runner:
         await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
-        await self._start_web_server()
+        await self._web_server.start(self.host_address)
         await self._start_nodes()
 
         return self
@@ -246,12 +230,7 @@ class Runner:
             await probe.stop()
 
         await self._compose_manager.stop_network()
-
-        if self._web_server_task:
-            self._web_server_task.cancel()
-            await self._web_server_task
-            logger.info("Stopped the web server")
-
+        await self._web_server.stop()
         self.proxy.stop()
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
