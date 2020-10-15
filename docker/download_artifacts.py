@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-ARTIFACT_NAMES = ["yagna", "ya-sb-router"]
+ARTIFACT_NAMES = ["golem-requestor", "ya-sb-router"]
 BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
