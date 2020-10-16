@@ -140,7 +140,7 @@ def get_workflow(workflow_name: str) -> dict:
 def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) -> dict:
     """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
-    params = {"branch": branch, "status": "success"}
+    params = {"branch": branch, "status": "completed"}
     request = session.prepare_request(requests.Request("GET", url, params=params))
     logger.info("fetching workflow runs. url=%s", request.url)
 
