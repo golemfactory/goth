@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-ARTIFACT_NAMES = ["yagna", "ya-sb-router"]
+ARTIFACT_NAMES = ["Yagna Linux"]
 BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
-WORKFLOW_NAME = "Build .deb"
+WORKFLOW_NAME = "CI"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--branch", default=BRANCH)
