@@ -166,7 +166,7 @@ class Probe(abc.ABC):
             db_id = self.cli.id_update(address, set_default=True)
             self._logger.debug("update_id. result=%r", db_id)
             self.container.restart()
-            time.sleep(1)
+            time.sleep(5)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
