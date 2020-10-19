@@ -4,7 +4,6 @@ import abc
 import asyncio
 import logging
 from pathlib import Path
-import time
 from typing import Optional, TYPE_CHECKING
 
 from docker import DockerClient

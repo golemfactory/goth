@@ -12,7 +12,8 @@ RUN pip install requests \
     && python ./download_release.py -t ${GITHUB_API_TOKEN} ya-runtime-wasi
 
 FROM debian:bullseye-slim
-COPY --from=downloader /yagna-binaries/* /usr/bin/
 COPY --from=downloader /*.deb ./
+COPY --from=downloader /yagna-binaries/* /usr/bin/
+COPY --from=downloader /yagna-binaries/exe-unit /usr/lib/yagna/plugins/
 RUN apt update && apt install -y ./*.deb && apt install -y libssl-dev
 ENTRYPOINT /usr/bin/yagna
