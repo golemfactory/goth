@@ -14,6 +14,8 @@ RUN pip install requests \
 FROM debian:bullseye-slim
 COPY --from=downloader /*.deb ./
 COPY --from=downloader /yagna-binaries/* /usr/bin/
-COPY --from=downloader /yagna-binaries/exe-unit /usr/lib/yagna/plugins/
-RUN apt update && apt install -y ./*.deb && apt install -y libssl-dev
+RUN apt update \
+    && apt install -y ./*.deb \
+    && apt install -y libssl-dev \
+    && ln -s /usr/bin/exe-unit /usr/lib/yagna/plugins/exe-unit
 ENTRYPOINT /usr/bin/yagna
