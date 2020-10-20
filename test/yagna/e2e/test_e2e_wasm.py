@@ -3,6 +3,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import List
 
 import pytest
 
@@ -11,7 +12,7 @@ from goth.address import (
     PROXY_HOST,
     YAGNA_REST_URL,
 )
-from goth.node import node_environment, VOLUMES
+from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
@@ -19,35 +20,44 @@ from goth.runner.requestor import RequestorProbeWithApiSteps
 
 logger = logging.getLogger(__name__)
 
-TOPOLOGY = [
-    YagnaContainerConfig(
-        name="requestor",
-        probe_type=RequestorProbeWithApiSteps,
-        environment=node_environment(account_list="/asset/key/001-accounts.json"),
-        key_file="/asset/key/001.json",
-        volumes=VOLUMES,
-    ),
-    YagnaContainerConfig(
-        name="provider_1",
-        probe_type=ProviderProbeWithLogSteps,
-        # Configure this provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+
+def topology(assets_path: Path) -> List[YagnaContainerConfig]:
+    """Define the topology of the test network."""
+
+    # Nodes are configured to communicate via proxy
+    provider_env = node_environment(
+        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+        rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+    )
+    requestor_env = node_environment(
+        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+        rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        account_list="/asset/key/001-accounts.json",
+    )
+
+    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+
+    return [
+        YagnaContainerConfig(
+            name="requestor",
+            probe_type=RequestorProbeWithApiSteps,
+            volumes={assets_path / "requestor": "/asset"},
+            environment=requestor_env,
+            key_file="/asset/key/001.json",
         ),
-        volumes=VOLUMES,
-    ),
-    YagnaContainerConfig(
-        name="provider_2",
-        probe_type=ProviderProbeWithLogSteps,
-        # Configure the second provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        YagnaContainerConfig(
+            name="provider_1",
+            probe_type=ProviderProbeWithLogSteps,
+            environment=provider_env,
+            volumes=provider_volumes,
         ),
-        volumes=VOLUMES,
-    ),
-]
+        YagnaContainerConfig(
+            name="provider_2",
+            probe_type=ProviderProbeWithLogSteps,
+            environment=provider_env,
+            volumes=provider_volumes,
+        ),
+    ]
 
 
 @pytest.mark.asyncio
@@ -57,11 +67,13 @@ async def test_e2e_wasm_success(
     exe_script: dict,
     compose_build_env: dict,
     compose_file_path: Path,
+    task_package_template: str,
+    demand_constraints: str,
 ):
     """Test successful flow requesting WASM tasks with goth REST API client."""
 
     async with Runner(
-        topology=TOPOLOGY,
+        topology=topology(assets_path),
         api_assertions_module="assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,
@@ -79,7 +91,13 @@ async def test_e2e_wasm_success(
         for provider in providers:
             await provider.wait_for_offer_subscribed()
 
-        subscription_id, demand = await requestor.subscribe_demand()
+        task_package = task_package_template.format(
+            web_server_addr=runner.host_address, web_server_port=runner.web_server_port
+        )
+
+        subscription_id, demand = await requestor.subscribe_demand(
+            task_package, demand_constraints
+        )
 
         proposals = await requestor.wait_for_proposals(subscription_id, providers)
         logger.info("Collected %s proposals", len(proposals))

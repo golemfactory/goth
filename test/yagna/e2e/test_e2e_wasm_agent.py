@@ -2,6 +2,7 @@
 
 import logging
 from pathlib import Path
+from typing import List
 
 import pytest
 
@@ -10,43 +11,54 @@ from goth.address import (
     PROXY_HOST,
     YAGNA_REST_URL,
 )
-from goth.node import node_environment, VOLUMES
+from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbeWithAgent
 from goth.runner.provider import ProviderProbeWithLogSteps
 
+
 logger = logging.getLogger(__name__)
 
-TOPOLOGY = [
-    YagnaContainerConfig(
-        name="requestor",
-        probe_type=RequestorProbeWithAgent,
-        environment=node_environment(account_list="/asset/key/001-accounts.json"),
-        volumes=VOLUMES,
-        key_file="/asset/key/001.json",
-    ),
-    YagnaContainerConfig(
-        name="provider_1",
-        probe_type=ProviderProbe,
-        # Configure this provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+
+def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerConfig]:
+    """Define the topology of the test network."""
+
+    # Nodes are configured to communicate via proxy
+    provider_env = node_environment(
+        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+        rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+    )
+    requestor_env = node_environment(
+        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
+        rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        account_list="/asset/key/001-accounts.json",
+    )
+
+    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+
+    return [
+        YagnaContainerConfig(
+            "requestor",
+            probe_type=RequestorProbeWithAgent,
+            probe_properties={"task_package": agent_task_package},
+            volumes={assets_path / "requestor": "/asset"},
+            environment=requestor_env,
+            key_file="/asset/key/001.json",
         ),
-        volumes=VOLUMES,
-    ),
-    YagnaContainerConfig(
-        name="provider_2",
-        probe_type=ProviderProbe,
-        # Configure the second provider node to communicate via proxy
-        environment=node_environment(
-            market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
-            rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+        YagnaContainerConfig(
+            "provider_1",
+            probe_type=ProviderProbe,
+            environment=provider_env,
+            volumes=provider_volumes,
         ),
-        volumes=VOLUMES,
-    ),
-]
+        YagnaContainerConfig(
+            "provider_2",
+            probe_type=ProviderProbe,
+            environment=provider_env,
+            volumes=provider_volumes,
+        ),
+    ]
 
 
 @pytest.mark.asyncio
@@ -55,11 +67,12 @@ async def test_e2e_wasm_agent_success(
     assets_path: Path,
     compose_build_env: dict,
     compose_file_path: Path,
+    task_package_template: str,
 ):
     """Test succesful flow requesting WASM tasks with requestor agent."""
 
     async with Runner(
-        topology=TOPOLOGY,
+        topology=topology(assets_path, task_package_template),
         api_assertions_module="assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,

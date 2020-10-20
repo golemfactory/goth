@@ -36,10 +36,7 @@ class ActivityOperationsMixin:
 
     @step()
     async def collect_results(
-        self: RequestorProbe,
-        activity_id: str,
-        batch_id: str,
-        num_results: int,
+        self: RequestorProbe, activity_id: str, batch_id: str, num_results: int
     ) -> List[ExeScriptCommandResult]:
         """Call collect_results on the requestor activity api."""
 
@@ -63,18 +60,10 @@ class MarketOperationsMixin:
     """Provides high-level steps that rely on Yagna Market API."""
 
     @step()
-    async def subscribe_demand(self: RequestorProbe) -> Tuple[str, Demand]:
+    async def subscribe_demand(
+        self: RequestorProbe, task_package: str, constraints: str
+    ) -> Tuple[str, Demand]:
         """Call subscribe demand on the requestor market api."""
-
-        # TODO: `package` and `constraints` should be arguments
-        package = (
-            "hash://sha3:d5e31b2eed628572a5898bf8c34447644bfc4b5130cfc1e4f10aeaa1"
-            ":http://3.249.139.167:8000/rust-wasi-tutorial.zip"
-        )
-        constraints = (
-            "(&(golem.inf.mem.gib>0.5)(golem.inf.storage.gib>1)"
-            "(golem.com.pricing.model=linear))"
-        )
 
         demand = Demand(
             requestor_id=self.address,
@@ -83,7 +72,7 @@ class MarketOperationsMixin:
                 "golem.srv.comp.expiration": int(
                     (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
                 ),
-                "golem.srv.comp.task_package": package,
+                "golem.srv.comp.task_package": task_package,
             },
             constraints=constraints,
         )

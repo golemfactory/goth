@@ -84,9 +84,7 @@ class ApiClientMixin:
         self._init_market_api(self._api_base_host)
 
     def _create_api_client(
-        self,
-        api_module: ApiModule[ConfTVar, ClientTVar],
-        api_url: str,
+        self, api_module: ApiModule[ConfTVar, ClientTVar], api_url: str
     ) -> ClientTVar:
         api_url = ensure_no_trailing_slash(str(api_url))
         config: ConfTVar = api_module.Configuration(api_url)

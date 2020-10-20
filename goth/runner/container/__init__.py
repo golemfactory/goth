@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from string import Template
 from typing import Callable, Dict, List, Optional
 
 from docker import DockerClient
@@ -22,30 +21,22 @@ class DockerContainerConfig:
     name: str
     """Name to be used for this container, must be unique."""
 
-    volumes: Dict[Template, str] = field(default_factory=dict)
+    volumes: Dict[Path, str] = field(default_factory=dict)
     """Volumes to be mounted in the container.
 
-    Keys are paths on the host machine, represented by `Template`s. These templates may
-    include `assets_path` as a placeholder to be used for substitution. The values are
-    container paths to be used as mount points.
+    Keys in this dictionary are paths on the host machine. The values
+    are container paths to be used as mount points.
     """
 
     log_config: Optional[LogConfig] = None
     """Optional custom logging config to be used for this container."""
 
-    def get_volumes_spec(self, assets_path: Path) -> Dict[str, dict]:
-        """Produce volume specification to be passed to docker.
-
-        Produce volumes specification for a docker container by substituting given
-        `assets_path` into `self.volumes`.
-        """
+    def get_volumes_spec(self) -> Dict[str, dict]:
+        """Produce volume specification to be passed to docker."""
 
         return {
-            host_template.substitute(assets_path=str(assets_path)): {
-                "bind": mount_path,
-                "mode": "ro",
-            }
-            for host_template, mount_path in self.volumes.items()
+            str(host_path.resolve()): {"bind": mount_path, "mode": "ro"}
+            for host_path, mount_path in self.volumes.items()
         }
 
 
