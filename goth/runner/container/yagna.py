@@ -48,7 +48,7 @@ class YagnaContainerConfig(DockerContainerConfig):
 class YagnaContainer(DockerContainer):
     """Extension of DockerContainer to be configured for yagna daemons."""
 
-    COMMAND = ["service", "run", "-d", "/", "--accept-terms"]
+    COMMAND = ["service", "run", "-d", "/"]
     ENTRYPOINT = "/usr/bin/yagna"
     IMAGE = "yagna-goth"
 

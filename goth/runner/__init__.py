@@ -164,12 +164,12 @@ class Runner:
         logger.debug("Cleaned current test dir name=%s", test_name)
         return test_name
 
-    def _start_nodes(self):
+    async def _start_nodes(self):
         node_names: Dict[str, str] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            probe.start()
+            await probe.start()
             assert probe.ip_address
             node_names[probe.ip_address] = probe.name
 
@@ -193,7 +193,7 @@ class Runner:
         await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
-        self._start_nodes()
+        await self._start_nodes()
 
         return self
 

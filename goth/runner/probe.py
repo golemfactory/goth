@@ -1,9 +1,9 @@
 """Classes and helpers for managing Probes."""
 
 import abc
+import asyncio
 import logging
 from pathlib import Path
-import time
 from typing import Optional, TYPE_CHECKING
 
 from docker import DockerClient
@@ -100,13 +100,13 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
-    def start(self) -> None:
+    async def start(self) -> None:
         """Start the probe.
 
         This method is extended in subclasses and mixins.
         """
 
-        self._start_container()
+        await self._start_container()
 
     async def stop(self):
         """
@@ -118,7 +118,7 @@ class Probe(abc.ABC):
             await self.container.logs.stop()
         self.container.remove(force=True)
 
-    def _start_container(self) -> None:
+    async def _start_container(self) -> None:
         """
         Start the probe's Docker container.
 
@@ -127,8 +127,8 @@ class Probe(abc.ABC):
         """
         self.container.start()
         # Give the daemon some time to start before asking it for an app key.
-        time.sleep(1)
-        self.create_app_key()
+        await asyncio.sleep(1)
+        await self.create_app_key()
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(
@@ -136,7 +136,7 @@ class Probe(abc.ABC):
         )
         self._logger.info("IP address: %s", self.ip_address)
 
-    def create_app_key(self, key_name: str = "test_key") -> str:
+    async def create_app_key(self, key_name: str = "test_key") -> str:
         """Attempt to create a new app key on the Yagna daemon.
 
         The key name can be specified via `key_name` parameter.
@@ -166,7 +166,7 @@ class Probe(abc.ABC):
             db_id = self.cli.id_update(address, set_default=True)
             self._logger.debug("update_id. result=%r", db_id)
             self.container.restart()
-            time.sleep(1)
+            await asyncio.sleep(5)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)

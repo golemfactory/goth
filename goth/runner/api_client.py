@@ -75,10 +75,10 @@ class ApiClientMixin:
     _api_base_host: str
     """Base hostname for the Yagna API clients."""
 
-    def start(self):
+    async def start(self):
         """Start the probe and initialize the API clients."""
 
-        super().start()
+        await super().start()
         self._init_activity_api(self._api_base_host)
         self._init_payment_api(self._api_base_host)
         self._init_market_api(self._api_base_host)

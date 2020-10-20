@@ -4,6 +4,7 @@
 import argparse
 import logging
 import os
+from pathlib import Path
 import re
 import shutil
 import tempfile
@@ -19,11 +20,11 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-ARTIFACT_NAMES = ["yagna", "ya-sb-router"]
+ARTIFACT_NAMES = ["Yagna Linux"]
 BRANCH = "master"
 REPO_OWNER = "golemfactory"
 REPO_NAME = "yagna"
-WORKFLOW_NAME = "Build .deb"
+WORKFLOW_NAME = "CI"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-b", "--branch", default=BRANCH)
@@ -35,6 +36,7 @@ parser.add_argument(
             By default, the latest workflow run is used. \
             This value can also be specified using the YAGNA_COMMIT_HASH env variable.",
 )
+parser.add_argument("-o", "--output-dir", default=Path("."))
 parser.add_argument("-r", "--repo", default=REPO_NAME)
 parser.add_argument(
     "-t",
@@ -138,7 +140,7 @@ def get_workflow(workflow_name: str) -> dict:
 def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) -> dict:
     """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
-    params = {"branch": branch, "status": "success"}
+    params = {"branch": branch, "status": "completed"}
     request = session.prepare_request(requests.Request("GET", url, params=params))
     logger.info("fetching workflow runs. url=%s", request.url)
 
@@ -156,7 +158,9 @@ def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) 
     return workflow_run
 
 
-def download_artifacts(artifacts_url: str, artifact_names: List[str]):
+def download_artifacts(
+    artifacts_url: str, artifact_names: List[str], output_dir: os.PathLike
+):
     """Download an artifact from a specific github workflow."""
     logger.info("fetching artifacts. url=%s", artifacts_url)
     response = session.get(artifacts_url)
@@ -178,8 +182,10 @@ def download_artifacts(artifacts_url: str, artifact_names: List[str]):
             with tempfile.NamedTemporaryFile() as fd:
                 fd.write(response.content)
                 logger.debug("extracting zip archive. path=%s", fd.name)
-                shutil.unpack_archive(fd.name, format="zip")
-        logger.info("extracted package. path=%s", artifact["name"])
+                shutil.unpack_archive(
+                    fd.name, format="zip", extract_dir=str(output_dir)
+                )
+        logger.info("extracted package. path=%s", output_dir)
 
 
 if __name__ == "__main__":
@@ -192,4 +198,4 @@ if __name__ == "__main__":
 
     workflow = get_workflow(args.workflow)
     last_run = get_latest_run(workflow["id"], args.branch, args.commit)
-    download_artifacts(last_run["artifacts_url"], args.artifacts)
+    download_artifacts(last_run["artifacts_url"], args.artifacts, args.output_dir)

@@ -39,9 +39,9 @@ class AgentMixin(abc.ABC):
         passing in the log stream from the agent binary.
         """
 
-    def start(self):
+    async def start(self):
         """Start the probe and initialize the log monitor."""
-        super().start()
+        await super().start()
         self._init_log_monitor()
 
     async def stop(self):

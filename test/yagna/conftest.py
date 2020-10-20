@@ -25,14 +25,14 @@ def pytest_addoption(parser):
         help="path under which all test run logs should be stored",
     )
     parser.addoption(
-        "--yagna-commit-hash",
+        "--yagna-branch",
         action="store",
-        help="git commit hash of yagna .deb package to be used in the tests",
+        help="name of the branch for which the yagna binaries should be downloaded",
     )
     parser.addoption(
-        "--yagna-deb-path",
+        "--yagna-commit-hash",
         action="store",
-        help="path to a yagna .deb package to be used in the tests",
+        help="git commit hash in yagna repo for which to download binaries",
     )
 
 
@@ -94,21 +94,22 @@ def yagna_commit_hash(request) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
-def yagna_deb_path(request) -> Optional[str]:
-    """Fixture that passes the --yagna-deb-path CLI parameter to the test suite."""
-    return request.config.option.yagna_deb_path
+def yagna_branch(request) -> Optional[str]:
+    """Fixture that passes the --yagna-branch CLI parameter to the test suite."""
+    return request.config.option.yagna_branch
 
 
 @pytest.fixture(scope="session")
 def compose_build_env(
-    yagna_commit_hash: Optional[str], yagna_deb_path: Optional[str]
+    yagna_commit_hash: Optional[str],
+    yagna_branch: Optional[str],
 ) -> dict:
     """Fixture which provides the build environment for docker-compose network."""
     env = {}
     if yagna_commit_hash:
         env["YAGNA_COMMIT_HASH"] = yagna_commit_hash
-    if yagna_deb_path:
-        env["YAGNA_DEB_PATH"] = yagna_deb_path
+    if yagna_branch:
+        env["YAGNA_BRANCH"] = yagna_branch
     return env
 
 
