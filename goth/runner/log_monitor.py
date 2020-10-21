@@ -171,7 +171,6 @@ class LogEventMonitor(EventMonitor[LogEvent]):
                     self.logger.info(line)
 
                     event = LogEvent(line)
-                    logger.debug("[%s] event=%s", self.logger.name, event)
                     self.add_event(event)
         except StopThreadException:
             return
