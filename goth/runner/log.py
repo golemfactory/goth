@@ -53,7 +53,11 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
+        "goth.runner": {
+            "handlers": ["console", "runner_file"],
+            "propagate": False,
+            "level": "DEBUG",
+        },
         # This logger is used also by the assertions loaded into the proxy
         "goth.runner.proxy": {
             "handlers": ["proxy_file"],
