@@ -35,7 +35,7 @@ LOGGING_CONFIG = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
-            "level": "DEBUG",
+            "level": "INFO",
         },
         "runner_file": {
             "class": "logging.FileHandler",
@@ -67,8 +67,6 @@ LOGGING_CONFIG = {
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
-        "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
-        "test_level1": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
     },
 }
