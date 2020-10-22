@@ -35,7 +35,7 @@ LOGGING_CONFIG = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
-            "level": "DEBUG",
+            "level": "INFO",
         },
         "runner_file": {
             "class": "logging.FileHandler",
@@ -53,7 +53,11 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "goth.runner": {"handlers": ["console", "runner_file"], "propagate": False},
+        "goth.runner": {
+            "handlers": ["console", "runner_file"],
+            "propagate": False,
+            "level": "DEBUG",
+        },
         # This logger is used also by the assertions loaded into the proxy
         "goth.runner.proxy": {
             "handlers": ["proxy_file"],
@@ -67,8 +71,6 @@ LOGGING_CONFIG = {
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
-        "test_level0": {"handlers": ["console", "runner_file"], "propagate": False},
-        "test_level1": {"handlers": ["console", "runner_file"], "propagate": False},
         "transitions": {"level": "WARNING"},
     },
 }
