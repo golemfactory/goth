@@ -140,7 +140,10 @@ def get_workflow(workflow_name: str) -> dict:
 def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) -> dict:
     """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
-    params = {"branch": branch, "status": "completed"}
+    params = {"status": "completed"}
+    if not commit:
+        params["branch"] = branch
+
     request = session.prepare_request(requests.Request("GET", url, params=params))
     logger.info("fetching workflow runs. url=%s", request.url)
 
@@ -190,10 +193,11 @@ def download_artifacts(
 
 if __name__ == "__main__":
     logger.info(
-        "workflow=%s, artifacts=%s, commit=%s",
+        "workflow=%s, commit=%s, branch=%s, artifacts=%s",
         args.workflow,
-        args.artifacts,
         args.commit,
+        args.branch,
+        args.artifacts,
     )
 
     workflow = get_workflow(args.workflow)
