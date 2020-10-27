@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script for downloading artifacts from a github repository."""
+"""Script for downloading artifacts from a GitHub repository."""
 
 import argparse
 import logging
@@ -202,7 +202,9 @@ def download_artifacts(
 ):
     """Download artifacts being the result of a given GitHub Actions workflow.
 
+    The GitHub user name used in this function is `golemfactory`.
     After downloading, artifacts are extracted in the destination directory.
+
     :param artifacts: list of artifact names which should be downloaded
     :param branch: git branch to use when selecting the workflow run
     :param commit: git commit to use when selecting the workflow run
