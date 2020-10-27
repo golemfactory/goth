@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script to download artifacts from a github repository."""
+"""Script for downloading artifacts from a github repository."""
 
 import argparse
 import logging
@@ -20,48 +20,47 @@ logger = logging.getLogger(__name__)
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-ARTIFACT_NAMES = ["Yagna Linux"]
-BRANCH = "master"
+DEFAULT_ARTIFACTS = ["Yagna Linux"]
+DEFAULT_BRANCH = "master"
+DEFAULT_COMMIT = os.getenv(ENV_YAGNA_COMMIT)
+DEFAULT_OUTPUT_DIR = Path(".")
+DEFAULT_REPO = "yagna"
+DEFAULT_TOKEN = os.getenv(ENV_API_TOKEN)
+DEFAULT_WORKFLOW = "CI"
+
 REPO_OWNER = "golemfactory"
-REPO_NAME = "yagna"
-WORKFLOW_NAME = "CI"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-b", "--branch", default=BRANCH)
+parser.add_argument("-b", "--branch", default=DEFAULT_BRANCH)
 parser.add_argument(
     "-c",
     "--commit",
-    default=os.getenv(ENV_YAGNA_COMMIT),
+    default=DEFAULT_COMMIT,
     help="git commit to look for when choosing the workflow run to download from. \
-            By default, the latest workflow run is used. \
-            This value can also be specified using the YAGNA_COMMIT_HASH env variable.",
+            By default, this value is obtained from env variable YAGNA_COMMIT_HASH. \
+            If None, the latest workflow run is used.",
 )
-parser.add_argument("-o", "--output-dir", default=Path("."))
-parser.add_argument("-r", "--repo", default=REPO_NAME)
+parser.add_argument("-o", "--output-dir", default=DEFAULT_OUTPUT_DIR, type=Path)
+parser.add_argument("-r", "--repo", default=DEFAULT_REPO)
 parser.add_argument(
     "-t",
     "--token",
-    default=os.getenv(ENV_API_TOKEN),
+    default=DEFAULT_TOKEN,
     help="Access token to be used in GitHub API calls.\
             By default, this value is obtained from env variable GITHUB_API_TOKEN.",
 )
-parser.add_argument("-w", "--workflow", default=WORKFLOW_NAME)
+parser.add_argument("-w", "--workflow", default=DEFAULT_WORKFLOW)
 parser.add_argument(
     "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
 )
 parser.add_argument(
     "artifacts",
     nargs="*",
-    default=ARTIFACT_NAMES,
+    default=DEFAULT_ARTIFACTS,
     help="List of artifact names which should be downloaded. \
             These can be substrings, as well as exact names (with extensions).",
 )
 args = parser.parse_args()
-
-if not args.token:
-    raise ValueError("GitHub token was not provided.")
-if args.verbose:
-    logger.setLevel(logging.DEBUG)
 
 BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
 session = requests.Session()
@@ -123,8 +122,8 @@ def _parse_link_header(header_value: str) -> dict:
     return relation_to_url
 
 
-def get_workflow(workflow_name: str) -> dict:
-    """Query the workflow on github."""
+def _get_workflow(workflow_name: str) -> dict:
+    """Query the workflow on GitHub Actions."""
     url = f"{BASE_URL}/actions/workflows"
     logger.info("fetching workflows. url=%s", url)
     response = session.get(url)
@@ -137,7 +136,9 @@ def get_workflow(workflow_name: str) -> dict:
     return workflow
 
 
-def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) -> dict:
+def _get_latest_run(
+    workflow_id: str, branch: str, commit: Optional[str] = None
+) -> dict:
     """Filter out the latest workflow run."""
     url = f"{BASE_URL}/actions/workflows/{workflow_id}/runs"
     params = {"status": "completed"}
@@ -161,10 +162,8 @@ def get_latest_run(workflow_id: str, branch: str, commit: Optional[str] = None) 
     return workflow_run
 
 
-def download_artifacts(
-    artifacts_url: str, artifact_names: List[str], output_dir: os.PathLike
-):
-    """Download an artifact from a specific github workflow."""
+def _download(artifacts_url: str, artifact_names: List[str], output_dir: os.PathLike):
+    """Download an artifact from a specific GitHub Actions workflow."""
     logger.info("fetching artifacts. url=%s", artifacts_url)
     response = session.get(artifacts_url)
     response.raise_for_status()
@@ -191,15 +190,45 @@ def download_artifacts(
         logger.info("extracted package. path=%s", output_dir)
 
 
-if __name__ == "__main__":
+def download_artifacts(
+    artifacts: List[str] = DEFAULT_ARTIFACTS,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = DEFAULT_COMMIT,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    repo: str = DEFAULT_REPO,
+    token: Optional[str] = DEFAULT_TOKEN,
+    workflow: str = DEFAULT_WORKFLOW,
+    verbose: bool = False,
+):
+    """Download artifacts being the result of a given GitHub Actions workflow.
+
+    After downloading, artifacts are extracted in the destination directory.
+    :param artifacts: list of artifact names which should be downloaded
+    :param branch: git branch to use when selecting the workflow run
+    :param commit: git commit to use when selecting the workflow run
+    :param output_dir: directory to which the artifacts should be extracted
+    :param repo: name of the repo from which to select the workflow
+    :param token: GitHub API token
+    :param workflow: name of the workflow to select a run from
+    :param verbose: enables debug logging when set
+    """
+    if not token:
+        raise ValueError("GitHub token was not provided.")
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+
     logger.info(
         "workflow=%s, commit=%s, branch=%s, artifacts=%s",
-        args.workflow,
-        args.commit,
-        args.branch,
-        args.artifacts,
+        workflow,
+        commit,
+        branch,
+        artifacts,
     )
 
-    workflow = get_workflow(args.workflow)
-    last_run = get_latest_run(workflow["id"], args.branch, args.commit)
-    download_artifacts(last_run["artifacts_url"], args.artifacts, args.output_dir)
+    workflow_obj = _get_workflow(workflow)
+    last_run = _get_latest_run(workflow_obj["id"], branch, commit)
+    _download(last_run["artifacts_url"], artifacts, output_dir)
+
+
+if __name__ == "__main__":
+    download_artifacts(**vars(args))
