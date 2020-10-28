@@ -60,11 +60,15 @@ parser.add_argument(
     help="List of artifact names which should be downloaded. \
             These can be substrings, as well as exact names (with extensions).",
 )
-args = parser.parse_args()
 
-BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
+BASE_URL = "https://api.github.com/repos"
 session = requests.Session()
-session.headers["Authorization"] = f"token {args.token}"
+
+
+def _setup_session(repo: str, token: str):
+    global BASE_URL
+    BASE_URL += f"/{REPO_OWNER}/{repo}"
+    session.headers["Authorization"] = f"token {token}"
 
 
 def _search_with_pagination(
@@ -219,6 +223,8 @@ def download_artifacts(
     if verbose:
         logger.setLevel(logging.DEBUG)
 
+    _setup_session(repo, token)
+
     logger.info(
         "workflow=%s, commit=%s, branch=%s, artifacts=%s",
         workflow,
@@ -233,4 +239,5 @@ def download_artifacts(
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     download_artifacts(**vars(args))

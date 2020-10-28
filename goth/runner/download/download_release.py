@@ -34,11 +34,15 @@ parser.add_argument(
     "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
 )
 parser.add_argument("repo", help="Name of the git repository to be used.")
-args = parser.parse_args()
 
-BASE_URL = f"https://api.github.com/repos/{REPO_OWNER}/{args.repo}"
+BASE_URL = "https://api.github.com/repos"
 session = requests.Session()
-session.headers["Authorization"] = f"token {args.token}"
+
+
+def _setup_session(repo: str, token: str):
+    global BASE_URL
+    BASE_URL += f"/{REPO_OWNER}/{repo}"
+    session.headers["Authorization"] = f"token {token}"
 
 
 def _get_latest_release() -> dict:
@@ -85,17 +89,21 @@ def download_release(
     :param repo: name of the repo to download from
     :param content_type: content-type string for the asset to download
     :param output: file path to where the asset should be downloaded
-    :
+    :param token: GitHub API token
+    :param verbose: enables debug logging when set
     """
     if not token:
         raise ValueError("GitHub token was not provided.")
-    output = output or Path(f"./{repo}.deb")
     if verbose:
         logger.setLevel(logging.DEBUG)
+
+    _setup_session(repo, token)
+    output = output or Path(f"./{repo}.deb")
 
     release = _get_latest_release()
     _download(release, content_type, output)
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     download_release(**vars(args))
