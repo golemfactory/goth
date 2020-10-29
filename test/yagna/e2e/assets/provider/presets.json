@@ -1,20 +1,28 @@
-[
-  {
-    "name": "lame-offer",
-    "exeunit-name": "wasmtime",
-    "pricing-model": "linear",
-    "usage-coeffs": [0.0, 0.0, 0.0]
-  },
-  {
-    "name": "high-cpu",
-    "exeunit-name": "wasmtime",
-    "pricing-model": "linear",
-    "usage-coeffs": [0.01, 1.2, 1.5]
-  },
-  {
-    "name": "default",
-    "exeunit-name": "wasmtime",
-    "pricing-model": "linear",
-    "usage-coeffs": [0.1, 0.2, 1.0]
-  }
-]
+{
+  "active": [
+    "default",
+    "wasmtime"
+  ],
+  "presets": [
+    {
+      "name": "wasmtime",
+      "exeunit-name": "wasmtime",
+      "pricing-model": "linear",
+      "usage-coeffs": {
+        "initial": 0.0,
+        "duration": 0.0002777777777777778,
+        "cpu": 0.001388888888888889
+      }
+    },
+    {
+      "name": "default",
+      "exeunit-name": "vm",
+      "pricing-model": "linear",
+      "usage-coeffs": {
+        "initial": 0.0,
+        "cpu": 0.001388888888888889,
+        "duration": 0.0002777777777777778
+      }
+    }
+  ]
+}
