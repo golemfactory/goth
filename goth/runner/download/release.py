@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Script for downloading releases from a GitHub repository."""
+"""Downloader for GitHub repo releases using GitHub's REST API."""
 
-import argparse
 import logging
 import os
 from pathlib import Path
@@ -19,35 +18,22 @@ ENV_API_TOKEN = "GITHUB_API_TOKEN"
 DEFAULT_CONTENT_TYPE = "application/vnd.debian.binary-package"
 DEFAULT_TOKEN = os.getenv(ENV_API_TOKEN)
 
+BASE_URL = "https://api.github.com/repos"
 REPO_OWNER = "golemfactory"
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-c", "--content-type", default=DEFAULT_CONTENT_TYPE)
-parser.add_argument(
-    "-o",
-    "--output",
-    help="Output file path. Default: ./{repo_name}.deb.",
-    type=Path,
-)
-parser.add_argument("-t", "--token", default=DEFAULT_TOKEN)
-parser.add_argument(
-    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
-)
-parser.add_argument("repo", help="Name of the git repository to be used.")
-
-BASE_URL = "https://api.github.com/repos"
+repo_url = ""
 session = requests.Session()
 
 
 def _setup_session(repo: str, token: str):
-    global BASE_URL
-    BASE_URL += f"/{REPO_OWNER}/{repo}"
+    global repo_url
+    repo_url = BASE_URL + f"/{REPO_OWNER}/{repo}"
     session.headers["Authorization"] = f"token {token}"
 
 
 def _get_latest_release() -> dict:
     """Get the latest version, this includes pre-releases."""
-    url = f"{BASE_URL}/releases"
+    url = f"{repo_url}/releases"
     logger.info("fetching releases. url=%s", url)
     response = session.get(url)
     response.raise_for_status()
@@ -102,8 +88,3 @@ def download_release(
 
     release = _get_latest_release()
     _download(release, content_type, output)
-
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-    download_release(**vars(args))
