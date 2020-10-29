@@ -29,6 +29,13 @@ class WebServer:
         self.root_path = root_path
         self.server_port = server_port
 
+    async def _upload_handler(self, request: web.Request) -> web.Response:
+        logger.debug("Handling upload request...")
+        with open(Path(self.root_path) / request.match_info["filename"], "wb") as out:
+            async for data in request.content.iter_any():
+                out.write(data)
+        return web.Response()
+
     async def start(self, server_address: str) -> None:
         """Start serving content."""
 
@@ -36,7 +43,8 @@ class WebServer:
             logger.warning("Tried to start a web server that is already running")
             return
 
-        app = web.Application()
+        app = web.Application(debug=True)
+        app.router.add_put("/upload/{filename}", self._upload_handler)
         app.router.add_static("/", path=Path(self.root_path), name="root")
         runner = web_runner.AppRunner(app)
         await runner.setup()
@@ -56,6 +64,8 @@ class WebServer:
             logger.warning("Tried to stop a web server that is not running")
             return
 
+        if self._server_task.done() and self._server_task.exception():
+            await self._server_task
         self._server_task.cancel()
         await self._server_task
         self._server_task = None

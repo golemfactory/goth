@@ -71,6 +71,11 @@ LOGGING_CONFIG = {
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
+        "aiohttp": {
+            "handlers": ["console", "runner_file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
         "transitions": {"level": "WARNING"},
     },
 }
