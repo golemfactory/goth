@@ -35,7 +35,7 @@ class DockerContainerConfig:
         """Produce volume specification to be passed to docker."""
 
         return {
-            str(host_path.resolve()): {"bind": mount_path, "mode": "ro"}
+            str(host_path.resolve()): {"bind": mount_path, "mode": "rw"}
             for host_path, mount_path in self.volumes.items()
         }
 
@@ -135,6 +135,7 @@ class DockerContainer:
             detach=True,
             name=self.name,
             network=self.network,
+            privileged=True,
             **kwargs,
         )
 
