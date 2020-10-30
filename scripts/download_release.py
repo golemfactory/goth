@@ -4,8 +4,8 @@
 import argparse
 from pathlib import Path
 
-from goth.runner.download.release import (
-    download_release,
+from goth.runner.download import (
+    ReleaseDownloader,
     DEFAULT_CONTENT_TYPE,
     DEFAULT_TOKEN,
 )
@@ -27,4 +27,5 @@ parser.add_argument("repo", help="Name of the git repository to be used.")
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    download_release(**vars(args))
+    downloader = ReleaseDownloader(args.repo, token=args.token, verbose=args.verbose)
+    downloader.download_release(args.content_type, args.output)

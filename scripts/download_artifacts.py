@@ -4,8 +4,8 @@
 import argparse
 from pathlib import Path
 
-from goth.runner.download.artifacts import (
-    download_artifacts,
+from goth.runner.download import (
+    ArtifactsDownloader,
     DEFAULT_ARTIFACTS,
     DEFAULT_BRANCH,
     DEFAULT_COMMIT,
@@ -49,4 +49,7 @@ parser.add_argument(
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    download_artifacts(**vars(args))
+    downloader = ArtifactsDownloader(
+        repo=args.repo, token=args.token, verbose=args.verbose
+    )
+    downloader.download(**vars(args))
