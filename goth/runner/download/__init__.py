@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 import requests
 
@@ -23,11 +23,10 @@ BASE_URL = "https://api.github.com/repos"
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
-DEFAULT_ARTIFACTS = ["Yagna Linux"]
+DEFAULT_ARTIFACT = "Yagna Linux"
 DEFAULT_BRANCH = "master"
 DEFAULT_COMMIT = os.getenv(ENV_YAGNA_COMMIT)
 DEFAULT_CONTENT_TYPE = "application/vnd.debian.binary-package"
-DEFAULT_OUTPUT_DIR = Path(".")
 DEFAULT_OWNER = "golemfactory"
 DEFAULT_REPO = "yagna"
 DEFAULT_TOKEN = os.getenv(ENV_API_TOKEN)
@@ -60,7 +59,6 @@ class GithubDownloader(ABC):
 
         if purge_cache:
             shutil.rmtree(ASSET_CACHE_DIR)
-        ASSET_CACHE_DIR.mkdir(exist_ok=True)
 
         self.repo_url = BASE_URL + f"/{owner}/{repo}"
         self.session = requests.Session()
@@ -69,10 +67,15 @@ class GithubDownloader(ABC):
     def _cache_get(self, asset_id: str) -> Optional[Path]:
         asset_path: Path = ASSET_CACHE_DIR / asset_id
 
-        if asset_path.is_dir() and asset_path.glob("*"):
+        if asset_path.is_dir() and list(asset_path.glob("*")):
             return asset_path
 
         return None
+
+    def _create_cache_dir(self, asset_id: str) -> Path:
+        asset_path: Path = ASSET_CACHE_DIR / asset_id
+        asset_path.mkdir(exist_ok=True, parents=True)
+        return asset_path
 
     def _parse_link_header(self, header_value: str) -> dict:
         """Parse URLs and their relative positions from a `Link` header value.
@@ -131,7 +134,7 @@ class GithubDownloader(ABC):
                 return None
 
 
-class ArtifactsDownloader(GithubDownloader):
+class ArtifactDownloader(GithubDownloader):
     """Downloader for GitHub Actions artifacts using GitHub's REST API."""
 
     def _get_workflow(self, workflow_name: str) -> dict:
@@ -148,9 +151,10 @@ class ArtifactsDownloader(GithubDownloader):
         return workflow
 
     def _get_latest_run(
-        self, workflow_id: str, branch: str, commit: Optional[str] = None
+        self, workflow: dict, branch: str, commit: Optional[str] = None
     ) -> dict:
         """Filter out the latest workflow run."""
+        workflow_id = workflow["id"]
         url = f"{self.repo_url}/actions/workflows/{workflow_id}/runs"
         params = {"status": "completed"}
         if not commit:
@@ -175,10 +179,7 @@ class ArtifactsDownloader(GithubDownloader):
         logger.debug("workflow_run=%s", workflow_run)
         return workflow_run
 
-    def _download(
-        self, workflow_run: dict, artifact_names: List[str], output_dir: os.PathLike
-    ):
-        """Download artifacts from a specific GitHub Actions workflow run."""
+    def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
         logger.info("fetching artifacts. url=%s", artifacts_url)
         response = self.session.get(artifacts_url)
@@ -186,56 +187,79 @@ class ArtifactsDownloader(GithubDownloader):
 
         artifacts = response.json()["artifacts"]
         logger.debug("artifacts=%s", artifacts)
-        for name in artifact_names:
-            artifact = next(filter(lambda a: name in a["name"], artifacts), None)
-            if not artifact:
-                logger.warning("failed to find artifact. artifact_name=%s", name)
-                continue
+        artifact = next(filter(lambda a: artifact_name in a["name"], artifacts), None)
 
-            logger.info("found matching artifact. artifact=%s", artifact)
-            archive_url = artifact["archive_download_url"]
-            with self.session.get(archive_url) as response:
-                response.raise_for_status()
-                logger.info("downloading artifact. url=%s", archive_url)
-                with tempfile.NamedTemporaryFile() as fd:
-                    fd.write(response.content)
-                    logger.debug("extracting zip archive. path=%s", fd.name)
-                    shutil.unpack_archive(
-                        fd.name, format="zip", extract_dir=str(output_dir)
-                    )
-            logger.info("extracted package. path=%s", output_dir)
+        return artifact
+
+    def _download_artifact(self, artifact: dict) -> Path:
+        """Download an artifact from a specific GitHub Actions workflow run.
+
+        Return path to the extracted artifact.
+        """
+        artifact_id = str(artifact["id"])
+        archive_url = artifact["archive_download_url"]
+
+        with self.session.get(archive_url) as response:
+            response.raise_for_status()
+            logger.info("downloading artifact. url=%s", archive_url)
+
+            with tempfile.NamedTemporaryFile() as fd:
+                fd.write(response.content)
+                logger.debug("extracting zip archive. path=%s", fd.name)
+                cache_dir = self._create_cache_dir(artifact_id)
+                shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
+                logger.info("extracted package. path=%s", cache_dir)
+
+        return cache_dir
 
     def download(
         self,
-        artifacts: List[str] = DEFAULT_ARTIFACTS,
+        artifact_name: str = DEFAULT_ARTIFACT,
         branch: str = DEFAULT_BRANCH,
         commit: Optional[str] = DEFAULT_COMMIT,
-        output_dir: Path = DEFAULT_OUTPUT_DIR,
-        workflow: str = DEFAULT_WORKFLOW,
-        **kwargs,
-    ):
-        """Download artifacts being the result of a given GitHub Actions workflow.
+        output: Optional[Path] = None,
+        workflow_name: str = DEFAULT_WORKFLOW,
+    ) -> Optional[Path]:
+        """Download an artifact being the result of a given GitHub Actions workflow.
 
-        The GitHub user name used in this function is `golemfactory`.
-        After downloading, artifacts are extracted in the destination directory.
+        After downloading, the artifact is extracted and, if specified, saved under
+        the directory or file given as `output`.
+        Return the download path or `None` if the artifact was not found.
 
-        :param artifacts: list of artifact names which should be downloaded
+        :param artifact_name: name of the artifact which should be downloaded
         :param branch: git branch to use when selecting the workflow run
         :param commit: git commit to use when selecting the workflow run
-        :param output_dir: directory to which the artifacts should be extracted
-        :param workflow: name of the workflow to select a run from
+        :param output: directory to which the artifact should be extracted
+        :param workflow_name: name of the workflow to select a run from
         """
         logger.info(
-            "downloading artifacts. artifacts=%s, branch=%s, commit=%s, workflow=%s",
-            artifacts,
+            "downloading artifact. name=%s, branch=%s, commit=%s, workflow=%s",
+            artifact_name,
             branch,
             commit,
-            workflow,
+            workflow_name,
         )
 
-        workflow_obj = self._get_workflow(workflow)
-        last_run = self._get_latest_run(workflow_obj["id"], branch, commit)
-        self._download(last_run, artifacts, output_dir)
+        workflow = self._get_workflow(workflow_name)
+        latest_run = self._get_latest_run(workflow, branch, commit)
+        artifact = self._get_artifact(artifact_name, latest_run)
+        if not artifact:
+            logger.warning("failed to find artifact. name=%s", artifact_name)
+            return None
+        logger.info("found matching artifact. artifact=%s", artifact)
+
+        artifact_id = str(artifact["id"])
+        cache_path = self._cache_get(artifact_id)
+        if cache_path:
+            logger.info("using cached artifact. cache_path=%s", cache_path)
+        else:
+            cache_path = self._download_artifact(artifact)
+
+        if output:
+            shutil.copytree(cache_path, output, dirs_exist_ok=True)
+            logger.info("copied artifact to output path. output=%s", str(output))
+
+        return output or cache_path
 
 
 class ReleaseDownloader(GithubDownloader):
@@ -249,7 +273,7 @@ class ReleaseDownloader(GithubDownloader):
         super().__init__(*args, repo=repo, **kwargs)
         self.repo_name = repo
 
-    def _get_latest_release(self) -> dict:
+    def _get_latest_release(self) -> Optional[dict]:
         """Get the latest version, this includes pre-releases."""
         url = f"{self.repo_url}/releases"
         logger.info("fetching releases. url=%s", url)
@@ -259,35 +283,64 @@ class ReleaseDownloader(GithubDownloader):
         releases = response.json()
         logger.debug("releases=%s", releases)
 
-        return releases[0]
+        return releases[0] if releases else None
 
-    def _download(self, release: dict, content_type: str, output_path: Path):
-        """Download an asset from a specific GitHub release."""
+    def _get_asset(self, release: dict, content_type: str) -> Optional[dict]:
         assets = release["assets"]
         logger.debug("assets=%s", assets)
-        asset = next(filter(lambda a: a["content_type"] == content_type, assets))
-        logger.info("found matching asset. name=%s", asset["name"])
-        logger.debug("asset=%s", asset)
+        asset = next(filter(lambda a: a["content_type"] == content_type, assets), None)
+        return asset
 
+    def _download_asset(self, asset: dict) -> Path:
+        """Download an asset from a specific GitHub release."""
         download_url = asset["browser_download_url"]
+        asset_id = str(asset["id"])
+
         with self.session.get(download_url) as response:
             response.raise_for_status()
             logger.info("downloading asset. url=%s", download_url)
-            with output_path.open(mode="wb") as fd:
+            cache_file = self._create_cache_dir(asset_id) / asset["name"]
+            with cache_file.open(mode="wb") as fd:
                 fd.write(response.content)
-            logger.info("downloaded asset. path=%s", str(output_path))
+            logger.info("downloaded asset. path=%s", str(cache_file))
 
-    def download_release(
+        return cache_file
+
+    def download(
         self,
         content_type: str = DEFAULT_CONTENT_TYPE,
         output: Optional[Path] = None,
-    ):
+    ) -> Optional[Path]:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
+        Return the download path or `None` if the asset was not found.
         :param content_type: content-type string for the asset to download
-        :param output: file path to where the asset should be downloaded
+        :param output: file path to where the asset should be saved
         """
-        output = output or Path(f"./{self.repo_name}.deb")
-
         release = self._get_latest_release()
-        self._download(release, content_type, output)
+        if not release:
+            logger.warning("given repo has no releases. repo=%s", self.repo_name)
+            return None
+
+        asset = self._get_asset(release, content_type)
+        if not asset:
+            logger.warning(
+                "failed to find asset of given type. content_type=%s", content_type
+            )
+            return None
+        logger.info("found matching asset. name=%s", asset["name"])
+        logger.debug("asset=%s", asset)
+
+        asset_id = str(asset["id"])
+        cache_path = self._cache_get(asset_id)
+        if cache_path:
+            cache_path = cache_path / asset["name"]
+            logger.info("using cached release asset. cache_path=%s", cache_path)
+        else:
+            cache_path = self._download_asset(asset)
+
+        if output:
+            shutil.copy2(cache_path, output)
+            logger.info("copied release to output path. output=%s", str(output))
+
+        return output or cache_path

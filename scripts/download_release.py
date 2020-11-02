@@ -15,7 +15,7 @@ parser.add_argument("-c", "--content-type", default=DEFAULT_CONTENT_TYPE)
 parser.add_argument(
     "-o",
     "--output",
-    help="Output file path. Default: ./{repo_name}.deb.",
+    help="Output path, may be either a file or a directory.",
     type=Path,
 )
 parser.add_argument("-t", "--token", default=DEFAULT_TOKEN)
@@ -28,4 +28,4 @@ parser.add_argument("repo", help="Name of the git repository to be used.")
 if __name__ == "__main__":
     args = parser.parse_args()
     downloader = ReleaseDownloader(args.repo, token=args.token, verbose=args.verbose)
-    downloader.download_release(args.content_type, args.output)
+    downloader.download(args.content_type, args.output)
