@@ -1,27 +1,25 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
-import asyncio
 from datetime import datetime
 import logging
 import os
 from pathlib import Path
-import subprocess
-from typing import ClassVar, Dict, Optional, Sequence
+from typing import ClassVar, Dict, Optional
 
 from docker import DockerClient
 import yaml
 
 from goth.project import DOCKER_DIR
 from goth.runner.container import DockerContainer
+from goth.runner.container.build import build
 from goth.runner.container.utils import get_container_address
-from goth.runner.exceptions import ContainerNotFoundError, CommandError
+from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
+from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
-RUN_COMMAND_SLEEP_INTERVAL = 0.1
-RUN_COMMAND_DEFAULT_TIMEOUT = 3600
 
 
 class ComposeNetworkManager:
@@ -73,10 +71,12 @@ class ComposeNetworkManager:
         )
         command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
 
+        await build(environment)
+
         if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
             command.append("--build")
 
-        await _run_command(command, env=environment)
+        await run_command(command, env=environment)
         ComposeNetworkManager._last_compose_path = self.compose_path
 
         self._log_running_containers()
@@ -88,8 +88,8 @@ class ComposeNetworkManager:
             logger.debug("stopping log monitor. name=%s", name)
             await monitor.stop()
 
-        await _run_command(["docker-compose", "-f", str(self.compose_path), "kill"])
-        await _run_command(["docker-compose", "-f", str(self.compose_path), "rm", "-f"])
+        await run_command(["docker-compose", "-f", str(self.compose_path), "kill"])
+        await run_command(["docker-compose", "-f", str(self.compose_path), "rm", "-f"])
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
@@ -148,33 +148,3 @@ class ComposeNetworkManager:
                 )
             )
             self._log_monitors[service_name] = monitor
-
-
-async def _run_command(
-    args: Sequence[str],
-    env: Optional[dict] = None,
-    log_prefix: Optional[str] = None,
-    timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
-):
-    logger.info("Running local command: %s", " ".join(args))
-
-    if log_prefix is None:
-        log_prefix = f"[{args[0]}] "
-
-    p = subprocess.Popen(
-        args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-
-    async def _read_output():
-        for line in p.stdout:
-            logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
-
-        return_code = p.poll()
-        if return_code:
-            raise CommandError(
-                f"Command exited abnormally. args={args}, return_code={return_code}"
-            )
-        else:
-            await asyncio.sleep(RUN_COMMAND_SLEEP_INTERVAL)
-
-    await asyncio.wait_for(_read_output(), timeout=timeout)
