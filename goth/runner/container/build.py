@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from typing import Dict, List, Optional
 
 from goth.project import DOCKER_DIR
+from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
     ReleaseDownloader,
@@ -19,7 +20,7 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
-DOCKERFILE_PATH = DOCKER_DIR / "yagna-goth.Dockerfile"
+DOCKERFILE_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}.Dockerfile"
 
 ENV_YAGNA_BINARY_DIR = "YAGNA_BINARY_DIR"
 ENV_YAGNA_DEB_DIR = "YAGNA_DEB_DIR"
@@ -45,7 +46,7 @@ async def build(environment: Dict[str, str]):
         _setup_build_context(temp_dir, environment)
 
         logger.info("building Docker image. file=%s", DOCKERFILE_PATH)
-        command = ["docker", "build", f"{temp_dir}"]
+        command = ["docker", "build", "-t", YagnaContainer.IMAGE, str(temp_dir)]
         await (run_command(command))
 
 
