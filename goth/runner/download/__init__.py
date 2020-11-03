@@ -21,6 +21,7 @@ ASSET_CACHE_DIR = Path(tempfile.gettempdir()) / "goth_asset_cache"
 BASE_URL = "https://api.github.com/repos"
 
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
+ENV_YAGNA_BRANCH = "YAGNA_BRANCH"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
 DEFAULT_ARTIFACT = "Yagna Linux"
