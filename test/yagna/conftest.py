@@ -45,9 +45,10 @@ def pytest_addoption(parser):
         help="git commit hash in yagna repo for which to download binaries",
     )
     parser.addoption(
-        "--yagna-deb-dir",
+        "--yagna-deb-path",
         action="store",
-        help="path to local dir with .deb packages to be installed in yagna containers",
+        help="path to local .deb file or dir with .deb packages to be installed in \
+                yagna containers",
     )
 
 
@@ -104,11 +105,11 @@ def yagna_commit_hash(request) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
-def yagna_deb_dir(request) -> Optional[Path]:
+def yagna_deb_path(request) -> Optional[Path]:
     """Fixture that passes the --yagna-deb-dir CLI parameter to the test suite."""
-    deb_dir = request.config.option.yagna_deb_dir
-    if deb_dir:
-        return Path(deb_dir)
+    deb_path = request.config.option.yagna_deb_path
+    if deb_path:
+        return Path(deb_path)
     return None
 
 
@@ -118,7 +119,7 @@ def yagna_build_env(
     yagna_binary_dir: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
-    yagna_deb_dir: Optional[Path],
+    yagna_deb_path: Optional[Path],
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
@@ -126,7 +127,7 @@ def yagna_build_env(
         binary_dir=yagna_binary_dir,
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
-        deb_dir=yagna_deb_dir,
+        deb_path=yagna_deb_path,
     )
 
 

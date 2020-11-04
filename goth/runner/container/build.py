@@ -45,8 +45,8 @@ class YagnaBuildEnvironment:
     """git branch in yagna repo for which to download binaries."""
     commit_hash: Optional[str]
     """git commit hash in yagna repo for which to download binaries."""
-    deb_dir: Optional[Path]
-    """Local directory with .deb files to be installed in the image."""
+    deb_path: Optional[Path]
+    """Local path to .deb file or dir with .deb files to be installed in the image."""
 
 
 async def build_yagna_image(environment: YagnaBuildEnvironment):
@@ -122,9 +122,13 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
     else:
         _download_artifact(env, context_binary_dir)
 
-    if env.deb_dir:
-        logger.info("using local .deb packages. path=%s", env.deb_dir)
-        shutil.copytree(env.deb_dir, context_deb_dir, dirs_exist_ok=True)
+    if env.deb_path:
+        if env.deb_path.is_dir():
+            logger.info("using local .deb packages. path=%s", env.deb_path)
+            shutil.copytree(env.deb_path, context_deb_dir, dirs_exist_ok=True)
+        elif env.deb_path.is_file():
+            logger.info("using local .deb package. path=%s", env.deb_path)
+            shutil.copy2(env.deb_path, context_deb_dir)
     else:
         _download_release(env, context_deb_dir)
 
