@@ -1,6 +1,6 @@
 """Module responsible for building the yagna Docker image for testing."""
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import logging
 import os
 from pathlib import Path
@@ -53,7 +53,6 @@ async def build_yagna_image(environment: YagnaBuildEnvironment):
     """Build the yagna Docker image."""
     with TemporaryDirectory() as temp_path:
         temp_dir = Path(temp_path)
-        logger.info("setting up Docker build context. path=%s", temp_dir)
         _setup_build_context(temp_dir, environment)
 
         logger.info("building Docker image. file=%s", DOCKERFILE_PATH)
@@ -100,7 +99,11 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
     two directories: `bin` and `deb`. Depending on the build environment, these will be
     populated with assets from either the local filesystem or downloaded from GitHub.
     """
-    logger.info(env)
+    env_dict: dict = asdict(env)
+    filtered_env = {k: v for k, v in env_dict.items() if v is not None}
+    logger.info(
+        "setting up Docker build context. path=%s, env=%s", context_dir, filtered_env
+    )
 
     context_binary_dir: Path = context_dir / "bin"
     context_deb_dir: Path = context_dir / "deb"
