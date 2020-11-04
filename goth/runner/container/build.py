@@ -93,6 +93,13 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
 
 
 def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
+    """Set up the build context for `docker build` command.
+
+    This function prepares a directory to be used as build context for
+    yagna-goth.Dockerfile. This includes copying the original Dockerfile and creating
+    two directories: `bin` and `deb`. Depending on the build environment, these will be
+    populated with assets from either the local filesystem or downloaded from GitHub.
+    """
     logger.info(env)
 
     context_binary_dir: Path = context_dir / "bin"
