@@ -10,7 +10,7 @@ import yaml
 
 from goth.project import DOCKER_DIR
 from goth.runner.container import DockerContainer
-from goth.runner.container.build import build
+from goth.runner.container.build import build_yagna_image, YagnaBuildEnvironment
 from goth.runner.container.utils import get_container_address
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import LogConfig
@@ -34,11 +34,11 @@ class ComposeNetworkManager:
     compose_path: Path
     """Path to compose file to be used with this instance."""
 
+    _build_environment: YagnaBuildEnvironment
+    """Environment used when building the yagna Docker image."""
+
     _docker_client: DockerClient
     """Docker client to be used for high-level Docker API calls."""
-
-    _environment: Optional[dict]
-    """Custom environment variables to be used when running docker-compose commands."""
 
     _log_monitors: Dict[str, LogEventMonitor]
     """Log monitors for containers running as part of docker-compose."""
@@ -53,11 +53,11 @@ class ComposeNetworkManager:
         self,
         docker_client: DockerClient,
         compose_path: Path,
-        environment: Optional[dict] = None,
+        build_environment: YagnaBuildEnvironment,
     ):
         self.compose_path = compose_path.resolve()
+        self._build_environment = build_environment
         self._docker_client = docker_client
-        self._environment = environment
         self._log_monitors = {}
         self._network_gateway_address = ""
 
@@ -66,17 +66,14 @@ class ComposeNetworkManager:
 
         This step may include (re)building the network's docker images.
         """
-        environment = (
-            {**os.environ, **self._environment} if self._environment else {**os.environ}
-        )
         command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
 
-        await build(environment)
+        await build_yagna_image(self._build_environment)
 
         if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
             command.append("--build")
 
-        await run_command(command, env=environment)
+        await run_command(command, env={**os.environ})
         ComposeNetworkManager._last_compose_path = self.compose_path
 
         self._log_running_containers()
