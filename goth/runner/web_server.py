@@ -43,7 +43,7 @@ class WebServer:
             logger.warning("Tried to start a web server that is already running")
             return
 
-        app = web.Application(debug=True)
+        app = web.Application()
         app.router.add_put("/upload/{filename}", self._upload_handler)
         app.router.add_static("/", path=Path(self.root_path), name="root")
         runner = web_runner.AppRunner(app)

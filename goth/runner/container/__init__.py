@@ -135,7 +135,6 @@ class DockerContainer:
             detach=True,
             name=self.name,
             network=self.network,
-            privileged=True,
             **kwargs,
         )
 

@@ -19,7 +19,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("goth.runner")
 
 
 def topology(assets_path: Path) -> List[YagnaContainerConfig]:
@@ -100,7 +100,13 @@ async def test_e2e_wasm_success(
             task_package, demand_constraints
         )
 
-        proposals = await requestor.wait_for_proposals(subscription_id, providers)
+        proposals = await requestor.wait_for_proposals(
+            subscription_id,
+            providers,
+            lambda proposal: (
+                proposal.properties.get("golem.runtime.name") == "wasmtime"
+            ),
+        )
         logger.info("Collected %s proposals", len(proposals))
 
         agreement_providers = []

@@ -61,12 +61,14 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             volumes=provider_volumes,
+            privileged_mode=True,
         ),
         YagnaContainerConfig(
             name="provider_2",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             volumes=provider_volumes,
+            privileged_mode=True,
         ),
     ]
 
