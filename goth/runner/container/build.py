@@ -21,16 +21,14 @@ logger = logging.getLogger(__name__)
 
 DOCKERFILE_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}.Dockerfile"
 
-EXPECTED_BINARIES = set(
-    [
-        "exe-unit",
-        "golemsp",
-        "ya-provider",
-        "ya-requestor",
-        "ya_sb_router",
-        "yagna",
-    ]
-)
+EXPECTED_BINARIES = {
+    "exe-unit",
+    "golemsp",
+    "ya-provider",
+    "ya-requestor",
+    "ya_sb_router",
+    "yagna",
+}
 
 
 @dataclass(frozen=True)
