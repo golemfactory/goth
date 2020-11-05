@@ -14,6 +14,7 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -65,7 +66,7 @@ async def test_e2e_wasm_success(
     logs_path: Path,
     assets_path: Path,
     exe_script: dict,
-    compose_build_env: dict,
+    yagna_build_env: YagnaBuildEnvironment,
     compose_file_path: Path,
     task_package_template: str,
     demand_constraints: str,
@@ -78,7 +79,7 @@ async def test_e2e_wasm_success(
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,
-        compose_build_env=compose_build_env,
+        build_environment=yagna_build_env,
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]

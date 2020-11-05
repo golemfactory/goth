@@ -9,8 +9,8 @@ The Yagna Integration project, intending to build the Integration Harness around
 
 ### Python setup
 
-#### Python 3.7
-The test runner requires Python 3.7+ to be installed on the system. You can check your currently installed Python version by running:
+#### Python 3.8
+The test runner requires Python 3.8+ to be installed on the system. You can check your currently installed Python version by running:
 ```
 python3 --version
 ```
