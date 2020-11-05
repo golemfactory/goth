@@ -124,8 +124,11 @@ class Probe(abc.ABC):
         (e.g. creating the default app key).
         """
         self.container.start()
-        # Give the daemon some time to start before asking it for an app key.
-        await asyncio.sleep(1)
+
+        # Wait until the daemon is ready to create an app key.
+        await self.container.logs.wait_for_entry(
+            ".*Identity GSB service successfully activated", timeout=15
+        )
         await self.create_app_key()
 
         # Obtain the IP address of the container

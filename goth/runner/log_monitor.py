@@ -1,5 +1,6 @@
 """Classes and utilities to use a Monitor for log events."""
 
+import asyncio
 from datetime import datetime
 from enum import Enum
 import logging
@@ -10,6 +11,7 @@ from typing import Iterator, Optional, Sequence
 from func_timeout.StoppableThread import StoppableThread
 
 from goth.assertions.monitor import EventMonitor
+from goth.assertions.operators import eventually
 from goth.runner.exceptions import StopThreadException
 from goth.runner.log import LogConfig
 
@@ -125,11 +127,18 @@ class LogEventMonitor(EventMonitor[LogEvent]):
     in_stream: Iterator[bytes]
     logger: logging.Logger
     _buffer_task: Optional[StoppableThread]
+    _last_checked_line: int
+    """The index of the last line examined while waiting for log messages.
+
+    Subsequent calls to `wait_for_agent_log()` will only look at lines that
+    were logged after this line.
+    """
 
     def __init__(self, log_config: LogConfig):
         super().__init__()
         self.logger = _create_file_logger(log_config)
         self._buffer_task = None
+        self._last_checked_line = -1
 
     @property
     def events(self) -> Sequence[LogEvent]:
@@ -174,3 +183,43 @@ class LogEventMonitor(EventMonitor[LogEvent]):
                     self.add_event(event)
         except StopThreadException:
             return
+
+    async def wait_for_entry(self, pattern: str, timeout: float = 1000) -> LogEvent:
+        """Search log for a log entry with the message matching `pattern`.
+
+        The first call to this method will examine all log entries gathered
+        since this monitor was started and then, if needed, will wait for
+        up to `timeout` seconds for a matching entry.
+
+        Subsequent calls will examine all log entries gathered since
+        the previous call returned and then wait for up to `timeout` seconds.
+        """
+        regex = re.compile(pattern)
+
+        def predicate(log_event) -> bool:
+            return regex.match(log_event.message) is not None
+
+        # First examine log lines already seen
+        while self._last_checked_line + 1 < len(self.events):
+            self._last_checked_line += 1
+            event = self.events[self._last_checked_line]
+            if predicate(event):
+                return event
+
+        # Otherwise create an assertion that waits for a matching line...
+        async def coro(stream) -> LogEvent:
+            try:
+                log_event = await eventually(stream, predicate, timeout=timeout)
+                return log_event
+            finally:
+                self._last_checked_line = len(stream.past_events) - 1
+
+        assertion = self.add_assertion(coro)
+
+        # ... and wait until the assertion completes
+        while not assertion.done:
+            await asyncio.sleep(0.1)
+
+        if assertion.failed:
+            raise assertion.result
+        return assertion.result
