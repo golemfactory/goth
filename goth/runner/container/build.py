@@ -70,7 +70,7 @@ def _download_artifact(env: YagnaBuildEnvironment, download_path: Path):
     downloader.download(artifact_name="Yagna Linux", output=download_path, **kwargs)
 
 
-def _download_release(env: YagnaBuildEnvironment, download_path: Path):
+def _download_release(download_path: Path):
     downloader = ReleaseDownloader(
         repo="ya-runtime-wasi", token=os.environ.get(ENV_API_TOKEN)
     )
