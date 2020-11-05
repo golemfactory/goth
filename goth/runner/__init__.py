@@ -13,6 +13,7 @@ import docker
 
 from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.compose import ComposeNetworkManager, DEFAULT_COMPOSE_FILE
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import LogConfig
@@ -99,8 +100,8 @@ class Runner:
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Path,
+        build_environment: YagnaBuildEnvironment,
         compose_file_path: Path = DEFAULT_COMPOSE_FILE,
-        compose_build_env: Optional[dict] = None,
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -112,7 +113,7 @@ class Runner:
         self._compose_manager = ComposeNetworkManager(
             docker_client=docker.from_env(),
             compose_path=compose_file_path,
-            environment=compose_build_env,
+            build_environment=build_environment,
         )
         self._web_server = WebServer(assets_path / "web-root", web_server_port)
 

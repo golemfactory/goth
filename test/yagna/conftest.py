@@ -7,6 +7,7 @@ from typing import Optional
 
 import pytest
 
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.compose import DEFAULT_COMPOSE_FILE
 from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
@@ -24,6 +25,11 @@ def pytest_addoption(parser):
         help="path under which all test run logs should be stored",
     )
     parser.addoption(
+        "--yagna-binary-path",
+        action="store",
+        help="path to local directory or archive containing yagna binaries",
+    )
+    parser.addoption(
         "--yagna-branch",
         action="store",
         help="name of the branch for which the yagna binaries should be downloaded",
@@ -32,6 +38,12 @@ def pytest_addoption(parser):
         "--yagna-commit-hash",
         action="store",
         help="git commit hash in yagna repo for which to download binaries",
+    )
+    parser.addoption(
+        "--yagna-deb-path",
+        action="store",
+        help="path to local .deb file or dir with .deb packages to be installed in \
+                yagna containers",
     )
 
 
@@ -58,9 +70,12 @@ def logs_path(request) -> Path:
 
 
 @pytest.fixture(scope="session")
-def yagna_commit_hash(request) -> Optional[str]:
-    """Fixture that passes the --yagna-commit-hash CLI parameter to the test suite."""
-    return request.config.option.yagna_commit_hash
+def yagna_binary_path(request) -> Optional[Path]:
+    """Fixture that passes the --yagna-binary-path CLI parameter to the test suite."""
+    binary_path = request.config.option.yagna_binary_path
+    if binary_path:
+        return Path(binary_path)
+    return None
 
 
 @pytest.fixture(scope="session")
@@ -70,17 +85,34 @@ def yagna_branch(request) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
-def compose_build_env(
-    yagna_commit_hash: Optional[str],
+def yagna_commit_hash(request) -> Optional[str]:
+    """Fixture that passes the --yagna-commit-hash CLI parameter to the test suite."""
+    return request.config.option.yagna_commit_hash
+
+
+@pytest.fixture(scope="session")
+def yagna_deb_path(request) -> Optional[Path]:
+    """Fixture that passes the --yagna-deb-dir CLI parameter to the test suite."""
+    deb_path = request.config.option.yagna_deb_path
+    if deb_path:
+        return Path(deb_path)
+    return None
+
+
+@pytest.fixture(scope="session")
+def yagna_build_env(
+    yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
-) -> dict:
-    """Fixture which provides the build environment for docker-compose network."""
-    env = {}
-    if yagna_commit_hash:
-        env["YAGNA_COMMIT_HASH"] = yagna_commit_hash
-    if yagna_branch:
-        env["YAGNA_BRANCH"] = yagna_branch
-    return env
+    yagna_commit_hash: Optional[str],
+    yagna_deb_path: Optional[Path],
+) -> YagnaBuildEnvironment:
+    """Fixture which provides the build environment for yagna Docker images."""
+    return YagnaBuildEnvironment(
+        binary_path=yagna_binary_path,
+        branch=yagna_branch,
+        commit_hash=yagna_commit_hash,
+        deb_path=yagna_deb_path,
+    )
 
 
 @pytest.fixture(scope="session")
