@@ -1,5 +1,4 @@
 """End to end tests for requesting WASM tasks using ya-requestor agent."""
-
 import logging
 from pathlib import Path
 from typing import List
@@ -12,7 +11,7 @@ from goth.address import (
     YAGNA_REST_URL,
 )
 from goth.node import node_environment
-from goth.runner import Runner
+from goth.runner import Runner, YagnaBuildEnvironment
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbeWithAgent
 from goth.runner.provider import ProviderProbeWithLogSteps
@@ -30,16 +29,23 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     provider_1_env = provider_env.copy()
-    provider_1_env.update(account_list="/asset/key/002-accounts.json")
+    provider_1_env.update(ACCOUNT_LIST="/asset/key/002-accounts.json")
     provider_2_env = provider_env.copy()
-    provider_2_env.update(account_list="/asset/key/003-accounts-zk.json")
+    provider_2_env.update(ACCOUNT_LIST="/asset/key/003-accounts-zk.json")
+    provider_2_env.update(ZKSYNC_RPC_ADDRESS="http://zksync:3030")
+    provider_2_env.update(ZKSYNC_FAUCET_ADDR="http://zksync:3030/donate")
     requestor_env = node_environment(
         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
         account_list="/asset/key/001-multi.json",
     )
+    requestor_env.update(ZKSYNC_RPC_ADDRESS="http://zksync:3030")
+    requestor_env.update(ZKSYNC_FAUCET_ADDR="http://zksync:3030/donate")
 
-    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+    provider_volumes = {
+        assets_path / "provider" / "presets.json": "/presets.json",
+        assets_path / "requestor": "/asset"
+    }
 
     return [
         YagnaContainerConfig(
@@ -71,7 +77,7 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
 async def test_multi_driver_success(
     logs_path: Path,
     assets_path: Path,
-    compose_build_env: dict,
+    yagna_build_env: YagnaBuildEnvironment,
     compose_file_path: Path,
     task_package_template: str,
 ):
@@ -83,7 +89,7 @@ async def test_multi_driver_success(
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,
-        compose_build_env=compose_build_env,
+        build_environment=yagna_build_env,
     ) as runner:
 
         providers = runner.get_probes(probe_type=ProviderProbe)
