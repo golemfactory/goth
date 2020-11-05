@@ -25,14 +25,9 @@ def pytest_addoption(parser):
         help="path under which all test run logs should be stored",
     )
     parser.addoption(
-        "--yagna-archive-path",
+        "--yagna-binary-path",
         action="store",
-        help="path to local archive with yagna binaries",
-    )
-    parser.addoption(
-        "--yagna-binary-dir",
-        action="store",
-        help="path to local directory containing yagna binaries",
+        help="path to local directory or archive containing yagna binaries",
     )
     parser.addoption(
         "--yagna-branch",
@@ -75,20 +70,11 @@ def logs_path(request) -> Path:
 
 
 @pytest.fixture(scope="session")
-def yagna_archive_path(request) -> Optional[Path]:
-    """Fixture that passes the --yagna-archive-path CLI parameter to the test suite."""
-    archive_path = request.config.option.yagna_archive_path
-    if archive_path:
-        return Path(archive_path)
-    return None
-
-
-@pytest.fixture(scope="session")
-def yagna_binary_dir(request) -> Optional[Path]:
-    """Fixture that passes the --yagna-binary-dir CLI parameter to the test suite."""
-    binary_dir = request.config.option.yagna_binary_dir
-    if binary_dir:
-        return Path(binary_dir)
+def yagna_binary_path(request) -> Optional[Path]:
+    """Fixture that passes the --yagna-binary-path CLI parameter to the test suite."""
+    binary_path = request.config.option.yagna_binary_path
+    if binary_path:
+        return Path(binary_path)
     return None
 
 
@@ -115,16 +101,14 @@ def yagna_deb_path(request) -> Optional[Path]:
 
 @pytest.fixture(scope="session")
 def yagna_build_env(
-    yagna_archive_path: Optional[Path],
-    yagna_binary_dir: Optional[Path],
+    yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
     yagna_deb_path: Optional[Path],
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
-        archive_path=yagna_archive_path,
-        binary_dir=yagna_binary_dir,
+        binary_path=yagna_binary_path,
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
         deb_path=yagna_deb_path,
