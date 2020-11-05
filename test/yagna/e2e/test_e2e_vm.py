@@ -42,6 +42,9 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
         / "presets.json": "/root/.local/share/ya-provider/presets.json",
         assets_path
         / "provider"
+        / "hardware.json": "/root/.local/share/ya-provider/hardware.json",
+        assets_path
+        / "provider"
         / "images": "/root/.local/share/ya-provider/exe-unit/cache/tmp",
     }
 
@@ -59,23 +62,57 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             environment=provider_env,
             volumes=provider_volumes,
         ),
-        # YagnaContainerConfig(
-        #     name="provider_2",
-        #     probe_type=ProviderProbeWithLogSteps,
-        #     environment=provider_env,
-        #     volumes=provider_volumes,
-        # ),
+        YagnaContainerConfig(
+            name="provider_2",
+            probe_type=ProviderProbeWithLogSteps,
+            environment=provider_env,
+            volumes=provider_volumes,
+        ),
     ]
 
 
+def _exe_script(runner: Runner, output_file: str):
+
+    output_path = Path(runner.web_root_path) / output_file
+    if output_path.exists():
+        os.remove(output_path)
+
+    web_server_addr = f"http://{runner.host_address}:{runner.web_server_port}"
+
+    return [
+        {"deploy": {}},
+        {"start": {}},
+        {
+            "transfer": {
+                "from": f"{web_server_addr}/scene.blend",
+                "to": "container:/golem/resource/scene.blend",
+            }
+        },
+        {
+            "transfer": {
+                "from": f"{web_server_addr}/params.json",
+                "to": "container:/golem/work/params.json",
+            }
+        },
+        {"run": {"entry_point": "/golem/entrypoints/run-blender.sh", "args": []}},
+        {
+            "transfer": {
+                "from": f"container:/golem/output/{output_file}",
+                "to": f"{web_server_addr}/upload/{output_file}",
+            }
+        },
+    ]
+
+
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true", reason="Running in GitHub Actions"
+)
 @pytest.mark.asyncio
 async def test_e2e_vm_success(
     logs_path: Path,
     assets_path: Path,
-    exe_script: dict,
     compose_build_env: dict,
     compose_file_path: Path,
-    task_package_template: str,
     demand_constraints: str,
 ):
     """Test successful flow requesting WASM tasks with goth REST API client."""
@@ -95,35 +132,12 @@ async def test_e2e_vm_success(
         )
 
         output_file = "out0000.png"
+
         output_path = Path(runner.web_root_path) / output_file
         if output_path.exists():
             os.remove(output_path)
 
-        web_server_addr = f"http://{runner.host_address}:{runner.web_server_port}"
-
-        exe_script = [
-            {"deploy": {}},
-            {"start": {}},
-            {
-                "transfer": {
-                    "from": f"{web_server_addr}/scene.blend",
-                    "to": "container:/golem/resource/scene.blend",
-                }
-            },
-            {
-                "transfer": {
-                    "from": f"{web_server_addr}/params.json",
-                    "to": "container:/golem/work/params.json",
-                }
-            },
-            {"run": {"entry_point": "/golem/entrypoints/run-blender.sh", "args": []}},
-            {
-                "transfer": {
-                    "from": f"container:/golem/output/{output_file}",
-                    "to": f"{web_server_addr}/upload/{output_file}",
-                }
-            },
-        ]
+        exe_script = _exe_script(runner, output_file)
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
         providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
@@ -137,12 +151,16 @@ async def test_e2e_vm_success(
             task_package, demand_constraints
         )
 
-        proposals = await requestor.wait_for_proposals(subscription_id, providers)
+        proposals = await requestor.wait_for_proposals(
+            subscription_id,
+            providers,
+            lambda proposal: proposal.properties.get("golem.runtime.name") == "vm",
+        )
         logger.info("Collected %s proposals", len(proposals))
 
         agreement_providers = []
 
-        for proposal in proposals[:1]:
+        for proposal in proposals:
             provider = next(p for p in providers if p.address == proposal.issuer_id)
             logger.info("Processing proposal from %s", provider.name)
 
