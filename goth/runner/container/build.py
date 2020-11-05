@@ -53,7 +53,7 @@ async def build_yagna_image(environment: YagnaBuildEnvironment):
         temp_dir = Path(temp_path)
         _setup_build_context(temp_dir, environment)
 
-        logger.info("building Docker image. file=%s", DOCKERFILE_PATH)
+        logger.info("Building Docker image. file=%s", DOCKERFILE_PATH)
         command = ["docker", "build", "-t", YagnaContainer.IMAGE, str(temp_dir)]
         await (run_command(command))
 
@@ -100,7 +100,7 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
     env_dict: dict = asdict(env)
     filtered_env = {k: v for k, v in env_dict.items() if v is not None}
     logger.info(
-        "setting up Docker build context. path=%s, env=%s", context_dir, filtered_env
+        "Setting up Docker build context. path=%s, env=%s", context_dir, filtered_env
     )
 
     context_binary_dir: Path = context_dir / "bin"
@@ -109,28 +109,28 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
     context_deb_dir.mkdir()
 
     if env.binary_dir:
-        logger.info("using local yagna binaries. path=%s", env.binary_dir)
+        logger.info("Using local yagna binaries. path=%s", env.binary_dir)
         binary_paths = _find_expected_binaries(env.binary_dir)
-        logger.debug("found expected yagna binaries. paths=%s", binary_paths)
+        logger.debug("Found expected yagna binaries. paths=%s", binary_paths)
         for path in binary_paths:
             shutil.copy2(path, context_binary_dir)
     elif env.archive_path:
-        logger.info("using local yagna archive. path=%s", env.archive_path)
+        logger.info("Using local yagna archive. path=%s", env.archive_path)
         shutil.unpack_archive(env.archive_path, extract_dir=str(context_binary_dir))
     else:
         _download_artifact(env, context_binary_dir)
 
     if env.deb_path:
         if env.deb_path.is_dir():
-            logger.info("using local .deb packages. path=%s", env.deb_path)
+            logger.info("Using local .deb packages. path=%s", env.deb_path)
             shutil.copytree(env.deb_path, context_deb_dir, dirs_exist_ok=True)
         elif env.deb_path.is_file():
-            logger.info("using local .deb package. path=%s", env.deb_path)
+            logger.info("Using local .deb package. path=%s", env.deb_path)
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
         _download_release(env, context_deb_dir)
 
     logger.debug(
-        "copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
+        "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
     )
     shutil.copy2(DOCKERFILE_PATH, context_dir / "Dockerfile")
