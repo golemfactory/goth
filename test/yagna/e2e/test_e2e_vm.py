@@ -15,11 +15,12 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
-logger = logging.getLogger("goth.runner")
+logger = logging.getLogger(__name__)
 
 
 def topology(assets_path: Path) -> List[YagnaContainerConfig]:
@@ -113,7 +114,7 @@ def _exe_script(runner: Runner, output_file: str):
 async def test_e2e_vm_success(
     logs_path: Path,
     assets_path: Path,
-    compose_build_env: dict,
+    yagna_build_env: YagnaBuildEnvironment,
     compose_file_path: Path,
     demand_constraints: str,
 ):
@@ -121,11 +122,11 @@ async def test_e2e_vm_success(
 
     async with Runner(
         topology=topology(assets_path),
-        api_assertions_module="assertions.e2e_wasm_assertions",
+        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,
-        compose_build_env=compose_build_env,
+        build_environment=yagna_build_env,
     ) as runner:
 
         task_package = (

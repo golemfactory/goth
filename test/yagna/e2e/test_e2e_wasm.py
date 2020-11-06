@@ -19,7 +19,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
-logger = logging.getLogger("goth.runner")
+logger = logging.getLogger(__name__)
 
 
 def topology(assets_path: Path) -> List[YagnaContainerConfig]:
@@ -36,7 +36,11 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
         account_list="/asset/key/001-accounts.json",
     )
 
-    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+    provider_volumes = {
+        assets_path
+        / "provider"
+        / "presets.json": "/root/.local/share/ya-provider/presets.json"
+    }
 
     return [
         YagnaContainerConfig(
@@ -75,7 +79,7 @@ async def test_e2e_wasm_success(
 
     async with Runner(
         topology=topology(assets_path),
-        api_assertions_module="assertions.e2e_wasm_assertions",
+        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,
