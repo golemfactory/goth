@@ -1,7 +1,7 @@
 {
   "active": [
-    "default",
-    "wasmtime"
+    "wasmtime",
+    "vm"
   ],
   "presets": [
     {
@@ -15,7 +15,7 @@
       }
     },
     {
-      "name": "default",
+      "name": "vm",
       "exeunit-name": "vm",
       "pricing-model": "linear",
       "usage-coeffs": {

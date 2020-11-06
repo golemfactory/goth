@@ -246,13 +246,26 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
 class ProviderProbe(AgentMixin, Probe):
     """A probe subclass that can run a provider agent."""
 
-    agent_preset: str = "default"
+    agent_preset: Optional[str]
     """Name of the preset to be used when placing a market offer."""
+
+    def __init__(
+        self,
+        runner: "Runner",
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        agent_preset: Optional[str] = None,
+    ):
+        super().__init__(runner, client, config, log_config)
+        self.agent_preset = agent_preset
 
     def start_agent(self) -> None:
         """Start the provider agent and attach to its log stream."""
 
-        self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+        if self.agent_preset:
+            self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,
