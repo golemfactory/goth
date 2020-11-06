@@ -45,7 +45,7 @@ class YagnaBuildEnvironment:
     """Local path to .deb file or dir with .deb files to be installed in the image."""
 
 
-async def build_yagna_image(environment: YagnaBuildEnvironment):
+async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
     """Build the yagna Docker image."""
     with TemporaryDirectory() as temp_path:
         temp_dir = Path(temp_path)
@@ -56,7 +56,7 @@ async def build_yagna_image(environment: YagnaBuildEnvironment):
         await (run_command(command))
 
 
-def _download_artifact(env: YagnaBuildEnvironment, download_path: Path):
+def _download_artifact(env: YagnaBuildEnvironment, download_path: Path) -> None:
     downloader = ArtifactDownloader(token=os.environ.get(ENV_API_TOKEN))
     kwargs = {}
 
@@ -68,9 +68,9 @@ def _download_artifact(env: YagnaBuildEnvironment, download_path: Path):
     downloader.download(artifact_name="Yagna Linux", output=download_path, **kwargs)
 
 
-def _download_release(download_path: Path):
+def _download_release(download_path: Path, repo: str, tag_substring: str = "") -> None:
     downloader = ReleaseDownloader(
-        repo="ya-runtime-wasi", token=os.environ.get(ENV_API_TOKEN)
+        repo=repo, tag_substring=tag_substring, token=os.environ.get(ENV_API_TOKEN)
     )
     downloader.download(output=download_path)
 
@@ -87,7 +87,7 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
     return binary_paths
 
 
-def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
+def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
     """Set up the build context for `docker build` command.
 
     This function prepares a directory to be used as build context for
@@ -127,7 +127,8 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
             logger.info("Using local .deb package. path=%s", env.deb_path)
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
-        _download_release(context_deb_dir)
+        _download_release(context_deb_dir, "ya-runtime-wasi")
+        _download_release(context_deb_dir, "ya-runtime-vm", "v0.2.1")
 
     logger.debug(
         "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
