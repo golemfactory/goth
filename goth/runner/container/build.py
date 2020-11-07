@@ -8,7 +8,7 @@ import shutil
 from tempfile import TemporaryDirectory
 from typing import List, Optional
 
-from goth.project import DOCKER_DIR
+from goth.project import DOCKER_DIR, PROJECT_ROOT
 from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
@@ -30,6 +30,8 @@ EXPECTED_BINARIES = {
     "yagna",
 }
 
+PROXY_IMAGE = "proxy-nginx"
+
 
 @dataclass(frozen=True)
 class YagnaBuildEnvironment:
@@ -45,15 +47,50 @@ class YagnaBuildEnvironment:
     """Local path to .deb file or dir with .deb files to be installed in the image."""
 
 
+async def build_proxy_image() -> None:
+    """Build the proxy-nginx Docker image."""
+
+    with TemporaryDirectory() as temp_path:
+        build_dir = Path(temp_path)
+
+        required_files = (
+            Path("goth", "api_monitor", "nginx.conf"),
+            Path("goth", "address.py"),
+        )
+
+        for path in required_files:
+            if path.parent != Path():
+                (build_dir / path.parent).mkdir(parents=True, exist_ok=True)
+            shutil.copy2(PROJECT_ROOT / path, build_dir / path)
+
+        proxy_dockerfile = DOCKERFILE_PATH.parent / f"{PROXY_IMAGE}.Dockerfile"
+        shutil.copy2(proxy_dockerfile, build_dir / "Dockerfile")
+
+        logger.info(
+            "Building %s Docker image. dockerfile=%s, build dir=%s",
+            PROXY_IMAGE,
+            proxy_dockerfile,
+            build_dir,
+        )
+        command = ["docker", "build", "-t", PROXY_IMAGE, str(build_dir)]
+        await run_command(command)
+
+
 async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
     """Build the yagna Docker image."""
+
     with TemporaryDirectory() as temp_path:
         temp_dir = Path(temp_path)
         _setup_build_context(temp_dir, environment)
 
-        logger.info("Building Docker image. file=%s", DOCKERFILE_PATH)
+        logger.info(
+            "Building %s Docker image. dockerfile=%s, build dir=%s",
+            YagnaContainer.IMAGE,
+            DOCKERFILE_PATH,
+            temp_dir,
+        )
         command = ["docker", "build", "-t", YagnaContainer.IMAGE, str(temp_dir)]
-        await (run_command(command))
+        await run_command(command)
 
 
 def _download_artifact(env: YagnaBuildEnvironment, download_path: Path) -> None:

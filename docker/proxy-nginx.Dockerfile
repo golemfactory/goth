@@ -1,8 +1,8 @@
 FROM nginx:1.19
 
-COPY api_monitor/nginx.conf /etc/nginx/nginx.conf
+COPY goth/api_monitor/nginx.conf /etc/nginx/nginx.conf
 
-COPY address.py /root/address.py
+COPY goth/address.py /root/address.py
 
 # This will read from /root/address.py definitions of the form:
 #
