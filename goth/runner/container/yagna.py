@@ -31,9 +31,6 @@ class YagnaContainerConfig(DockerContainerConfig):
     key_file: Optional[str]
     """Keyfile to be imported into the yagna id service."""
 
-    privileged_mode: bool
-    """If set, docker container will be run in privileged mode."""
-
     def __init__(
         self,
         name: str,
@@ -45,12 +42,11 @@ class YagnaContainerConfig(DockerContainerConfig):
         key_file: Optional[str] = None,
         privileged_mode: Optional[bool] = False,
     ):
-        super().__init__(name, volumes or {}, log_config)
+        super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type
         self.probe_properties = probe_properties or {}
         self.environment = environment or {}
         self.key_file = key_file
-        self.privileged_mode = privileged_mode
 
 
 class YagnaContainer(DockerContainer):

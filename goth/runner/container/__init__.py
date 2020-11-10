@@ -31,6 +31,9 @@ class DockerContainerConfig:
     log_config: Optional[LogConfig] = None
     """Optional custom logging config to be used for this container."""
 
+    privileged_mode: bool = False
+    """If set, docker container will be run in privileged mode."""
+
     def get_volumes_spec(self) -> Dict[str, dict]:
         """Produce volume specification to be passed to docker."""
 
