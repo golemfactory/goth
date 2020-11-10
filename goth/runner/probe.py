@@ -124,8 +124,11 @@ class Probe(abc.ABC):
         (e.g. creating the default app key).
         """
         self.container.start()
-        # Give the daemon some time to start before asking it for an app key.
-        await asyncio.sleep(1)
+
+        # Wait until the daemon is ready to create an app key.
+        await self.container.logs.wait_for_entry(
+            ".*Identity GSB service successfully activated", timeout=15
+        )
         await self.create_app_key()
 
         # Obtain the IP address of the container
@@ -243,13 +246,26 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
 class ProviderProbe(AgentMixin, Probe):
     """A probe subclass that can run a provider agent."""
 
-    agent_preset: str = "default"
+    agent_preset: Optional[str]
     """Name of the preset to be used when placing a market offer."""
+
+    def __init__(
+        self,
+        runner: "Runner",
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+        agent_preset: Optional[str] = None,
+    ):
+        super().__init__(runner, client, config, log_config)
+        self.agent_preset = agent_preset
 
     def start_agent(self) -> None:
         """Start the provider agent and attach to its log stream."""
 
-        self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+        if self.agent_preset:
+            self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
             stream=True,

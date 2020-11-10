@@ -6,9 +6,9 @@ import os
 from pathlib import Path
 import shutil
 from tempfile import TemporaryDirectory
-from typing import List, Optional
+from typing import Callable, List, Optional
 
-from goth.project import DOCKER_DIR
+from goth.project import DOCKER_DIR, PROJECT_ROOT
 from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
@@ -30,6 +30,8 @@ EXPECTED_BINARIES = {
     "yagna",
 }
 
+PROXY_IMAGE = "proxy-nginx"
+
 
 @dataclass(frozen=True)
 class YagnaBuildEnvironment:
@@ -45,18 +47,55 @@ class YagnaBuildEnvironment:
     """Local path to .deb file or dir with .deb files to be installed in the image."""
 
 
-async def build_yagna_image(environment: YagnaBuildEnvironment):
-    """Build the yagna Docker image."""
+async def _build_docker_image(
+    image_name: str, dockerfile: Path, setup_context: Callable[[Path], None]
+) -> None:
+    """Set up a temporary build directory and issue `docker build` command there."""
+
     with TemporaryDirectory() as temp_path:
-        temp_dir = Path(temp_path)
-        _setup_build_context(temp_dir, environment)
+        build_dir = Path(temp_path)
+        setup_context(build_dir)
 
-        logger.info("Building Docker image. file=%s", DOCKERFILE_PATH)
-        command = ["docker", "build", "-t", YagnaContainer.IMAGE, str(temp_dir)]
-        await (run_command(command))
+        logger.info(
+            "Building %s Docker image. dockerfile=%s, build dir=%s",
+            image_name,
+            dockerfile,
+            build_dir,
+        )
+        command = ["docker", "build", "-t", image_name, str(build_dir)]
+        await run_command(command)
 
 
-def _download_artifact(env: YagnaBuildEnvironment, download_path: Path):
+async def build_proxy_image() -> None:
+    """Build the proxy-nginx Docker image."""
+
+    required_files = (
+        Path("goth", "api_monitor", "nginx.conf"),
+        Path("goth", "address.py"),
+    )
+    proxy_dockerfile = DOCKER_DIR / f"{PROXY_IMAGE}.Dockerfile"
+
+    def _setup_context(build_dir: Path) -> None:
+        nonlocal proxy_dockerfile
+        for path in required_files:
+            (build_dir / path.parent).mkdir(parents=True, exist_ok=True)
+            shutil.copy2(PROJECT_ROOT / path, build_dir / path)
+        shutil.copy2(proxy_dockerfile, build_dir / "Dockerfile")
+
+    await _build_docker_image(PROXY_IMAGE, proxy_dockerfile, _setup_context)
+
+
+async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
+    """Build the yagna Docker image."""
+
+    await _build_docker_image(
+        YagnaContainer.IMAGE,
+        DOCKERFILE_PATH,
+        lambda build_dir: _setup_build_context(build_dir, environment),
+    )
+
+
+def _download_artifact(env: YagnaBuildEnvironment, download_path: Path) -> None:
     downloader = ArtifactDownloader(token=os.environ.get(ENV_API_TOKEN))
     kwargs = {}
 
@@ -68,9 +107,9 @@ def _download_artifact(env: YagnaBuildEnvironment, download_path: Path):
     downloader.download(artifact_name="Yagna Linux", output=download_path, **kwargs)
 
 
-def _download_release(download_path: Path):
+def _download_release(download_path: Path, repo: str, tag_substring: str = "") -> None:
     downloader = ReleaseDownloader(
-        repo="ya-runtime-wasi", token=os.environ.get(ENV_API_TOKEN)
+        repo=repo, tag_substring=tag_substring, token=os.environ.get(ENV_API_TOKEN)
     )
     downloader.download(output=download_path)
 
@@ -87,7 +126,7 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
     return binary_paths
 
 
-def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
+def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
     """Set up the build context for `docker build` command.
 
     This function prepares a directory to be used as build context for
@@ -127,7 +166,8 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment):
             logger.info("Using local .deb package. path=%s", env.deb_path)
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
-        _download_release(context_deb_dir)
+        _download_release(context_deb_dir, "ya-runtime-wasi")
+        _download_release(context_deb_dir, "ya-runtime-vm")
 
     logger.debug(
         "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir

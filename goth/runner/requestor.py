@@ -3,7 +3,7 @@
 import asyncio
 from datetime import datetime, timedelta
 import logging
-from typing import Iterable, List, Sequence, Tuple
+from typing import Callable, Iterable, List, Optional, Sequence, Tuple
 
 from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
 from openapi_market_client import AgreementProposal, Demand, Proposal
@@ -87,7 +87,10 @@ class MarketOperationsMixin:
 
     @step()
     async def wait_for_proposals(
-        self: RequestorProbe, subscription_id: str, providers: Sequence[Probe]
+        self: RequestorProbe,
+        subscription_id: str,
+        providers: Sequence[Probe],
+        filter: Optional[Callable[[Proposal], bool]] = lambda p: True,
     ) -> List[Proposal]:
         """Call collect_offers on the requestor market api.
 
@@ -108,7 +111,10 @@ class MarketOperationsMixin:
                 collected_proposals = [
                     offer.proposal
                     for offer in collected_offers
-                    if offer.proposal.issuer_id in provider_ids
+                    if (
+                        offer.proposal.issuer_id in provider_ids
+                        and filter(offer.proposal)
+                    )
                 ]
                 proposals.extend(collected_proposals)
             else:

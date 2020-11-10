@@ -54,6 +54,7 @@ def yagna_container(mock_docker_client):
     config.name = YAGNA_CONTAINER_NAME
     config.environment = {}
     config.volumes = {}
+    config.privileged_mode = False
     return YagnaContainer(mock_docker_client, config)
 
 
@@ -124,4 +125,5 @@ def test_yagna_container_create(yagna_container, mock_docker_client):
         ports=ANY,
         volumes=ANY,
         detach=True,
+        privileged=False,
     )

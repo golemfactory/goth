@@ -10,7 +10,11 @@ import yaml
 
 from goth.project import DOCKER_DIR
 from goth.runner.container import DockerContainer
-from goth.runner.container.build import build_yagna_image, YagnaBuildEnvironment
+from goth.runner.container.build import (
+    build_proxy_image,
+    build_yagna_image,
+    YagnaBuildEnvironment,
+)
 from goth.runner.container.utils import get_container_address
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import LogConfig
@@ -69,6 +73,7 @@ class ComposeNetworkManager:
         command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
 
         await build_yagna_image(self._build_environment)
+        await build_proxy_image()
 
         if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
             command.append("--build")

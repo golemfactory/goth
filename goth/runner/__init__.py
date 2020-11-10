@@ -115,7 +115,7 @@ class Runner:
             compose_path=compose_file_path,
             build_environment=build_environment,
         )
-        self._web_server = WebServer(assets_path / "web-root", web_server_port)
+        self._web_server = WebServer(self.web_root_path, web_server_port)
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -221,6 +221,12 @@ class Runner:
         await self._start_nodes()
 
         return self
+
+    @property
+    def web_root_path(self) -> Path:
+        """Return the directory served by the built-in web server."""
+
+        return self.assets_path / "web-root"
 
     # Argument exception will be re-raised after exiting the context manager,
     # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
