@@ -2,7 +2,7 @@ from eth_keyfile import create_keyfile_json
 import json
 import sys
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <private_key_hex>")
         exit(1)

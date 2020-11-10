@@ -322,9 +322,7 @@ class ReleaseDownloader(GithubDownloader):
         return cache_file
 
     def download(
-        self,
-        content_type: str = DEFAULT_CONTENT_TYPE,
-        output: Optional[Path] = None,
+        self, content_type: str = DEFAULT_CONTENT_TYPE, output: Optional[Path] = None,
     ) -> Optional[Path]:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
