@@ -63,7 +63,7 @@ async def build_proxy_image() -> None:
                 (build_dir / path.parent).mkdir(parents=True, exist_ok=True)
             shutil.copy2(PROJECT_ROOT / path, build_dir / path)
 
-        proxy_dockerfile = DOCKERFILE_PATH.parent / f"{PROXY_IMAGE}.Dockerfile"
+        proxy_dockerfile = DOCKER_DIR / f"{PROXY_IMAGE}.Dockerfile"
         shutil.copy2(proxy_dockerfile, build_dir / "Dockerfile")
 
         logger.info(
