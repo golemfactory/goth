@@ -27,6 +27,8 @@ def node_environment(
         "CHAIN": "mainnet",
         "GETH_ADDRESS": "http://ethereum:8545",
         "NGNT_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",
+        "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/donate",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
         "RUST_BACKTRACE": "1",
