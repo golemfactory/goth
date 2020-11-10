@@ -48,7 +48,7 @@ class YagnaBuildEnvironment:
 
 
 async def _build_docker_image(
-    image_name: str, dockerfile: Path, setup_context: Callable[[Path], None],
+    image_name: str, dockerfile: Path, setup_context: Callable[[Path], None]
 ) -> None:
     """Set up a temporary build directory and issue `docker build` command there."""
 

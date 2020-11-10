@@ -137,7 +137,7 @@ async def test_e2e_vm_success(
 
         output_file = "out0000.png"
 
-        output_path = Path(runner.web_root_path) / output_file
+        output_path = Path(runner.web_root_path) / "upload" / output_file
         if output_path.exists():
             os.remove(output_path)
 
