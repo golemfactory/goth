@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      # - <your-branch>    # put your branch name here to test it @ GH Actions
+      - mwu/default-test    # put your branch name here to test it @ GH Actions
   pull_request:
     branches:
       - master
@@ -47,4 +47,3 @@ jobs:
         with:
           name: goth-logs
           path: /tmp/yagna-tests
-
