@@ -38,7 +38,10 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
         account_list="/asset/key/001-multi.json",
     )
 
-    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+    provider_volumes = {
+        assets_path / "provider" / "presets.json": "/presets.json",
+        assets_path / "provider": "/asset"
+    }
 
     return [
         YagnaContainerConfig(
