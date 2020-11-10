@@ -167,7 +167,7 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
         _download_release(context_deb_dir, "ya-runtime-wasi")
-        _download_release(context_deb_dir, "ya-runtime-vm", "v0.2.1")
+        _download_release(context_deb_dir, "ya-runtime-vm")
 
     logger.debug(
         "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
