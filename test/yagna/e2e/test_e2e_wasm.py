@@ -14,7 +14,7 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.build import YagnaBuildEnvironment
+from goth.runner.container.compose import ComposeConfig
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -70,20 +70,18 @@ async def test_e2e_wasm_success(
     logs_path: Path,
     assets_path: Path,
     exe_script: dict,
-    yagna_build_env: YagnaBuildEnvironment,
-    compose_file_path: Path,
+    compose_config: ComposeConfig,
     task_package_template: str,
     demand_constraints: str,
 ):
     """Test successful flow requesting WASM tasks with goth REST API client."""
 
     async with Runner(
-        topology=topology(assets_path),
         api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        logs_path=logs_path,
         assets_path=assets_path,
-        compose_file_path=compose_file_path,
-        build_environment=yagna_build_env,
+        compose_config=compose_config,
+        logs_path=logs_path,
+        topology=topology(assets_path),
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
