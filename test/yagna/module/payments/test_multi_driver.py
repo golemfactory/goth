@@ -40,7 +40,7 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
 
     provider_volumes = {
         assets_path / "provider" / "presets.json": "/presets.json",
-        assets_path / "provider": "/asset"
+        assets_path / "provider": "/asset",
     }
 
     return [

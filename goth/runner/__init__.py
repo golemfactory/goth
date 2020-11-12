@@ -193,12 +193,11 @@ class Runner:
         )
         self.proxy.start()
 
+        awaitables = []
         for probe in self.get_probes(probe_type=AgentMixin):
             # Wait until the daemon is ready to list payment accounts.
-            await probe.container.logs.wait_for_entry(
-                "Payment accounts initialized.", timeout=20
-            )
-            probe.start_agent()
+            awaitables.append(probe.start_agent())
+        await asyncio.gather(*awaitables)
 
     @property
     def host_address(self) -> str:
