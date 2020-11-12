@@ -32,7 +32,7 @@ def node_environment(
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
         "RUST_BACKTRACE": "1",
-        "RUST_LOG": "trace,tokio_core=info,tokio_reactor=info,hyper=info",
+        "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info,reqwest=info",
         "REQUIRED_CONFIRMATIONS": "1",
         "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/donate",
         "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",
