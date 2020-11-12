@@ -55,14 +55,14 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
         YagnaContainerConfig(
             "provider_1",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_1_env,
             volumes=provider_volumes,
             key_file="/asset/key/002.json",
         ),
         YagnaContainerConfig(
             "provider_2",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_2_env,
             volumes=provider_volumes,
             key_file="/asset/key/003.json",
         ),
