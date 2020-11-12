@@ -230,9 +230,9 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
     async def start_agent(self):
         """Start the requestor agent and attach to its log stream."""
 
-        self._logger.info("Waiting for payment accounts to initialise...")
+        self._logger.info("Waiting for yagna apis to be listening...")
         await self.container.logs.wait_for_entry(
-            "Payment accounts initialized.", timeout=300
+            "Starting .* service on .*.", timeout=300
         )
 
         pkg_spec = self.task_package.format(
@@ -268,9 +268,9 @@ class ProviderProbe(AgentMixin, Probe):
     async def start_agent(self):
         """Start the provider agent and attach to its log stream."""
 
-        self._logger.info("Waiting for payment accounts to initialise...")
+        self._logger.info("Waiting for yagna apis to be listening...")
         await self.container.logs.wait_for_entry(
-            "Payment accounts initialized.", timeout=10
+            "Starting .* service on .*.", timeout=10
         )
 
         if self.agent_preset:
