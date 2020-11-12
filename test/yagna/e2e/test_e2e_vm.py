@@ -15,7 +15,7 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.build import YagnaBuildEnvironment
+from goth.runner.container.compose import ComposeConfig
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -115,19 +115,17 @@ def _exe_script(runner: Runner, output_file: str):
 async def test_e2e_vm_success(
     logs_path: Path,
     assets_path: Path,
-    yagna_build_env: YagnaBuildEnvironment,
-    compose_file_path: Path,
+    compose_config: ComposeConfig,
     demand_constraints: str,
 ):
     """Test successful flow requesting a Blender task with goth REST API client."""
 
     async with Runner(
-        topology=topology(assets_path),
         api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        logs_path=logs_path,
         assets_path=assets_path,
-        compose_file_path=compose_file_path,
-        build_environment=yagna_build_env,
+        compose_config=compose_config,
+        logs_path=logs_path,
+        topology=topology(assets_path),
     ) as runner:
 
         task_package = (

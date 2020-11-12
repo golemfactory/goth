@@ -1,4 +1,5 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
+from dataclasses import dataclass
 from datetime import datetime
 import logging
 import os
@@ -23,7 +24,27 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
+CONTAINER_READY_TIMEOUT = 15  # in seconds
 DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
+
+
+@dataclass
+class ComposeConfig:
+    """Configuration class for `ComposeNetworkManager` instances."""
+
+    build_env: YagnaBuildEnvironment
+    """Build environment for building yagna images."""
+
+    file_path: Path
+    """Path to the docker-compose.yml file to be used."""
+
+    log_patterns: Dict[str, str]
+    """Mapping between service names and regex patterns to look for in their logs.
+
+    The `ComposeNetworkManager` being configured by this object will use the entries
+    from this dict to perform ready checks on services. For each service (key)
+    the manager will wait for a log line to match the regex pattern (value).
+    """
 
 
 class ComposeNetworkManager:
@@ -35,20 +56,17 @@ class ComposeNetworkManager:
     `DockerClient` used on initialization.
     """
 
-    compose_path: Path
-    """Path to compose file to be used with this instance."""
-
-    _build_environment: YagnaBuildEnvironment
-    """Environment used when building the yagna Docker image."""
+    config: ComposeConfig
+    """Configuration for this manager instance."""
 
     _docker_client: DockerClient
     """Docker client to be used for high-level Docker API calls."""
 
-    _log_monitors: Dict[str, LogEventMonitor]
-    """Log monitors for containers running as part of docker-compose."""
-
     _last_compose_path: ClassVar[Optional[Path]] = None
     """Class attribute storing the last compose file used by any manager instance."""
+
+    _log_monitors: Dict[str, LogEventMonitor]
+    """Log monitors for containers running as part of docker-compose."""
 
     _network_gateway_address: str
     """IP address of the gateway for the docker network."""
@@ -56,11 +74,10 @@ class ComposeNetworkManager:
     def __init__(
         self,
         docker_client: DockerClient,
-        compose_path: Path,
-        build_environment: YagnaBuildEnvironment,
+        config: ComposeConfig,
     ):
-        self.compose_path = compose_path.resolve()
-        self._build_environment = build_environment
+        self.config = config
+        self.config.file_path = config.file_path.resolve()
         self._docker_client = docker_client
         self._log_monitors = {}
         self._network_gateway_address = ""
@@ -70,19 +87,38 @@ class ComposeNetworkManager:
 
         This step may include (re)building the network's docker images.
         """
-        command = ["docker-compose", "-f", str(self.compose_path), "up", "-d"]
+        command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
 
-        await build_yagna_image(self._build_environment)
+        await build_yagna_image(self.config.build_env)
         await build_proxy_image()
 
-        if force_build or self.compose_path != ComposeNetworkManager._last_compose_path:
+        if (
+            force_build
+            or self.config.file_path != ComposeNetworkManager._last_compose_path
+        ):
             command.append("--build")
 
         await run_command(command, env={**os.environ})
-        ComposeNetworkManager._last_compose_path = self.compose_path
+        ComposeNetworkManager._last_compose_path = self.config.file_path
 
-        self._log_running_containers()
         self._start_log_monitors(log_dir)
+        await self._wait_for_containers()
+        self._log_running_containers()
+
+    async def _wait_for_containers(self) -> None:
+        logger.info("Waiting for compose containers to be ready.")
+        for name, pattern in self.config.log_patterns.items():
+            monitor = self._log_monitors.get(name)
+            if not monitor:
+                logger.warning("No log monitor found. container_name=%s", name)
+                continue
+
+            logger.debug(
+                "Waiting for container to be ready. name=%s, log_pattern=%s",
+                name,
+                pattern,
+            )
+            await monitor.wait_for_entry(pattern, timeout=CONTAINER_READY_TIMEOUT)
 
     async def stop_network(self):
         """Stop the running compose network, removing its containers."""
@@ -90,12 +126,14 @@ class ComposeNetworkManager:
             logger.debug("stopping log monitor. name=%s", name)
             await monitor.stop()
 
-        await run_command(["docker-compose", "-f", str(self.compose_path), "kill"])
-        await run_command(["docker-compose", "-f", str(self.compose_path), "rm", "-f"])
+        await run_command(["docker-compose", "-f", str(self.config.file_path), "kill"])
+        await run_command(
+            ["docker-compose", "-f", str(self.config.file_path), "rm", "-f"]
+        )
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
-        with self.compose_path.open() as f:
+        with self.config.file_path.open() as f:
             return yaml.safe_load(f)["services"]
 
     @property

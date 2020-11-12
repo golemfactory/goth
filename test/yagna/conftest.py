@@ -8,7 +8,7 @@ from typing import Optional
 import pytest
 
 from goth.runner.container.build import YagnaBuildEnvironment
-from goth.runner.container.compose import DEFAULT_COMPOSE_FILE
+from goth.runner.container.compose import ComposeConfig, DEFAULT_COMPOSE_FILE
 from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
 
@@ -116,13 +116,16 @@ def yagna_build_env(
 
 
 @pytest.fixture(scope="session")
-def compose_file_path() -> Path:
-    """Fixture which provides the path to the default docker-compose file.
+def compose_config(yagna_build_env) -> ComposeConfig:
+    """Fixture providing the configuration object for running docker-compose network.
 
-    This fixture is intended to be overridden when a different compose file should be
-    used for a given set of tests.
+    This fixture is intended to be overridden when using a non-default compose file for
+    given set of tests.
     """
-    return DEFAULT_COMPOSE_FILE
+    patterns = {"ethereum": ".*Wallets supplied."}
+    return ComposeConfig(
+        build_env=yagna_build_env, file_path=DEFAULT_COMPOSE_FILE, log_patterns=patterns
+    )
 
 
 @pytest.fixture(scope="module")

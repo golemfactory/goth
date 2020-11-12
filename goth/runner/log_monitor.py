@@ -116,17 +116,17 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
 
 
 class LogEventMonitor(EventMonitor[LogEvent]):
-    """Buffers logs coming from `in_stream`.
+    """Log buffer supporting logging to a file and waiting for a line pattern match.
 
-    `log_config` holds the configuration of the file logger.
+    `log_config` parameter holds the configuration of the file logger.
     Consecutive values are interpreted as lines by splitting them on the new line
-    character. Internally, it uses a asyncio task to read the stream and add lines to
-    the buffer.
+    character.
+    Internally it uses an asyncio task to read the stream and add lines to the buffer.
     """
 
-    in_stream: Iterator[bytes]
-    logger: logging.Logger
     _buffer_task: Optional[StoppableThread]
+    _file_logger: logging.Logger
+    _in_stream: Iterator[bytes]
     _last_checked_line: int
     """The index of the last line examined while waiting for log messages.
 
@@ -136,7 +136,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
 
     def __init__(self, log_config: LogConfig):
         super().__init__()
-        self.logger = _create_file_logger(log_config)
+        self._file_logger = _create_file_logger(log_config)
         self._buffer_task = None
         self._last_checked_line = -1
 
@@ -149,12 +149,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
         """Start reading the logs."""
         super().start()
         self.update_stream(in_stream)
-
-        logger.debug(
-            "Started LogEventMonitor. stream=%r, logger=%r",
-            self.in_stream,
-            self.logger,
-        )
+        logger.debug("Started LogEventMonitor. name=%s", self._file_logger.name)
 
     async def stop(self) -> None:
         """Stop the monitor."""
@@ -166,18 +161,16 @@ class LogEventMonitor(EventMonitor[LogEvent]):
         """Update the stream when restarting a container."""
         if self._buffer_task:
             self._buffer_task.stop(StopThreadException)
-        self.in_stream = in_stream
+        self._in_stream = in_stream
         self._buffer_task = StoppableThread(target=self._buffer_input, daemon=True)
         self._buffer_task.start()
 
     def _buffer_input(self):
-        logger.debug("Start reading input. name=%s", self.logger.name)
-
         try:
-            for chunk in self.in_stream:
+            for chunk in self._in_stream:
                 chunk = chunk.decode()
                 for line in chunk.splitlines():
-                    self.logger.info(line)
+                    self._file_logger.info(line)
 
                     event = LogEvent(line)
                     self.add_event(event)
@@ -200,6 +193,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             return regex.match(log_event.message) is not None
 
         # First examine log lines already seen
+        logger.debug("Checking past log lines. pattern=%s", pattern)
         while self._last_checked_line + 1 < len(self.events):
             self._last_checked_line += 1
             event = self.events[self._last_checked_line]
@@ -214,6 +208,7 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             finally:
                 self._last_checked_line = len(stream.past_events) - 1
 
+        logger.debug("Creating log assertion. pattern=%s", pattern)
         assertion = self.add_assertion(coro)
 
         # ... and wait until the assertion completes
