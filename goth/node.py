@@ -32,6 +32,8 @@ def node_environment(
         "RUST_BACKTRACE": "1",
         "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info",
         "REQUIRED_CONFIRMATIONS": "1",
+        "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/donate",
+        "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",
     }
     if account_list:
         daemon_env["ACCOUNT_LIST"] = account_list

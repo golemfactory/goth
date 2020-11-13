@@ -34,19 +34,15 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
     provider_1_env.update(ACCOUNT_LIST="/asset/key/002-accounts.json")
     provider_2_env = provider_env.copy()
     provider_2_env.update(ACCOUNT_LIST="/asset/key/003-accounts-zk.json")
-    provider_2_env.update(ZKSYNC_RPC_ADDRESS="http://zksync:3030")
-    provider_2_env.update(ZKSYNC_FAUCET_ADDR="http://zksync:3030/donate")
     requestor_env = node_environment(
         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
         account_list="/asset/key/001-multi.json",
     )
-    requestor_env.update(ZKSYNC_RPC_ADDRESS="http://zksync:3030")
-    requestor_env.update(ZKSYNC_FAUCET_ADDR="http://zksync:3030/donate")
 
     provider_volumes = {
         assets_path / "provider" / "presets.json": "/presets.json",
-        assets_path / "requestor": "/asset"
+        assets_path / "requestor": "/asset",
     }
 
     return [
@@ -61,14 +57,14 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
         YagnaContainerConfig(
             "provider_1",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_1_env,
             volumes=provider_volumes,
             key_file="/asset/key/002.json",
         ),
         YagnaContainerConfig(
             "provider_2",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_2_env,
             volumes=provider_volumes,
             key_file="/asset/key/003.json",
         ),
