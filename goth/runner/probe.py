@@ -230,7 +230,7 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
     async def start_agent(self):
         """Start the requestor agent and attach to its log stream."""
 
-        self._logger.info("Waiting for yagna apis to be listening...")
+        self._logger.info("Waiting for yagna API to be listening.")
         await self.container.logs.wait_for_entry(
             "Starting .* service on .*.", timeout=300
         )
