@@ -192,6 +192,8 @@ class Runner:
             node_names=node_names, assertions_module=self.api_assertions_module
         )
         self.proxy.start()
+        # Wait for proxy to start. TODO: wait for a log line?
+        await asyncio.sleep(2.0)
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []
