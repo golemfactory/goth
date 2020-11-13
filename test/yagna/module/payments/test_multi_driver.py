@@ -13,7 +13,7 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.build import YagnaBuildEnvironment
+from goth.runner.container.compose import ComposeConfig
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbeWithAgent
 from goth.runner.provider import ProviderProbeWithLogSteps
@@ -75,19 +75,17 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
 async def test_multi_driver_success(
     logs_path: Path,
     assets_path: Path,
-    yagna_build_env: YagnaBuildEnvironment,
-    compose_file_path: Path,
+    compose_config: ComposeConfig,
     task_package_template: str,
 ):
     """Test succesful flow requesting WASM tasks with requestor agent."""
 
     async with Runner(
-        topology=topology(assets_path, task_package_template),
         api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        logs_path=logs_path,
         assets_path=assets_path,
-        compose_file_path=compose_file_path,
-        build_environment=yagna_build_env,
+        compose_config=compose_config,
+        logs_path=logs_path,
+        topology=topology(assets_path, task_package_template),
     ) as runner:
 
         providers = runner.get_probes(probe_type=ProviderProbe)
