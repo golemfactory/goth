@@ -1,4 +1,5 @@
 """End to end tests for requesting WASM tasks using ya-requestor agent."""
+
 import logging
 from pathlib import Path
 from typing import List
@@ -11,7 +12,8 @@ from goth.address import (
     YAGNA_REST_URL,
 )
 from goth.node import node_environment
-from goth.runner import Runner, YagnaBuildEnvironment
+from goth.runner import Runner
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbeWithAgent
 from goth.runner.provider import ProviderProbeWithLogSteps
@@ -85,7 +87,7 @@ async def test_multi_driver_success(
 
     async with Runner(
         topology=topology(assets_path, task_package_template),
-        api_assertions_module="assertions.e2e_wasm_assertions",
+        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,
