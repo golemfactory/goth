@@ -74,7 +74,7 @@ async def test_e2e_wasm_agent_success(
 
     async with Runner(
         topology=topology(assets_path, task_package_template),
-        api_assertions_module="assertions.e2e_wasm_assertions",
+        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
         logs_path=logs_path,
         assets_path=assets_path,
         compose_file_path=compose_file_path,

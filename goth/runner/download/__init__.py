@@ -269,22 +269,36 @@ class ReleaseDownloader(GithubDownloader):
     repo_name: str
     """Name of the repo to download the release from."""
 
-    def __init__(self, repo: str, *args, **kwargs):
+    tag_substring: str
+    """Required substring of the release tag. Empty by default.
+
+     Used to restrict which releases to download.
+     """
+
+    def __init__(self, repo: str, tag_substring: str = "", *args, **kwargs):
         # mypy error here is a bug: https://github.com/python/mypy/issues/6799
         super().__init__(*args, repo=repo, **kwargs)
         self.repo_name = repo
+        self.tag_substring = tag_substring
 
     def _get_latest_release(self) -> Optional[dict]:
-        """Get the latest version, this includes pre-releases."""
+        """Get the latest version, this includes pre-releases.
+
+        Only the versions with `tag_name` that contains `self.tag_substring`
+        as a substring are considered.
+        """
         url = f"{self.repo_url}/releases"
         logger.info("fetching releases. url=%s", url)
         response = self.session.get(url)
         response.raise_for_status()
 
-        releases = response.json()
-        logger.debug("releases=%s", releases)
+        all_releases = response.json()
+        logger.debug("releases=%s", all_releases)
 
-        return releases[0] if releases else None
+        matching_releases = (
+            rel for rel in all_releases if self.tag_substring in rel.get("tag_name", "")
+        )
+        return next(matching_releases, None)
 
     def _get_asset(self, release: dict, content_type: str) -> Optional[dict]:
         assets = release["assets"]
