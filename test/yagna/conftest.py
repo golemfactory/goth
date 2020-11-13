@@ -124,7 +124,7 @@ def compose_config(yagna_build_env) -> ComposeConfig:
     """
     patterns = {
         "ethereum": ".*Wallets supplied.",
-        "zksync": ".*Running on http://0.0.0.0:3030/.*"
+        "zksync": ".*Running on http://0.0.0.0:3030/.*",
     }
     return ComposeConfig(
         build_env=yagna_build_env, file_path=DEFAULT_COMPOSE_FILE, log_patterns=patterns
