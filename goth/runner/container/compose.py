@@ -106,12 +106,11 @@ class ComposeNetworkManager:
         self._log_running_containers()
 
     async def _wait_for_containers(self) -> None:
-        logger.info("Waiting for compose containers to be ready.")
+        logger.info("Waiting for compose containers to be ready")
         for name, pattern in self.config.log_patterns.items():
             monitor = self._log_monitors.get(name)
             if not monitor:
-                logger.warning("No log monitor found. container_name=%s", name)
-                continue
+                raise RuntimeError(f"No log monitor found for container: {name}")
 
             logger.debug(
                 "Waiting for container to be ready. name=%s, log_pattern=%s",
@@ -119,6 +118,7 @@ class ComposeNetworkManager:
                 pattern,
             )
             await monitor.wait_for_entry(pattern, timeout=CONTAINER_READY_TIMEOUT)
+        logger.info("Compose network ready")
 
     async def stop_network(self):
         """Stop the running compose network, removing its containers."""
