@@ -227,8 +227,14 @@ class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
     ):
         super().__init__(runner, client, config, log_config)
 
-    def start_agent(self):
+    async def start_agent(self):
         """Start the requestor agent and attach to its log stream."""
+
+        self._logger.info("Waiting for yagna API to be listening.")
+        await self.container.logs.wait_for_entry(
+            "Starting .* service on .*.", timeout=300
+        )
+        self._logger.info("Starting ya-requestor")
 
         pkg_spec = self.task_package.format(
             web_server_addr=self.runner.host_address,
@@ -260,8 +266,14 @@ class ProviderProbe(AgentMixin, Probe):
         super().__init__(runner, client, config, log_config)
         self.agent_preset = agent_preset
 
-    def start_agent(self) -> None:
+    async def start_agent(self):
         """Start the provider agent and attach to its log stream."""
+
+        self._logger.info("Waiting for yagna apis to be listening...")
+        await self.container.logs.wait_for_entry(
+            "Starting .* service on .*.", timeout=10
+        )
+        self._logger.info("Starting ya-provider")
 
         if self.agent_preset:
             self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
