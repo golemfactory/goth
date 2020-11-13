@@ -122,7 +122,10 @@ def compose_config(yagna_build_env) -> ComposeConfig:
     This fixture is intended to be overridden when using a non-default compose file for
     given set of tests.
     """
-    patterns = {"ethereum": ".*Wallets supplied."}
+    patterns = {
+        "ethereum": ".*Wallets supplied.",
+        "zksync": ".*Running on http://0.0.0.0:3030/.*"
+    }
     return ComposeConfig(
         build_env=yagna_build_env, file_path=DEFAULT_COMPOSE_FILE, log_patterns=patterns
     )
