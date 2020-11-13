@@ -193,8 +193,11 @@ class Runner:
         )
         self.proxy.start()
 
+        # Collect all agent enabled probes and start them in parallel
+        awaitables = []
         for probe in self.get_probes(probe_type=AgentMixin):
-            probe.start_agent()
+            awaitables.append(probe.start_agent())
+        await asyncio.gather(*awaitables)
 
     @property
     def host_address(self) -> str:
