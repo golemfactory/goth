@@ -7,7 +7,6 @@ from typing import List
 import pytest
 
 from goth.address import (
-    MARKET_BASE_URL,
     PROXY_HOST,
     YAGNA_REST_URL,
 )
@@ -27,7 +26,6 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
 
     # Nodes are configured to communicate via proxy
     provider_env = node_environment(
-        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     provider_1_env = provider_env.copy()
@@ -35,7 +33,6 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
     provider_2_env = provider_env.copy()
     provider_2_env.update(ACCOUNT_LIST="/asset/key/003-accounts-zk.json")
     requestor_env = node_environment(
-        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
         account_list="/asset/key/001-multi.json",
     )

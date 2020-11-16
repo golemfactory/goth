@@ -10,7 +10,6 @@ from mitmproxy.http import HTTPFlow
 from goth.address import (
     HOST_REST_PORT_END,
     HOST_REST_PORT_START,
-    MARKET_PORT,
     YAGNA_REST_PORT,
 )
 
@@ -50,16 +49,7 @@ class RouterAddon:
             remote_addr = req.headers["X-Remote-Addr"]
             node_name = self._node_names[remote_addr]
 
-            if server_port == MARKET_PORT:
-                # It's a yagna daemon calling the central market API.
-                # We use localhost's address, since `MARKET_PORT` in the
-                # market API container is mapped to the same port on the host.
-                req.host = "127.0.0.1"
-                req.port = MARKET_PORT
-                req.headers[CALLER_HEADER] = f"{node_name}:daemon"
-                req.headers[CALLEE_HEADER] = "MarketAPI"
-
-            elif server_port == YAGNA_REST_PORT:
+            if server_port == YAGNA_REST_PORT:
                 # It's a provider agent calling a yagna daemon.
                 # We assume that both are running on the same host, so the
                 # request is bounced back to the caller.
