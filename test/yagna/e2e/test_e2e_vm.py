@@ -107,10 +107,6 @@ def _exe_script(runner: Runner, output_file: str):
     ]
 
 
-@pytest.mark.skipif(
-    os.getenv("GITHUB_ACTIONS") == "true",
-    reason="Running in GitHub Actions (no nested virtualization)",
-)
 @pytest.mark.asyncio
 async def test_e2e_vm_success(
     logs_path: Path,
