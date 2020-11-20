@@ -33,7 +33,6 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
     requestor_env = node_environment(
         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        account_list="/asset/key/001-accounts.json",
     )
 
     provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
@@ -45,7 +44,6 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
             probe_properties={"task_package": agent_task_package},
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
-            key_file="/asset/key/001.json",
         ),
         YagnaContainerConfig(
             "provider_1",

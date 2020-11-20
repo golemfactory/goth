@@ -33,7 +33,6 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
     requestor_env = node_environment(
         market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        account_list="/asset/key/001-accounts.json",
     )
 
     provider_volumes = {
@@ -48,7 +47,6 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=RequestorProbeWithApiSteps,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
-            key_file="/asset/key/001.json",
         ),
         YagnaContainerConfig(
             name="provider_1",
