@@ -15,7 +15,7 @@ from goth.address import (
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
-from goth.runner.container.payment import PaymentId
+from goth.runner.container.payment import ENV_ACCOUNT_LIST
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
@@ -56,11 +56,11 @@ class Probe(abc.ABC):
     ip_address: Optional[str]
     """An IP address of the daemon's container in the Docker network."""
 
-    payment_id: Optional[PaymentId]
-    """Custom payment ID to be used by the yagna daemon."""
-
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
+
+    _yagna_config: YagnaContainerConfig
+    """Config object used for setting up the Yagna node for this probe."""
 
     def __init__(
         self,
@@ -77,7 +77,7 @@ class Probe(abc.ABC):
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
         self.ip_address = None
-        self.payment_id = config.payment_id
+        self._yagna_config = config
 
     def __str__(self):
         return self.name
@@ -150,21 +150,16 @@ class Probe(abc.ABC):
         - restarts the container ( https://github.com/golemfactory/yagna/issues/458 )
         """
         address = None
-        if self.key_file:
-            self._logger.debug(
-                "create_id(alias=%s, key_file=%s", key_name, self.key_file
-            )
+        if self._yagna_config.payment_id:
+            key_file: str = self._yagna_config.environment[ENV_ACCOUNT_LIST]
+            self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
             try:
-                db_id = self.cli.id_create(alias=key_name, key_file=self.key_file)
+                db_id = self.cli.id_create(alias=key_name, key_file=key_file)
                 address = db_id.address
                 self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
             except KeyAlreadyExistsError as e:
                 logger.critical("Id already exists : (%r)", e)
                 raise
-                # db_id = next(
-                #     filter(lambda i: i.id == e.TODO_extract_id(), self.cli.id_list())
-                # )
-                # address = db_id.address
             db_id = self.cli.id_update(address, set_default=True)
             self._logger.debug("update_id. result=%r", db_id)
             self.container.restart()

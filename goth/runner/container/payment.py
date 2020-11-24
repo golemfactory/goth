@@ -5,10 +5,12 @@ from enum import Enum, unique
 import json
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Generator, List, NamedTuple, Optional
+from typing import Generator, List, NamedTuple
 from uuid import uuid4
 
 from goth.project import TEST_DIR
+
+ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
 KEY_DIR = Path(TEST_DIR, "yagna", "keys")
 TEMP_ID_DIR = Path(gettempdir(), "goth-payment-id")

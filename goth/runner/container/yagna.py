@@ -10,7 +10,7 @@ from goth.address import (
     YAGNA_REST_PORT,
 )
 from goth.runner.container import DockerContainer, DockerContainerConfig
-from goth.runner.container.payment import PaymentId, TEMP_ID_DIR
+from goth.runner.container.payment import PaymentId, ENV_ACCOUNT_LIST, TEMP_ID_DIR
 import goth.runner.container.utils as utils
 from goth.runner.log import LogConfig
 
@@ -115,5 +115,5 @@ class YagnaContainer(DockerContainer):
         env = config.environment
         if config.payment_id:
             mount_path = f"{DEFAULT_ASSET_PATH}/{config.payment_id.accounts_file.name}"
-            env["ACCOUNT_LIST"] = mount_path
+            env[ENV_ACCOUNT_LIST] = mount_path
         return env
