@@ -13,7 +13,7 @@ from goth.project import TEST_DIR
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
 KEY_DIR = Path(TEST_DIR, "yagna", "keys")
-TEMP_ID_DIR = Path(gettempdir(), "goth-payment-id")
+TEMP_ID_DIR = Path(gettempdir(), "goth_payment_id")
 TEMP_ID_DIR.mkdir(exist_ok=True)
 
 
@@ -71,7 +71,7 @@ class PaymentId:
         accounts_path = Path(TEMP_ID_DIR, f"accounts_{self._uuid}.json")
 
         if not accounts_path.exists():
-            with open(accounts_path) as fd:
+            with accounts_path.open(mode="w+") as fd:
                 json.dump(self.accounts, fd)
 
         return accounts_path
@@ -82,7 +82,7 @@ class PaymentId:
         key_path = Path(TEMP_ID_DIR, f"key_{self._uuid}.json")
 
         if not key_path.exists():
-            with open(key_path) as fd:
+            with key_path.open(mode="w+") as fd:
                 json.dump(self.key, fd)
 
         return key_path
@@ -102,7 +102,7 @@ class PaymentIdPool:
 
     def get_id(
         self,
-        drivers: List[PaymentDriver] = [PaymentDriver.zksync],
+        drivers: List[PaymentDriver] = [PaymentDriver.ngnt, PaymentDriver.zksync],
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:
