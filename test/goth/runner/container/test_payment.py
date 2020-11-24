@@ -15,22 +15,22 @@ def payment_id_pool() -> PaymentIdPool:
     return PaymentIdPool()
 
 
-def test_get_accounts(payment_id_pool):
+def test_get_id(payment_id_pool):
     """Test if pre-funded payment accounts are generated correctly."""
     drivers = [PaymentDriver.ngnt, PaymentDriver.zksync]
     receive = False
     send = False
 
-    account_list = payment_id_pool.get_accounts(drivers, receive, send)
+    payment_id = payment_id_pool.get_id(drivers, receive, send)
 
     # We should get back exactly 2 accounts
-    assert len(account_list) == len(drivers)
+    assert len(payment_id.accounts) == len(drivers)
     # There should be an account for each of the requested payment drivers
-    result_drivers = [a.driver for a in account_list]
+    result_drivers = [a.driver for a in payment_id.accounts]
     for driver in drivers:
         assert driver in result_drivers
     # All accounts should have the requested receive/send values
-    for account in account_list:
+    for account in payment_id.accounts:
         assert account.receive == receive
         assert account.send == send
 
@@ -39,5 +39,5 @@ def test_key_pool_depleted(payment_id_pool):
     """Test if the proper exception is raised when we run out of pre-funded keys."""
 
     with pytest.raises(KeyPoolDepletedError):
-        for i in range(100):
-            payment_id_pool.get_accounts()
+        while True:
+            payment_id_pool.get_id()

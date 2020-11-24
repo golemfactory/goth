@@ -63,10 +63,7 @@ class PaymentId:
     accounts: List[Account]
     key: EthKey
 
-    _uuid: str
-
-    def __post_init__(self):
-        self._uuid = uuid4().hex
+    _uuid: str = uuid4().hex
 
     @property
     def accounts_file(self) -> Path:
@@ -92,7 +89,7 @@ class PaymentId:
 
 
 class PaymentIdPool:
-    """Class used for generating yagna accounts based on a pool of Ethereum keys.
+    """Class used for generating yagna payment IDs based on a pool of Ethereum keys.
 
     The pool of keys is loaded from key files stored in the repo under `KEY_DIR`.
     """
@@ -103,7 +100,7 @@ class PaymentIdPool:
     def __init__(self):
         self._key_pool = (self._key_from_file(f) for f in KEY_DIR.iterdir())
 
-    def get_accounts(
+    def get_id(
         self,
         drivers: List[PaymentDriver] = [PaymentDriver.zksync],
         receive: bool = True,
