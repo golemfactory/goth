@@ -9,7 +9,6 @@ from typing import List
 import pytest
 
 from goth.address import (
-    MARKET_BASE_URL,
     PROXY_HOST,
     YAGNA_REST_URL,
 )
@@ -28,11 +27,9 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
 
     # Nodes are configured to communicate via proxy
     provider_env = node_environment(
-        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     requestor_env = node_environment(
-        market_url_base=MARKET_BASE_URL.substitute(host=PROXY_HOST),
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
         account_list="/asset/key/001-accounts.json",
     )
