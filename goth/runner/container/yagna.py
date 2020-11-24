@@ -106,7 +106,7 @@ class YagnaContainer(DockerContainer):
     def _prepare_volumes(self, config: YagnaContainerConfig) -> Dict[str, dict]:
         volumes_spec = utils.get_volumes_spec(config.volumes)
         if config.payment_id:
-            id_volumes = {TEMP_ID_DIR: DEFAULT_ASSET_PATH}
+            id_volumes = {TEMP_ID_DIR: f"{DEFAULT_ASSET_PATH}/payment_ids"}
             id_volumes_spec = utils.get_volumes_spec(id_volumes, writable=False)
             volumes_spec.update(id_volumes_spec)
         return volumes_spec
