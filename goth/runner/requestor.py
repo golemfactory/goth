@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 import logging
 from typing import Callable, Iterable, List, Optional, Sequence, Tuple
 
-from openapi_activity_client import ExeScriptCommandResult, ExeScriptRequest
-from openapi_market_client import AgreementProposal, Demand, Proposal
-from openapi_payment_client import Acceptance, Allocation, Invoice
+from ya_activity import ExeScriptCommandResult, ExeScriptRequest
+from ya_market import AgreementProposal, Demand, Proposal
+from ya_payment import Acceptance, Allocation, Invoice
 
 from goth.runner import step
 from goth.runner.probe import Probe, RequestorProbe
@@ -23,7 +23,7 @@ class ActivityOperationsMixin:
     async def create_activity(self: RequestorProbe, agreement_id: str) -> str:
         """Call create_activity on the requestor activity api."""
 
-        activity_id = self.activity.control.create_activity(agreement_id)
+        activity_id = await self.activity.control.create_activity(agreement_id)
         return activity_id
 
     @step()
@@ -31,7 +31,7 @@ class ActivityOperationsMixin:
         """Call call_exec on the requestor activity api."""
 
         script_request = ExeScriptRequest(exe_script)
-        batch_id = self.activity.control.call_exec(activity_id, script_request)
+        batch_id = await self.activity.control.call_exec(activity_id, script_request)
         return batch_id
 
     @step()
@@ -43,7 +43,7 @@ class ActivityOperationsMixin:
         results: List[ExeScriptCommandResult] = []
 
         while len(results) < num_results:
-            results = self.activity.control.get_exec_batch_results(
+            results = await self.activity.control.get_exec_batch_results(
                 activity_id, batch_id
             )
             await asyncio.sleep(1.0)
@@ -53,7 +53,7 @@ class ActivityOperationsMixin:
     async def destroy_activity(self: RequestorProbe, activity_id: str) -> None:
         """Call destroy_activity on the requestor activity api."""
 
-        self.activity.control.destroy_activity(activity_id)
+        await self.activity.control.destroy_activity(activity_id)
 
 
 class MarketOperationsMixin:
@@ -77,13 +77,13 @@ class MarketOperationsMixin:
             constraints=constraints,
         )
 
-        subscription_id = self.market.subscribe_demand(demand)
+        subscription_id = await self.market.subscribe_demand(demand)
         return subscription_id, demand
 
     @step()
     async def unsubscribe_demand(self: RequestorProbe, subscription_id: str) -> None:
         """Call unsubscribe demand on the requestor market api."""
-        self.market.unsubscribe_demand(subscription_id)
+        await self.market.unsubscribe_demand(subscription_id)
 
     @step()
     async def wait_for_proposals(
@@ -101,7 +101,7 @@ class MarketOperationsMixin:
         provider_ids = {p.address for p in providers}
 
         while len(proposals) < len(provider_ids):
-            collected_offers = self.market.collect_offers(subscription_id)
+            collected_offers = await self.market.collect_offers(subscription_id)
             if collected_offers:
                 logger.debug(
                     "collect_offers(%s). collected_offers=%r",
@@ -140,7 +140,7 @@ class MarketOperationsMixin:
             prev_proposal_id=provider_proposal.proposal_id,
         )
 
-        counter_proposal = self.market.counter_proposal_demand(
+        counter_proposal = await self.market.counter_proposal_demand(
             subscription_id=subscription_id,
             proposal_id=provider_proposal.proposal_id,
             proposal=proposal,
@@ -162,13 +162,13 @@ class MarketOperationsMixin:
             proposal_id=proposal.proposal_id, valid_to=valid_to
         )
 
-        agreement_id = self.market.create_agreement(agreement_proposal)
+        agreement_id = await self.market.create_agreement(agreement_proposal)
         return agreement_id
 
     @step()
     async def confirm_agreement(self: RequestorProbe, agreement_id: str) -> None:
         """Call confirm_agreement on the requestor market api."""
-        self.market.confirm_agreement(agreement_id)
+        await self.market.confirm_agreement(agreement_id)
 
 
 class PaymentOperationsMixin:
@@ -182,9 +182,7 @@ class PaymentOperationsMixin:
 
         while not invoices:
             await asyncio.sleep(2.0)
-            invoices = (
-                self.payment.get_received_invoices()
-            )  # to be replaced by requestor.events.waitUntil(InvoiceReceivedEvent)
+            invoices = await self.payment.get_received_invoices()
             invoices = [inv for inv in invoices if inv.agreement_id == agreement_id]
 
         return invoices
@@ -197,19 +195,20 @@ class PaymentOperationsMixin:
 
         for invoice_event in invoice_events:
             allocation = Allocation(
+                allocation_id="",
                 total_amount=invoice_event.amount,
                 spent_amount=0,
                 remaining_amount=0,
                 make_deposit=True,
             )
-            allocation_result = self.payment.create_allocation(allocation)
+            allocation_result = await self.payment.create_allocation(allocation)
             logger.debug("Created allocation. id=%s", allocation_result)
 
             acceptance = Acceptance(
                 total_amount_accepted=invoice_event.amount,
                 allocation_id=allocation_result.allocation_id,
             )
-            self.payment.accept_invoice(invoice_event.invoice_id, acceptance)
+            await self.payment.accept_invoice(invoice_event.invoice_id, acceptance)
             logger.debug("Accepted invoice. id=%s", invoice_event.invoice_id)
 
 

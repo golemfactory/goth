@@ -4,7 +4,6 @@ from typing import Dict
 
 from goth.address import (
     ACTIVITY_API_URL,
-    MARKET_API_URL,
     PAYMENT_API_URL,
     ROUTER_HOST,
     ROUTER_PORT,
@@ -14,15 +13,11 @@ from goth.address import (
 
 
 def node_environment(
-    market_url_base: str = "", rest_api_url_base: str = "", account_list: str = ""
+    rest_api_url_base: str = "", account_list: str = ""
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
 
-    # Use custom base if given, default otherwise
-    market_template_params = {"base": market_url_base} if market_url_base else {}
-
     daemon_env = {
-        "CENTRAL_MARKET_URL": MARKET_API_URL.substitute(market_template_params),
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "CHAIN": "mainnet",
         "GETH_ADDRESS": "http://ethereum:8545",
@@ -41,8 +36,6 @@ def node_environment(
 
     if rest_api_url_base:
         agent_env = {
-            # TODO: Why this is still disabled?!
-            # "YAGNA_MARKET_URL": MARKET_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_ACTIVITY_URL": ACTIVITY_API_URL.substitute(base=rest_api_url_base),
             "YAGNA_PAYMENT_URL": PAYMENT_API_URL.substitute(base=rest_api_url_base),
         }
