@@ -45,7 +45,7 @@ def get_volumes_spec(
     return {
         str(host_path.resolve()): {
             "bind": mount_path,
-            "mode": "rw" if writable else "r",
+            "mode": "rw" if writable else "ro",
         }
         for host_path, mount_path in volumes.items()
     }
