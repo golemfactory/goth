@@ -1,13 +1,18 @@
 """Module related to handling payment IDs in yagna containers."""
 
+from dataclasses import dataclass
 from enum import Enum, unique
 import json
 from pathlib import Path
-from typing import Generator, List, NamedTuple, Tuple
+from tempfile import gettempdir
+from typing import Generator, List, NamedTuple, Optional
+from uuid import uuid4
 
 from goth.project import TEST_DIR
 
 KEY_DIR = Path(TEST_DIR, "yagna", "keys")
+TEMP_ID_DIR = Path(gettempdir(), "goth-payment-id")
+TEMP_ID_DIR.mkdir(exist_ok=True)
 
 
 class KeyPoolDepletedError(Exception):
@@ -42,6 +47,48 @@ class EthKey(NamedTuple):
     crypto: dict
 
 
+@dataclass
+class PaymentId:
+    """Represents a single payment ID to be used with a yagna node.
+
+    Consists of a list of payment accounts along with a common Ethereum key used by
+    those accounts as their address.
+    Supports dumping the accounts and key to temporary files to be used for mounting
+    within a Docker container. For a given payment ID, its files share a common UUID
+    in their names.
+    """
+
+    accounts: List[Account]
+    key: EthKey
+
+    _uuid: str
+
+    def __post_init__(self):
+        self._uuid = uuid4().hex
+
+    @property
+    def accounts_file(self) -> Path:
+        """Return path to a file with a serialized version of this ID's accounts."""
+        accounts_path = Path(TEMP_ID_DIR, f"accounts_{self._uuid}.json")
+
+        if not accounts_path.exists():
+            with open(accounts_path) as fd:
+                json.dump(self.accounts, fd)
+
+        return accounts_path
+
+    @property
+    def key_file(self) -> Path:
+        """Return path to a file with a serialized version of this ID's Ethereum key."""
+        key_path = Path(TEMP_ID_DIR, f"key_{self._uuid}.json")
+
+        if not key_path.exists():
+            with open(key_path) as fd:
+                json.dump(self.key, fd)
+
+        return key_path
+
+
 class PaymentIdPool:
     """Class used for generating yagna accounts based on a pool of Ethereum keys.
 
@@ -49,9 +96,9 @@ class PaymentIdPool:
     """
 
     _key_pool: Generator[EthKey, None, None]
+    """Generator yielding pre-funded Ethereum keys loaded from a directory."""
 
     def __init__(self):
-        # generator comprehension yielding eth keys loaded from files
         self._key_pool = (self._key_from_file(f) for f in KEY_DIR.iterdir())
 
     def get_accounts(
@@ -59,7 +106,7 @@ class PaymentIdPool:
         drivers: List[PaymentDriver] = [PaymentDriver.zksync],
         receive: bool = True,
         send: bool = True,
-    ) -> Tuple[EthKey, List[Account]]:
+    ) -> PaymentId:
         """Generate payment accounts with a common, pre-funded Ethereum key.
 
         Attempts to obtain a key from the pool and, if available, creates a list of
@@ -79,7 +126,7 @@ class PaymentIdPool:
             )
             for driver in drivers
         ]
-        return key, account_list
+        return PaymentId(account_list, key)
 
     def _get_key(self) -> EthKey:
         try:

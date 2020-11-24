@@ -15,6 +15,7 @@ from goth.address import (
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
+from goth.runner.container.payment import PaymentId
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
 from goth.runner.exceptions import KeyAlreadyExistsError
@@ -55,8 +56,8 @@ class Probe(abc.ABC):
     ip_address: Optional[str]
     """An IP address of the daemon's container in the Docker network."""
 
-    key_file: Optional[str]
-    """Keyfile to be imported into the yagna daemon id service."""
+    payment_id: Optional[PaymentId]
+    """Custom payment ID to be used by the yagna daemon."""
 
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
@@ -76,7 +77,7 @@ class Probe(abc.ABC):
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
         self.ip_address = None
-        self.key_file = config.key_file
+        self.payment_id = config.payment_id
 
     def __str__(self):
         return self.name
