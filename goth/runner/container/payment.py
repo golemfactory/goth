@@ -51,7 +51,6 @@ class EthKey:
     crypto: dict
 
 
-@dataclass
 class PaymentId:
     """Represents a single payment ID to be used with a yagna node.
 
@@ -63,31 +62,30 @@ class PaymentId:
     """
 
     accounts: List[Account]
+    accounts_file: Path
     key: EthKey
+    key_file: Path
 
     _uuid: str = uuid4().hex
 
-    @property
-    def accounts_file(self) -> Path:
-        """Return path to a file with a serialized version of this ID's accounts."""
+    def __init__(self, accounts: List[Account], key: EthKey):
+        self.accounts = accounts
+        self.key = key
+
+        self.accounts_file = self._create_accounts_file()
+        self.key_file = self._create_key_file()
+
+    def _create_accounts_file(self) -> Path:
         accounts_path = Path(TEMP_ID_DIR, f"accounts_{self._uuid}.json")
-
-        if not accounts_path.exists():
-            with accounts_path.open(mode="w+") as fd:
-                serializable = [asdict(a) for a in self.accounts]
-                json.dump(serializable, fd)
-
+        with accounts_path.open(mode="w+") as fd:
+            serializable = [asdict(a) for a in self.accounts]
+            json.dump(serializable, fd)
         return accounts_path
 
-    @property
-    def key_file(self) -> Path:
-        """Return path to a file with a serialized version of this ID's Ethereum key."""
+    def _create_key_file(self) -> Path:
         key_path = Path(TEMP_ID_DIR, f"key_{self._uuid}.json")
-
-        if not key_path.exists():
-            with key_path.open(mode="w+") as fd:
-                json.dump(asdict(self.key), fd)
-
+        with key_path.open(mode="w+") as fd:
+            json.dump(asdict(self.key), fd)
         return key_path
 
 
