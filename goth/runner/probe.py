@@ -15,7 +15,6 @@ from goth.address import (
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
-from goth.runner.container.payment import ENV_ACCOUNT_LIST
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
     YagnaContainer,
