@@ -14,6 +14,7 @@ from goth.address import (
 from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.compose import ComposeConfig
+from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -21,7 +22,9 @@ from goth.runner.requestor import RequestorProbeWithApiSteps
 logger = logging.getLogger(__name__)
 
 
-def topology(assets_path: Path) -> List[YagnaContainerConfig]:
+def topology(
+    assets_path: Path, payment_id_pool: PaymentIdPool
+) -> List[YagnaContainerConfig]:
     """Define the topology of the test network."""
 
     # Nodes are configured to communicate via proxy
@@ -44,6 +47,7 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=RequestorProbeWithApiSteps,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
+            payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
@@ -68,6 +72,7 @@ async def test_e2e_wasm_success(
     compose_config: ComposeConfig,
     task_package_template: str,
     demand_constraints: str,
+    payment_id_pool: PaymentIdPool,
 ):
     """Test successful flow requesting WASM tasks with goth REST API client."""
 
@@ -76,7 +81,7 @@ async def test_e2e_wasm_success(
         assets_path=assets_path,
         compose_config=compose_config,
         logs_path=logs_path,
-        topology=topology(assets_path),
+        topology=topology(assets_path, payment_id_pool),
     ) as runner:
 
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
