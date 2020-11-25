@@ -49,6 +49,8 @@ class EthKey:
 
     address: str
     crypto: dict
+    id: str
+    version: int
 
 
 class PaymentId:
@@ -137,4 +139,4 @@ class PaymentIdPool:
     def _key_from_file(self, path: Path) -> EthKey:
         with path.open() as fd:
             key_dict = json.load(fd)
-            return EthKey(key_dict["address"], key_dict["crypto"])
+            return EthKey(**key_dict)
