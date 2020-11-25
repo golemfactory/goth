@@ -17,7 +17,11 @@ from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.payment import ENV_ACCOUNT_LIST
 from goth.runner.container.utils import get_container_address
-from goth.runner.container.yagna import YagnaContainer, YagnaContainerConfig
+from goth.runner.container.yagna import (
+    YagnaContainer,
+    YagnaContainerConfig,
+    PAYMENT_MOUNT_PATH,
+)
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
 
@@ -151,7 +155,8 @@ class Probe(abc.ABC):
         """
         address = None
         if self._yagna_config.payment_id:
-            key_file: str = self._yagna_config.environment[ENV_ACCOUNT_LIST]
+            key_name = self._yagna_config.payment_id.key_file.name
+            key_file: str = str(PAYMENT_MOUNT_PATH / key_name)
             self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
             try:
                 db_id = self.cli.id_create(alias=key_name, key_file=key_file)

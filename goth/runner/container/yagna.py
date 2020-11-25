@@ -17,7 +17,10 @@ from goth.runner.log import LogConfig
 if TYPE_CHECKING:
     from goth.runner.probe import Probe  # noqa: F401
 
-DEFAULT_ASSET_PATH = "/asset"
+# Default path for mounting assets within a yagna container
+ASSET_MOUNT_PATH = Path("/asset")
+# Path for mounting payment IDs inside a yagna container
+PAYMENT_MOUNT_PATH = ASSET_MOUNT_PATH / "payment"
 
 
 class YagnaContainerConfig(DockerContainerConfig):
@@ -106,7 +109,7 @@ class YagnaContainer(DockerContainer):
     def _prepare_volumes(self, config: YagnaContainerConfig) -> Dict[str, dict]:
         volumes_spec = utils.get_volumes_spec(config.volumes)
         if config.payment_id:
-            id_volumes = {TEMP_ID_DIR: f"{DEFAULT_ASSET_PATH}/payment_ids"}
+            id_volumes = {TEMP_ID_DIR: str(PAYMENT_MOUNT_PATH)}
             id_volumes_spec = utils.get_volumes_spec(id_volumes, writable=False)
             volumes_spec.update(id_volumes_spec)
         return volumes_spec
@@ -114,6 +117,7 @@ class YagnaContainer(DockerContainer):
     def _prepare_environment(self, config: YagnaContainerConfig) -> Dict[str, str]:
         env = config.environment
         if config.payment_id:
-            mount_path = f"{DEFAULT_ASSET_PATH}/{config.payment_id.accounts_file.name}"
+            accounts_file_name = config.payment_id.accounts_file.name
+            mount_path = str(PAYMENT_MOUNT_PATH / accounts_file_name)
             env[ENV_ACCOUNT_LIST] = mount_path
         return env
