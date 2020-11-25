@@ -1,11 +1,11 @@
 """Module related to handling payment IDs in yagna containers."""
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum, unique
 import json
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Generator, List, NamedTuple
+from typing import Generator, List
 from uuid import uuid4
 
 from goth.project import TEST_DIR
@@ -33,8 +33,9 @@ class PaymentDriver(str, Enum):
     zksync = "zksync"
 
 
-class Account(NamedTuple):
-    """Named tuple representing a single yagna payment account."""
+@dataclass
+class Account:
+    """Data class representing a single yagna payment account."""
 
     address: str
     driver: PaymentDriver = PaymentDriver.zksync
@@ -42,8 +43,9 @@ class Account(NamedTuple):
     send: bool = True
 
 
-class EthKey(NamedTuple):
-    """Named tuple representing an Ethereum private key."""
+@dataclass
+class EthKey:
+    """Data class representing an Ethereum private key."""
 
     address: str
     crypto: dict
@@ -72,7 +74,8 @@ class PaymentId:
 
         if not accounts_path.exists():
             with accounts_path.open(mode="w+") as fd:
-                json.dump(self.accounts, fd)
+                serializable = [asdict(a) for a in self.accounts]
+                json.dump(serializable, fd)
 
         return accounts_path
 
@@ -83,7 +86,7 @@ class PaymentId:
 
         if not key_path.exists():
             with key_path.open(mode="w+") as fd:
-                json.dump(self.key, fd)
+                json.dump(asdict(self.key), fd)
 
         return key_path
 
