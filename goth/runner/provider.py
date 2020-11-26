@@ -35,6 +35,11 @@ class ProviderProbeWithLogSteps(ProviderProbe):
         )
 
     @step()
+    async def wait_for_agreement_terminated(self):
+        """Wait until exe-unit finishes."""
+        await self._wait_for_agent_log("Requestor terminated agreement")
+
+    @step()
     async def wait_for_invoice_sent(self):
         """Wait until the invoice is sent."""
         await self._wait_for_agent_log("Invoice (.+) sent")

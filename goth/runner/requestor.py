@@ -61,9 +61,17 @@ class MarketOperationsMixin:
 
     @step()
     async def subscribe_demand(
-        self: RequestorProbe, task_package: str, constraints: str
+        self: RequestorProbe, demand: Demand
     ) -> Tuple[str, Demand]:
         """Call subscribe demand on the requestor market api."""
+        subscription_id = await self.market.subscribe_demand(demand)
+        return subscription_id, demand
+
+    @step()
+    async def subscribe_template_demand(
+        self: RequestorProbe, task_package: str, constraints: str
+    ) -> Tuple[str, Demand]:
+        """Build Demand from template and call subscribe demand on market api."""
 
         demand = Demand(
             requestor_id=self.address,
@@ -77,8 +85,7 @@ class MarketOperationsMixin:
             constraints=constraints,
         )
 
-        subscription_id = await self.market.subscribe_demand(demand)
-        return subscription_id, demand
+        return await self.subscribe_demand(demand)
 
     @step()
     async def unsubscribe_demand(self: RequestorProbe, subscription_id: str) -> None:
@@ -169,6 +176,13 @@ class MarketOperationsMixin:
     async def confirm_agreement(self: RequestorProbe, agreement_id: str) -> None:
         """Call confirm_agreement on the requestor market api."""
         await self.market.confirm_agreement(agreement_id)
+
+    @step()
+    async def terminate_agreement(
+        self: RequestorProbe, agreement_id: str, reason: Optional[str]
+    ):
+        """Call terminate_agreement on the requestor market api."""
+        await self.market.terminate_agreement(agreement_id, reason)
 
 
 class PaymentOperationsMixin:
