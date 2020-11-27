@@ -5,7 +5,7 @@ from enum import Enum, unique
 import json
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Generator, List
+from typing import Iterator, List
 from uuid import uuid4
 
 from goth.project import TEST_DIR
@@ -99,8 +99,8 @@ class PaymentIdPool:
     The pool of keys is loaded from key files stored in the repo under `KEY_DIR`.
     """
 
-    _key_pool: Generator[EthKey, None, None]
-    """Generator yielding pre-funded Ethereum keys loaded from a directory."""
+    _key_pool: Iterator[EthKey]
+    """Iterator yielding pre-funded Ethereum keys loaded from a directory."""
 
     def __init__(self):
         self._key_pool = (self._key_from_file(f) for f in KEY_DIR.iterdir())
