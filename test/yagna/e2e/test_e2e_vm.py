@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import List
 
@@ -36,7 +37,13 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
     provider_volumes = {
         assets_path
         / "provider"
-        / "presets.json": "/root/.local/share/ya-provider/presets.json"
+        / "presets.json": "/root/.local/share/ya-provider/presets.json",
+        assets_path
+        / "provider"
+        / "hardware.json": "/root/.local/share/ya-provider/hardware.json",
+        assets_path
+        / "provider"
+        / "images": "/root/.local/share/ya-provider/exe-unit/cache/tmp",
     }
 
     return [
@@ -52,26 +59,63 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             volumes=provider_volumes,
+            privileged_mode=True,
         ),
         YagnaContainerConfig(
             name="provider_2",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             volumes=provider_volumes,
+            privileged_mode=True,
         ),
     ]
 
 
+def _exe_script(runner: Runner, output_file: str):
+
+    output_path = Path(runner.web_root_path) / output_file
+    if output_path.exists():
+        os.remove(output_path)
+
+    web_server_addr = f"http://{runner.host_address}:{runner.web_server_port}"
+
+    return [
+        {"deploy": {}},
+        {"start": {}},
+        {
+            "transfer": {
+                "from": f"{web_server_addr}/scene.blend",
+                "to": "container:/golem/resource/scene.blend",
+            }
+        },
+        {
+            "transfer": {
+                "from": f"{web_server_addr}/params.json",
+                "to": "container:/golem/work/params.json",
+            }
+        },
+        {"run": {"entry_point": "/golem/entrypoints/run-blender.sh", "args": []}},
+        {
+            "transfer": {
+                "from": f"container:/golem/output/{output_file}",
+                "to": f"{web_server_addr}/upload/{output_file}",
+            }
+        },
+    ]
+
+
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Running in GitHub Actions (no nested virtualization)",
+)
 @pytest.mark.asyncio
-async def test_e2e_wasm_success(
+async def test_e2e_vm_success(
     logs_path: Path,
     assets_path: Path,
-    exe_script: dict,
     compose_config: ComposeConfig,
-    task_package_template: str,
     demand_constraints: str,
 ):
-    """Test successful flow requesting WASM tasks with goth REST API client."""
+    """Test successful flow requesting a Blender task with goth REST API client."""
 
     async with Runner(
         api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
@@ -81,19 +125,26 @@ async def test_e2e_wasm_success(
         topology=topology(assets_path),
     ) as runner:
 
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        task_package = (
+            "hash:sha3:9a3b5d67b0b27746283cb5f287c13eab1beaa12d92a9f536b747c7ae:"
+            "http://3.249.139.167:8000/local-image-c76719083b.gvmi"
+        )
 
-        provider_1, provider_2 = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
-        providers = (provider_1, provider_2)
+        output_file = "out0000.png"
+
+        output_path = Path(runner.web_root_path) / "upload" / output_file
+        if output_path.exists():
+            os.remove(output_path)
+
+        exe_script = _exe_script(runner, output_file)
+
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
 
         # Market
 
         for provider in providers:
             await provider.wait_for_offer_subscribed()
-
-        task_package = task_package_template.format(
-            web_server_addr=runner.host_address, web_server_port=runner.web_server_port
-        )
 
         subscription_id, demand = await requestor.subscribe_demand(
             task_package, demand_constraints
@@ -102,9 +153,7 @@ async def test_e2e_wasm_success(
         proposals = await requestor.wait_for_proposals(
             subscription_id,
             providers,
-            lambda proposal: (
-                proposal.properties.get("golem.runtime.name") == "wasmtime"
-            ),
+            lambda proposal: proposal.properties.get("golem.runtime.name") == "vm",
         )
         logger.info("Collected %s proposals", len(proposals))
 
@@ -143,10 +192,13 @@ async def test_e2e_wasm_success(
             await provider.wait_for_exeunit_started()
             batch_id = await requestor.call_exec(activity_id, json.dumps(exe_script))
             await requestor.collect_results(
-                activity_id, batch_id, num_commands, timeout=30
+                activity_id, batch_id, num_commands, timeout=300
             )
             await requestor.destroy_activity(activity_id)
             await provider.wait_for_exeunit_finished()
+
+        assert output_path.is_file()
+        assert output_path.stat().st_size > 0
 
         # Payment
 

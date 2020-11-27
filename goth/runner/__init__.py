@@ -13,8 +13,7 @@ import docker
 
 from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
-from goth.runner.container.build import YagnaBuildEnvironment
-from goth.runner.container.compose import ComposeNetworkManager, DEFAULT_COMPOSE_FILE
+from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
@@ -100,8 +99,7 @@ class Runner:
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Path,
-        build_environment: YagnaBuildEnvironment,
-        compose_file_path: Path = DEFAULT_COMPOSE_FILE,
+        compose_config: ComposeConfig,
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -111,11 +109,10 @@ class Runner:
         self.proxy = None
         self.topology = topology
         self._compose_manager = ComposeNetworkManager(
+            config=compose_config,
             docker_client=docker.from_env(),
-            compose_path=compose_file_path,
-            build_environment=build_environment,
         )
-        self._web_server = WebServer(assets_path / "web-root", web_server_port)
+        self._web_server = WebServer(self.web_root_path, web_server_port)
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -200,9 +197,14 @@ class Runner:
             assertions_module=self.api_assertions_module
         )
         self.proxy.start()
+        # Wait for proxy to start. TODO: wait for a log line?
+        await asyncio.sleep(2.0)
 
+        # Collect all agent enabled probes and start them in parallel
+        awaitables = []
         for probe in self.get_probes(probe_type=AgentMixin):
-            probe.start_agent()
+            awaitables.append(probe.start_agent())
+        await asyncio.gather(*awaitables)
 
     @property
     def host_address(self) -> str:
@@ -222,13 +224,18 @@ class Runner:
 
         self.base_log_dir.mkdir()
         await self._compose_manager.start_network(self.base_log_dir)
-        await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
         await self._web_server.start(server_address=None)  # listen on all interfaces
         await self._start_nodes()
 
         return self
+
+    @property
+    def web_root_path(self) -> Path:
+        """Return the directory served by the built-in web server."""
+
+        return self.assets_path / "web-root"
 
     # Argument exception will be re-raised after exiting the context manager,
     # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__

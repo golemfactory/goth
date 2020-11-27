@@ -28,12 +28,19 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
     provider_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
+    provider_1_env = provider_env.copy()
+    provider_1_env.update(ACCOUNT_LIST="/asset/key/002-accounts.json")
+    provider_2_env = provider_env.copy()
+    provider_2_env.update(ACCOUNT_LIST="/asset/key/003-accounts-zk.json")
     requestor_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        account_list="/asset/key/001-accounts.json",
+        account_list="/asset/key/001-multi.json",
     )
 
-    provider_volumes = {assets_path / "provider" / "presets.json": "/presets.json"}
+    provider_volumes = {
+        assets_path / "provider" / "presets.json": "/presets.json",
+        assets_path / "provider": "/asset",
+    }
 
     return [
         YagnaContainerConfig(
@@ -47,20 +54,22 @@ def topology(assets_path: Path, agent_task_package: str) -> List[YagnaContainerC
         YagnaContainerConfig(
             "provider_1",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_1_env,
             volumes=provider_volumes,
+            key_file="/asset/key/002.json",
         ),
         YagnaContainerConfig(
             "provider_2",
             probe_type=ProviderProbe,
-            environment=provider_env,
+            environment=provider_2_env,
             volumes=provider_volumes,
+            key_file="/asset/key/003.json",
         ),
     ]
 
 
 @pytest.mark.asyncio
-async def test_e2e_wasm_agent_success(
+async def test_multi_driver_success(
     logs_path: Path,
     assets_path: Path,
     compose_config: ComposeConfig,

@@ -63,15 +63,6 @@ class DefaultTemplate(Template):
 
 _BASE_URL_TEMPLATE = "$protocol://$host:$port"
 
-MARKET_HOST = "mock-api"
-# NOTE: This variable is used in `nginx.conf` file in the proxy container:
-MARKET_PORT = 5001
-MARKET_PROTOCOL = "http"
-MARKET_BASE_URL = DefaultTemplate(
-    _BASE_URL_TEMPLATE,
-    {"host": MARKET_HOST, "port": MARKET_PORT, "protocol": MARKET_PROTOCOL},
-)
-
 PROXY_HOST = "proxy-nginx"
 
 ROUTER_HOST = "router"
@@ -83,9 +74,7 @@ ROUTER_BASE_URL = DefaultTemplate(
 )
 
 ACTIVITY_API_URL = Template("$base/activity-api/v1/")
-MARKET_API_URL = DefaultTemplate(
-    "$base/market-api/v1/", default={"base": str(MARKET_BASE_URL)}
-)
+MARKET_API_URL = Template("$base/market-api/v1/")
 PAYMENT_API_URL = Template("$base/payment-api/v1/")
 
 YAGNA_BUS_PORT = 6010

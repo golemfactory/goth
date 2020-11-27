@@ -5,9 +5,9 @@ from typing import TypeVar
 
 from typing_extensions import Protocol
 
-import openapi_activity_client as activity
-import openapi_market_client as market
-import openapi_payment_client as payment
+import ya_activity
+import ya_market
+import ya_payment
 
 from goth.address import (
     ensure_no_trailing_slash,
@@ -28,10 +28,10 @@ class ActivityApiClient:
     reflected in the inner client objects of this class.
     """
 
-    control: activity.RequestorControlApi
+    control: ya_activity.RequestorControlApi
     """Client for the control part of the activity API."""
 
-    state: activity.RequestorStateApi
+    state: ya_activity.RequestorStateApi
     """Client for the state part of the activity API."""
 
 
@@ -66,10 +66,10 @@ class ApiClientMixin:
     activity: ActivityApiClient
     """Activity API client for the requestor daemon."""
 
-    market: market.RequestorApi
+    market: ya_market.RequestorApi
     """Market API client for the requestor daemon."""
 
-    payment: payment.RequestorApi
+    payment: ya_payment.RequestorApi
     """Payment API client for the requestor daemon."""
 
     _api_base_host: str
@@ -93,20 +93,20 @@ class ApiClientMixin:
 
     def _init_activity_api(self, api_base_host: str) -> None:
         api_url = ACTIVITY_API_URL.substitute(base=api_base_host)
-        client = self._create_api_client(activity, api_url)
-        control = activity.RequestorControlApi(client)
-        state = activity.RequestorStateApi(client)
+        client = self._create_api_client(ya_activity, api_url)
+        control = ya_activity.RequestorControlApi(client)
+        state = ya_activity.RequestorStateApi(client)
         self.activity = ActivityApiClient(control, state)
         logger.debug("activity API initialized. url=%s", api_url)
 
     def _init_market_api(self, api_base_host: str) -> None:
         api_url = MARKET_API_URL.substitute(base=api_base_host)
-        client = self._create_api_client(market, api_url)
-        self.market = market.RequestorApi(client)
+        client = self._create_api_client(ya_market, api_url)
+        self.market = ya_market.RequestorApi(client)
         logger.debug("market API initialized. url=%s", api_url)
 
     def _init_payment_api(self, api_base_host: str) -> None:
         api_url = PAYMENT_API_URL.substitute(base=api_base_host)
-        client = self._create_api_client(payment, api_url)
-        self.payment = payment.RequestorApi(client)
+        client = self._create_api_client(ya_payment, api_url)
+        self.payment = ya_payment.RequestorApi(client)
         logger.debug("payment API initialized. url=%s", api_url)
