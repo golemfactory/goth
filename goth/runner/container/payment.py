@@ -68,11 +68,13 @@ class PaymentId:
     key: EthKey
     key_file: Path
 
-    _uuid: str = uuid4().hex
+    _uuid: str
+    """UUID for this instance of `PaymentId`."""
 
     def __init__(self, accounts: List[Account], key: EthKey):
         self.accounts = accounts
         self.key = key
+        self._uuid = uuid4().hex
 
         self.accounts_file = self._create_accounts_file()
         self.key_file = self._create_key_file()
