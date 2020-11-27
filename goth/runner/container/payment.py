@@ -5,7 +5,7 @@ from enum import Enum, unique
 import json
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Iterator, List
+from typing import Iterator, List, Sequence
 from uuid import uuid4
 
 from goth.project import TEST_DIR
@@ -107,7 +107,7 @@ class PaymentIdPool:
 
     def get_id(
         self,
-        drivers: List[PaymentDriver] = [PaymentDriver.ngnt, PaymentDriver.zksync],
+        drivers: Sequence[PaymentDriver] = (PaymentDriver.ngnt, PaymentDriver.zksync),
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:
