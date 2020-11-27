@@ -177,19 +177,27 @@ class Runner:
 
     async def _start_nodes(self):
         node_names: Dict[str, str] = {}
+        ports: Dict[str, dict] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
             await probe.start()
             assert probe.ip_address
-            node_names[probe.ip_address] = probe.name
+            ip = probe.ip_address
+            p = probe.container.ports
+            node_names[ip] = probe.name
+            ports[ip] = p
+            logger.debug(
+                "Probe for %s started on IP: %s with port mapping: %s", probe.name, ip, p)
 
         node_names[self.host_address] = "Pytest-Requestor-Agent"
 
         # Start the proxy node. The containers should not make API calls
         # up to this point.
         self.proxy = Proxy(
-            node_names=node_names, assertions_module=self.api_assertions_module
+            node_names=node_names,
+            ports=ports,
+            assertions_module=self.api_assertions_module
         )
         self.proxy.start()
 
@@ -217,7 +225,7 @@ class Runner:
         await asyncio.sleep(5)
 
         self._create_probes(self.base_log_dir)
-        await self._web_server.start(self.host_address)
+        await self._web_server.start(server_address=None)  # listen on all interfaces
         await self._start_nodes()
 
         return self

@@ -30,10 +30,17 @@ class Proxy:
     _node_names: Mapping[str, str]
     """Mapping of IP addresses to node names"""
 
+    _ports: Mapping[str, dict]
+    """Mapping of IP addresses to their port mappings"""
+
     def __init__(
-        self, node_names: Mapping[str, str], assertions_module: Optional[str] = None
+        self,
+        node_names: Mapping[str, str],
+        ports: Mapping[str, dict],
+        assertions_module: Optional[str] = None,
     ):
         self._node_names = node_names
+        self._ports = ports
         self._logger = logging.getLogger(__name__)
         self._loop = None
         self._proxy_thread = threading.Thread(
@@ -79,7 +86,7 @@ class Proxy:
         class MITMProxyRunner(dump.DumpMaster):
             def __init__(inner_self, opts: options.Options) -> None:
                 super().__init__(opts)
-                inner_self.addons.add(RouterAddon(self._node_names))
+                inner_self.addons.add(RouterAddon(self._node_names, self._ports))
                 inner_self.addons.add(MonitorAddon(self.monitor))
 
         args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
