@@ -6,7 +6,6 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
-import shutil
 import time
 from typing import cast, Dict, List, Optional, Type, TypeVar
 
@@ -15,8 +14,8 @@ import docker
 from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
-from goth.runner.container.payment import TEMP_ID_DIR
 from goth.runner.container.yagna import YagnaContainerConfig
+import goth.runner.container.payment as payment
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
@@ -153,10 +152,6 @@ class Runner:
                 f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
             )
 
-    def _clean_temp(self) -> None:
-        shutil.rmtree(TEMP_ID_DIR, ignore_errors=True)
-        TEMP_ID_DIR.mkdir(exist_ok=True)
-
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
 
@@ -250,4 +245,4 @@ class Runner:
         # "at the end of events".
         self.check_assertion_errors()
         # Clean up temporary files left by the test
-        self._clean_temp()
+        payment.clean_up()

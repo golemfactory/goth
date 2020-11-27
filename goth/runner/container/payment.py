@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum, unique
 import json
 from pathlib import Path
+import shutil
 from tempfile import gettempdir
 from typing import Iterator, List, Sequence
 from uuid import uuid4
@@ -13,8 +14,19 @@ from goth.project import TEST_DIR
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
 KEY_DIR = Path(TEST_DIR, "yagna", "keys")
-TEMP_ID_DIR = Path(gettempdir(), "goth_payment_id")
-TEMP_ID_DIR.mkdir(exist_ok=True)
+
+
+def get_id_directory() -> Path:
+    """Return temporary directory used for storing generated payment IDs."""
+    temp_id_dir = Path(gettempdir(), "goth_payment_id")
+    temp_id_dir.mkdir(exist_ok=True)
+    return temp_id_dir
+
+
+def clean_up(self) -> None:
+    """Perform post-test cleanup related to payment IDs."""
+    shutil.rmtree(get_id_directory(), ignore_errors=True)
+    get_id_directory().mkdir(exist_ok=True)
 
 
 class KeyPoolDepletedError(Exception):
@@ -80,14 +92,14 @@ class PaymentId:
         self.key_file = self._create_key_file()
 
     def _create_accounts_file(self) -> Path:
-        accounts_path = Path(TEMP_ID_DIR, f"accounts_{self._uuid}.json")
+        accounts_path = Path(get_id_directory(), f"accounts_{self._uuid}.json")
         with accounts_path.open(mode="w+") as fd:
             serializable = [asdict(a) for a in self.accounts]
             json.dump(serializable, fd)
         return accounts_path
 
     def _create_key_file(self) -> Path:
-        key_path = Path(TEMP_ID_DIR, f"key_{self._uuid}.json")
+        key_path = Path(get_id_directory(), f"key_{self._uuid}.json")
         with key_path.open(mode="w+") as fd:
             json.dump(asdict(self.key), fd)
         return key_path

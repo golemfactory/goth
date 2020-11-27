@@ -10,7 +10,7 @@ from goth.address import (
     YAGNA_REST_PORT,
 )
 from goth.runner.container import DockerContainer, DockerContainerConfig
-from goth.runner.container.payment import PaymentId, ENV_ACCOUNT_LIST, TEMP_ID_DIR
+import goth.runner.container.payment as payment
 import goth.runner.container.utils as utils
 from goth.runner.log import LogConfig
 
@@ -35,7 +35,7 @@ class YagnaContainerConfig(DockerContainerConfig):
     environment: Dict[str, str]
     """Environment variables to be set for this container."""
 
-    payment_id: Optional[PaymentId]
+    payment_id: Optional[payment.PaymentId]
     """Custom key and payment accounts to be imported into yagna ID service."""
 
     def __init__(
@@ -47,7 +47,7 @@ class YagnaContainerConfig(DockerContainerConfig):
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
         privileged_mode: bool = False,
-        payment_id: Optional[PaymentId] = None,
+        payment_id: Optional[payment.PaymentId] = None,
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type
@@ -109,7 +109,7 @@ class YagnaContainer(DockerContainer):
     def _prepare_volumes(self, config: YagnaContainerConfig) -> Dict[str, dict]:
         volumes_spec = utils.get_volumes_spec(config.volumes)
         if config.payment_id:
-            id_volumes = {TEMP_ID_DIR: str(PAYMENT_MOUNT_PATH)}
+            id_volumes = {payment.get_id_directory(): str(PAYMENT_MOUNT_PATH)}
             id_volumes_spec = utils.get_volumes_spec(id_volumes, writable=False)
             volumes_spec.update(id_volumes_spec)
         return volumes_spec
@@ -119,5 +119,5 @@ class YagnaContainer(DockerContainer):
         if config.payment_id:
             accounts_file_name = config.payment_id.accounts_file.name
             mount_path = str(PAYMENT_MOUNT_PATH / accounts_file_name)
-            env[ENV_ACCOUNT_LIST] = mount_path
+            env[payment.ENV_ACCOUNT_LIST] = mount_path
         return env
