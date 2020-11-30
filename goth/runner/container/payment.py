@@ -23,7 +23,7 @@ def get_id_directory() -> Path:
     return temp_id_dir
 
 
-def clean_up(self) -> None:
+def clean_up() -> None:
     """Perform post-test cleanup related to payment IDs."""
     shutil.rmtree(get_id_directory(), ignore_errors=True)
     get_id_directory().mkdir(exist_ok=True)
