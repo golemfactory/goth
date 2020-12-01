@@ -233,14 +233,16 @@ class Runner:
     # Argument exception will be re-raised after exiting the context manager,
     # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
     async def __aexit__(self, _exc_type, _exc, _traceback):
+        logger.info("Test finished: %s", self._get_current_test_name())
+
         await asyncio.sleep(2.0)
         for probe in self.probes:
-            logger.info("stopping probe. name=%s", probe.name)
             await probe.stop()
 
         await self._compose_manager.stop_network()
         await self._web_server.stop()
         self.proxy.stop()
+
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
