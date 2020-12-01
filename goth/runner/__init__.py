@@ -15,6 +15,7 @@ from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
+import goth.runner.container.payment as payment
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
@@ -211,6 +212,12 @@ class Runner:
         """Return the port of the build-in web server."""
         return self._web_server.server_port
 
+    @property
+    def web_root_path(self) -> Path:
+        """Return the directory served by the built-in web server."""
+
+        return self.assets_path / "web-root"
+
     async def __aenter__(self) -> "Runner":
         logger.info("Running test: %s", self._get_current_test_name())
 
@@ -222,12 +229,6 @@ class Runner:
         await self._start_nodes()
 
         return self
-
-    @property
-    def web_root_path(self) -> Path:
-        """Return the directory served by the built-in web server."""
-
-        return self.assets_path / "web-root"
 
     # Argument exception will be re-raised after exiting the context manager,
     # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
@@ -243,3 +244,5 @@ class Runner:
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
+        # Clean up temporary files left by the test
+        payment.clean_up()

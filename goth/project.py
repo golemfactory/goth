@@ -6,3 +6,4 @@ import goth
 
 PROJECT_ROOT = Path(goth.__file__).parent.parent
 DOCKER_DIR = PROJECT_ROOT / "docker"
+TEST_DIR = PROJECT_ROOT / "test"

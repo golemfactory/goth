@@ -34,14 +34,6 @@ class DockerContainerConfig:
     privileged_mode: bool = False
     """If set, docker container will be run in privileged mode."""
 
-    def get_volumes_spec(self) -> Dict[str, dict]:
-        """Produce volume specification to be passed to docker."""
-
-        return {
-            str(host_path.resolve()): {"bind": mount_path, "mode": "rw"}
-            for host_path, mount_path in self.volumes.items()
-        }
-
 
 class State(Enum):
     """Represents states that a Docker container may be in."""
