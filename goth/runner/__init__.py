@@ -243,8 +243,9 @@ class Runner:
         await self._web_server.stop()
         self.proxy.stop()
 
+        # Clean up temporary files left by the test
+        payment.clean_up()
+
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
-        # Clean up temporary files left by the test
-        payment.clean_up()
