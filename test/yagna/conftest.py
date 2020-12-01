@@ -9,6 +9,7 @@ import pytest
 
 from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.compose import ComposeConfig, DEFAULT_COMPOSE_FILE
+from goth.runner.container.payment import PaymentIdPool
 from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
 
@@ -187,3 +188,9 @@ def demand_constraints() -> str:
         "(golem.com.pricing.model=linear)"
         ")"
     )
+
+
+@pytest.fixture
+def payment_id_pool() -> PaymentIdPool:
+    """Fixture providing a new instance of `PaymentIdPool` for each test."""
+    return PaymentIdPool()

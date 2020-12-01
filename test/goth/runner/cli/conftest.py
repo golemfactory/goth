@@ -60,4 +60,5 @@ def yagna_container(mock_docker_client):
     config.environment = {}
     config.volumes = {}
     config.privileged_mode = False
+    config.payment_id = None
     return YagnaContainer(mock_docker_client, config)
