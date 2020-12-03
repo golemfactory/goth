@@ -1,5 +1,6 @@
 aiohttp==3.7.3
-docker==4.2.0
+docker-compose==1.27.4
+docker==4.4.0
 func_timeout==4.3.5
 mitmproxy>=5.1,<6.0
 pytest-asyncio==0.14.0

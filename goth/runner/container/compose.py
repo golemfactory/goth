@@ -126,9 +126,8 @@ class ComposeNetworkManager:
             logger.debug("stopping log monitor. name=%s", name)
             await monitor.stop()
 
-        await run_command(["docker-compose", "-f", str(self.config.file_path), "kill"])
         await run_command(
-            ["docker-compose", "-f", str(self.config.file_path), "rm", "-f"]
+            ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"]
         )
 
     def _get_compose_services(self) -> dict:
