@@ -109,7 +109,8 @@ class Runner:
         self.probes = []
         self.proxy = None
         self._compose_manager = ComposeNetworkManager(
-            config=compose_config, docker_client=docker.from_env(),
+            config=compose_config,
+            docker_client=docker.from_env(),
         )
         self._web_server = WebServer(self.web_root_path, web_server_port)
 
@@ -271,7 +272,7 @@ def _install_sigint_handler():
     loop = asyncio.get_event_loop()
 
     def _sigint_handler(*args):
-        print("Got SIGINT")
+        logger.warning("Received SIGINT")
         task.cancel()
 
     loop.add_signal_handler(signal.SIGINT, _sigint_handler)
