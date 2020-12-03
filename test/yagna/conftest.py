@@ -62,7 +62,7 @@ def logs_path(request) -> Path:
 
     # Create a unique subdirectory for this test run
     date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
-    base_log_dir = base_log_dir / f"yagna_integration_{date_str}"
+    base_log_dir = base_log_dir / f"goth_{date_str}"
     base_log_dir.mkdir(parents=True)
 
     configure_logging(base_log_dir)
