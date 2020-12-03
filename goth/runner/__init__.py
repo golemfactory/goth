@@ -1,13 +1,14 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
+from contextlib import asynccontextmanager
 import functools
 from itertools import chain
 import logging
 import os
 from pathlib import Path
 import time
-from typing import cast, Dict, List, Optional, Type, TypeVar
+from typing import cast, AsyncGenerator, Dict, List, Optional, Type, TypeVar
 
 import docker
 
@@ -79,24 +80,26 @@ class Runner:
     base_log_dir: Path
     """Base directory for all log files created during this test run."""
 
+    is_running: bool = False
+    """Bool indicating whether a test is currently being run with this instance."""
+
     probes: List[Probe]
     """Probes used for the test run."""
 
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    topology: List[YagnaContainerConfig]
-    """A list of configuration objects for the containers to be instantiated."""
-
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
+
+    _topology: List[YagnaContainerConfig]
+    """A list of configuration objects for the containers to be instantiated."""
 
     _web_server: WebServer
     """A built-in web server."""
 
     def __init__(
         self,
-        topology: List[YagnaContainerConfig],
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Path,
@@ -108,7 +111,6 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
-        self.topology = topology
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
@@ -155,7 +157,7 @@ class Runner:
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
 
-        for config in self.topology:
+        for config in self._topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
@@ -218,7 +220,23 @@ class Runner:
 
         return self.assets_path / "web-root"
 
-    async def __aenter__(self) -> "Runner":
+    @asynccontextmanager
+    async def __call__(
+        self, topology: List[YagnaContainerConfig]
+    ) -> AsyncGenerator["Runner", None]:
+        """Set up a test with the given topology and enter the test context.
+
+        This is an async context manager, yielding its `Runner` instance.
+        """
+        self._topology = topology
+        await self._enter()
+        try:
+            yield self
+        finally:
+            await self._exit()
+
+    async def _enter(self) -> None:
+        self.is_running = True
         logger.info("Running test: %s", self._get_current_test_name())
 
         self.base_log_dir.mkdir()
@@ -228,21 +246,20 @@ class Runner:
         await self._web_server.start(self.host_address)
         await self._start_nodes()
 
-        return self
+    async def _exit(self):
+        self.is_running = False
+        logger.info("Test finished: %s", self._get_current_test_name())
 
-    # Argument exception will be re-raised after exiting the context manager,
-    # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
-    async def __aexit__(self, _exc_type, _exc, _traceback):
-        await asyncio.sleep(2.0)
         for probe in self.probes:
-            logger.info("stopping probe. name=%s", probe.name)
             await probe.stop()
 
         await self._compose_manager.stop_network()
         await self._web_server.stop()
         self.proxy.stop()
+
+        # Clean up temporary files left by the test
+        payment.clean_up()
+
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
-        # Clean up temporary files left by the test
-        payment.clean_up()

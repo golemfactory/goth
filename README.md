@@ -37,7 +37,9 @@ docker run hello-world
 ```
 
 #### Docker Compose
-Docker Compose is a separate binary which needs to be available on your system in order to run Yagna integration tests. To install it, download the appropriate executable from its [releases page](https://github.com/docker/compose/releases) and make sure its present on your system's `PATH`.
+Docker Compose is a separate binary which needs to be available on your system in order to run Yagna integration tests. `goth` requires `docker-compose` **version 1.27** or higher. There are two ways you can install it:
+1. Download the appropriate executable from the [releases page](https://github.com/docker/compose/releases) and make sure its present on your system's `PATH`.
+2. Use the `docker-compose` installed to your `goth` Python environment (you will need to activate the environment in the shell from which you run your tests).
 
 ### Running the test network
 
