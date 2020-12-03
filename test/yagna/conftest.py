@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 import pytest
 
@@ -212,3 +212,17 @@ def runner(
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
     return Runner(proxy_assertions_module, logs_path, assets_path, compose_config)
+
+
+@pytest.fixture(autouse=True)
+async def cleanup_on_exit(runner) -> AsyncGenerator[None, None]:
+    """Fixture which runs for each test, with sections before and after the test.
+
+    Currently only the section after a test is used. This is done to enable cleanup
+    in case it has not been performed when exiting the `Runner` context (e.g. in case
+    of a `KeyboardInterrupt` exception).
+    """
+    yield
+
+    if runner.is_running:
+        await runner._exit()

@@ -80,6 +80,9 @@ class Runner:
     base_log_dir: Path
     """Base directory for all log files created during this test run."""
 
+    is_running: bool = False
+    """Bool indicating whether a test is currently being run with this instance."""
+
     probes: List[Probe]
     """Probes used for the test run."""
 
@@ -233,6 +236,7 @@ class Runner:
             await self._exit()
 
     async def _enter(self) -> None:
+        self.is_running = True
         logger.info("Running test: %s", self._get_current_test_name())
 
         self.base_log_dir.mkdir()
@@ -242,12 +246,10 @@ class Runner:
         await self._web_server.start(self.host_address)
         await self._start_nodes()
 
-    # Argument exception will be re-raised after exiting the context manager,
-    # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
     async def _exit(self):
+        self.is_running = False
         logger.info("Test finished: %s", self._get_current_test_name())
 
-        await asyncio.sleep(2.0)
         for probe in self.probes:
             await probe.stop()
 
