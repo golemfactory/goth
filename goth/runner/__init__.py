@@ -80,9 +80,6 @@ class Runner:
     base_log_dir: Path
     """Base directory for all log files created during this test run."""
 
-    is_running: bool = False
-    """Bool indicating whether a test is currently being run with this instance."""
-
     probes: List[Probe]
     """Probes used for the test run."""
 
@@ -112,8 +109,7 @@ class Runner:
         self.probes = []
         self.proxy = None
         self._compose_manager = ComposeNetworkManager(
-            config=compose_config,
-            docker_client=docker.from_env(),
+            config=compose_config, docker_client=docker.from_env(),
         )
         self._web_server = WebServer(self.web_root_path, web_server_port)
 
@@ -229,14 +225,17 @@ class Runner:
         This is an async context manager, yielding its `Runner` instance.
         """
         self._topology = topology
-        await self._enter()
+        _install_sigint_handler()
         try:
+            await self._enter()
             yield self
+        except asyncio.CancelledError:
+            logger.error("The runner was cancelled")
+            raise
         finally:
             await self._exit()
 
     async def _enter(self) -> None:
-        self.is_running = True
         logger.info("Running test: %s", self._get_current_test_name())
 
         self.base_log_dir.mkdir()
@@ -247,19 +246,32 @@ class Runner:
         await self._start_nodes()
 
     async def _exit(self):
-        self.is_running = False
         logger.info("Test finished: %s", self._get_current_test_name())
 
         for probe in self.probes:
             await probe.stop()
 
+        self.proxy.stop()
+        # Stopping the proxy triggered evaluation of assertions
+        # "at the end of events".
+        self.check_assertion_errors()
+
         await self._compose_manager.stop_network()
         await self._web_server.stop()
-        self.proxy.stop()
 
         # Clean up temporary files left by the test
         payment.clean_up()
 
-        # Stopping the proxy triggered evaluation of assertions
-        # "at the end of events".
-        self.check_assertion_errors()
+
+def _install_sigint_handler():
+    """Install handler that cancels the current task in the current event loop."""
+    import signal
+
+    task = asyncio.current_task()
+    loop = asyncio.get_event_loop()
+
+    def _sigint_handler(*args):
+        print("Got SIGINT")
+        task.cancel()
+
+    loop.add_signal_handler(signal.SIGINT, _sigint_handler)
