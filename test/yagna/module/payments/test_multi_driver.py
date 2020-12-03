@@ -12,7 +12,6 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.compose import ComposeConfig
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbeWithAgent
@@ -22,11 +21,9 @@ from goth.runner.provider import ProviderProbeWithLogSteps
 logger = logging.getLogger(__name__)
 
 
-def topology(
+def _topology(
     assets_path: Path, agent_task_package: str, payment_id_pool: PaymentIdPool
 ) -> List[YagnaContainerConfig]:
-    """Define the topology of the test network."""
-
     # Nodes are configured to communicate via proxy
     provider_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST)
@@ -66,22 +63,16 @@ def topology(
 
 @pytest.mark.asyncio
 async def test_multi_driver_success(
-    logs_path: Path,
     assets_path: Path,
-    compose_config: ComposeConfig,
-    task_package_template: str,
     payment_id_pool: PaymentIdPool,
+    runner: Runner,
+    task_package_template: str,
 ):
     """Test succesful flow requesting WASM tasks with requestor agent."""
 
-    async with Runner(
-        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        assets_path=assets_path,
-        compose_config=compose_config,
-        logs_path=logs_path,
-        topology=topology(assets_path, task_package_template, payment_id_pool),
-    ) as runner:
+    topology = _topology(assets_path, task_package_template, payment_id_pool)
 
+    async with runner(topology):
         providers = runner.get_probes(probe_type=ProviderProbe)
 
         steps = [
