@@ -41,17 +41,17 @@ Docker Compose is a separate binary which needs to be available on your system i
 ### Running the test network
 
 #### Getting a GitHub API token
-In the current setup, the Yagna Docker image is built locally when the test network is first started. To install the Yagna binary a .deb package is downloaded from GitHub. Downloading artifacts requires authentication, therefore we need to use a GitHub API personal token with appropriate permissions.
+When first starting the test network, `goth` uses the GitHub API to fetch metadata and download artifacts and images. Although all of these assets are public, using the GitHub API still requires basic authentication. Therefore, we need to provide `goth` with a personal access token.
 
 To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens).
-You will need to grant your new token the full `repo` scope, as well as the `read:packages` scope. The packages scope is required in order to pull a Docker image from the [gnt2 repo](https://github.com/golemfactory/gnt2), which is currently private.
+You will need to grant your new token the `public_repo` scope, as well as the `read:packages` scope. The packages scope is required in order to pull Docker images from GitHub.
 
 Once your token is generated you need to do two things:
 1. Log in to GitHub's Docker registry by calling: `docker login docker.pkg.github.com -u {username}`, replacing `{username}` with your GitHub username and pasting in your access token as the password. You only need to do this once on your development machine.
-2. Create an environment variable named `GITHUB_API_TOKEN` and store the access token as its value. This environment variable will need to be available in the shell from which you run the integration tests.
+2. Export an environment variable named `GITHUB_API_TOKEN` and use the access token as its value. This environment variable will need to be available in the shell from which you run `goth`.
 
 ### Running the integration tests
-With project dependencies and Docker tools installed we are now ready to launch integration tests.
+With project dependencies installed and environment set up we are now ready to launch integration tests.
 
 All tests related to `yagna` can be found under `test/yagna` with end-to-end tests located in `test/yagna/e2e`. To run them, issue the below command from the project's root directory:
 ```
@@ -59,20 +59,14 @@ python -m pytest test/yagna/e2e -svx
 ```
 The test runner of choice here is `pytest`, therefore each test is defined as a separate Python function in a given `.py` file.
 
-In the case of end-to-end tests, every test consists of the following steps:
+Every test run consists of the following steps:
 1. `docker-compose` is used to start the so-called "static" containers (e.g. local blockchain, HTTP proxy) and create a common Docker network for all containers participating in the test.
 2. The test runner creates a number of Yagna containers (as defined in the test's topology) which are connected to the `docker-compose` network.
-3. For each Yagna container started a so-called "probe" object is created and made available inside the integration test proper.
+3. For each Yagna container started a so-called "probe" object is created and made available inside the test via the `Runner` object.
 4. The integration test scenario is executed as defined in the function called by `pytest`.
 5. Once the test is finished, all previously started Docker containers (both "static" and "dynamic") are removed.
 
 ### Custom test options
-
-#### Log level
-By default, the test runner will use `INFO` log level. To override it and enable more verbose logging, use the `--log-cli-level` parameter in the `pytest` invocation:
-```
-python -m pytest test/yagna/e2e -svx --log-cli-level DEBUG
-```
 
 #### Assets path
 It's possible to provide a custom assets directory which will be mounted in all Yagna containers used for the test. The assets include files such as the exe script definition (`exe-script.json`) or payment configuration (`accounts.json`).
@@ -82,38 +76,35 @@ To override the default path, use the `--assets-path` parameter, passing in the 
 python -m pytest test/yagna/e2e -svx --assets-path test/custom_assets/some_directory
 ```
 
+#### Log level
+By default, the test runner will use `INFO` log level. To override it and enable more verbose logging, use the `--log-cli-level` parameter in the `pytest` invocation:
+```
+python -m pytest test/yagna/e2e -svx --log-cli-level DEBUG
+```
+
 #### Logs path
 The destination path for all test logs can be overridden using the option `--logs-path`:
 ```
 python -m pytest test/yagna/e2e -svx --logs-path your/custom/path
 ```
 
-#### Yagna commit hash
-Running an integration test includes a `docker-compose` step which builds the `yagna-goth` image. By default, this image is created using the latest `.deb` package from the yagna repo [GitHub Actions build workflow](https://github.com/golemfactory/yagna/actions?query=workflow%3A%22Build+.deb%22).
+#### Yagna binary path
+By default, a set of yagna binaries is downloaded from GitHub to be used for a given test session. The option `--yagna-binary-path` allows for using binaries from the local file system instead. Its value must be a path to either a directory tree containing yagna binaries (e.g. `target` directory from a local `cargo` build) or a `.zip` archive file (e.g. downloaded manually from GitHub Actions):
+```
+python -m pytest test/yagna/e2e -svx --yagna-binary-path /path/to/binaries
+```
 
-In some cases we may want to use a specific build of Yagna rather than the latest one. To achieve this, we can specify a git commit hash being the head for one of the build workflow runs:
+#### Yagna commit hash
+By default, `goth` uses a `yagna` binary from the latest GitHub Actions successful build on `master` branch. This option can be used to override that behaviour. The value here needs to be a git commit hash being the head for one of the build workflow runs:
 ```
 python -m pytest test/yagna/e2e -svx --yagna-commit-hash b0ac62f
 ```
 
 #### Yagna .deb path
-Using the below option we can specify a local Yagna `.deb` package to be installed in the Docker image for Yagna nodes that will be used during a given test session:
+Path to a local .deb file or a directory containing a number of such archives. All of these .deb files will be installed in the Docker image used for Yagna nodes in the tests. To specify the path, use the option `--yagna-deb-path`:
 ```
 python -m pytest test/yagna/e2e -svx --yagna-deb-path path/to/yagna.deb
 ```
-
-##### Building yagna .deb from source
-Assuming we have set up the development environment for `yagna` on our machine, we can build a `.deb` package from source by using [`cargo-deb`](https://github.com/mmstick/cargo-deb). First, we need to install this extension via `cargo`:
-```
-cargo install cargo-deb
-```
-
-With `cargo-deb` installed we can build a `.deb` package of `yagna` by calling the below command from our `yagna` source root directory:
-```
-cargo deb -p yagna
-```
-
-Once built, we can find the result `.deb` package under: `target/debian` in our `yagna` source directory.
 
 ### Troubleshooting integration test runs
 All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/yagna-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running `pytest`.
