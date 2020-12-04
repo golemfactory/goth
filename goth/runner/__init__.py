@@ -8,7 +8,9 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import cast, AsyncGenerator, Dict, List, Optional, Type, TypeVar
+from typing import (
+    cast, AsyncGenerator, Callable, Dict, List, Optional, Type, TypeVar
+)
 
 import docker
 
@@ -86,6 +88,9 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
+    _cancellation_callback: Callable[[], None]
+    """A function to be called when CancellationError is caught during the test."""
+
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
@@ -101,6 +106,7 @@ class Runner:
         logs_path: Path,
         assets_path: Path,
         compose_config: ComposeConfig,
+        cancellation_callback: Callable[[], None],
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -108,6 +114,7 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
+        self._cancellation_callback = cancellation_callback
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
@@ -231,8 +238,7 @@ class Runner:
             await self._enter()
             yield self
         except asyncio.CancelledError:
-            logger.error("The runner was cancelled")
-            raise
+            self._cancellation_callback()
         finally:
             await self._exit()
 

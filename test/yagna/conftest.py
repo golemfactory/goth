@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import pytest
 
@@ -203,12 +203,26 @@ def payment_id_pool() -> PaymentIdPool:
     return PaymentIdPool()
 
 
+# TODO: add the optional exception info argument to the callback
+# (as returned by `sys.exc_info()`)
+@pytest.fixture
+def cancellation_callback() -> Callable[[], None]:
+    return lambda: pytest.fail("The runner was cancelled", pytrace=False)
+
+
 @pytest.fixture
 def runner(
     assets_path: Path,
     compose_config: ComposeConfig,
     logs_path: Path,
     proxy_assertions_module: str,
+    cancellation_callback: Callable[[], None]
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
-    return Runner(proxy_assertions_module, logs_path, assets_path, compose_config)
+    return Runner(
+        proxy_assertions_module,
+        logs_path,
+        assets_path,
+        compose_config,
+        cancellation_callback,
+    )
