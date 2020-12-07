@@ -199,7 +199,7 @@ class RequestorProbe(ApiClientMixin, Probe):
         super().__init__(runner, client, config, log_config)
 
         host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = get_container_address(client, PROXY_HOST)
+        proxy_ip = '127.0.0.1' # use the host-mapped proxy port
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
 

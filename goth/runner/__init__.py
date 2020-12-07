@@ -6,6 +6,7 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
+import sys
 import time
 from typing import cast, Dict, List, Optional, Type, TypeVar
 
@@ -211,8 +212,16 @@ class Runner:
         """Return the host IP address in the docker network used by the containers.
 
         Both the proxy server and the built-in web server are bound to this address.
+
+        On Mac (and Windows?) there's no network bridge and the services on the host
+        don't have access to Docker's internal network. Thus, we need to use a special
+        address `host.docker.internal`
         """
-        return self._compose_manager.network_gateway_address
+
+        if sys.platform == 'linux':
+            return self._compose_manager.network_gateway_address
+        else:
+            return 'host.docker.internal'
 
     @property
     def web_server_port(self) -> int:
