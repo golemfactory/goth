@@ -41,6 +41,53 @@ class ProbeLoggingAdapter(logging.LoggerAdapter):
 
 
 class Probe(abc.ABC):
+    """TODO."""
+
+    runner: "Runner"
+    """A runner that created this probe."""
+
+    _yagna_config: YagnaContainerConfig
+    """Config object used for setting up the Yagna node for this probe."""
+
+    def __init__(
+        self,
+        runner: "Runner",
+        config: YagnaContainerConfig,
+    ):
+        self.runner = runner
+        # self.cli = Cli(self.container).yagna
+        # self._logger = ProbeLoggingAdapter(
+        #     logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
+        # )
+        self._yagna_config = config
+
+    @property
+    def address(self) -> Optional[str]:
+        """Return address from id marked as default."""
+        identity = self.cli.id_show()
+        return identity.address if identity else None
+
+    @property
+    def app_key(self) -> Optional[str]:
+        """Return first app key on the list."""
+        keys = self.cli.app_key_list()
+        return keys[0].key if keys else None
+
+    @abc.abstractmethod
+    @property
+    def name(self) -> str:
+        """Name of the probe."""
+
+    @abc.abstractmethod
+    async def start(self):
+        """Start the probe."""
+
+    @abc.abstractmethod
+    async def stop(self):
+        """Stop the probe."""
+
+
+class DockerProbe(Probe):
     """Provides a unified interface for interacting with and testing a single Yagna node.
 
     This interface consists of several independent modules which may be extended
