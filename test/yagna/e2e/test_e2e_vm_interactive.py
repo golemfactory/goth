@@ -29,6 +29,7 @@ requestor_env = node_environment(
     account_list="/asset/key/001-accounts.json",
 )
 
+
 def _topology(
     assets_path: Path, payment_id_pool: PaymentIdPool
 ) -> List[YagnaContainerConfig]:
@@ -69,7 +70,7 @@ def _topology(
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
-            subnet="goth"
+            subnet="goth",
         ),
         YagnaContainerConfig(
             name="provider_2",
@@ -77,10 +78,9 @@ def _topology(
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
-            subnet="goth"
+            subnet="goth",
         ),
     ]
-
 
 
 ## ASSERTIONS #################################################
@@ -88,9 +88,7 @@ def _topology(
 import json
 
 from goth.api_monitor.api_events import APIEvent, APIResponse
-from goth.assertions.common import (
-    APIEvents,
-)
+from goth.assertions.common import APIEvents
 from goth.assertions.operators import eventually
 
 
@@ -108,7 +106,9 @@ def contains_activity_event(event: APIEvent, event_type: str) -> bool:
 
 async def assert_activity_started(stream: APIEvents) -> None:
 
-    event = await eventually(stream, lambda e: contains_activity_event(e, "CreateActivity"))
+    event = await eventually(
+        stream, lambda e: contains_activity_event(e, "CreateActivity")
+    )
     if event:
         print("\033[32;1m🙂 Activity started!\033[0m")
     else:
@@ -120,14 +120,18 @@ async def assert_activity_started_destroyed(stream: APIEvents) -> None:
 
     await assert_activity_started(stream)
 
-    event = await eventually(stream, lambda e: contains_activity_event(e, "DestroyActivity"))
+    event = await eventually(
+        stream, lambda e: contains_activity_event(e, "DestroyActivity")
+    )
     if event:
         print("\033[32;1m🙂 Activity destroyed!\033[0m")
     else:
         print("\033[31;1m🙁 Activity not destroyed!\033[0m")
         assert False
 
+
 ###################################################
+
 
 @pytest.fixture
 def cancellation_callback() -> Callable[[], None]:

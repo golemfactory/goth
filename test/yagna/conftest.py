@@ -216,7 +216,7 @@ def runner(
     compose_config: ComposeConfig,
     logs_path: Path,
     proxy_assertions_module: str,
-    cancellation_callback: Callable[[], None]
+    cancellation_callback: Callable[[], None],
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
     return Runner(

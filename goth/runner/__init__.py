@@ -8,9 +8,7 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import (
-    cast, AsyncGenerator, Callable, Dict, List, Optional, Type, TypeVar
-)
+from typing import cast, AsyncGenerator, Callable, Dict, List, Optional, Type, TypeVar
 
 import docker
 

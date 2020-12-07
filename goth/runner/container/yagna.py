@@ -47,7 +47,7 @@ class YagnaContainerConfig(DockerContainerConfig):
         environment: Optional[Dict[str, str]] = None,
         privileged_mode: bool = False,
         payment_id: Optional[payment.PaymentId] = None,
-        **probe_properties
+        **probe_properties,
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type
