@@ -186,7 +186,11 @@ class Runner:
             node_names[ip] = probe.name
             ports[ip] = p
             logger.debug(
-                "Probe for %s started on IP: %s with port mapping: %s", probe.name, ip, p)
+                "Probe for %s started on IP: %s with port mapping: %s",
+                probe.name,
+                ip,
+                p,
+            )
 
         node_names[self.host_address] = "Pytest-Requestor-Agent"
 
@@ -195,7 +199,7 @@ class Runner:
         self.proxy = Proxy(
             node_names=node_names,
             ports=ports,
-            assertions_module=self.api_assertions_module
+            assertions_module=self.api_assertions_module,
         )
         self.proxy.start()
         # Wait for proxy to start. TODO: wait for a log line?
@@ -218,10 +222,10 @@ class Runner:
         address `host.docker.internal`
         """
 
-        if sys.platform == 'linux':
+        if sys.platform == "linux":
             return self._compose_manager.network_gateway_address
         else:
-            return 'host.docker.internal'
+            return "host.docker.internal"
 
     @property
     def web_server_port(self) -> int:
