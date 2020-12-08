@@ -1,4 +1,7 @@
 """Utilities related to Docker containers."""
+from pathlib import Path
+from typing import Dict
+
 from docker import DockerClient
 
 from goth.runner.container import DockerContainer
@@ -27,3 +30,22 @@ def get_container_address(
     container = matching_containers[0]
     container_networks = container.attrs["NetworkSettings"]["Networks"]
     return container_networks[network_name]["IPAddress"]
+
+
+def get_volumes_spec(
+    volumes: Dict[Path, str], writable: bool = True
+) -> Dict[str, dict]:
+    """Generate Docker volume specification based on a list of directory mappings.
+
+    `volumes` argument contains mappings between directories. Keys are paths on host,
+    values are mount points in the container.
+    When `writable` is `True`, the volumes will be mounted as read/write, granting
+    the container with write permissions on the mount point.
+    """
+    return {
+        str(host_path.resolve()): {
+            "bind": mount_path,
+            "mode": "rw" if writable else "ro",
+        }
+        for host_path, mount_path in volumes.items()
+    }

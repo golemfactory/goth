@@ -14,7 +14,7 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.compose import ComposeConfig
+from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -22,16 +22,15 @@ from goth.runner.requestor import RequestorProbeWithApiSteps
 logger = logging.getLogger(__name__)
 
 
-def topology(assets_path: Path) -> List[YagnaContainerConfig]:
-    """Define the topology of the test network."""
-
+def _topology(
+    assets_path: Path, payment_id_pool: PaymentIdPool
+) -> List[YagnaContainerConfig]:
     # Nodes are configured to communicate via proxy
     provider_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     requestor_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        account_list="/asset/key/001-accounts.json",
     )
 
     provider_volumes = {
@@ -52,7 +51,7 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=RequestorProbeWithApiSteps,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
-            key_file="/asset/key/001.json",
+            payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
@@ -104,27 +103,18 @@ def _exe_script(runner: Runner, output_file: str):
     ]
 
 
-@pytest.mark.skipif(
-    os.getenv("GITHUB_ACTIONS") == "true",
-    reason="Running in GitHub Actions (no nested virtualization)",
-)
 @pytest.mark.asyncio
 async def test_e2e_vm_success(
-    logs_path: Path,
     assets_path: Path,
-    compose_config: ComposeConfig,
     demand_constraints: str,
+    payment_id_pool: PaymentIdPool,
+    runner: Runner,
 ):
     """Test successful flow requesting a Blender task with goth REST API client."""
 
-    async with Runner(
-        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        assets_path=assets_path,
-        compose_config=compose_config,
-        logs_path=logs_path,
-        topology=topology(assets_path),
-    ) as runner:
+    topology = _topology(assets_path, payment_id_pool)
 
+    async with runner(topology):
         task_package = (
             "hash:sha3:9a3b5d67b0b27746283cb5f287c13eab1beaa12d92a9f536b747c7ae:"
             "http://3.249.139.167:8000/local-image-c76719083b.gvmi"

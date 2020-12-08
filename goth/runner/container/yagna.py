@@ -10,10 +10,17 @@ from goth.address import (
     YAGNA_REST_PORT,
 )
 from goth.runner.container import DockerContainer, DockerContainerConfig
+import goth.runner.container.payment as payment
+import goth.runner.container.utils as utils
 from goth.runner.log import LogConfig
 
 if TYPE_CHECKING:
     from goth.runner.probe import Probe  # noqa: F401
+
+# Default path for mounting assets within a yagna container
+ASSET_MOUNT_PATH = Path("/asset")
+# Path for mounting payment IDs inside a yagna container
+PAYMENT_MOUNT_PATH = ASSET_MOUNT_PATH / "payment"
 
 
 class YagnaContainerConfig(DockerContainerConfig):
@@ -28,8 +35,8 @@ class YagnaContainerConfig(DockerContainerConfig):
     environment: Dict[str, str]
     """Environment variables to be set for this container."""
 
-    key_file: Optional[str]
-    """Keyfile to be imported into the yagna id service."""
+    payment_id: Optional[payment.PaymentId]
+    """Custom key and payment accounts to be imported into yagna ID service."""
 
     def __init__(
         self,
@@ -39,14 +46,14 @@ class YagnaContainerConfig(DockerContainerConfig):
         volumes: Optional[Dict[Path, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
-        key_file: Optional[str] = None,
-        privileged_mode: Optional[bool] = False,
+        privileged_mode: bool = False,
+        payment_id: Optional[payment.PaymentId] = None,
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type
         self.probe_properties = probe_properties or {}
         self.environment = environment or {}
-        self.key_file = key_file
+        self.payment_id = payment_id
 
 
 class YagnaContainer(DockerContainer):
@@ -78,12 +85,12 @@ class YagnaContainer(DockerContainer):
             client=client,
             command=self.COMMAND,
             entrypoint=self.ENTRYPOINT,
-            environment=config.environment,
+            environment=self._prepare_environment(config),
             image=self.IMAGE,
             log_config=log_config,
             name=config.name,
             ports=self.ports,
-            volumes=config.get_volumes_spec(),
+            volumes=self._prepare_volumes(config),
             privileged=config.privileged_mode,
             **kwargs,
         )
@@ -98,3 +105,19 @@ class YagnaContainer(DockerContainer):
             return next(cls.host_port_range)
         except StopIteration:
             raise OverflowError(f"Port range exceeded. range_end={HOST_REST_PORT_END}")
+
+    def _prepare_volumes(self, config: YagnaContainerConfig) -> Dict[str, dict]:
+        volumes_spec = utils.get_volumes_spec(config.volumes)
+        if config.payment_id:
+            id_volumes = {payment.get_id_directory(): str(PAYMENT_MOUNT_PATH)}
+            id_volumes_spec = utils.get_volumes_spec(id_volumes, writable=False)
+            volumes_spec.update(id_volumes_spec)
+        return volumes_spec
+
+    def _prepare_environment(self, config: YagnaContainerConfig) -> Dict[str, str]:
+        env = config.environment
+        if config.payment_id:
+            accounts_file_name = config.payment_id.accounts_file.name
+            mount_path = str(PAYMENT_MOUNT_PATH / accounts_file_name)
+            env[payment.ENV_ACCOUNT_LIST] = mount_path
+        return env

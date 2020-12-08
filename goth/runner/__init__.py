@@ -1,6 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
+from contextlib import asynccontextmanager
 import functools
 from itertools import chain
 import logging
@@ -8,7 +9,7 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import cast, Dict, List, Optional, Type, TypeVar
+from typing import cast, AsyncGenerator, Dict, List, Optional, Type, TypeVar
 
 import docker
 
@@ -16,6 +17,7 @@ from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
+import goth.runner.container.payment as payment
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
@@ -85,18 +87,17 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    topology: List[YagnaContainerConfig]
-    """A list of configuration objects for the containers to be instantiated."""
-
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
+
+    _topology: List[YagnaContainerConfig]
+    """A list of configuration objects for the containers to be instantiated."""
 
     _web_server: WebServer
     """A built-in web server."""
 
     def __init__(
         self,
-        topology: List[YagnaContainerConfig],
         api_assertions_module: Optional[str],
         logs_path: Path,
         assets_path: Path,
@@ -108,7 +109,6 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
-        self.topology = topology
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
@@ -155,7 +155,7 @@ class Runner:
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
 
-        for config in self.topology:
+        for config in self._topology:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
@@ -228,7 +228,32 @@ class Runner:
         """Return the port of the build-in web server."""
         return self._web_server.server_port
 
-    async def __aenter__(self) -> "Runner":
+    @property
+    def web_root_path(self) -> Path:
+        """Return the directory served by the built-in web server."""
+
+        return self.assets_path / "web-root"
+
+    @asynccontextmanager
+    async def __call__(
+        self, topology: List[YagnaContainerConfig]
+    ) -> AsyncGenerator["Runner", None]:
+        """Set up a test with the given topology and enter the test context.
+
+        This is an async context manager, yielding its `Runner` instance.
+        """
+        self._topology = topology
+        _install_sigint_handler()
+        try:
+            await self._enter()
+            yield self
+        except asyncio.CancelledError:
+            logger.error("The runner was cancelled")
+            raise
+        finally:
+            await self._exit()
+
+    async def _enter(self) -> None:
         logger.info("Running test: %s", self._get_current_test_name())
 
         self.base_log_dir.mkdir()
@@ -238,25 +263,33 @@ class Runner:
         await self._web_server.start(server_address=None)  # listen on all interfaces
         await self._start_nodes()
 
-        return self
+    async def _exit(self):
+        logger.info("Test finished: %s", self._get_current_test_name())
 
-    @property
-    def web_root_path(self) -> Path:
-        """Return the directory served by the built-in web server."""
-
-        return self.assets_path / "web-root"
-
-    # Argument exception will be re-raised after exiting the context manager,
-    # see: https://docs.python.org/3/reference/datamodel.html#object.__exit__
-    async def __aexit__(self, _exc_type, _exc, _traceback):
-        await asyncio.sleep(2.0)
         for probe in self.probes:
-            logger.info("stopping probe. name=%s", probe.name)
             await probe.stop()
 
-        await self._compose_manager.stop_network()
-        await self._web_server.stop()
         self.proxy.stop()
         # Stopping the proxy triggered evaluation of assertions
         # "at the end of events".
         self.check_assertion_errors()
+
+        await self._compose_manager.stop_network()
+        await self._web_server.stop()
+
+        # Clean up temporary files left by the test
+        payment.clean_up()
+
+
+def _install_sigint_handler():
+    """Install handler that cancels the current task in the current event loop."""
+    import signal
+
+    task = asyncio.current_task()
+    loop = asyncio.get_event_loop()
+
+    def _sigint_handler(*args):
+        logger.warning("Received SIGINT")
+        task.cancel()
+
+    loop.add_signal_handler(signal.SIGINT, _sigint_handler)

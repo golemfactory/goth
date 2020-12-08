@@ -11,8 +11,6 @@ class CommandError(Exception):
 class KeyAlreadyExistsError(CommandError):
     """Specific duplicate key subclass of the CommandError."""
 
-    pass
-
 
 class ContainerNotFoundError(Exception):
     """Exception for when the container is not found."""
@@ -24,10 +22,6 @@ class ContainerNotFoundError(Exception):
 class TimeoutError(Exception):
     """Exception for when a timeout occurs."""
 
-    pass
-
 
 class StopThreadException(Exception):
     """Exception used to stop a running `StoppableThread`."""
-
-    pass
