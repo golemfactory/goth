@@ -9,7 +9,6 @@ from docker import DockerClient
 
 from goth.address import (
     YAGNA_REST_PORT,
-    PROXY_HOST,
     YAGNA_REST_URL,
 )
 from goth.runner.agent import AgentMixin
