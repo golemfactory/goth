@@ -41,7 +41,7 @@ Docker Compose is a separate binary which needs to be available on your system i
 ### Running the test network
 
 #### Getting a GitHub API token
-When first starting the test network, `goth` uses the GitHub API to fetch metadata and download artifacts and images. Although all of these assets are public, using the GitHub API still requires basic authentication. Therefore, we need to provide `goth` with a personal access token.
+When first starting the test network, `goth` uses the GitHub API to fetch metadata and download artifacts and images. Although all of these assets are public, using the GitHub API still requires basic authentication. Therefore, you need to provide `goth` with a personal access token.
 
 To generate a new token, go to your account's [developer settings](https://github.com/settings/tokens).
 You will need to grant your new token the `public_repo` scope, as well as the `read:packages` scope. The packages scope is required in order to pull Docker images from GitHub.
@@ -51,7 +51,7 @@ Once your token is generated you need to do two things:
 2. Export an environment variable named `GITHUB_API_TOKEN` and use the access token as its value. This environment variable will need to be available in the shell from which you run `goth`.
 
 ### Running the integration tests
-With project dependencies installed and environment set up we are now ready to launch integration tests.
+With project dependencies installed and environment set up you are now ready to launch integration tests.
 
 All tests related to `yagna` can be found under `test/yagna` with end-to-end tests located in `test/yagna/e2e`. To run them, issue the below command from the project's root directory:
 ```
@@ -89,7 +89,7 @@ python -m pytest test/yagna/e2e -svx --logs-path your/custom/path
 ```
 
 #### Yagna binary path
-By default, a set of yagna binaries is downloaded from GitHub to be used for a given test session. The option `--yagna-binary-path` allows for using binaries from the local file system instead. Its value must be a path to either a directory tree containing yagna binaries (e.g. `target` directory from a local `cargo` build) or a `.zip` archive file (e.g. downloaded manually from GitHub Actions):
+By default, a set of yagna binaries is downloaded from GitHub to be used for a given test session. The option `--yagna-binary-path` allows you to use binaries from the local file system instead. Its value must be a path to either a directory tree containing yagna binaries (e.g. `target` directory from a local `cargo` build) or a `.zip` archive file (e.g. downloaded manually from GitHub Actions):
 ```
 python -m pytest test/yagna/e2e -svx --yagna-binary-path /path/to/binaries
 ```
