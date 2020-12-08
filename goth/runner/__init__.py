@@ -235,7 +235,7 @@ class Runner:
     async def __aexit__(self, _exc_type, _exc, _traceback):
         await asyncio.sleep(2.0)
         for probe in self.probes:
-            logger.info("stopping probe. name=%s", probe.name)
+            logger.info("Stopping probe. name=%s", probe.name)
             await probe.stop()
 
         await self._compose_manager.stop_network()
