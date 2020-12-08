@@ -13,7 +13,6 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
-from goth.runner.container.compose import ComposeConfig
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
@@ -58,6 +57,7 @@ def _topology(
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             payment_id=payment_id_pool.get_id(),
+            volumes=provider_volumes,
         ),
     ]
 
