@@ -116,6 +116,7 @@ class Probe(abc.ABC):
 
         Once stopped, a probe cannot be restarted.
         """
+        self._logger.info("Stopping probe")
         if self.container.logs:
             await self.container.logs.stop()
         self.container.remove(force=True)
@@ -130,16 +131,18 @@ class Probe(abc.ABC):
         self.container.start()
 
         # Wait until the daemon is ready to create an app key.
-        self._logger.info("Waiting for GSB identity service to be available.")
-        await self.container.logs.wait_for_entry(
-            ".*Identity GSB service successfully activated", timeout=30
-        )
+        self._logger.info("Waiting for GSB identity service to be available")
+        if self.container.logs:
+            await self.container.logs.wait_for_entry(
+                ".*Identity GSB service successfully activated", timeout=30
+            )
         await self.create_app_key()
 
-        self._logger.info("Waiting for yagna REST API to be listening.")
-        await self.container.logs.wait_for_entry(
-            "Starting .* service on .*.", timeout=30
-        )
+        self._logger.info("Waiting for yagna REST API to be listening")
+        if self.container.logs:
+            await self.container.logs.wait_for_entry(
+                "Starting .* service on .*.", timeout=30
+            )
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(

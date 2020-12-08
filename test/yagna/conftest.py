@@ -7,6 +7,7 @@ from typing import Optional
 
 import pytest
 
+from goth.runner import Runner
 from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.compose import ComposeConfig, DEFAULT_COMPOSE_FILE
 from goth.runner.container.payment import PaymentIdPool
@@ -190,7 +191,24 @@ def demand_constraints() -> str:
     )
 
 
+@pytest.fixture(scope="module")
+def proxy_assertions_module() -> str:
+    """Fixture providing relative path to Python module with proxy assertions."""
+    return "test.yagna.assertions.e2e_wasm_assertions"
+
+
 @pytest.fixture
 def payment_id_pool() -> PaymentIdPool:
     """Fixture providing a new instance of `PaymentIdPool` for each test."""
     return PaymentIdPool()
+
+
+@pytest.fixture
+def runner(
+    assets_path: Path,
+    compose_config: ComposeConfig,
+    logs_path: Path,
+    proxy_assertions_module: str,
+) -> Runner:
+    """Fixture providing the `Runner` object for a test."""
+    return Runner(proxy_assertions_module, logs_path, assets_path, compose_config)
