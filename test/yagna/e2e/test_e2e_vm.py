@@ -104,7 +104,9 @@ def _exe_script(runner: Runner, output_file: str):
     ]
 
 
-@pytest.mark.skipif(sys.platform != "linux", reason="VM test is only supported on Linux")
+@pytest.mark.skipif(
+    sys.platform != "linux", reason="VM test is only supported on Linux"
+)
 @pytest.mark.asyncio
 async def test_e2e_vm_success(
     assets_path: Path,
