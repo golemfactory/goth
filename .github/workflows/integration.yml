@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - km/self-hosted-runner
       # - <your-branch>    # put your branch name here to test it @ GH Actions
   pull_request:
     branches:
