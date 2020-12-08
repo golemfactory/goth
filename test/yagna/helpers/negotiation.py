@@ -21,26 +21,26 @@ class DemandBuilder:
     """
 
     def __init__(self, requestor: RequestorProbe):
-        self.requestor = requestor
-        self.properties = dict()
-        self.constraints = "()"
+        self._requestor = requestor
+        self._properties = dict()
+        self._constraints = "()"
 
     def props_from_template(self, task_package: str) -> "DemandBuilder":
         """Build default properties."""
 
         new_props = {
-            "golem.node.id.name": "test-requestor-{}".format(self.requestor.name),
+            "golem.node.id.name": "test-requestor-{}".format(self._requestor.name),
             "golem.srv.comp.expiration": int(
                 (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
             ),
             "golem.srv.comp.task_package": task_package,
         }
-        self.properties.update(new_props)
+        self._properties.update(new_props)
         return self
 
     def property(self, key: str, value: Any) -> "DemandBuilder":
         """Add property."""
-        self.properties[key] = value
+        self._properties[key] = value
         return self
 
     # TODO: Building constraints.
@@ -50,15 +50,15 @@ class DemandBuilder:
         Note: This will override previous constraints.
         """
 
-        self.constraints = constraints
+        self._constraints = constraints
         return self
 
     def build(self) -> Demand:
         """Create Demand from supplied parameters."""
         return Demand(
-            requestor_id=self.requestor.address,
-            properties=self.properties,
-            constraints=self.constraints,
+            requestor_id=self._requestor.address,
+            properties=self._properties,
+            constraints=self._constraints,
         )
 
 

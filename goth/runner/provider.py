@@ -36,8 +36,23 @@ class ProviderProbeWithLogSteps(ProviderProbe):
 
     @step()
     async def wait_for_agreement_terminated(self):
-        """Wait until exe-unit finishes."""
-        await self._wait_for_agent_log("Requestor terminated agreement")
+        """Wait until Agreement will be terminated.
+
+        This can happen for 2 reasons (both caught by this function):
+        - Requestor terminates - most common case
+        - Provider terminates - it happens for compatibility with previous
+        versions of API without `terminate` endpoint implemented. Moreover
+        Provider can terminate, because Agreements condition where broken.
+        """
+        await self._wait_for_agent_log(r"Agreement \[.*\] terminated by")
+
+    @step()
+    async def wait_for_agreement_cleanup(self):
+        """Wait until Provider will cleanup all allocated resources.
+
+        This can happen before or after Agreement terminated log will be printed.
+        """
+        await self._wait_for_agent_log(r"Agreement \[.*\] cleanup finished.")
 
     @step()
     async def wait_for_invoice_sent(self):

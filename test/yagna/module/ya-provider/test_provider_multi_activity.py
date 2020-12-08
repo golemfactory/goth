@@ -14,6 +14,7 @@ from goth.address import (
 from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.compose import ComposeConfig
+from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -24,7 +25,9 @@ from test.yagna.helpers.payment import pay_all
 logger = logging.getLogger(__name__)
 
 
-def topology(assets_path: Path) -> List[YagnaContainerConfig]:
+def _topology(
+    assets_path: Path, payment_id_pool: PaymentIdPool
+) -> List[YagnaContainerConfig]:
     """Define the topology of the test network."""
 
     # Nodes are configured to communicate via proxy
@@ -48,13 +51,13 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
             probe_type=RequestorProbeWithApiSteps,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
-            key_file="/asset/key/001.json",
+            payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
-            volumes=provider_volumes,
+            payment_id=payment_id_pool.get_id(),
         ),
     ]
 
@@ -64,23 +67,16 @@ def topology(assets_path: Path) -> List[YagnaContainerConfig]:
 # Provider should listen
 @pytest.mark.asyncio
 async def test_provider_multi_activity(
-    logs_path: Path,
     assets_path: Path,
-    exe_script: dict,
-    compose_config: ComposeConfig,
-    task_package_template: str,
     demand_constraints: str,
+    exe_script: dict,
+    payment_id_pool: PaymentIdPool,
+    runner: Runner,
+    task_package_template: str,
 ):
-    """Test successful flow requesting WASM tasks with goth REST API client."""
+    """Test provider handling multiple activities in single Agreement."""
 
-    async with Runner(
-        api_assertions_module="test.yagna.assertions.e2e_wasm_assertions",
-        assets_path=assets_path,
-        compose_config=compose_config,
-        logs_path=logs_path,
-        topology=topology(assets_path),
-    ) as runner:
-
+    async with runner(_topology(assets_path, payment_id_pool)):
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
         providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
 
@@ -98,6 +94,7 @@ async def test_provider_multi_activity(
             )
             .build()
         )
+
         agreement_providers = await negotiate_agreements(
             requestor,
             demand,
