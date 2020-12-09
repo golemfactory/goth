@@ -90,7 +90,7 @@ def _topology(
 # ASSERTIONS #################################################
 
 
-def contains_activity_event(event: APIEvent, event_type: str) -> bool:
+def _contains_activity_event(event: APIEvent, event_type: str) -> bool:
     if (
         isinstance(event, APIResponse)
         and event.request.path.startswith("/activity-api/v1/events?")
@@ -102,10 +102,10 @@ def contains_activity_event(event: APIEvent, event_type: str) -> bool:
     return False
 
 
-async def assert_activity_started(stream: APIEvents) -> None:
+async def _assert_activity_started(stream: APIEvents) -> None:
 
     event = await eventually(
-        stream, lambda e: contains_activity_event(e, "CreateActivity")
+        stream, lambda e: _contains_activity_event(e, "CreateActivity")
     )
     if event:
         print("\033[32;1m🙂 Activity started!\033[0m")
@@ -114,12 +114,12 @@ async def assert_activity_started(stream: APIEvents) -> None:
         assert False
 
 
-async def assert_activity_started_destroyed(stream: APIEvents) -> None:
+async def _assert_activity_started_destroyed(stream: APIEvents) -> None:
 
-    await assert_activity_started(stream)
+    await _assert_activity_started(stream)
 
     event = await eventually(
-        stream, lambda e: contains_activity_event(e, "DestroyActivity")
+        stream, lambda e: _contains_activity_event(e, "DestroyActivity")
     )
     if event:
         print("\033[32;1m🙂 Activity destroyed!\033[0m")
@@ -129,7 +129,7 @@ async def assert_activity_started_destroyed(stream: APIEvents) -> None:
 
 
 # This will fail, it's just to check how assertion failures are reported
-async def assert_activity_api_not_called(stream: APIEvents) -> None:
+async def _assert_activity_api_not_called(stream: APIEvents) -> None:
 
     async for event in stream:
         if isinstance(event, APIRequest):
@@ -187,8 +187,8 @@ async def test_e2e_vm_interactive(
         # Assertions may be added at any point. They have to be checked
         # periodically by calling `runner.check_assertion_errors()`.
         # They will be also checked automatically on runner exit.
-        runner.proxy.monitor.add_assertion(assert_activity_started_destroyed)
-        # runner.proxy.monitor.add_assertion(assert_activity_api_not_called)
+        runner.proxy.monitor.add_assertion(_assert_activity_started_destroyed)
+        # runner.proxy.monitor.add_assertion(_assert_activity_api_not_called)
 
         while True:
             await asyncio.sleep(5)
