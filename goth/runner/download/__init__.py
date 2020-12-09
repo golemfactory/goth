@@ -141,7 +141,7 @@ class ArtifactDownloader(GithubDownloader):
     def _get_workflow(self, workflow_name: str) -> dict:
         """Query the workflow on GitHub Actions."""
         url = f"{self.repo_url}/actions/workflows"
-        logger.info("fetching workflows. url=%s", url)
+        logger.info("Fetching workflows. url=%s", url)
         response = self.session.get(url)
         response.raise_for_status()
 
@@ -164,7 +164,7 @@ class ArtifactDownloader(GithubDownloader):
         request = self.session.prepare_request(
             requests.Request("GET", url, params=params)
         )
-        logger.info("fetching workflow runs. url=%s", request.url)
+        logger.info("Fetching workflow runs. url=%s", request.url)
 
         def _filter_workflows(response: requests.Response) -> Optional[dict]:
             workflow_runs = response.json()["workflow_runs"]
@@ -182,7 +182,7 @@ class ArtifactDownloader(GithubDownloader):
 
     def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
-        logger.info("fetching artifacts. url=%s", artifacts_url)
+        logger.info("Fetching artifacts. url=%s", artifacts_url)
         response = self.session.get(artifacts_url)
         response.raise_for_status()
 
@@ -202,14 +202,14 @@ class ArtifactDownloader(GithubDownloader):
 
         with self.session.get(archive_url) as response:
             response.raise_for_status()
-            logger.info("downloading artifact. url=%s", archive_url)
+            logger.info("Downloading artifact. url=%s", archive_url)
 
             with tempfile.NamedTemporaryFile() as fd:
                 fd.write(response.content)
                 logger.debug("extracting zip archive. path=%s", fd.name)
                 cache_dir = self._create_cache_dir(artifact_id)
                 shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
-                logger.info("extracted package. path=%s", cache_dir)
+                logger.info("Extracted package. path=%s", cache_dir)
 
         return cache_dir
 
@@ -234,7 +234,7 @@ class ArtifactDownloader(GithubDownloader):
         :param workflow_name: name of the workflow to select a run from
         """
         logger.info(
-            "downloading artifact. name=%s, branch=%s, commit=%s, workflow=%s",
+            "Downloading artifact. name=%s, branch=%s, commit=%s, workflow=%s",
             artifact_name,
             branch,
             commit,
@@ -245,20 +245,20 @@ class ArtifactDownloader(GithubDownloader):
         latest_run = self._get_latest_run(workflow, branch, commit)
         artifact = self._get_artifact(artifact_name, latest_run)
         if not artifact:
-            logger.warning("failed to find artifact. name=%s", artifact_name)
+            logger.warning("Failed to find artifact. name=%s", artifact_name)
             return None
-        logger.info("found matching artifact. artifact=%s", artifact)
+        logger.info("Found matching artifact. artifact=%s", artifact)
 
         artifact_id = str(artifact["id"])
         cache_path = self._cache_get(artifact_id)
         if cache_path:
-            logger.info("using cached artifact. cache_path=%s", cache_path)
+            logger.info("Using cached artifact. cache_path=%s", cache_path)
         else:
             cache_path = self._download_artifact(artifact)
 
         if output:
             shutil.copytree(cache_path, output, dirs_exist_ok=True)
-            logger.info("copied artifact to output path. output=%s", str(output))
+            logger.info("Copied artifact to output path. output=%s", str(output))
 
         return output or cache_path
 
@@ -288,7 +288,7 @@ class ReleaseDownloader(GithubDownloader):
         as a substring are considered.
         """
         url = f"{self.repo_url}/releases"
-        logger.info("fetching releases. url=%s", url)
+        logger.info("Fetching releases. url=%s", url)
         response = self.session.get(url)
         response.raise_for_status()
 
@@ -313,11 +313,11 @@ class ReleaseDownloader(GithubDownloader):
 
         with self.session.get(download_url) as response:
             response.raise_for_status()
-            logger.info("downloading asset. url=%s", download_url)
+            logger.info("Downloading asset. url=%s", download_url)
             cache_file = self._create_cache_dir(asset_id) / asset["name"]
             with cache_file.open(mode="wb") as fd:
                 fd.write(response.content)
-            logger.info("downloaded asset. path=%s", str(cache_file))
+            logger.info("Downloaded asset. path=%s", str(cache_file))
 
         return cache_file
 
@@ -334,28 +334,28 @@ class ReleaseDownloader(GithubDownloader):
         """
         release = self._get_latest_release()
         if not release:
-            logger.warning("given repo has no releases. repo=%s", self.repo_name)
+            logger.warning("Given repo has no releases. repo=%s", self.repo_name)
             return None
 
         asset = self._get_asset(release, content_type)
         if not asset:
             logger.warning(
-                "failed to find asset of given type. content_type=%s", content_type
+                "Failed to find asset of given type. content_type=%s", content_type
             )
             return None
-        logger.info("found matching asset. name=%s", asset["name"])
+        logger.info("Found matching asset. name=%s", asset["name"])
         logger.debug("asset=%s", asset)
 
         asset_id = str(asset["id"])
         cache_path = self._cache_get(asset_id)
         if cache_path:
             cache_path = cache_path / asset["name"]
-            logger.info("using cached release asset. cache_path=%s", cache_path)
+            logger.info("Using cached release asset. cache_path=%s", cache_path)
         else:
             cache_path = self._download_asset(asset)
 
         if output:
             shutil.copy2(cache_path, output)
-            logger.info("copied release to output path. output=%s", str(output))
+            logger.info("Copied release to output path. output=%s", str(output))
 
         return output or cache_path

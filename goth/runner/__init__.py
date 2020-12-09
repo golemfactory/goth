@@ -250,6 +250,7 @@ class Runner:
         logger.info("Test finished: %s", self._get_current_test_name())
 
         for probe in self.probes:
+            logger.info("Stopping probe. name=%s", probe.name)
             await probe.stop()
 
         self.proxy.stop()
