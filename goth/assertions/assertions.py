@@ -15,10 +15,6 @@ from typing import (
 )
 
 
-class TemporalAssertionError(AssertionError):
-    """Thrown by temporal assertions on failure."""
-
-
 E = TypeVar("E")
 """Type variable for the type of events"""
 
