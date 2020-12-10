@@ -21,9 +21,20 @@ For the sake of compatibility with other projects and/or your local Python 3 ins
 You can also use your preferred way of managing Python virtual environments to achieve this.
 
 #### Project installation
-To install the `goth` package in development mode with all dependencies, run the below command from the project's root directory:
+`goth` is not (yet) available as a standalone package, therefore you will need to set up its development environment in order to use it.
+
+##### poetry
+`goth` uses [`poetry`](https://python-poetry.org/) to manage its dependencies and provide a runner for common tasks (e.g. running E2E tests).
+If you don't have `poetry` available on your system then follow its [installation instructions](https://python-poetry.org/docs/#installation) before proceeding.
+Verify your installation by running:
 ```
-python3 setup.py develop
+poetry --version
+```
+
+##### project dependencies
+To install the project's dependencies run:
+```
+poetry install
 ```
 
 ### Docker setup
@@ -58,9 +69,19 @@ With project dependencies installed and environment set up you are now ready to 
 
 All tests related to `yagna` can be found under `test/yagna` with end-to-end tests located in `test/yagna/e2e`. To run them, issue the below command from the project's root directory:
 ```
-python -m pytest test/yagna/e2e -svx
+poetry run poe e2e_test
 ```
-The test runner of choice here is `pytest`, therefore each test is defined as a separate Python function in a given `.py` file.
+The above command makes use of [`poethepoet`](https://github.com/nat-n/poethepoet), a task runner for `poetry`. To see all configured tasks run `poe` with no arguments:
+```
+poetry run poe
+```
+
+For more granular control (e.g. running one specific test file) you can also invoke pytest directly to run tests:
+```
+pytest -svx test/yagna/e2e/test_e2e_wasm.py
+```
+
+The test runner of choice for `goth` is `pytest`, therefore each test is defined as a separate Python function in a given `.py` file.
 
 Every test run consists of the following steps:
 1. `docker-compose` is used to start the so-called "static" containers (e.g. local blockchain, HTTP proxy) and create a common Docker network for all containers participating in the test.
@@ -76,41 +97,41 @@ It's possible to provide a custom assets directory which will be mounted in all 
 
 To override the default path, use the `--assets-path` parameter, passing in the custom path:
 ```
-python -m pytest test/yagna/e2e -svx --assets-path test/custom_assets/some_directory
+poetry run poe e2e_test --assets-path test/custom_assets/some_directory
 ```
 
 #### Log level
-By default, the test runner will use `INFO` log level. To override it and enable more verbose logging, use the `--log-cli-level` parameter in the `pytest` invocation:
+By default, the test runner will use `INFO` log level. To override it and enable more verbose logging, use the `--log-cli-level` parameter:
 ```
-python -m pytest test/yagna/e2e -svx --log-cli-level DEBUG
+poetry run poe e2e_test --log-cli-level DEBUG
 ```
 
 #### Logs path
 The destination path for all test logs can be overridden using the option `--logs-path`:
 ```
-python -m pytest test/yagna/e2e -svx --logs-path your/custom/path
+poetry run poe e2e_test --logs-path your/custom/path
 ```
 
 #### Yagna binary path
 By default, a set of yagna binaries is downloaded from GitHub to be used for a given test session. The option `--yagna-binary-path` allows you to use binaries from the local file system instead. Its value must be a path to either a directory tree containing yagna binaries (e.g. `target` directory from a local `cargo` build) or a `.zip` archive file (e.g. downloaded manually from GitHub Actions):
 ```
-python -m pytest test/yagna/e2e -svx --yagna-binary-path /path/to/binaries
+poetry run poe e2e_test --yagna-binary-path /path/to/binaries
 ```
 
 #### Yagna commit hash
 By default, `goth` uses a `yagna` binary from the latest GitHub Actions successful build on `master` branch. This option can be used to override that behaviour. The value here needs to be a git commit hash being the head for one of the build workflow runs:
 ```
-python -m pytest test/yagna/e2e -svx --yagna-commit-hash b0ac62f
+poetry run poe e2e_test --yagna-commit-hash b0ac62f
 ```
 
 #### Yagna .deb path
 Path to a local .deb file or a directory containing a number of such archives. All of these .deb files will be installed in the Docker image used for Yagna nodes in the tests. To specify the path, use the option `--yagna-deb-path`:
 ```
-python -m pytest test/yagna/e2e -svx --yagna-deb-path path/to/yagna.deb
+poetry run poe e2e_test --yagna-deb-path path/to/yagna.deb
 ```
 
 ### Troubleshooting integration test runs
-All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/goth-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running `pytest`.
+All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/goth-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running tests.
 
 The logs from a test run are recorded in the following directory structure:
 - `runner.log` - logs recorded by the integration test runner engine.
