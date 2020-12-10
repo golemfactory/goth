@@ -3,7 +3,7 @@
 ![codestyle](https://github.com/golemfactory/goth/workflows/codestyle/badge.svg?event=push)
 ![test](https://github.com/golemfactory/goth/workflows/test/badge.svg?event=push)
 
-`goth` is an integration testing framework intended to aid the development process of `yagna` itself, as well as apps built on top of it.
+`goth` is an integration testing framework intended to aid the development process of [`yagna`](https://github.com/golemfactory/yagna) itself, as well as apps built on top of it.
 
 ## Running the tests locally
 
