@@ -15,10 +15,6 @@ from typing import (
 )
 
 
-class TemporalAssertionError(AssertionError):
-    """Thrown by temporal assertions on failure."""
-
-
 E = TypeVar("E")
 """Type variable for the type of events"""
 
@@ -137,20 +133,19 @@ class Assertion(AsyncIterable[E]):
         """Return `True` iff this assertion finished execution by failing."""
         return self.started and self._task.done() and self._task.exception() is not None
 
-    @property
-    def result(self) -> Any:
-        """Return the result of the assertion.
+    async def result(self) -> Any:
+        """Return the result of this assertion.
 
-        This can be either a value returned by this assertion on success, an exception
-        thrown on failure, or `None` if the assertion hasn't finished yet.
+        If the assertion succeeded its result will be returned.
+        If it failed, the exception will be raised.
+        If the assertion hasn't finished yet, `None` will be returned.
+        If it hasn't been started, `asyncio.InvalidStateError` will be raised.
         """
         if not self.started:
             raise asyncio.InvalidStateError("Assertion not started")
 
         if self._task.done():
-            if self._task.exception() is not None:
-                return self._task.exception()
-            return self._task.result()
+            return await self._task
         return None
 
     async def update_events(self, events_ended: bool = False) -> None:

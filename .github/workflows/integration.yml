@@ -37,6 +37,7 @@ jobs:
 
       - name: Run test suite
         env:
+          ENABLE_VM_TESTS: 'true'
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: poetry run poe ci_test
 

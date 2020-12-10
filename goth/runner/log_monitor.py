@@ -215,6 +215,4 @@ class LogEventMonitor(EventMonitor[LogEvent]):
         while not assertion.done:
             await asyncio.sleep(0.1)
 
-        if assertion.failed:
-            raise assertion.result
-        return assertion.result
+        return await assertion.result()
