@@ -48,4 +48,4 @@ jobs:
         if: always()
         with:
           name: goth-logs
-          path: /tmp/yagna-tests
+          path: /tmp/goth-tests

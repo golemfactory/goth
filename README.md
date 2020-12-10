@@ -1,9 +1,9 @@
-# Yagna Integration
+# Golem Test Harness
 
-![codestyle](https://github.com/golemfactory/yagna-integration/workflows/codestyle/badge.svg?event=push)
-![test](https://github.com/golemfactory/yagna-integration/workflows/test/badge.svg?event=push)
+![codestyle](https://github.com/golemfactory/goth/workflows/codestyle/badge.svg?event=push)
+![test](https://github.com/golemfactory/goth/workflows/test/badge.svg?event=push)
 
-The Yagna Integration project, intending to build the Integration Harness around LWG software implementation.
+`goth` is an integration testing framework intended to aid the development process of [`yagna`](https://github.com/golemfactory/yagna) itself, as well as apps built on top of it.
 
 ## Running the tests locally
 
@@ -18,9 +18,10 @@ python3 --version
 If you don't have Python installed, download the appropriate package and follow instructions from the [releases page](https://www.python.org/downloads/).
 
 For the sake of compatibility with other projects and/or your local Python 3 installation you can install [`pyenv`](https://github.com/pyenv/pyenv) to manage and switch between multiple Python versions. The `pyenv` installer can be found [here](https://github.com/pyenv/pyenv-installer).
+You can also use your preferred way of managing Python virtual environments to achieve this.
 
 #### Project installation
-To install the `yagna-integration` package in development mode with all dependencies, run the below command from the project's root directory:
+To install the `goth` package in development mode with all dependencies, run the below command from the project's root directory:
 ```
 python3 setup.py develop
 ```
@@ -109,7 +110,7 @@ python -m pytest test/yagna/e2e -svx --yagna-deb-path path/to/yagna.deb
 ```
 
 ### Troubleshooting integration test runs
-All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/yagna-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running `pytest`.
+All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/goth-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running `pytest`.
 
 The logs from a test run are recorded in the following directory structure:
 - `runner.log` - logs recorded by the integration test runner engine.

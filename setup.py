@@ -35,11 +35,11 @@ directory = path.abspath(path.dirname(__file__))
 requirements, dependencies = parse_requirements(directory)
 
 setup(
-    name="yagna-integration",
+    name="goth",
     version="0.0.1",
     platforms=sys.platform,
-    description="Testing framework for yagna",
-    long_description="Testing framework for yagna",
+    description="Golem Test Harness",
+    long_description="Integration testing framework for yagna.",
     url="https://golem.network",
     author="Golem Team",
     author_email="contact@golem.network",
