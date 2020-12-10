@@ -1,3 +1,56 @@
 [tool.black]
 target-version = ['py38']
 exclude= '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|model)/' # Default excludes from black and the generated folder model
+
+[tool.poetry]
+name = "goth"
+version = "0.1.0"
+description = "Golem Test Harness - integration testing framework"
+authors = ["Golem Factory <contact@golem.network>"]
+license = "GPL-3.0"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.8",
+    "Framework :: AsyncIO",
+    "Framework :: Pytest",
+    "Topic :: Software Development :: Testing"
+]
+repository = "https://github.com/golemfactory/goth"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiohttp = "3.7.3"
+docker-compose = "^1.27.4"
+docker = "4.4.0"
+func_timeout = "4.3.5"
+mitmproxy = "^5.1"
+pytest-asyncio = "0.14.0"
+pytest = "^6.1.2"
+pyyaml = "^5.3.1"
+transitions = "^0.8.1"
+typing_extensions = "^3.7.4.2"
+urllib3 = "1.25.*"
+ya-aioclient = "^0.3"
+
+[tool.poetry.dev-dependencies]
+black = "20.8b1"
+flake8 = "3.8.4"
+flake8-docstrings = "1.5.0"
+mypy = "^0.790"
+poethepoet = "^0.8.0"
+
+[tool.poe.tasks]
+codeformat = "black -v --check --diff ."
+codestyle = "flake8"
+# ugly hack to make assets work, fix progress tracked here: https://github.com/golemfactory/yagna-integration/issues/336
+ci_test = "pytest -svx test/yagna --assets-path=/opt/actions-runner/_work/yagna-integration/yagna-integration/test/yagna/e2e/assets"
+e2e_test = "pytest -svx test/yagna/e2e"
+unit_test = "pytest -svx test/goth"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
