@@ -37,7 +37,7 @@ ProbeType = TypeVar("ProbeType", bound=Probe)
 
 
 class TestFailure(Exception):
-    """Base class for errors raised by the test runner when a test fails"""
+    """Base class for errors raised by the test runner when a test fails."""
 
 
 class TemporalAssertionError(TestFailure):
@@ -48,7 +48,7 @@ class TemporalAssertionError(TestFailure):
 
 
 class StepTimeoutError(TestFailure):
-    """Raised on test step timeout. """
+    """Raised on test step timeout."""
 
     def __init__(self, step: str, time: float):
         super().__init__(f"Step '{step}' timed out after {time:.1f} s")
@@ -116,10 +116,11 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
-    _test_error_callback: Callable[[TestFailure], None]
+    _test_failure_callback: Callable[[TestFailure], None]
+    """A function to be called when `TestFailure` is caught during a test run."""
 
     _cancellation_callback: Callable[[], None]
-    """A function to be called when CancellationError is caught during the test."""
+    """A function to be called when `CancellationError` is caught during a test run."""
 
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
@@ -136,7 +137,7 @@ class Runner:
         logs_path: Path,
         assets_path: Path,
         compose_config: ComposeConfig,
-        test_error_callback: Callable[[TestFailure], None],
+        test_failure_callback: Callable[[TestFailure], None],
         cancellation_callback: Callable[[], None],
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
@@ -145,7 +146,7 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
-        self._test_error_callback = test_error_callback
+        self._test_failure_callback = test_failure_callback
         self._cancellation_callback = cancellation_callback
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
@@ -273,7 +274,7 @@ class Runner:
             finally:
                 await self._exit()
         except TestFailure as err:
-            self._test_error_callback(err)
+            self._test_failure_callback(err)
 
     async def _enter(self) -> None:
         logger.info("Running test: %s", self._get_current_test_name())

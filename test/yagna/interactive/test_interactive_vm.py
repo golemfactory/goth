@@ -1,10 +1,10 @@
-"""End to end tests for requesting WASM tasks using goth REST API clients."""
+"""Test scenario that starts providers with VM runtime in interactive mode."""
 
 import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Callable, List
+from typing import List
 
 import pytest
 
@@ -14,11 +14,11 @@ from goth.address import (
     YAGNA_BUS_PORT,
     YAGNA_REST_PORT,
 )
-from goth.api_monitor.api_events import APIEvent, APIRequest, APIResponse
+from goth.api_monitor.api_events import APIEvent, APIResponse
 from goth.assertions.common import APIEvents
 from goth.assertions.operators import eventually
 from goth.node import node_environment
-from goth.runner import Runner, TestFailure
+from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import RequestorProbe
@@ -87,7 +87,7 @@ def _topology(
     ]
 
 
-# ASSERTIONS #################################################
+# ASSERTIONS #######################################################
 
 
 def _contains_activity_event(event: APIEvent, event_type: str) -> bool:
@@ -128,42 +128,18 @@ async def _assert_activity_started_destroyed(stream: APIEvents) -> None:
         assert False
 
 
-# This will fail, it's just to check how assertion failures are reported
-async def _assert_activity_api_not_called(stream: APIEvents) -> None:
-
-    async for event in stream:
-        if isinstance(event, APIRequest):
-            assert not event.path.startswith("/activity-api/")
-
-
-###################################################
-
-
-@pytest.fixture
-def cancellation_callback() -> Callable[[], None]:
-    """Report that the runner was cancelled, do not fail the test."""
-
-    logger = logging.getLogger("goth.runner.interactive")
-    return lambda: logger.info("The runner was cancelled")
-
-
-@pytest.fixture
-def test_failure_callback() -> Callable[[TestFailure], None]:
-    """Report the failure, do not fail the test."""
-
-    logger = logging.getLogger("goth.runner.interactive")
-    return lambda error: logger.error(
-        "The runner was stopped due to test failure: {error}"
-    )
+####################################################################
 
 
 @pytest.mark.asyncio
-async def test_e2e_vm_interactive(
+async def test_interactive_vm(
     assets_path: Path,
     demand_constraints: str,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
 ):
+    """Start the nodes and wait for ctrl+c or assertion error."""
+
     topology = _topology(assets_path, payment_id_pool)
 
     async with runner(topology):
@@ -188,7 +164,6 @@ async def test_e2e_vm_interactive(
         # periodically by calling `runner.check_assertion_errors()`.
         # They will be also checked automatically on runner exit.
         runner.proxy.monitor.add_assertion(_assert_activity_started_destroyed)
-        # runner.proxy.monitor.add_assertion(_assert_activity_api_not_called)
 
         while True:
             await asyncio.sleep(5)
