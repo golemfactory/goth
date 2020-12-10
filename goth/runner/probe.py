@@ -73,8 +73,8 @@ class Probe(abc.ABC):
         keys = self.cli.app_key_list()
         return keys[0].key if keys else None
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def name(self) -> str:
         """Name of the probe."""
 

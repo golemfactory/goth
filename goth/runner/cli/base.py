@@ -1,8 +1,10 @@
 """Classes for running commands in a docker container and some utility functions."""
 
+from dataclasses import dataclass
 import json
 import logging
 import shlex
+import subprocess
 from typing import Dict, List, Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 
 from docker.models.containers import ExecResult
@@ -17,11 +19,22 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class DockerCommandRunner:
-    """A wrapper for executing a command in a docker container."""
+@dataclass(frozen=True)
+class CommandResult:
+    """Stuff."""
 
-    def __init__(self, container: "DockerContainer", command: str):
-        self.container = container
+    exit_code: int
+    stderr: bytes
+    stdout: bytes
+
+
+class CommandRunner:
+    """Stuff."""
+
+    command: str
+    """Stuff."""
+
+    def __init__(self, command: str):
         self.command = command
 
     def run_command(self, *cmd_args: str) -> Tuple[str, str]:
@@ -33,11 +46,30 @@ class DockerCommandRunner:
 
         result = self.run_command_no_throw(*cmd_args)
         # Command's stdout or stderr may be None
-        cmd_stderr = result.output[1].decode() if result.output[1] else ""
-        cmd_stdout = result.output[0].decode() if result.output[0] else ""
+        cmd_stderr = result.stderr.decode() if result.stderr else ""
+        cmd_stdout = result.stdout.decode() if result.stdout else ""
         if result.exit_code != 0:
             raise CommandError(cmd_stderr)
         return cmd_stdout, cmd_stderr
+
+    def run_command_no_throw(self, *cmd_args: str) -> CommandResult:
+        """Stuff."""
+
+        cmd_line = list(cmd_args)
+        cmd_line.insert(0, self.command)
+        logger.debug("[%s] command: '%s'", cmd_line)
+        result = subprocess.run(cmd_line, capture_output=True)
+        return CommandResult(result.returncode, result.stderr, result.stdout)
+
+
+class DockerCommandRunner(CommandRunner):
+    """A wrapper for executing a command in a docker container."""
+
+    container: "DockerContainer"
+
+    def __init__(self, container: "DockerContainer", command: str):
+        super().__init__(command)
+        self.container = container
 
     def run_command_no_throw(self, *cmd_args: str) -> ExecResult:
         """Run the command with `cmd_args`; return its `ExecResult`."""
