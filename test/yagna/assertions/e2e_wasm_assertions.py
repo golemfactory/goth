@@ -6,7 +6,7 @@ from typing import Sequence
 from goth.api_monitor.api_events import APIEvent, APIResponse
 import goth.api_monitor.api_events as api
 
-from goth.assertions import AssertionFunction, TemporalAssertionError
+from goth.assertions import AssertionFunction
 from goth.assertions.common import (
     APIEvents,
     assert_no_api_errors,
@@ -26,14 +26,14 @@ async def assert_eventually_offer_subscribed(stream: APIEvents) -> APIResponse:
     req = await eventually(stream, api.is_subscribe_offer_request)
     if req is None:
         # We've reached the End of Events
-        raise TemporalAssertionError("SubscribeOffer not called")
+        raise AssertionError("SubscribeOffer not called")
 
     # Now wait for a response event matching `req`.
     resp = await eventually(
         stream, lambda e: isinstance(e, APIResponse) and e.request == req
     )
     if resp is None:
-        raise TemporalAssertionError("no response to SubscribeOffer")
+        raise AssertionError("no response to SubscribeOffer")
 
     return resp
 
@@ -62,7 +62,7 @@ async def assert_provider_periodically_collects_demands(stream: APIEvents) -> bo
             if req and api.is_unsubscribe_offer_request(req, sub_id):
                 break
         except asyncio.TimeoutError:
-            raise TemporalAssertionError(
+            raise AssertionError(
                 f"CollectDemands not called within the last {interval}s"
             )
 
@@ -78,7 +78,7 @@ async def assert_no_errors_until_invoice_sent(stream: APIEvents) -> None:
     try:
         await assert_no_api_errors(stream)
 
-    except TemporalAssertionError as err:
+    except AssertionError as err:
         # After the invoice is sent the test is finished and the containers are
         # shut down, and hence some API requests may get no response
         if any(api.is_invoice_send_response(e) for e in stream.past_events):

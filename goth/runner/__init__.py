@@ -9,11 +9,19 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import cast, AsyncGenerator, Dict, List, Optional, Type, TypeVar
+from typing import (
+    cast,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import docker
 
-from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
@@ -27,6 +35,24 @@ from goth.runner.web_server import WebServer
 logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
+
+
+class TestFailure(Exception):
+    """Base class for errors raised by the test runner when a test fails."""
+
+
+class TemporalAssertionError(TestFailure):
+    """Raised on temporal assertion failure."""
+
+    def __init__(self, assertion: str):
+        super().__init__(f"Temporal assertion '{assertion}' failed")
+
+
+class StepTimeoutError(TestFailure):
+    """Raised on test step timeout."""
+
+    def __init__(self, step: str, time: float):
+        super().__init__(f"Step '{step}' timed out after {time:.1f} s")
 
 
 def step(default_timeout: float = 10.0):
@@ -45,15 +71,19 @@ def step(default_timeout: float = 10.0):
                 self.runner.check_assertion_errors()
                 step_time = time.time() - start_time
                 logger.debug(
-                    "Finished step '%s', result: %s, time: %s",
+                    "Finished step '%s', result: %s, time: %.1f s",
                     step_name,
                     result,
                     step_time,
                 )
+            except asyncio.TimeoutError:
+                step_time = time.time() - start_time
+                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
+                raise StepTimeoutError(step_name, step_time)
             except Exception as exc:
                 step_time = time.time() - start_time
                 logger.error(
-                    "Step '%s' raised %s in %s",
+                    "Step '%s' raised %s in %.1f",
                     step_name,
                     exc.__class__.__name__,
                     step_time,
@@ -87,6 +117,12 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
+    _test_failure_callback: Callable[[TestFailure], None]
+    """A function to be called when `TestFailure` is caught during a test run."""
+
+    _cancellation_callback: Callable[[], None]
+    """A function to be called when `CancellationError` is caught during a test run."""
+
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
@@ -102,6 +138,8 @@ class Runner:
         logs_path: Path,
         assets_path: Path,
         compose_config: ComposeConfig,
+        test_failure_callback: Callable[[TestFailure], None],
+        cancellation_callback: Callable[[], None],
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -109,6 +147,8 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
+        self._test_failure_callback = test_failure_callback
+        self._cancellation_callback = cancellation_callback
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
@@ -148,9 +188,7 @@ class Runner:
             # We assume all failed assertions were already reported
             # in their corresponding log files. Now we only need to raise
             # one of them to break the execution.
-            raise TemporalAssertionError(
-                f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
-            )
+            raise TemporalAssertionError(assertion.name)
 
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
@@ -249,13 +287,15 @@ class Runner:
         self._topology = topology
         _install_sigint_handler()
         try:
-            await self._enter()
-            yield self
-        except asyncio.CancelledError:
-            logger.error("The runner was cancelled")
-            raise
-        finally:
-            await self._exit()
+            try:
+                await self._enter()
+                yield self
+            except asyncio.CancelledError:
+                self._cancellation_callback()
+            finally:
+                await self._exit()
+        except TestFailure as err:
+            self._test_failure_callback(err)
 
     async def _enter(self) -> None:
         logger.info("Running test: %s", self._get_current_test_name())
@@ -271,18 +311,20 @@ class Runner:
         logger.info("Test finished: %s", self._get_current_test_name())
 
         for probe in self.probes:
+            logger.info("Stopping probe. name=%s", probe.name)
             await probe.stop()
 
         self.proxy.stop()
-        # Stopping the proxy triggered evaluation of assertions
-        # "at the end of events".
-        self.check_assertion_errors()
+        try:
+            # Stopping the proxy triggered evaluation of assertions
+            # "at the end of events".
+            self.check_assertion_errors()
+        finally:
+            await self._compose_manager.stop_network()
+            await self._web_server.stop()
 
-        await self._compose_manager.stop_network()
-        await self._web_server.stop()
-
-        # Clean up temporary files left by the test
-        payment.clean_up()
+            # Clean up temporary files left by the test
+            payment.clean_up()
 
 
 def _install_sigint_handler():

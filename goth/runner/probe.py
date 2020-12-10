@@ -259,6 +259,9 @@ class ProviderProbe(AgentMixin, Probe):
     agent_preset: Optional[str]
     """Name of the preset to be used when placing a market offer."""
 
+    subnet: Optional[str]
+    """Optional name of the subnet to which the provider agent connects."""
+
     def __init__(
         self,
         runner: "Runner",
@@ -266,9 +269,11 @@ class ProviderProbe(AgentMixin, Probe):
         config: YagnaContainerConfig,
         log_config: LogConfig,
         agent_preset: Optional[str] = None,
+        subnet: Optional[str] = None,
     ):
         super().__init__(runner, client, config, log_config)
         self.agent_preset = agent_preset
+        self.subnet = subnet
 
     async def start_agent(self):
         """Start the provider agent and attach to its log stream."""
@@ -277,6 +282,8 @@ class ProviderProbe(AgentMixin, Probe):
 
         if self.agent_preset:
             self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+        if self.subnet:
+            self.container.exec_run(f"ya-provider config set --subnet {self.subnet}")
 
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",

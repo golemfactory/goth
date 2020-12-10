@@ -87,6 +87,9 @@ class ComposeNetworkManager:
 
         This step may include (re)building the network's docker images.
         """
+        # Stop the network in case it's already running (e.g. from a previous test)
+        await self.stop_network()
+
         command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
 
         await build_yagna_image(self.config.build_env)

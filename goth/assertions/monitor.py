@@ -6,6 +6,7 @@ that registers events and checks whether temporal assertions are satisfied.
 import asyncio
 import importlib
 import logging
+import sys
 from typing import Generic, List, Optional, Sequence
 
 from goth.assertions import Assertion, AssertionFunction, E
@@ -168,7 +169,9 @@ class EventMonitor(Generic[E]):
     async def _check_assertions(self, events_ended: bool) -> None:
 
         event_descr = (
-            f"event #{len(self._events)}" if not events_ended else "all events"
+            f"#{len(self._events)} ({self._events[-1]})"
+            if not events_ended
+            else "EndOfEvents"
         )
 
         for a in self.assertions:
@@ -185,15 +188,29 @@ class EventMonitor(Generic[E]):
             await a.update_events(events_ended=events_ended)
 
             if a.accepted:
-                msg = "Assertion '%s' succeeded after %s; result: %s"
-                self._logger.info(msg, a.name, event_descr, str(a.result))
+                result = await a.result()
+                msg = "Assertion '%s' succeeded after event: %s; result: %s"
+                self._logger.info(msg, a.name, event_descr, result)
 
             elif a.failed:
-                msg = "Assertion '%s' failed after %s; cause: %s"
-                self._logger.error(msg, a.name, event_descr, str(a.result))
+                await self._report_failure(a, event_descr)
 
             # Ensure other tasks can also run between assertions
             await asyncio.sleep(0)
+
+    async def _report_failure(self, a: Assertion, event_descr: str) -> None:
+        try:
+            await a.result()
+        except Exception:
+            exc_type, exc, tb = sys.exc_info()
+            # Drop top 2 frames from the traceback: the current one
+            # and the the one for `a.result()`, so that only the frames
+            # of the assertion functions are left.
+            tb = tb.tb_next.tb_next
+            msg = "Assertion '%s' failed after event: %s; cause: %s"
+            self._logger.error(
+                msg, a.name, event_descr, exc, exc_info=(exc_type, exc, tb)
+            )
 
     @property
     def satisfied(self) -> Sequence[Assertion[E]]:
