@@ -41,10 +41,10 @@ def _topology(
         YagnaContainerConfig(
             "requestor",
             probe_type=RequestorProbeWithAgent,
-            probe_properties={"task_package": agent_task_package},
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
+            task_package=agent_task_package,
         ),
         YagnaContainerConfig(
             "provider_1",

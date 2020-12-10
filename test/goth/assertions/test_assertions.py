@@ -21,7 +21,7 @@ async def test_assertion_not_started_raises():
     assert not assertion.accepted
     assert not assertion.failed
     with pytest.raises(asyncio.InvalidStateError):
-        _ = assertion.result
+        _ = await assertion.result()
     with pytest.raises(asyncio.InvalidStateError):
         await assertion.update_events()
 
@@ -40,7 +40,7 @@ async def test_assertion_accept_immediately():
     await task
     assert assertion.done
     assert assertion.accepted
-    assert assertion.result == 43
+    assert await assertion.result() == 43
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,7 @@ async def test_assertion_accept_with_delay():
     await task
     assert assertion.done
     assert assertion.accepted
-    assert assertion.result == 43
+    assert await assertion.result() == 43
 
 
 @pytest.mark.asyncio
@@ -95,7 +95,7 @@ async def test_assertion_consumes_one():
     events.append(2)
     await assertion.update_events()
     assert assertion.accepted
-    assert assertion.result == 2
+    assert await assertion.result() == 2
 
 
 @pytest.mark.asyncio
@@ -112,7 +112,8 @@ async def test_assertion_fails_on_event():
     assertion.start()
     await assertion.update_events()
     assert assertion.failed
-    assert isinstance(assertion.result, AssertionError)
+    with pytest.raises(AssertionError):
+        await assertion.result()
 
 
 @pytest.mark.asyncio
@@ -143,7 +144,7 @@ async def test_assertion_consumes_three():
     events.append(3)
     await assertion.update_events()
     assert assertion.accepted
-    assert assertion.result == 6
+    assert await assertion.result() == 6
 
 
 @pytest.mark.asyncio
@@ -163,7 +164,7 @@ async def test_assertion_end_events():
 
     await assertion.update_events(events_ended=True)
     assert assertion.accepted
-    assert assertion.result == 44
+    assert await assertion.result() == 44
 
 
 @pytest.mark.asyncio
@@ -183,7 +184,8 @@ async def test_assertion_end_events_raises():
 
     await assertion.update_events(events_ended=True)
     assert assertion.failed
-    assert isinstance(assertion.result, AssertionError)
+    with pytest.raises(AssertionError):
+        await assertion.result()
 
 
 @pytest.mark.asyncio
@@ -207,7 +209,7 @@ async def test_assertion_consumes_all():
 
     await assertion.update_events(events_ended=True)
     assert assertion.done
-    assert assertion.result == events
+    assert await assertion.result() == events
 
 
 @pytest.mark.asyncio
@@ -280,7 +282,7 @@ async def test_past_events():
     await assertion.update_events(events_ended=True)
 
     assert assertion.accepted
-    assert assertion.result == [3, 2, 1]
+    assert await assertion.result() == [3, 2, 1]
 
 
 @pytest.mark.parametrize(
@@ -316,7 +318,11 @@ async def test_eventually_with_timeout(timeout, accept, result_predicate):
     await assertion.update_events(events_ended=True)
 
     assert assertion.accepted is accept
-    assert result_predicate(assertion.result)
+    try:
+        result = await assertion.result()
+    except Exception as error:
+        result = error
+    assert result_predicate(result)
 
 
 @pytest.mark.parametrize("timeout, accept", [(1.0, True), (0.1, False)])
@@ -387,7 +393,7 @@ async def test_composite_assertion():
     await asyncio.sleep(0.1)
     await assertion.update_events(events_ended=True)
 
-    assert assertion.result == (True, False, False)
+    assert await assertion.result() == (True, False, False)
 
 
 @pytest.mark.asyncio

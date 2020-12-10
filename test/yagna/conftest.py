@@ -3,11 +3,11 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import pytest
 
-from goth.runner import Runner
+from goth.runner import Runner, TestFailure
 from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.compose import ComposeConfig, DEFAULT_COMPOSE_FILE
 from goth.runner.container.payment import PaymentIdPool
@@ -204,11 +204,39 @@ def payment_id_pool() -> PaymentIdPool:
 
 
 @pytest.fixture
+def test_failure_callback() -> Callable[[TestFailure], None]:
+    """Fail the current test but suppress the traceback."""
+
+    def _handle_test_failure(err: TestFailure) -> None:
+        pytest.fail(str(err), pytrace=False)
+
+    return _handle_test_failure
+
+
+# TODO: add the optional exception info argument to the callback
+# (as returned by `sys.exc_info()`)
+@pytest.fixture
+def cancellation_callback() -> Callable[[], None]:
+    """Fail the current test when the runner is cancelled."""
+
+    return lambda: pytest.fail("The runner was cancelled", pytrace=False)
+
+
+@pytest.fixture
 def runner(
     assets_path: Path,
     compose_config: ComposeConfig,
     logs_path: Path,
     proxy_assertions_module: str,
+    test_failure_callback: Callable[[TestFailure], None],
+    cancellation_callback: Callable[[], None],
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
-    return Runner(proxy_assertions_module, logs_path, assets_path, compose_config)
+    return Runner(
+        proxy_assertions_module,
+        logs_path,
+        assets_path,
+        compose_config,
+        test_failure_callback,
+        cancellation_callback,
+    )

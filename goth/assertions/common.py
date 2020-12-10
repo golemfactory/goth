@@ -8,7 +8,7 @@ from goth.api_monitor.api_events import (
     APIResponse,
 )
 
-from goth.assertions import EventStream, TemporalAssertionError
+from goth.assertions import EventStream
 
 
 APIEvents = EventStream[APIEvent]
@@ -19,7 +19,7 @@ async def assert_no_api_errors(stream: APIEvents) -> bool:
     async for e in stream:
 
         if isinstance(e, APIError):
-            raise TemporalAssertionError(f"API error occurred: {e}")
+            raise AssertionError(f"API error occurred: {e}")
 
     return True
 
@@ -42,6 +42,6 @@ async def assert_every_request_gets_response(stream: APIEvents) -> bool:
 
     if requests_in_progress:
         a_request = requests_in_progress.pop()
-        raise TemporalAssertionError(f"request got no response: {a_request}")
+        raise AssertionError(f"request got no response: {a_request}")
 
     return True

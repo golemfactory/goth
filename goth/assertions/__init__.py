@@ -5,7 +5,6 @@ from goth.assertions.assertions import (
     AssertionFunction,
     E,
     EventStream,
-    TemporalAssertionError,
 )
 
 __all__ = [
@@ -13,5 +12,4 @@ __all__ = [
     "AssertionFunction",
     "E",
     "EventStream",
-    "TemporalAssertionError",
 ]
