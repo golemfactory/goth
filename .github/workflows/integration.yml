@@ -38,6 +38,7 @@ jobs:
 
       - name: Run test suite
         env:
+          ENABLE_VM_TESTS: 'true'
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # ugly hack to make assets work, fix progress tracked here: https://github.com/golemfactory/yagna-integration/issues/336
         run: python -m pytest test/yagna --assets-path=/opt/actions-runner/_work/yagna-integration/yagna-integration/test/yagna/e2e/assets -svx
