@@ -42,12 +42,12 @@ class YagnaContainerConfig(DockerContainerConfig):
         self,
         name: str,
         probe_type: Type["Probe"],
-        probe_properties: Optional[Dict[str, Any]] = None,
         volumes: Optional[Dict[Path, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
         privileged_mode: bool = False,
         payment_id: Optional[payment.PaymentId] = None,
+        **probe_properties,
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type

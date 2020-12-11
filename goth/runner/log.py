@@ -8,7 +8,7 @@ import tempfile
 import time
 from typing import Union
 
-DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "yagna-tests"
+DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "goth-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
 
 logger = logging.getLogger(__name__)
