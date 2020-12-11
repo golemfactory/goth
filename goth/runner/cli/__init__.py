@@ -1,6 +1,6 @@
 """Classes for running commands inside docker containers."""
 
-from goth.runner.cli.base import DockerJSONCommandRunner
+from goth.runner.cli.base import DockerCommandRunner
 from goth.runner.cli.yagna_app_key_cmd import YagnaAppKeyMixin
 from goth.runner.cli.yagna_id_cmd import YagnaIdMixin
 from goth.runner.cli.yagna_payment_cmd import YagnaPaymentMixin
@@ -8,7 +8,7 @@ from goth.runner.container import DockerContainer
 
 
 class YagnaDockerCli(
-    DockerJSONCommandRunner, YagnaAppKeyMixin, YagnaIdMixin, YagnaPaymentMixin
+    DockerCommandRunner, YagnaAppKeyMixin, YagnaIdMixin, YagnaPaymentMixin
 ):
     """A class for running the `yagna` command inside a docker container."""
 

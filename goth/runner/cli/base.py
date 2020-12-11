@@ -28,6 +28,9 @@ class CommandResult:
     stderr: bytes
 
 
+T = TypeVar("T")
+
+
 class CommandRunner:
     """Helper class for running shell commands on the host machine."""
 
@@ -63,6 +66,25 @@ class CommandRunner:
         result = subprocess.run(cmd_line, capture_output=True)
         return CommandResult(result.returncode, result.stdout, result.stderr)
 
+    def run_json_command(self, result_type: Type[T], *cmd_args: str) -> T:
+        """Add `--json` flag to command arguments and run the command.
+
+        Parse the command output as JSON and return it.
+        An assertion is made on the parsed result type, raising in case of mismatch.
+        """
+
+        if "--json" not in cmd_args:
+            cmd_args = *cmd_args, "--json"
+
+        cmd_stdout, _ = self.run_command(*cmd_args)
+        obj = json.loads(cmd_stdout)
+        if isinstance(obj, result_type):
+            return obj
+
+        raise CommandError(
+            f"Expected a {result_type.__name__} but command returned: {obj}"
+        )
+
 
 class DockerCommandRunner(CommandRunner):
     """Helper class for running shell commands in a Docker container."""
@@ -82,31 +104,6 @@ class DockerCommandRunner(CommandRunner):
 
         return CommandResult(
             exec_result.exit_code, exec_result.output[0], exec_result.output[1]
-        )
-
-
-T = TypeVar("T")
-
-
-class DockerJSONCommandRunner(DockerCommandRunner):
-    """Extension of `DockerCommandRunner` which adds `--json` flag to command args."""
-
-    def run_json_command(self, result_type: Type[T], *cmd_args: str) -> T:
-        """Add `--json` flag to command arguments and run the command.
-
-        Parse the command output as JSON and return it.
-        """
-
-        if "--json" not in cmd_args:
-            cmd_args = *cmd_args, "--json"
-
-        cmd_stdout, _ = self.run_command(*cmd_args)
-        obj = json.loads(cmd_stdout)
-        if isinstance(obj, result_type):
-            return obj
-
-        raise CommandError(
-            f"Expected a {result_type.__name__} but command returned: {obj}"
         )
 
 
