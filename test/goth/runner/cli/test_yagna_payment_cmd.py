@@ -17,24 +17,6 @@ def test_payment_init(yagna_container):
     yagna.payment_init()
 
 
-@pytest.mark.skip(reason="Not sure what is the expected behaviour")
-def test_payment_init_provider_mode(yagna_container):
-    """Test `payment init -p`."""
-
-    yagna = Cli(yagna_container).yagna
-
-    yagna.payment_init(provider_mode=True)
-
-
-@pytest.mark.skip(reason="Not sure what is the expected behaviour")
-def test_payment_init_requestor_mode(yagna_container):
-    """Test `payment init -r`."""
-
-    yagna = Cli(yagna_container).yagna
-
-    yagna.payment_init(requestor_mode=True)
-
-
 def test_payment_status(yagna_container):
     """Test `payment status` subcommand."""
 
