@@ -24,8 +24,8 @@ class CommandResult:
     """Stuff."""
 
     exit_code: int
-    stderr: bytes
     stdout: bytes
+    stderr: bytes
 
 
 class CommandRunner:
@@ -48,8 +48,10 @@ class CommandRunner:
         # Command's stdout or stderr may be None
         cmd_stderr = result.stderr.decode() if result.stderr else ""
         cmd_stdout = result.stdout.decode() if result.stdout else ""
+
         if result.exit_code != 0:
             raise CommandError(cmd_stderr)
+
         return cmd_stdout, cmd_stderr
 
     def run_command_no_throw(self, *cmd_args: str) -> CommandResult:
@@ -59,7 +61,7 @@ class CommandRunner:
         cmd_line.insert(0, self.command)
         logger.debug("[%s] command: '%s'", cmd_line)
         result = subprocess.run(cmd_line, capture_output=True)
-        return CommandResult(result.returncode, result.stderr, result.stdout)
+        return CommandResult(result.returncode, result.stdout, result.stderr)
 
 
 class DockerCommandRunner(CommandRunner):
@@ -71,12 +73,16 @@ class DockerCommandRunner(CommandRunner):
         super().__init__(command)
         self.container = container
 
-    def run_command_no_throw(self, *cmd_args: str) -> ExecResult:
+    def run_command_no_throw(self, *cmd_args: str) -> CommandResult:
         """Run the command with `cmd_args`; return its `ExecResult`."""
 
         cmd_line = f"{self.command} {' '.join(cmd_args)}"
         logger.debug("[%s] command: '%s'", self.container.name, cmd_line)
-        return self.container.exec_run(cmd_line, demux=True)
+        exec_result: ExecResult = self.container.exec_run(cmd_line, demux=True)
+
+        return CommandResult(
+            exec_result.exit_code, exec_result.output[0], exec_result.output[1]
+        )
 
 
 T = TypeVar("T")
