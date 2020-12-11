@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 @dataclass(frozen=True)
 class CommandResult:
-    """Stuff."""
+    """Represents the result of a shell command."""
 
     exit_code: int
     stdout: bytes
@@ -29,19 +29,19 @@ class CommandResult:
 
 
 class CommandRunner:
-    """Stuff."""
+    """Helper class for running shell commands on the host machine."""
 
     command: str
-    """Stuff."""
+    """Name of the executable this runner instance will use."""
 
     def __init__(self, command: str):
         self.command = command
 
     def run_command(self, *cmd_args: str) -> Tuple[str, str]:
-        """Run the command with `cmd_args`.
+        """Run the command with arguments given in `cmd_args`.
 
         Return a pair of strings containing the standard output and standard error of
-        the command on success, or raise `CommandError` on error.
+        the command on success, or raise `CommandError` on non-zero exit code.
         """
 
         result = self.run_command_no_throw(*cmd_args)
@@ -55,7 +55,7 @@ class CommandRunner:
         return cmd_stdout, cmd_stderr
 
     def run_command_no_throw(self, *cmd_args: str) -> CommandResult:
-        """Stuff."""
+        """Run command with `cmd_args` without raising an exception on failure."""
 
         cmd_line = list(cmd_args)
         cmd_line.insert(0, self.command)
@@ -65,7 +65,7 @@ class CommandRunner:
 
 
 class DockerCommandRunner(CommandRunner):
-    """A wrapper for executing a command in a docker container."""
+    """Helper class for running shell commands in a Docker container."""
 
     container: "DockerContainer"
 
@@ -74,7 +74,7 @@ class DockerCommandRunner(CommandRunner):
         self.container = container
 
     def run_command_no_throw(self, *cmd_args: str) -> CommandResult:
-        """Run the command with `cmd_args`; return its `ExecResult`."""
+        """Run command with `cmd_args` without raising an exception on failure."""
 
         cmd_line = f"{self.command} {' '.join(cmd_args)}"
         logger.debug("[%s] command: '%s'", self.container.name, cmd_line)
@@ -89,7 +89,7 @@ T = TypeVar("T")
 
 
 class DockerJSONCommandRunner(DockerCommandRunner):
-    """Adds method for running commands with `--json` flag."""
+    """Extension of `DockerCommandRunner` which adds `--json` flag to command args."""
 
     def run_json_command(self, result_type: Type[T], *cmd_args: str) -> T:
         """Add `--json` flag to command arguments and run the command.
@@ -99,10 +99,12 @@ class DockerJSONCommandRunner(DockerCommandRunner):
 
         if "--json" not in cmd_args:
             cmd_args = *cmd_args, "--json"
+
         cmd_stdout, _ = self.run_command(*cmd_args)
         obj = json.loads(cmd_stdout)
         if isinstance(obj, result_type):
             return obj
+
         raise CommandError(
             f"Expected a {result_type.__name__} but command returned: {obj}"
         )
