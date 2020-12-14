@@ -19,19 +19,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Configure python 3.8
+      - name: Configure python
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
 
-      - name: Print python and pip version
-        run: python --version && pip --version
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
 
-      - name: Run setuptools
-        run: python setup.py develop
-
-      - name: Print installed package versions
-        run: pip freeze
+      - name: Install dependencies
+        run: poetry install --no-root
 
       - name: Log in to GitHub Docker repository
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
@@ -40,8 +39,7 @@ jobs:
         env:
           ENABLE_VM_TESTS: 'true'
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # ugly hack to make assets work, fix progress tracked here: https://github.com/golemfactory/yagna-integration/issues/336
-        run: python -m pytest test/yagna --ignore test/yagna/interactive --assets-path=/opt/actions-runner/_work/yagna-integration/yagna-integration/test/yagna/e2e/assets -svx
+        run: poetry run poe ci_test
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2
