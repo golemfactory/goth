@@ -56,7 +56,9 @@ class RouterAddon:
 
             if server_port == YAGNA_REST_PORT:
                 # It's a provider agent calling a yagna daemon
-                # We route the request to the daemon's mapped port on the host
+                # Since we assume that the provider agent runs on the same container
+                # as the provider daemon, we route this request to that container's
+                # host-mapped daemon port
                 req.host = "127.0.0.1"
                 req.port = self._ports[remote_addr][server_port]
                 req.headers[CALLER_HEADER] = f"{node_name}:agent"

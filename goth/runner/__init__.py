@@ -220,14 +220,14 @@ class Runner:
             await probe.start()
             assert probe.ip_address
             ip = probe.ip_address
-            p = probe.container.ports
+            port = probe.container.ports
             node_names[ip] = probe.name
-            ports[ip] = p
+            ports[ip] = port
             logger.debug(
                 "Probe for %s started on IP: %s with port mapping: %s",
                 probe.name,
                 ip,
-                p,
+                port,
             )
 
         node_names[self.host_address] = "Pytest-Requestor-Agent"
