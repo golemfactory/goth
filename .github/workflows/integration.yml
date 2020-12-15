@@ -39,7 +39,7 @@ jobs:
         env:
           ENABLE_VM_TESTS: 'true'
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: poetry run poe ci_test
+        run: poetry run poe ci_test_self_hosted
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2
