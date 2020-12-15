@@ -37,7 +37,7 @@ class WebServer:
                 out.write(data)
         return web.Response()
 
-    async def start(self, server_address: str) -> None:
+    async def start(self, server_address: Optional[str]) -> None:
         """Start serving content."""
 
         if self._server_task:
@@ -53,7 +53,7 @@ class WebServer:
         self._server_task = asyncio.create_task(site.start())
         logger.info(
             "Web server listening on %s:%s, root dir is %s",
-            server_address,
+            server_address or "*",
             self.server_port,
             self.root_path,
         )

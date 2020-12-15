@@ -7,6 +7,7 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
+import sys
 import time
 from typing import (
     cast,
@@ -212,19 +213,31 @@ class Runner:
 
     async def _start_nodes(self):
         node_names: Dict[str, str] = {}
+        ports: Dict[str, dict] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
             await probe.start()
             assert probe.ip_address
-            node_names[probe.ip_address] = probe.name
+            ip = probe.ip_address
+            port = probe.container.ports
+            node_names[ip] = probe.name
+            ports[ip] = port
+            logger.debug(
+                "Probe for %s started on IP: %s with port mapping: %s",
+                probe.name,
+                ip,
+                port,
+            )
 
         node_names[self.host_address] = "Pytest-Requestor-Agent"
 
         # Start the proxy node. The containers should not make API calls
         # up to this point.
         self.proxy = Proxy(
-            node_names=node_names, assertions_module=self.api_assertions_module
+            node_names=node_names,
+            ports=ports,
+            assertions_module=self.api_assertions_module,
         )
         self.proxy.start()
         # Wait for proxy to start. TODO: wait for a log line?
@@ -241,8 +254,16 @@ class Runner:
         """Return the host IP address in the docker network used by the containers.
 
         Both the proxy server and the built-in web server are bound to this address.
+
+        On Mac (and Windows?) there's no network bridge and the services on the host
+        don't have access to Docker's internal network. Thus, we need to use a special
+        address `host.docker.internal`
         """
-        return self._compose_manager.network_gateway_address
+
+        if sys.platform == "linux":
+            return self._compose_manager.network_gateway_address
+        else:
+            return "host.docker.internal"
 
     @property
     def web_server_port(self) -> int:
@@ -283,7 +304,7 @@ class Runner:
         await self._compose_manager.start_network(self.base_log_dir)
 
         self._create_probes(self.base_log_dir)
-        await self._web_server.start(self.host_address)
+        await self._web_server.start(server_address=None)  # listen on all interfaces
         await self._start_nodes()
 
     async def _exit(self):
