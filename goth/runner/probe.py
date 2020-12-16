@@ -56,7 +56,7 @@ class Probe(abc.ABC):
     container: YagnaContainer
     """A module which handles the lifecycle of the daemon's Docker container."""
 
-    ip_address: Optional[str]
+    ip_address: Optional[str] = None
     """An IP address of the daemon's container in the Docker network."""
 
     _docker_client: DockerClient
@@ -79,7 +79,6 @@ class Probe(abc.ABC):
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
-        self.ip_address = None
         self._yagna_config = config
 
     def __str__(self):
