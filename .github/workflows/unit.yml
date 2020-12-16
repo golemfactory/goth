@@ -28,7 +28,7 @@ jobs:
           poetry-version: 1.1.4
           
       - name: Install dependencies
-        run: poetry install --no-root
+        run: poetry install
 
       - name: Run unit tests
         run: poetry run poe unit_test
