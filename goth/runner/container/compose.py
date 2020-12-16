@@ -25,7 +25,7 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
-CONTAINER_READY_TIMEOUT = 15  # in seconds
+CONTAINER_READY_TIMEOUT = 60  # in seconds
 DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
 
 

@@ -39,7 +39,7 @@ class WebServer:
         return web.Response()
 
     @contextlib.asynccontextmanager
-    async def run(self, server_address: str) -> None:
+    async def run(self, server_address: Optional[str]) -> None:
         """Implement AsyncContextManager protocol for a web server."""
 
         try:
@@ -48,7 +48,7 @@ class WebServer:
         finally:
             await self.stop()
 
-    async def start(self, server_address: str) -> None:
+    async def start(self, server_address: Optional[str]) -> None:
         """Start serving content."""
 
         if self._server_task:
@@ -64,7 +64,7 @@ class WebServer:
         self._server_task = asyncio.create_task(site.start())
         logger.info(
             "Web server listening on %s:%s, root dir is %s",
-            server_address,
+            server_address or "*",
             self.server_port,
             self.root_path,
         )

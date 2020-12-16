@@ -83,8 +83,12 @@ YAGNA_BUS_URL = DefaultTemplate(
     _BASE_URL_TEMPLATE, default={"port": YAGNA_BUS_PORT, "protocol": YAGNA_BUS_PROTOCOL}
 )
 
-# NOTE: This variable is used in `nginx.conf` file in the proxy container:
+# NOTE: This variable is used in `nginx.conf` file in the proxy container
+# also, because it needs to be host-mapped in order for the tests to be runnable
+# on non-Linux platforms, it's also independently specified in the definition for the
+# `proxy-nginx` service in `docker-compose.yml`
 YAGNA_REST_PORT = 6000
+
 YAGNA_REST_PROTOCOL = "http"
 YAGNA_REST_URL = DefaultTemplate(
     _BASE_URL_TEMPLATE,

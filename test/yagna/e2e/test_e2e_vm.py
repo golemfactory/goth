@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import List
 
@@ -104,8 +105,9 @@ def _exe_script(runner: Runner, output_file: str):
 
 
 @pytest.mark.skipif(
-    (os.getenv("GITHUB_ACTIONS") == "true") and (os.getenv("ENABLE_VM_TESTS") is None),
-    reason="Running in GitHub Actions (no nested virtualization)",
+    sys.platform != "linux"
+    or (os.getenv("GITHUB_ACTIONS") == "true" and os.getenv("ENABLE_VM_TESTS") is None),
+    reason="VM test is only supported on bare-metal Linux (e.g. only self-hosted github actions runners)",
 )
 @pytest.mark.asyncio
 async def test_e2e_vm_success(
