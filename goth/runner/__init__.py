@@ -7,12 +7,21 @@ from itertools import chain
 import logging
 import os
 from pathlib import Path
+import sys
 import time
-from typing import cast, AsyncGenerator, Dict, List, Optional, Type, TypeVar
+from typing import (
+    cast,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import docker
 
-from goth.assertions import TemporalAssertionError
 from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
@@ -26,6 +35,24 @@ from goth.runner.web_server import WebServer
 logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
+
+
+class TestFailure(Exception):
+    """Base class for errors raised by the test runner when a test fails."""
+
+
+class TemporalAssertionError(TestFailure):
+    """Raised on temporal assertion failure."""
+
+    def __init__(self, assertion: str):
+        super().__init__(f"Temporal assertion '{assertion}' failed")
+
+
+class StepTimeoutError(TestFailure):
+    """Raised on test step timeout."""
+
+    def __init__(self, step: str, time: float):
+        super().__init__(f"Step '{step}' timed out after {time:.1f} s")
 
 
 def step(default_timeout: float = 10.0):
@@ -44,15 +71,19 @@ def step(default_timeout: float = 10.0):
                 self.runner.check_assertion_errors()
                 step_time = time.time() - start_time
                 logger.debug(
-                    "Finished step '%s', result: %s, time: %s",
+                    "Finished step '%s', result: %s, time: %.1f s",
                     step_name,
                     result,
                     step_time,
                 )
+            except asyncio.TimeoutError:
+                step_time = time.time() - start_time
+                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
+                raise StepTimeoutError(step_name, step_time)
             except Exception as exc:
                 step_time = time.time() - start_time
                 logger.error(
-                    "Step '%s' raised %s in %s",
+                    "Step '%s' raised %s in %.1f",
                     step_name,
                     exc.__class__.__name__,
                     step_time,
@@ -86,6 +117,12 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
+    _test_failure_callback: Callable[[TestFailure], None]
+    """A function to be called when `TestFailure` is caught during a test run."""
+
+    _cancellation_callback: Callable[[], None]
+    """A function to be called when `CancellationError` is caught during a test run."""
+
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
@@ -101,6 +138,8 @@ class Runner:
         logs_path: Path,
         assets_path: Path,
         compose_config: ComposeConfig,
+        test_failure_callback: Callable[[TestFailure], None],
+        cancellation_callback: Callable[[], None],
         web_server_port: int = DEFAULT_WEB_SERVER_PORT,
     ):
         self.api_assertions_module = api_assertions_module
@@ -108,6 +147,8 @@ class Runner:
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
+        self._test_failure_callback = test_failure_callback
+        self._cancellation_callback = cancellation_callback
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
@@ -147,9 +188,7 @@ class Runner:
             # We assume all failed assertions were already reported
             # in their corresponding log files. Now we only need to raise
             # one of them to break the execution.
-            raise TemporalAssertionError(
-                f"Assertion '{assertion.name}' failed, cause: {assertion.result}"
-            )
+            raise TemporalAssertionError(assertion.name)
 
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
@@ -174,19 +213,31 @@ class Runner:
 
     async def _start_nodes(self):
         node_names: Dict[str, str] = {}
+        ports: Dict[str, dict] = {}
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
             await probe.start()
             assert probe.ip_address
-            node_names[probe.ip_address] = probe.name
+            ip = probe.ip_address
+            port = probe.container.ports
+            node_names[ip] = probe.name
+            ports[ip] = port
+            logger.debug(
+                "Probe for %s started on IP: %s with port mapping: %s",
+                probe.name,
+                ip,
+                port,
+            )
 
         node_names[self.host_address] = "Pytest-Requestor-Agent"
 
         # Start the proxy node. The containers should not make API calls
         # up to this point.
         self.proxy = Proxy(
-            node_names=node_names, assertions_module=self.api_assertions_module
+            node_names=node_names,
+            ports=ports,
+            assertions_module=self.api_assertions_module,
         )
         self.proxy.start()
         # Wait for proxy to start. TODO: wait for a log line?
@@ -203,8 +254,16 @@ class Runner:
         """Return the host IP address in the docker network used by the containers.
 
         Both the proxy server and the built-in web server are bound to this address.
+
+        On Mac (and Windows?) there's no network bridge and the services on the host
+        don't have access to Docker's internal network. Thus, we need to use a special
+        address `host.docker.internal`
         """
-        return self._compose_manager.network_gateway_address
+
+        if sys.platform == "linux":
+            return self._compose_manager.network_gateway_address
+        else:
+            return "host.docker.internal"
 
     @property
     def web_server_port(self) -> int:
@@ -228,13 +287,15 @@ class Runner:
         self._topology = topology
         _install_sigint_handler()
         try:
-            await self._enter()
-            yield self
-        except asyncio.CancelledError:
-            logger.error("The runner was cancelled")
-            raise
-        finally:
-            await self._exit()
+            try:
+                await self._enter()
+                yield self
+            except asyncio.CancelledError:
+                self._cancellation_callback()
+            finally:
+                await self._exit()
+        except TestFailure as err:
+            self._test_failure_callback(err)
 
     async def _enter(self) -> None:
         logger.info("Running test: %s", self._get_current_test_name())
@@ -243,7 +304,7 @@ class Runner:
         await self._compose_manager.start_network(self.base_log_dir)
 
         self._create_probes(self.base_log_dir)
-        await self._web_server.start(self.host_address)
+        await self._web_server.start(server_address=None)  # listen on all interfaces
         await self._start_nodes()
 
     async def _exit(self):
@@ -254,15 +315,16 @@ class Runner:
             await probe.stop()
 
         self.proxy.stop()
-        # Stopping the proxy triggered evaluation of assertions
-        # "at the end of events".
-        self.check_assertion_errors()
+        try:
+            # Stopping the proxy triggered evaluation of assertions
+            # "at the end of events".
+            self.check_assertion_errors()
+        finally:
+            await self._compose_manager.stop_network()
+            await self._web_server.stop()
 
-        await self._compose_manager.stop_network()
-        await self._web_server.stop()
-
-        # Clean up temporary files left by the test
-        payment.clean_up()
+            # Clean up temporary files left by the test
+            payment.clean_up()
 
 
 def _install_sigint_handler():

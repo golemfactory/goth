@@ -9,7 +9,6 @@ from docker import DockerClient
 
 from goth.address import (
     YAGNA_REST_PORT,
-    PROXY_HOST,
     YAGNA_REST_URL,
 )
 from goth.runner.agent import AgentMixin
@@ -208,7 +207,7 @@ class RequestorProbe(ApiClientMixin, Probe):
         super().__init__(runner, client, config, log_config)
 
         host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = get_container_address(client, PROXY_HOST)
+        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
 
@@ -260,6 +259,9 @@ class ProviderProbe(AgentMixin, Probe):
     agent_preset: Optional[str]
     """Name of the preset to be used when placing a market offer."""
 
+    subnet: Optional[str]
+    """Optional name of the subnet to which the provider agent connects."""
+
     def __init__(
         self,
         runner: "Runner",
@@ -267,9 +269,11 @@ class ProviderProbe(AgentMixin, Probe):
         config: YagnaContainerConfig,
         log_config: LogConfig,
         agent_preset: Optional[str] = None,
+        subnet: Optional[str] = None,
     ):
         super().__init__(runner, client, config, log_config)
         self.agent_preset = agent_preset
+        self.subnet = subnet
 
     async def start_agent(self):
         """Start the provider agent and attach to its log stream."""
@@ -278,6 +282,8 @@ class ProviderProbe(AgentMixin, Probe):
 
         if self.agent_preset:
             self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
+        if self.subnet:
+            self.container.exec_run(f"ya-provider config set --subnet {self.subnet}")
 
         log_stream = self.container.exec_run(
             f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",

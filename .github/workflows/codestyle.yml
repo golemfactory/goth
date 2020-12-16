@@ -2,41 +2,30 @@ name: codestyle
 on:
   push:
 jobs:
-  sort-requirements:
-    name: sort requirements
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Check if requirements are sorted properly
-        run: ls | grep '^requirements.*txt$' | LC_ALL=C xargs -I@ sort --ignore-case -c @
-
   codestyle:
-    name: black flake8
+    name: Check code style
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Configure python 3.7
+      - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: '3.8'
 
-      - name: Print python and pip version
-        run: python --version && pip --version
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
 
-      - name: Install developer requirements
-        run: pip install -r requirements-dev-frozen.txt
+      - name: Install dependencies
+        # TODO install dev dependencies only (https://github.com/python-poetry/poetry/issues/2572)
+        run: poetry install --no-root
 
-      - name: Print installed package versions
-        run: pip freeze
-
-      - name: Run black codestyle in check mode
-        run: black . -v --check --diff
-
-      - name: Run flake8 codestyle
-        run: flake8
+      - name: Run black formatter in check mode
+        run: poetry run poe codeformat
+      
+      - name: Run flake8 codestyle checker
+        run: poetry run poe codestyle
