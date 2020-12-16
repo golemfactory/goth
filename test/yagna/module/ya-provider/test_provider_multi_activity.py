@@ -35,7 +35,6 @@ def _topology(
     )
     requestor_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
-        account_list="/asset/key/001-accounts.json",
     )
 
     provider_volumes = {
@@ -88,9 +87,11 @@ async def test_provider_multi_activity(
         demand = (
             DemandBuilder(requestor)
             .props_from_template(task_package)
-            .property("golem.srv.comp.multi-activity", True)
+            .property("golem.srv.caps.multi-activity", True)
             .constraints(
-                "(&(golem.com.pricing.model=linear)(golem.inf.multi-activity=true))"
+                "(&(golem.com.pricing.model=linear)\
+                (golem.srv.caps.multi-activity=true)\
+                (golem.runtime.name=vm))"
             )
             .build()
         )
