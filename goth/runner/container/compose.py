@@ -1,4 +1,5 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
 import logging
@@ -72,15 +73,23 @@ class ComposeNetworkManager:
     """IP address of the gateway for the docker network."""
 
     def __init__(
-        self,
-        docker_client: DockerClient,
-        config: ComposeConfig,
+        self, docker_client: DockerClient, config: ComposeConfig,
     ):
         self.config = config
         self.config.file_path = config.file_path.resolve()
         self._docker_client = docker_client
         self._log_monitors = {}
         self._network_gateway_address = ""
+
+    @contextlib.asynccontextmanager
+    async def run(self, log_dir: Path, force_build: bool = False) -> None:
+        """Implement AsyncContextManager protocol for compose network manager."""
+
+        try:
+            await self.start_network(log_dir, force_build)
+            yield
+        finally:
+            await self.stop_network()
 
     async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.

@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+import contextlib
 import logging
 from typing import Optional, TYPE_CHECKING
 
@@ -101,6 +102,17 @@ class Probe(abc.ABC):
     def name(self) -> str:
         """Name of the container."""
         return self.container.name
+
+    @contextlib.asynccontextmanager
+    async def run(self) -> str:
+        """Implement AsyncContextManager protocol for a probe."""
+
+        try:
+            await self.start()
+            assert self.ip_address
+            yield self.ip_address
+        finally:
+            await self.stop()
 
     async def start(self) -> None:
         """Start the probe.
