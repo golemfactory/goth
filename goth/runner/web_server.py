@@ -1,6 +1,7 @@
 """Built-in web server for serving test assets such as task packages."""
 
 import asyncio
+import contextlib
 import logging
 from pathlib import Path
 from typing import Optional
@@ -36,6 +37,16 @@ class WebServer:
             async for data in request.content.iter_any():
                 out.write(data)
         return web.Response()
+
+    @contextlib.asynccontextmanager
+    async def run(self, server_address: Optional[str]) -> None:
+        """Implement AsyncContextManager protocol for a web server."""
+
+        try:
+            await self.start(server_address)
+            yield
+        finally:
+            await self.stop()
 
     async def start(self, server_address: Optional[str]) -> None:
         """Start serving content."""
