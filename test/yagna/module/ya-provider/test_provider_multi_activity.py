@@ -91,7 +91,7 @@ async def test_provider_multi_activity(
             .constraints(
                 "(&(golem.com.pricing.model=linear)\
                 (golem.srv.caps.multi-activity=true)\
-                (golem.runtime.name=vm))"
+                (golem.runtime.name=wasmtime))"
             )
             .build()
         )
@@ -103,8 +103,6 @@ async def test_provider_multi_activity(
         )
 
         #  Activity
-        num_commands = len(exe_script)
-
         for agreement_id, provider in agreement_providers:
             for i in range(0, 3):
                 logger.info("Running activity %n-th time on %s", i, provider.name)
@@ -114,7 +112,7 @@ async def test_provider_multi_activity(
                     activity_id, json.dumps(exe_script)
                 )
                 await requestor.collect_results(
-                    activity_id, batch_id, num_commands, timeout=30
+                    activity_id, batch_id, len(exe_script), timeout=30
                 )
                 await requestor.destroy_activity(activity_id)
                 await provider.wait_for_exeunit_finished()
