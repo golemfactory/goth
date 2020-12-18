@@ -33,15 +33,20 @@ class RouterAddon:
     _node_names: Mapping[str, str]
     """Mapping of IP addresses to node names"""
 
-    def __init__(self, node_names: Mapping[str, str]):
+    _ports: Mapping[str, dict]
+    """Mapping of IP addresses to their port mappings"""
+
+    def __init__(self, node_names: Mapping[str, str], ports: Mapping[str, dict]):
         self._logger = logging.getLogger(__name__)
         self._node_names = node_names
+        self._ports = ports
 
     # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow) -> None:
         """Route the request and set `X-Caller` and `X-Callee` headers."""
 
         req = flow.request
+        self._logger.debug("incoming request %s, headers: %s", req, req.headers)
 
         try:
             server_addr = req.headers["X-Server-Addr"]
@@ -50,11 +55,12 @@ class RouterAddon:
             node_name = self._node_names[remote_addr]
 
             if server_port == YAGNA_REST_PORT:
-                # It's a provider agent calling a yagna daemon.
-                # We assume that both are running on the same host, so the
-                # request is bounced back to the caller.
-                req.host = remote_addr
-                req.port = YAGNA_REST_PORT
+                # It's a provider agent calling a yagna daemon
+                # Since we assume that the provider agent runs on the same container
+                # as the provider daemon, we route this request to that container's
+                # host-mapped daemon port
+                req.host = "127.0.0.1"
+                req.port = self._ports[remote_addr][server_port]
                 req.headers[CALLER_HEADER] = f"{node_name}:agent"
                 req.headers[CALLEE_HEADER] = f"{node_name}:daemon"
 

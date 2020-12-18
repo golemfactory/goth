@@ -1,6 +1,7 @@
 """Built-in web server for serving test assets such as task packages."""
 
 import asyncio
+import contextlib
 import logging
 from pathlib import Path
 from typing import Optional
@@ -37,7 +38,17 @@ class WebServer:
                 out.write(data)
         return web.Response()
 
-    async def start(self, server_address: str) -> None:
+    @contextlib.asynccontextmanager
+    async def run(self, server_address: Optional[str]) -> None:
+        """Implement AsyncContextManager protocol for a web server."""
+
+        try:
+            await self.start(server_address)
+            yield
+        finally:
+            await self.stop()
+
+    async def start(self, server_address: Optional[str]) -> None:
         """Start serving content."""
 
         if self._server_task:
@@ -53,7 +64,7 @@ class WebServer:
         self._server_task = asyncio.create_task(site.start())
         logger.info(
             "Web server listening on %s:%s, root dir is %s",
-            server_address,
+            server_address or "*",
             self.server_port,
             self.root_path,
         )

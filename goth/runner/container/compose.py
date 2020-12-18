@@ -1,4 +1,5 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
 import logging
@@ -24,7 +25,7 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
-CONTAINER_READY_TIMEOUT = 15  # in seconds
+CONTAINER_READY_TIMEOUT = 60  # in seconds
 DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
 
 
@@ -81,6 +82,16 @@ class ComposeNetworkManager:
         self._docker_client = docker_client
         self._log_monitors = {}
         self._network_gateway_address = ""
+
+    @contextlib.asynccontextmanager
+    async def run(self, log_dir: Path, force_build: bool = False) -> None:
+        """Implement AsyncContextManager protocol for compose network manager."""
+
+        try:
+            await self.start_network(log_dir, force_build)
+            yield
+        finally:
+            await self.stop_network()
 
     async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.

@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  unit:
+  unit-test:
     name: Run unit tests
     runs-on: ubuntu-latest
     steps:
@@ -17,16 +17,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Configure python 3.8
+      - name: Configure python
         uses: actions/setup-python@v2
         with:
           python-version: '3.8'
     
-      - name: Run setuptools
-        run: python setup.py develop
-
-      - name: Print installed package versions
-        run: pip freeze
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
+          
+      - name: Install dependencies
+        run: poetry install
 
       - name: Run unit tests
-        run: python -m pytest test/goth -svx
+        run: poetry run poe unit_test
