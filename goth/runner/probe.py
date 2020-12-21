@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+import contextlib
 import logging
 from typing import Optional, TYPE_CHECKING
 
@@ -55,7 +56,7 @@ class Probe(abc.ABC):
     container: YagnaContainer
     """A module which handles the lifecycle of the daemon's Docker container."""
 
-    ip_address: Optional[str]
+    ip_address: Optional[str] = None
     """An IP address of the daemon's container in the Docker network."""
 
     _docker_client: DockerClient
@@ -78,7 +79,6 @@ class Probe(abc.ABC):
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
         )
-        self.ip_address = None
         self._yagna_config = config
 
     def __str__(self):
@@ -100,6 +100,17 @@ class Probe(abc.ABC):
     def name(self) -> str:
         """Name of the container."""
         return self.container.name
+
+    @contextlib.asynccontextmanager
+    async def run(self) -> str:
+        """Implement AsyncContextManager protocol for a probe."""
+
+        try:
+            await self.start()
+            assert self.ip_address
+            yield self.ip_address
+        finally:
+            await self.stop()
 
     async def start(self) -> None:
         """Start the probe.

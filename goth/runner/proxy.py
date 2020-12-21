@@ -1,5 +1,6 @@
 """A class for starting an embedded instance of mitmproxy."""
 import asyncio
+import contextlib
 import logging
 import threading
 from typing import Mapping, Optional
@@ -28,6 +29,7 @@ class Proxy:
     _logger: logging.Logger
     _loop: Optional[asyncio.AbstractEventLoop]
     _node_names: Mapping[str, str]
+    _server_ready: threading.Event
     """Mapping of IP addresses to node names"""
 
     _ports: Mapping[str, dict]
@@ -46,6 +48,7 @@ class Proxy:
         self._proxy_thread = threading.Thread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
         )
+        self._server_ready = threading.Event()
 
         def _stop_callback():
             """Stop `loop` so `proxy_thread` can terminate."""
@@ -56,9 +59,20 @@ class Proxy:
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 
+    @contextlib.contextmanager
+    def run(self):
+        """Implement AsyncContextManager protocol for Proxy."""
+
+        try:
+            self.start()
+            yield
+        finally:
+            self.stop()
+
     def start(self):
         """Start the proxy thread."""
         self._proxy_thread.start()
+        self._server_ready.wait()
 
     def stop(self):
         """Start the proxy monitor and thread."""
@@ -88,6 +102,11 @@ class Proxy:
                 super().__init__(opts)
                 inner_self.addons.add(RouterAddon(self._node_names, self._ports))
                 inner_self.addons.add(MonitorAddon(self.monitor))
+
+            def start(inner_self):
+                self._server_ready.set()
+                self._logger.info("Embedded mitmproxy started")
+                super().start()
 
         args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
         _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
