@@ -12,9 +12,10 @@ from goth.address import (
     YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
-from goth.runner.agent import AgentMixin
+from goth.runner.agent import Agent
 from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
+from goth.runner.container import DockerContainerConfig
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
     YagnaContainer,
@@ -43,23 +44,30 @@ class ProbeLoggingAdapter(logging.LoggerAdapter):
 class Probe(abc.ABC):
     """TODO."""
 
+    agent: Agent
+    """Stuff."""
+
     runner: "Runner"
     """A runner that created this probe."""
 
-    _yagna_config: YagnaContainerConfig
+    _container_config: DockerContainerConfig
     """Config object used for setting up the Yagna node for this probe."""
+
+    _logger: ProbeLoggingAdapter
+    """Logger which prefixes the message with the name of the probe."""
 
     def __init__(
         self,
+        agent: Agent,
         runner: "Runner",
-        config: YagnaContainerConfig,
+        config: DockerContainerConfig,
     ):
+        self.agent = agent
         self.runner = runner
-        # self.cli = Cli(self.container).yagna
-        # self._logger = ProbeLoggingAdapter(
-        #     logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
-        # )
-        self._yagna_config = config
+        self._logger = ProbeLoggingAdapter(
+            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
+        )
+        self._container_config = config
 
     @property
     def address(self) -> Optional[str]:
@@ -119,6 +127,7 @@ class DockerProbe(Probe):
         config: YagnaContainerConfig,
         log_config: LogConfig,
     ):
+        self._container_config = config
         self.runner = runner
         self._docker_client = client
         self.container = YagnaContainer(client, config, log_config)
