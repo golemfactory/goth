@@ -2,25 +2,21 @@
 
 import asyncio
 import contextlib
+from itertools import cycle
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Iterator, Optional
 
 from aiohttp import web, web_runner
+
+from goth.address import WEB_SERVER_PORT_END, WEB_SERVER_PORT_START
 
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SERVER_PORT = 9292
-
 
 class WebServer:
     """A simple web server implemented with the `aiohttp` library."""
-
-    _server_task: Optional[asyncio.Task] = None
-    """An asyncio task wrapping the `aiohttp` server coroutine.
-
-    Not None iff the server is running."""
 
     root_path: Path
     """A directory from which the content is served."""
@@ -28,9 +24,17 @@ class WebServer:
     server_port: int
     """A port on which the server listens."""
 
-    def __init__(self, root_path: Path, server_port: int):
+    _port_pool: Iterator[int] = cycle(range(WEB_SERVER_PORT_START, WEB_SERVER_PORT_END))
+    """Iterator which cycles indefinitely through the range of assigned ports."""
+
+    _server_task: Optional[asyncio.Task] = None
+    """An asyncio task wrapping the `aiohttp` server coroutine.
+
+    Not None iff the server is running."""
+
+    def __init__(self, root_path: Path, server_port: Optional[int] = None):
         self.root_path = root_path
-        self.server_port = server_port
+        self.server_port = server_port or next(self._port_pool)
 
     async def _upload_handler(self, request: web.Request) -> web.Response:
         logger.debug("Handling upload request...")
