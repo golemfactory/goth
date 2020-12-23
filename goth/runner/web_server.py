@@ -32,6 +32,9 @@ class WebServer:
 
     Not None iff the server is running."""
 
+    _site: web.TCPSite
+    """Site object for the TCP socket of this server."""
+
     def __init__(self, root_path: Path, server_port: Optional[int] = None):
         self.root_path = root_path
         self.server_port = server_port or next(self._port_pool)
@@ -66,8 +69,8 @@ class WebServer:
         app.router.add_static("/", path=Path(self.root_path), name="root")
         runner = web_runner.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, server_address, self.server_port)
-        self._server_task = asyncio.create_task(site.start())
+        self._site = web.TCPSite(runner, server_address, self.server_port)
+        self._server_task = asyncio.create_task(self._site.start())
         logger.info(
             "Web server listening on %s:%s, root dir is %s",
             server_address or "*",
@@ -84,6 +87,8 @@ class WebServer:
 
         if self._server_task.done() and self._server_task.exception():
             await self._server_task
+
+        await self._site.stop()
         self._server_task.cancel()
         await self._server_task
         self._server_task = None
