@@ -11,6 +11,8 @@ from aiohttp import web, web_runner
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_SERVER_PORT = 9292
+
 
 class WebServer:
     """A simple web server implemented with the `aiohttp` library."""
