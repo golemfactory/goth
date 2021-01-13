@@ -6,7 +6,7 @@ import logging
 from typing import Callable, Iterable, List, Optional, Sequence, Tuple
 
 from ya_activity import ExeScriptCommandResult, ExeScriptRequest
-from ya_market import AgreementProposal, Demand, Proposal
+from ya_market import AgreementProposal, Demand, DemandOfferBase, Proposal
 from ya_payment import Acceptance, Allocation, Invoice
 
 from goth.runner import step
@@ -65,8 +65,7 @@ class MarketOperationsMixin:
     ) -> Tuple[str, Demand]:
         """Call subscribe demand on the requestor market api."""
 
-        demand = Demand(
-            requestor_id=self.address,
+        demand = DemandOfferBase(
             properties={
                 "golem.node.id.name": "test1",
                 "golem.srv.comp.expiration": int(
@@ -134,16 +133,15 @@ class MarketOperationsMixin:
     ) -> str:
         """Call counter_proposal_demand on the requestor market api."""
 
-        proposal = Proposal(
+        proposal = DemandOfferBase(
             constraints=demand.constraints,
             properties=demand.properties,
-            prev_proposal_id=provider_proposal.proposal_id,
         )
 
         counter_proposal = await self.market.counter_proposal_demand(
             subscription_id=subscription_id,
             proposal_id=provider_proposal.proposal_id,
-            proposal=proposal,
+            demand_offer_base=proposal,
         )
 
         return counter_proposal
@@ -182,7 +180,7 @@ class PaymentOperationsMixin:
 
         while not invoices:
             await asyncio.sleep(2.0)
-            invoices = await self.payment.get_received_invoices()
+            invoices = await self.payment.get_invoices()
             invoices = [inv for inv in invoices if inv.agreement_id == agreement_id]
 
         return invoices

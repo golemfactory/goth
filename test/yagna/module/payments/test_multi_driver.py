@@ -61,6 +61,7 @@ def _topology(
     ]
 
 
+@pytest.mark.skip("ya-requestor incompatible with yagna event API.")
 @pytest.mark.asyncio
 async def test_multi_driver_success(
     assets_path: Path,
