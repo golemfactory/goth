@@ -59,6 +59,7 @@ def _topology(
     ]
 
 
+@pytest.mark.skip("ya-requestor incompatible with yagna event API.")
 @pytest.mark.asyncio
 async def test_e2e_wasm_agent_success(
     assets_path: Path,
