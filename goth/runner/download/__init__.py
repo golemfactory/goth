@@ -34,6 +34,10 @@ DEFAULT_TOKEN = os.getenv(ENV_API_TOKEN)
 DEFAULT_WORKFLOW = "CI"
 
 
+class AssetNotFound(Exception):
+    """Exception raised when a requested asset could not be found."""
+
+
 class GithubDownloader(ABC):
     """Base class for downloading assets using GitHub's REST API."""
 
@@ -220,12 +224,13 @@ class ArtifactDownloader(GithubDownloader):
         commit: Optional[str] = DEFAULT_COMMIT,
         output: Optional[Path] = None,
         workflow_name: str = DEFAULT_WORKFLOW,
-    ) -> Optional[Path]:
+    ) -> Path:
         """Download an artifact being the result of a given GitHub Actions workflow.
 
         After downloading, the artifact is extracted and, if specified, saved under
         the directory or file given as `output`.
-        Return the download path or `None` if the artifact was not found.
+        Raise `AssetNotFound` if the requested artifact could not be found.
+        Return path containing the downloaded artifact.
 
         :param artifact_name: name of the artifact which should be downloaded
         :param branch: git branch to use when selecting the workflow run
@@ -245,10 +250,9 @@ class ArtifactDownloader(GithubDownloader):
         latest_run = self._get_latest_run(workflow, branch, commit)
         artifact = self._get_artifact(artifact_name, latest_run)
         if not artifact:
-            logger.warning("Failed to find artifact. name=%s", artifact_name)
-            return None
-        logger.info("Found matching artifact. artifact=%s", artifact)
+            raise AssetNotFound(f"Artifact not found. name={artifact_name}")
 
+        logger.info("Found matching artifact. artifact=%s", artifact)
         artifact_id = str(artifact["id"])
         cache_path = self._cache_get(artifact_id)
         if cache_path:
@@ -325,32 +329,33 @@ class ReleaseDownloader(GithubDownloader):
         self,
         content_type: str = DEFAULT_CONTENT_TYPE,
         output: Optional[Path] = None,
-    ) -> Optional[Path]:
+    ) -> Path:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
-        Return the download path or `None` if the asset was not found.
+        Raise `AssetNotFound` if the requested release could not be found or if the
+        repo has no releases.
+        Return path containing the downloaded release.
         :param content_type: content-type string for the asset to download
         :param output: file path to where the asset should be saved
         """
         release = self._get_latest_release()
         if not release:
-            logger.warning("Given repo has no releases. repo=%s", self.repo_name)
-            return None
+            raise AssetNotFound(f"Given repo has no releases. repo={self.repo_name}")
 
         asset = self._get_asset(release, content_type)
         if not asset:
-            logger.warning(
-                "Failed to find asset of given type. content_type=%s", content_type
+            raise AssetNotFound(
+                f"Could not find asset of given type. content_type={content_type}"
             )
-            return None
-        logger.info("Found matching asset. name=%s", asset["name"])
+
+        logger.info("Found matching release. name=%s", asset["name"])
         logger.debug("asset=%s", asset)
 
         asset_id = str(asset["id"])
         cache_path = self._cache_get(asset_id)
         if cache_path:
             cache_path = cache_path / asset["name"]
-            logger.info("Using cached release asset. cache_path=%s", cache_path)
+            logger.info("Using cached release. cache_path=%s", cache_path)
         else:
             cache_path = self._download_asset(asset)
 
