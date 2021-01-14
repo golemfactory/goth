@@ -50,4 +50,5 @@ jobs:
 
       # Only relevant for self-hosted runners
       - name: Remove test logs
+        if: always()
         run: rm -rf /tmp/goth-tests
