@@ -122,7 +122,14 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
             if f in EXPECTED_BINARIES:
                 binary_paths.append(Path(f"{root}/{f}"))
 
-    assert len(binary_paths) == len(EXPECTED_BINARIES)
+    if len(binary_paths) != len(EXPECTED_BINARIES):
+        found = {p.name for p in set(binary_paths)}
+        missing = EXPECTED_BINARIES - found
+        raise RuntimeError(
+            f"Failed to find all binaries required to build a yagna Docker image. "
+            f"root_path={root_path}, missing_binaries={missing}"
+        )
+
     return binary_paths
 
 

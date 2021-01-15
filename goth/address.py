@@ -105,3 +105,8 @@ HOST_REST_PORT_END = 6100
 # Port used by the mitmproxy instance
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
 MITM_PROXY_PORT = 9000
+
+# Port range used by the internal web server spawned by goth for each test
+# Ports are rotated and re-used in a circular fashion
+WEB_SERVER_PORT_START = 9201
+WEB_SERVER_PORT_END = 9251

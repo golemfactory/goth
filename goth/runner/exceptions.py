@@ -8,10 +8,6 @@ class CommandError(Exception):
         super().__init__(message)
 
 
-class KeyAlreadyExistsError(CommandError):
-    """Specific duplicate key subclass of the CommandError."""
-
-
 class ContainerNotFoundError(Exception):
     """Exception for when the container is not found."""
 
@@ -19,9 +15,13 @@ class ContainerNotFoundError(Exception):
         super().__init__(f"No container with name containing '{name}' was found.")
 
 
-class TimeoutError(Exception):
-    """Exception for when a timeout occurs."""
+class KeyAlreadyExistsError(CommandError):
+    """Specific duplicate key subclass of the CommandError."""
 
 
 class StopThreadException(Exception):
     """Exception used to stop a running `StoppableThread`."""
+
+
+class TimeoutError(Exception):
+    """Exception for when a timeout occurs."""

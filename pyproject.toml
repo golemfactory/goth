@@ -34,7 +34,7 @@ pyyaml = "^5.3.1"
 transitions = "^0.8.1"
 typing_extensions = "^3.7.4.2"
 urllib3 = "1.25.*"
-ya-aioclient = "^0.3"
+ya-aioclient = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 black = "20.8b1"

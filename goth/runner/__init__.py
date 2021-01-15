@@ -96,9 +96,6 @@ def step(default_timeout: float = 10.0):
     return decorator
 
 
-DEFAULT_WEB_SERVER_PORT = 8080
-
-
 class Runner:
     """Manages the nodes and runs the scenario on them."""
 
@@ -143,7 +140,7 @@ class Runner:
         compose_config: ComposeConfig,
         test_failure_callback: Callable[[TestFailure], None],
         cancellation_callback: Callable[[], None],
-        web_server_port: int = DEFAULT_WEB_SERVER_PORT,
+        web_server_port: Optional[int] = None,
     ):
         self.api_assertions_module = api_assertions_module
         self.assets_path = assets_path
