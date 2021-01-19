@@ -222,48 +222,6 @@ class RequestorProbe(ApiClientMixin, Probe):
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
 
-class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
-    """A probe subclass that can run a requestor agent.
-
-    The use of ya-requestor is deprecated and supported for the sake of level 0 test
-    scenario compatibility.
-    """
-
-    task_package: str
-    """Value of the `--task-package` argument to `ya-requestor` run by this probe.
-
-    This string may include `{web_server_addr}` and `{web_server_port}` placeholders
-    which will be replaced by the IP address and the port, respectively,
-    of the built-in web server.
-    """
-
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-    ):
-        super().__init__(runner, client, config, log_config)
-
-    async def start_agent(self):
-        """Start the requestor agent and attach to its log stream."""
-
-        self._logger.info("Starting ya-requestor")
-
-        pkg_spec = self.task_package.format(
-            web_server_addr=self.runner.host_address,
-            web_server_port=self.runner.web_server_port,
-        )
-        log_stream = self.container.exec_run(
-            "ya-requestor"
-            f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
-            f" --task-package {pkg_spec}",
-            stream=True,
-        )
-        self.agent_logs.start(log_stream.output)
-
-
 class ProviderProbe(AgentMixin, Probe):
     """A probe subclass that can run a provider agent."""
 

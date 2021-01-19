@@ -25,7 +25,6 @@ EXPECTED_BINARIES = {
     "exe-unit",
     "golemsp",
     "ya-provider",
-    "ya-requestor",
     "ya_sb_router",
     "yagna",
 }
