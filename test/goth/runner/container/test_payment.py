@@ -17,7 +17,7 @@ def payment_id_pool() -> PaymentIdPool:
 
 def test_get_id(payment_id_pool):
     """Test if pre-funded payment accounts are generated correctly."""
-    drivers = [PaymentDriver.ngnt, PaymentDriver.zksync]
+    drivers = [PaymentDriver.erc20, PaymentDriver.zksync]
     receive = False
     send = False
 
