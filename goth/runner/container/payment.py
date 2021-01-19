@@ -6,14 +6,14 @@ import json
 from pathlib import Path
 import shutil
 from tempfile import gettempdir
-from typing import Iterator, List, Sequence
+from typing import Iterator, List, Optional, Sequence
 from uuid import uuid4
 
 from goth.project import TEST_DIR
 
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
-KEY_DIR = Path(TEST_DIR, "yagna", "keys")
+DEFAULT_KEY_DIR = Path(TEST_DIR, "yagna", "keys")
 
 
 def get_id_directory() -> Path:
@@ -41,7 +41,7 @@ class KeyPoolDepletedError(Exception):
 class PaymentDriver(str, Enum):
     """Enum listing the payment drivers that can be used with yagna."""
 
-    ngnt = "ngnt"
+    erc20 = "erc20"
     zksync = "zksync"
 
 
@@ -51,6 +51,8 @@ class Account:
 
     address: str
     driver: PaymentDriver = PaymentDriver.zksync
+    network: str = "rinkeby"
+    token: str = "tglm"
     receive: bool = True
     send: bool = True
 
@@ -108,18 +110,20 @@ class PaymentId:
 class PaymentIdPool:
     """Class used for generating yagna payment IDs based on a pool of Ethereum keys.
 
-    The pool of keys is loaded from key files stored in the repo under `KEY_DIR`.
+    The pool of keys is loaded from key files stored in the repo under a given dir
+    (`DEFAULT_KEY_DIR` by default).
     """
 
     _key_pool: Iterator[EthKey]
     """Iterator yielding pre-funded Ethereum keys loaded from a directory."""
 
-    def __init__(self):
-        self._key_pool = (self._key_from_file(f) for f in KEY_DIR.iterdir())
+    def __init__(self, key_dir: Optional[Path] = None):
+        key_dir = key_dir or DEFAULT_KEY_DIR
+        self._key_pool = (self._key_from_file(f) for f in key_dir.iterdir())
 
     def get_id(
         self,
-        drivers: Sequence[PaymentDriver] = (PaymentDriver.ngnt, PaymentDriver.zksync),
+        drivers: Sequence[PaymentDriver] = (PaymentDriver.erc20, PaymentDriver.zksync),
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:
