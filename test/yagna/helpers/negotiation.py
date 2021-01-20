@@ -4,11 +4,12 @@ import logging
 from typing import List, Optional, Callable, Tuple, Any
 from datetime import datetime, timedelta
 
-from ya_market import Demand, Proposal
+from ya_market import Demand, DemandOfferBase, Proposal
 
 from goth.runner.probe import RequestorProbe
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +54,9 @@ class DemandBuilder:
         self._constraints = constraints
         return self
 
-    def build(self) -> Demand:
+    def build(self) -> DemandOfferBase:
         """Create Demand from supplied parameters."""
-        return Demand(
-            requestor_id=self._requestor.address,
+        return DemandOfferBase(
             properties=self._properties,
             constraints=self._constraints,
         )

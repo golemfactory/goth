@@ -180,7 +180,7 @@ class MarketOperationsMixin:
         self: RequestorProbe, agreement_id: str, reason: Optional[str]
     ):
         """Call terminate_agreement on the requestor market api."""
-        await self.market.terminate_agreement(agreement_id, reason)
+        await self.market.terminate_agreement(agreement_id)
 
 
 class PaymentOperationsMixin:
