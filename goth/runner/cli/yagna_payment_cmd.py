@@ -1,13 +1,13 @@
 """Implementation of `yagna payment` subcommands."""
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
 
 
-DEFAULT_PAYMENT_DRIVER = "ngnt"
+DEFAULT_PAYMENT_DRIVER = "erc20"
 
 
 @dataclass(frozen=True)
@@ -35,22 +35,29 @@ class YagnaPaymentMixin:
 
     def payment_init(
         self: CommandRunner,
-        requestor_mode: bool = False,
-        provider_mode: bool = False,
+        sender_mode: bool = False,
+        receiver_mode: bool = False,
         data_dir: str = "",
         payment_driver: str = DEFAULT_PAYMENT_DRIVER,
-        address: str = "",
+        address: Optional[str] = None,
+        network: Optional[str] = None,
     ) -> str:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
         """
 
-        args = make_args("payment", "init", payment_driver, address, data_dir=data_dir)
-        if requestor_mode:
-            args.append("-r")
-        if provider_mode:
-            args.append("-p")
+        args = make_args(
+            "payment", "init",
+            data_dir=data_dir,
+            payment_driver=payment_driver,
+            address=address,
+            network=network
+        )
+        if sender_mode:
+            args.append("--sender")
+        if receiver_mode:
+            args.append("--receiver")
         return self.run_command(*args)[0]
 
     def payment_status(
