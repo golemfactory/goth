@@ -195,6 +195,9 @@ class Runner:
         docker_client = docker.from_env()
 
         for config in self._topology:
+            logger.debug(
+                "Creating probe. config=%s, probe_type=%s", config, config.probe_type
+            )
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
