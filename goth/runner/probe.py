@@ -221,6 +221,12 @@ class RequestorProbe(ApiClientMixin, Probe):
         proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
+    async def _start_container(self) -> None:
+        await super()._start_container()
+
+        self.cli.payment_fund()
+        self.cli.payment_init(sender_mode=True)
+
 
 class ProviderProbe(AgentMixin, Probe):
     """A probe subclass that can run a provider agent."""
