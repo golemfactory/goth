@@ -1,11 +1,7 @@
 """Tests for the `runner.cli.yagna_payment_cmd` module."""
 
-import time
-
-import pytest
-
 from goth.runner.cli import Cli
-from goth.runner.cli.yagna_payment_cmd import PaymentDriver, PaymentMode, PaymentStatus
+from goth.runner.cli.yagna_payment_cmd import PaymentStatus
 
 
 def test_payment_init(yagna_container):
@@ -22,7 +18,7 @@ def test_payment_init_provider_mode(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    status: PaymentStatus = yagna.payment_init(payment_mode=PaymentMode.receiver)
+    status: PaymentStatus = yagna.payment_init(receiver_mode=True)
     assert status
 
 
@@ -31,7 +27,7 @@ def test_payment_init_requestor_mode(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    status: PaymentStatus = yagna.payment_init(payment_mode=PaymentMode.sender)
+    status: PaymentStatus = yagna.payment_init(sender_mode=True)
     assert status
 
 

@@ -1,18 +1,11 @@
 """Implementation of `yagna payment` subcommands."""
 
 from dataclasses import dataclass
-from enum import auto, Enum
 from typing import Dict, Optional
 
 from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
-
-
-class PaymentDriver(Enum):
-    """Available payment drivers for yagna."""
-
-    erc20 = auto()
-    zksync = auto()
+from goth.runner.container.payment import PaymentDriver
 
 
 DEFAULT_PAYMENT_DRIVER = PaymentDriver.erc20
@@ -52,13 +45,6 @@ class PaymentStatus:
         )
 
 
-class PaymentMode(Enum):
-    """Possible modes for payment init CLI subcommand."""
-
-    receiver = auto()
-    sender = auto()
-
-
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
@@ -69,7 +55,8 @@ class YagnaPaymentMixin:
 
     def payment_init(
         self: CommandRunner,
-        payment_mode: PaymentMode = PaymentMode.receiver,
+        sender_mode: bool = False,
+        receiver_mode: bool = False,
         data_dir: str = "",
         payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
         address: Optional[str] = None,
@@ -88,7 +75,10 @@ class YagnaPaymentMixin:
             address=address,
             network=network,
         )
-        args.append(f"--{payment_mode.name}")
+        if sender_mode:
+            args.append("--sender")
+        if receiver_mode:
+            args.append("--receiver")
 
         output = self.run_json_command(Dict, *args)
         return PaymentStatus.from_dict(output)
