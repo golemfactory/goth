@@ -25,9 +25,14 @@ EXPECTED_BINARIES = {
     "exe-unit",
     "golemsp",
     "ya-provider",
-    "ya_sb_router",
     "yagna",
 }
+
+DEB_RELEASE_REPOS = [
+    "ya-service-bus",
+    "ya-runtime-wasi",
+    "ya-runtime-vm",
+]
 
 PROXY_IMAGE = "proxy-nginx"
 
@@ -172,8 +177,8 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
             logger.info("Using local .deb package. path=%s", env.deb_path)
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
-        _download_release(context_deb_dir, "ya-runtime-wasi")
-        _download_release(context_deb_dir, "ya-runtime-vm")
+        for repo in DEB_RELEASE_REPOS:
+            _download_release(context_deb_dir, repo)
 
     logger.debug(
         "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
