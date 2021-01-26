@@ -1,13 +1,21 @@
 """Implementation of `yagna payment` subcommands."""
 
 from dataclasses import dataclass
+from enum import auto, Enum
 from typing import Dict, Optional
 
 from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
 
 
-DEFAULT_PAYMENT_DRIVER = "erc20"
+class PaymentDriver(Enum):
+    """Available payment drivers for yagna."""
+
+    erc20 = auto()
+    zksync = auto()
+
+
+DEFAULT_PAYMENT_DRIVER = PaymentDriver.erc20
 
 
 @dataclass(frozen=True)
@@ -29,54 +37,67 @@ class PaymentStatus:
     outgoing: Payments
     reserved: float
 
+    @staticmethod
+    def from_dict(source: dict) -> "PaymentStatus":
+        """Parse a dict into an instance of `PaymentStatus`."""
+        return PaymentStatus(
+            amount=float(source["amount"]),
+            incoming=Payments(
+                **{key: float(value) for key, value in source["incoming"].items()}
+            ),
+            outgoing=Payments(
+                **{key: float(value) for key, value in source["outgoing"].items()}
+            ),
+            reserved=float(source["reserved"]),
+        )
+
+
+class PaymentMode(Enum):
+    """Possible modes for payment init CLI subcommand."""
+
+    receiver = auto()
+    sender = auto()
+
 
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
     def payment_init(
         self: CommandRunner,
-        sender_mode: bool = False,
-        receiver_mode: bool = False,
+        payment_mode: PaymentMode = PaymentMode.receiver,
         data_dir: str = "",
-        payment_driver: str = DEFAULT_PAYMENT_DRIVER,
+        payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
         address: Optional[str] = None,
         network: Optional[str] = None,
-    ) -> str:
+    ) -> PaymentStatus:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
         """
 
         args = make_args(
-            "payment", "init",
+            "payment",
+            "init",
             data_dir=data_dir,
-            payment_driver=payment_driver,
+            payment_driver=payment_driver.name,
             address=address,
-            network=network
+            network=network,
         )
-        if sender_mode:
-            args.append("--sender")
-        if receiver_mode:
-            args.append("--receiver")
-        return self.run_command(*args)[0]
+        args.append(f"--{payment_mode.name}")
+
+        output = self.run_json_command(Dict, *args)
+        return PaymentStatus.from_dict(output)
 
     def payment_status(
-        self: CommandRunner, data_dir: str = "", driver: str = DEFAULT_PAYMENT_DRIVER
+        self: CommandRunner,
+        data_dir: str = "",
+        driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 
-        Parse the command's output as a `PatmentStatus` and return it.
+        Parse the command's output as a `PaymentStatus` and return it.
         """
 
-        args = make_args("payment", "status", driver, data_dir=data_dir)
+        args = make_args("payment", "status", driver.name, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
-        return PaymentStatus(
-            amount=float(output["amount"]),
-            incoming=Payments(
-                **{key: float(value) for key, value in output["incoming"].items()}
-            ),
-            outgoing=Payments(
-                **{key: float(value) for key, value in output["outgoing"].items()}
-            ),
-            reserved=float(output["reserved"]),
-        )
+        return PaymentStatus.from_dict(output)

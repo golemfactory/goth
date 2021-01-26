@@ -5,6 +5,7 @@ import time
 import pytest
 
 from goth.runner.cli import Cli
+from goth.runner.cli.yagna_payment_cmd import PaymentDriver, PaymentMode, PaymentStatus
 
 
 def test_payment_init(yagna_container):
@@ -12,27 +13,26 @@ def test_payment_init(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    # The test fails if we call `payment init` too fast
-    time.sleep(3.0)
-    yagna.payment_init()
+    status: PaymentStatus = yagna.payment_init()
+    assert status
 
 
-@pytest.mark.skip(reason="Not sure what is the expected behaviour")
 def test_payment_init_provider_mode(yagna_container):
-    """Test `payment init -p`."""
+    """Test `payment init --receiver`."""
 
     yagna = Cli(yagna_container).yagna
 
-    yagna.payment_init(receiver_mode=True)
+    status: PaymentStatus = yagna.payment_init(payment_mode=PaymentMode.receiver)
+    assert status
 
 
-@pytest.mark.skip(reason="Not sure what is the expected behaviour")
 def test_payment_init_requestor_mode(yagna_container):
-    """Test `payment init -r`."""
+    """Test `payment init --sender`."""
 
     yagna = Cli(yagna_container).yagna
 
-    yagna.payment_init(sender_mode=True)
+    status: PaymentStatus = yagna.payment_init(payment_mode=PaymentMode.sender)
+    assert status
 
 
 def test_payment_status(yagna_container):
@@ -40,8 +40,6 @@ def test_payment_status(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    # The test fails if we call `payment init` too fast
-    time.sleep(3.0)
     status = yagna.payment_status()
     assert status
 
