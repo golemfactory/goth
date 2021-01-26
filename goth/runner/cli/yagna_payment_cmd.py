@@ -62,6 +62,11 @@ class PaymentMode(Enum):
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
+    def payment_fund(self: CommandRunner) -> None:
+        """Run `<cmd> payment fund`."""
+        args = make_args("payment", "fund")
+        self.run_command(args)
+
     def payment_init(
         self: CommandRunner,
         payment_mode: PaymentMode = PaymentMode.receiver,
