@@ -48,10 +48,12 @@ class PaymentStatus:
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
-    def payment_fund(self: CommandRunner) -> None:
+    def payment_fund(
+        self: CommandRunner, payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER
+    ) -> None:
         """Run `<cmd> payment fund`."""
-        args = make_args("payment", "fund")
-        self.run_command(args)
+        args = make_args("payment", "fund", driver=payment_driver.name)
+        self.run_command(*args)
 
     def payment_init(
         self: CommandRunner,
@@ -61,7 +63,7 @@ class YagnaPaymentMixin:
         payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
         address: Optional[str] = None,
         network: Optional[str] = None,
-    ) -> PaymentStatus:
+    ) -> None:
         """Run `<cmd> payment init` with optional extra args.
 
         Return the command's output.
@@ -71,7 +73,7 @@ class YagnaPaymentMixin:
             "payment",
             "init",
             data_dir=data_dir,
-            payment_driver=payment_driver.name,
+            driver=payment_driver.name,
             address=address,
             network=network,
         )
@@ -80,8 +82,7 @@ class YagnaPaymentMixin:
         if receiver_mode:
             args.append("--receiver")
 
-        output = self.run_json_command(Dict, *args)
-        return PaymentStatus.from_dict(output)
+        self.run_command(*args)[0]
 
     def payment_status(
         self: CommandRunner,
