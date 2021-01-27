@@ -8,7 +8,7 @@ from goth.runner.cli.typing import CommandRunner
 from goth.runner.container.payment import PaymentDriver
 
 
-DEFAULT_PAYMENT_DRIVER = PaymentDriver.erc20
+DEFAULT_PAYMENT_DRIVER = PaymentDriver.zksync
 
 
 @dataclass(frozen=True)
