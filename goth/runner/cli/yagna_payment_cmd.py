@@ -51,7 +51,7 @@ class YagnaPaymentMixin:
     def payment_fund(self: CommandRunner) -> None:
         """Run `<cmd> payment fund`."""
         args = make_args("payment", "fund")
-        self.run_command(args)
+        self.run_command(*args)
 
     def payment_init(
         self: CommandRunner,
