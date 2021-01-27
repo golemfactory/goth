@@ -51,7 +51,7 @@ class YagnaPaymentMixin:
     def payment_fund(
         self: CommandRunner, payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER
     ) -> None:
-        """Run `<cmd> payment fund`."""
+        """Run `<cmd> payment fund` with optional extra args."""
         args = make_args("payment", "fund", driver=payment_driver.name)
         self.run_command(*args)
 
