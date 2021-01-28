@@ -4,7 +4,7 @@ services:
 
     router:
         image: yagna-goth
-        entrypoint: /usr/bin/ya_sb_router
+        entrypoint: /usr/bin/ya-sb-router
         command: ["-l", "tcp://0.0.0.0:7477"]
 
     proxy-nginx:
