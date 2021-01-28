@@ -273,19 +273,12 @@ class ReleaseDownloader(GithubDownloader):
     repo_name: str
     """Name of the repo to download the release from."""
 
-    tag_substring: str
-    """Required substring of the release tag. Empty by default.
-
-     Used to restrict which releases to download.
-     """
-
-    def __init__(self, repo: str, tag_substring: str = "", *args, **kwargs):
+    def __init__(self, repo: str, *args, **kwargs):
         # mypy error here is a bug: https://github.com/python/mypy/issues/6799
         super().__init__(*args, repo=repo, **kwargs)
         self.repo_name = repo
-        self.tag_substring = tag_substring
 
-    def _get_latest_release(self) -> Optional[dict]:
+    def _get_latest_release(self, tag_substring: str = "") -> Optional[dict]:
         """Get the latest version, this includes pre-releases.
 
         Only the versions with `tag_name` that contains `self.tag_substring`
@@ -300,15 +293,20 @@ class ReleaseDownloader(GithubDownloader):
         logger.debug("releases=%s", all_releases)
 
         matching_releases = (
-            rel for rel in all_releases if self.tag_substring in rel.get("tag_name", "")
+            rel for rel in all_releases if tag_substring in rel.get("tag_name", "")
         )
         return next(matching_releases, None)
 
-    def _get_asset(self, release: dict, content_type: str) -> Optional[dict]:
+    def _get_asset(
+        self, release: dict, content_type: str, asset_name: Optional[str] = None
+    ) -> Optional[dict]:
         assets = release["assets"]
         logger.debug("assets=%s", assets)
-        asset = next(filter(lambda a: a["content_type"] == content_type, assets), None)
-        return asset
+
+        content_assets = filter(lambda a: a["content_type"] == content_type, assets)
+        if content_assets and asset_name:
+            return next(filter(lambda a: asset_name in a["name"], content_assets), None)
+        return next(content_assets, None)
 
     def _download_asset(self, asset: dict) -> Path:
         """Download an asset from a specific GitHub release."""
@@ -327,28 +325,36 @@ class ReleaseDownloader(GithubDownloader):
 
     def download(
         self,
+        asset_name: str = "",
         content_type: str = DEFAULT_CONTENT_TYPE,
         output: Optional[Path] = None,
+        tag_substring: str = "",
     ) -> Path:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
         Raise `AssetNotFound` if the requested release could not be found or if the
         repo has no releases.
         Return path containing the downloaded release.
+        :param asset_name: substring the asset's name must contain
         :param content_type: content-type string for the asset to download
         :param output: file path to where the asset should be saved
+        :param tag_substring: substring the release's tag name must contain
         """
-        release = self._get_latest_release()
+        release = self._get_latest_release(tag_substring)
         if not release:
-            raise AssetNotFound(f"Given repo has no releases. repo={self.repo_name}")
-
-        asset = self._get_asset(release, content_type)
-        if not asset:
             raise AssetNotFound(
-                f"Could not find asset of given type. content_type={content_type}"
+                f"Could not find release. "
+                f"repo={self.repo_name}, tag_substring={tag_substring}"
             )
 
-        logger.info("Found matching release. name=%s", asset["name"])
+        asset = self._get_asset(release, content_type, asset_name)
+        if not asset:
+            raise AssetNotFound(
+                f"Could not find asset. "
+                f"content_type={content_type}, asset_name={asset_name}"
+            )
+
+        logger.info("Found matching asset. name=%s", asset["name"])
         logger.debug("asset=%s", asset)
 
         asset_id = str(asset["id"])
