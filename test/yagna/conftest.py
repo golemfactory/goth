@@ -47,6 +47,12 @@ def pytest_addoption(parser):
         help="path to local .deb file or dir with .deb packages to be installed in \
                 yagna containers",
     )
+    parser.addoption(
+        "--yagna-release",
+        action="store",
+        help="release tag substring specifying which yagna release should be used. \
+                If this is equal to 'latest', latest yagna release will be used.",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -102,11 +108,18 @@ def yagna_deb_path(request) -> Optional[Path]:
 
 
 @pytest.fixture(scope="session")
+def yagna_release(request) -> Optional[str]:
+    """Fixture that passes the --yagna-release CLI parameter to the test suite."""
+    return request.config.option.yagna_release
+
+
+@pytest.fixture(scope="session")
 def yagna_build_env(
     yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
     yagna_deb_path: Optional[Path],
+    yagna_release: Optional[str],
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
@@ -114,6 +127,7 @@ def yagna_build_env(
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
         deb_path=yagna_deb_path,
+        release_tag=yagna_release,
     )
 
 
