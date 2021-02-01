@@ -22,6 +22,12 @@ def pytest_addoption(parser):
         help="path to custom assets to be used by yagna containers",
     )
     parser.addoption(
+        "--deb-package",
+        action="store",
+        help="path to local .deb file or dir with .deb packages to be installed in \
+                yagna containers",
+    )
+    parser.addoption(
         "--logs-path",
         action="store",
         help="path under which all test run logs should be stored",
@@ -42,11 +48,20 @@ def pytest_addoption(parser):
         help="git commit hash in yagna repo for which to download binaries",
     )
     parser.addoption(
-        "--yagna-deb-path",
+        "--yagna-release",
         action="store",
-        help="path to local .deb file or dir with .deb packages to be installed in \
-                yagna containers",
+        help="release tag substring specifying which yagna release should be used. \
+                If this is equal to 'latest', latest yagna release will be used.",
     )
+
+
+@pytest.fixture(scope="session")
+def deb_package(request) -> Optional[Path]:
+    """Fixture that passes the --deb-package CLI parameter to the test suite."""
+    deb_path = request.config.option.deb_package
+    if deb_path:
+        return Path(deb_path)
+    return None
 
 
 @pytest.fixture(scope="session")
@@ -93,12 +108,9 @@ def yagna_commit_hash(request) -> Optional[str]:
 
 
 @pytest.fixture(scope="session")
-def yagna_deb_path(request) -> Optional[Path]:
-    """Fixture that passes the --yagna-deb-dir CLI parameter to the test suite."""
-    deb_path = request.config.option.yagna_deb_path
-    if deb_path:
-        return Path(deb_path)
-    return None
+def yagna_release(request) -> Optional[str]:
+    """Fixture that passes the --yagna-release CLI parameter to the test suite."""
+    return request.config.option.yagna_release
 
 
 @pytest.fixture(scope="session")
@@ -106,14 +118,16 @@ def yagna_build_env(
     yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
-    yagna_deb_path: Optional[Path],
+    deb_package: Optional[Path],
+    yagna_release: Optional[str],
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
         binary_path=yagna_binary_path,
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
-        deb_path=yagna_deb_path,
+        deb_path=deb_package,
+        release_tag=yagna_release,
     )
 
 

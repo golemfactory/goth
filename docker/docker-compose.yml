@@ -21,7 +21,7 @@ services:
             - "8545:8545"
 
     zksync:
-        image: docker.pkg.github.com/golemfactory/yagna-zksync/yagna-zksync-mock:fe8f9ca005a3
+        image: docker.pkg.github.com/golemfactory/yagna-zksync/yagna-zksync-mock:f3867213572d
         ports:
             - "3030:3030"
         environment:

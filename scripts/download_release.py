@@ -13,6 +13,12 @@ from goth.runner.download import (
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--content-type", default=DEFAULT_CONTENT_TYPE)
 parser.add_argument(
+    "-n",
+    "--name",
+    help="Substring the asset to download should contain.",
+    type=str,
+)
+parser.add_argument(
     "-o",
     "--output",
     help="Output path, may be either a file or a directory.",
@@ -33,7 +39,5 @@ parser.add_argument("repo", help="Name of the git repository to be used.")
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    downloader = ReleaseDownloader(
-        args.repo, token=args.token, verbose=args.verbose, tag_substring=args.tag
-    )
-    downloader.download(args.content_type, args.output)
+    downloader = ReleaseDownloader(args.repo, token=args.token, verbose=args.verbose)
+    downloader.download(args.name, args.content_type, args.output, args.tag)
