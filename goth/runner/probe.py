@@ -101,17 +101,6 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
-    @contextlib.asynccontextmanager
-    async def run(self) -> str:
-        """Implement AsyncContextManager protocol for a probe."""
-
-        try:
-            await self.start()
-            assert self.ip_address
-            yield self.ip_address
-        finally:
-            await self.stop()
-
     async def start(self) -> None:
         """Start the probe.
 
@@ -129,7 +118,12 @@ class Probe(abc.ABC):
         self._logger.info("Stopping probe")
         if self.container.logs:
             await self.container.logs.stop()
-        self.container.remove(force=True)
+
+    def remove(self) -> None:
+        """Remove the underlying container."""
+        if self.container:
+            self.container.remove(force=True)
+            self._logger.debug("Container removed")
 
     async def _start_container(self) -> None:
         """
@@ -196,6 +190,38 @@ class Probe(abc.ABC):
             )
             key = app_key.key
         return key
+
+
+@contextlib.contextmanager
+def create_probe(
+    runner: "Runner",
+    docker_client: DockerClient,
+    config: YagnaContainerConfig,
+    log_config: LogConfig,
+) -> Probe:
+    """Implement a ContextManager protocol for creating and removing probes."""
+
+    probe: Optional[Probe] = None
+    try:
+        probe = config.probe_type(runner, docker_client, config, log_config)
+        for name, value in config.probe_properties.items():
+            probe.__setattr__(name, value)
+        yield probe
+    finally:
+        if probe:
+            probe.remove()
+
+
+@contextlib.asynccontextmanager
+async def run_probe(probe: Probe) -> str:
+    """Implement AsyncContextManager for starting and stopping a probe."""
+
+    try:
+        await probe.start()
+        assert probe.ip_address
+        yield probe.ip_address
+    finally:
+        await probe.stop()
 
 
 class RequestorProbe(ApiClientMixin, Probe):

@@ -2,13 +2,11 @@
 
 import asyncio
 from contextlib import asynccontextmanager, AsyncExitStack
-import functools
 from itertools import chain
 import logging
 import os
 from pathlib import Path
 import sys
-import time
 from typing import (
     cast,
     AsyncGenerator,
@@ -23,77 +21,24 @@ from typing import (
 import docker
 
 from goth.runner.agent import AgentMixin
-from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
+from goth.runner.container.compose import (
+    ComposeConfig,
+    ComposeNetworkManager,
+    run_compose_network,
+)
 from goth.runner.container.yagna import YagnaContainerConfig
 import goth.runner.container.payment as payment
+from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import LogConfig
-from goth.runner.probe import Probe
-from goth.runner.proxy import Proxy
-from goth.runner.web_server import WebServer
+from goth.runner.probe import Probe, create_probe, run_probe
+from goth.runner.proxy import Proxy, run_proxy
+from goth.runner.step import step  # noqa: F401
+from goth.runner.web_server import WebServer, run_web_server
 
 
 logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
-
-
-class TestFailure(Exception):
-    """Base class for errors raised by the test runner when a test fails."""
-
-
-class TemporalAssertionError(TestFailure):
-    """Raised on temporal assertion failure."""
-
-    def __init__(self, assertion: str):
-        super().__init__(f"Temporal assertion '{assertion}' failed")
-
-
-class StepTimeoutError(TestFailure):
-    """Raised on test step timeout."""
-
-    def __init__(self, step: str, time: float):
-        super().__init__(f"Step '{step}' timed out after {time:.1f} s")
-
-
-def step(default_timeout: float = 10.0):
-    """Wrap a step function to implement timeout and log progress."""
-
-    def decorator(func):
-        @functools.wraps(func)
-        async def wrapper(self: Probe, *args, timeout: Optional[float] = None):
-            timeout = timeout if timeout is not None else default_timeout
-            step_name = f"{self.name}.{func.__name__}(timeout={timeout})"
-            start_time = time.time()
-
-            logger.info("Running step '%s'", step_name)
-            try:
-                result = await asyncio.wait_for(func(self, *args), timeout=timeout)
-                self.runner.check_assertion_errors()
-                step_time = time.time() - start_time
-                logger.debug(
-                    "Finished step '%s', result: %s, time: %.1f s",
-                    step_name,
-                    result,
-                    step_time,
-                )
-            except asyncio.TimeoutError:
-                step_time = time.time() - start_time
-                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
-                raise StepTimeoutError(step_name, step_time)
-            except Exception as exc:
-                step_time = time.time() - start_time
-                logger.error(
-                    "Step '%s' raised %s in %.1f",
-                    step_name,
-                    exc.__class__.__name__,
-                    step_time,
-                )
-                raise
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 class Runner:
@@ -201,9 +146,9 @@ class Runner:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            probe = config.probe_type(self, docker_client, config, log_config)
-            for name, value in config.probe_properties.items():
-                probe.__setattr__(name, value)
+            probe = self._exit_stack.enter_context(
+                create_probe(self, docker_client, config, log_config)
+            )
             self.probes.append(probe)
 
     def _get_current_test_name(self) -> str:
@@ -221,7 +166,7 @@ class Runner:
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            ip_address = await self._exit_stack.enter_async_context(probe.run())
+            ip_address = await self._exit_stack.enter_async_context(run_probe(probe))
             node_names[ip_address] = probe.name
             container_ports = probe.container.ports
             ports[ip_address] = container_ports
@@ -245,7 +190,7 @@ class Runner:
             ports=ports,
             assertions_module=self.api_assertions_module,
         )
-        self._exit_stack.enter_context(self.proxy.run())
+        self._exit_stack.enter_context(run_proxy(self.proxy))
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []
@@ -307,13 +252,14 @@ class Runner:
         self.base_log_dir.mkdir()
 
         await self._exit_stack.enter_async_context(
-            self._compose_manager.run(self.base_log_dir)
+            run_compose_network(self._compose_manager, self.base_log_dir)
         )
 
         self._create_probes(self.base_log_dir)
 
         await self._exit_stack.enter_async_context(
-            self._web_server.run(server_address=None)  # listen on all interfaces
+            # listen on all interfaces
+            run_web_server(self._web_server, server_address=None)
         )
 
         await self._start_nodes()

@@ -47,16 +47,6 @@ class WebServer:
                 out.write(data)
         return web.Response()
 
-    @contextlib.asynccontextmanager
-    async def run(self, server_address: Optional[str]) -> None:
-        """Implement AsyncContextManager protocol for a web server."""
-
-        try:
-            await self.start(server_address)
-            yield
-        finally:
-            await self.stop()
-
     async def start(self, server_address: Optional[str]) -> None:
         """Start serving content."""
 
@@ -93,3 +83,14 @@ class WebServer:
         await self._server_task
         self._server_task = None
         logger.info("Stopped the web server")
+
+
+@contextlib.asynccontextmanager
+async def run_web_server(server: WebServer, server_address: Optional[str]) -> None:
+    """Implement AsyncContextManager protocol for starting/stopping a web server."""
+
+    try:
+        await server.start(server_address)
+        yield
+    finally:
+        await server.stop()
