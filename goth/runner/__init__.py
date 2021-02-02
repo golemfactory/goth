@@ -26,74 +26,17 @@ from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
 from goth.runner.container.yagna import YagnaContainerConfig
 import goth.runner.container.payment as payment
+from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import LogConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
+from goth.runner.step import step  # noqa: F401
 from goth.runner.web_server import WebServer
 
 
 logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
-
-
-class TestFailure(Exception):
-    """Base class for errors raised by the test runner when a test fails."""
-
-
-class TemporalAssertionError(TestFailure):
-    """Raised on temporal assertion failure."""
-
-    def __init__(self, assertion: str):
-        super().__init__(f"Temporal assertion '{assertion}' failed")
-
-
-class StepTimeoutError(TestFailure):
-    """Raised on test step timeout."""
-
-    def __init__(self, step: str, time: float):
-        super().__init__(f"Step '{step}' timed out after {time:.1f} s")
-
-
-def step(default_timeout: float = 10.0):
-    """Wrap a step function to implement timeout and log progress."""
-
-    def decorator(func):
-        @functools.wraps(func)
-        async def wrapper(self: Probe, *args, timeout: Optional[float] = None):
-            timeout = timeout if timeout is not None else default_timeout
-            step_name = f"{self.name}.{func.__name__}(timeout={timeout})"
-            start_time = time.time()
-
-            logger.info("Running step '%s'", step_name)
-            try:
-                result = await asyncio.wait_for(func(self, *args), timeout=timeout)
-                self.runner.check_assertion_errors()
-                step_time = time.time() - start_time
-                logger.debug(
-                    "Finished step '%s', result: %s, time: %.1f s",
-                    step_name,
-                    result,
-                    step_time,
-                )
-            except asyncio.TimeoutError:
-                step_time = time.time() - start_time
-                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
-                raise StepTimeoutError(step_name, step_time)
-            except Exception as exc:
-                step_time = time.time() - start_time
-                logger.error(
-                    "Step '%s' raised %s in %.1f",
-                    step_name,
-                    exc.__class__.__name__,
-                    step_time,
-                )
-                raise
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 class Runner:
