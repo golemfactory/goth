@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from contextlib import asynccontextmanager, AsyncExitStack, contextmanager
+from contextlib import asynccontextmanager, AsyncExitStack
 from itertools import chain
 import logging
 import os
@@ -21,15 +21,19 @@ from typing import (
 import docker
 
 from goth.runner.agent import AgentMixin
-from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
+from goth.runner.container.compose import (
+    ComposeConfig,
+    ComposeNetworkManager,
+    run_compose_network,
+)
 from goth.runner.container.yagna import YagnaContainerConfig
 import goth.runner.container.payment as payment
 from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import LogConfig
-from goth.runner.probe import Probe
-from goth.runner.proxy import Proxy
+from goth.runner.probe import Probe, create_probe, run_probe
+from goth.runner.proxy import Proxy, run_proxy
 from goth.runner.step import step  # noqa: F401
-from goth.runner.web_server import WebServer
+from goth.runner.web_server import WebServer, run_web_server
 
 
 logger = logging.getLogger(__name__)
@@ -143,7 +147,7 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             probe = self._exit_stack.enter_context(
-                _create_probe(self, docker_client, config, log_config)
+                create_probe(self, docker_client, config, log_config)
             )
             self.probes.append(probe)
 
@@ -162,7 +166,7 @@ class Runner:
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            ip_address = await self._exit_stack.enter_async_context(probe.run())
+            ip_address = await self._exit_stack.enter_async_context(run_probe(probe))
             node_names[ip_address] = probe.name
             container_ports = probe.container.ports
             ports[ip_address] = container_ports
@@ -186,7 +190,7 @@ class Runner:
             ports=ports,
             assertions_module=self.api_assertions_module,
         )
-        self._exit_stack.enter_context(self.proxy.run())
+        self._exit_stack.enter_context(run_proxy(self.proxy))
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []
@@ -248,13 +252,14 @@ class Runner:
         self.base_log_dir.mkdir()
 
         await self._exit_stack.enter_async_context(
-            self._compose_manager.run(self.base_log_dir)
+            run_compose_network(self._compose_manager, self.base_log_dir)
         )
 
         self._create_probes(self.base_log_dir)
 
         await self._exit_stack.enter_async_context(
-            self._web_server.run(server_address=None)  # listen on all interfaces
+            # listen on all interfaces
+            run_web_server(self._web_server, server_address=None)
         )
 
         await self._start_nodes()
@@ -264,25 +269,6 @@ class Runner:
         await self._exit_stack.aclose()
         payment.clean_up()
 
-
-@contextmanager
-def _create_probe(
-    runner: "Runner",
-    docker_client: docker.DockerClient,
-    config: YagnaContainerConfig,
-    log_config: LogConfig,
-) -> Probe:
-    """Implement a ContextManager protocol for creating and removing probes."""
-
-    probe: Optional[Probe] = None
-    try:
-        probe = config.probe_type(runner, docker_client, config, log_config)
-        for name, value in config.probe_properties.items():
-            probe.__setattr__(name, value)
-        yield probe
-    finally:
-        if probe:
-            probe.remove()
 
 def _install_sigint_handler():
     """Install handler that cancels the current task in the current event loop."""
