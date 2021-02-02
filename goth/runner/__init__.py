@@ -1,14 +1,12 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from contextlib import asynccontextmanager, AsyncExitStack
-import functools
+from contextlib import asynccontextmanager, AsyncExitStack, contextmanager
 from itertools import chain
 import logging
 import os
 from pathlib import Path
 import sys
-import time
 from typing import (
     cast,
     AsyncGenerator,
@@ -144,9 +142,9 @@ class Runner:
             log_config = config.log_config or LogConfig(config.name)
             log_config.base_dir = scenario_dir
 
-            probe = config.probe_type(self, docker_client, config, log_config)
-            for name, value in config.probe_properties.items():
-                probe.__setattr__(name, value)
+            probe = self._exit_stack.enter_context(
+                _create_probe(self, docker_client, config, log_config)
+            )
             self.probes.append(probe)
 
     def _get_current_test_name(self) -> str:
@@ -266,6 +264,25 @@ class Runner:
         await self._exit_stack.aclose()
         payment.clean_up()
 
+
+@contextmanager
+def _create_probe(
+    runner: "Runner",
+    docker_client: docker.DockerClient,
+    config: YagnaContainerConfig,
+    log_config: LogConfig,
+) -> Probe:
+    """Implement a ContextManager protocol for creating and removing probes."""
+
+    probe: Optional[Probe] = None
+    try:
+        probe = config.probe_type(runner, docker_client, config, log_config)
+        for name, value in config.probe_properties.items():
+            probe.__setattr__(name, value)
+        yield probe
+    finally:
+        if probe:
+            probe.remove()
 
 def _install_sigint_handler():
     """Install handler that cancels the current task in the current event loop."""

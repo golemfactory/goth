@@ -129,7 +129,12 @@ class Probe(abc.ABC):
         self._logger.info("Stopping probe")
         if self.container.logs:
             await self.container.logs.stop()
-        self.container.remove(force=True)
+
+    def remove(self) -> None:
+        """Remove the underlying container."""
+        if self.container:
+            self.container.remove(force=True)
+            self._logger.debug("Container removed")
 
     async def _start_container(self) -> None:
         """
