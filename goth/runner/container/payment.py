@@ -52,7 +52,7 @@ class Account:
     address: str
     driver: PaymentDriver = PaymentDriver.zksync
     network: str = "rinkeby"
-    token: str = "tglm"
+    token: str = "tGLM"
     receive: bool = True
     send: bool = True
 
