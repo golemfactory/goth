@@ -52,12 +52,3 @@ def test_failure_callback() -> Callable[[TestFailure], None]:
     return lambda error: logger.error(
         f"The runner was stopped due to test failure: {error}"
     )
-
-
-@pytest.hookimpl
-def pytest_report_teststatus(report, config):
-    """Suppress printing test status for interactive testing session."""
-
-    # Return section, one-letter and verbose status, e.g. ("failed", "F", "FAILED").
-    # Returning empty strings will suppress printing status.
-    return "", "", ""  # e.g. "failed", "F", "FAILED"
