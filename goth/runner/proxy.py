@@ -59,16 +59,6 @@ class Proxy:
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 
-    @contextlib.contextmanager
-    def run(self):
-        """Implement AsyncContextManager protocol for Proxy."""
-
-        try:
-            self.start()
-            yield
-        finally:
-            self.stop()
-
     def start(self):
         """Start the proxy thread."""
         self._proxy_thread.start()
@@ -111,3 +101,14 @@ class Proxy:
         args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
         _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
         self._logger.info("Embedded mitmproxy exited")
+
+
+@contextlib.contextmanager
+def run_proxy(proxy: Proxy) -> Proxy:
+    """Implement ContextManager protocol for stating and stopping a Proxy."""
+
+    try:
+        proxy.start()
+        yield
+    finally:
+        proxy.stop()

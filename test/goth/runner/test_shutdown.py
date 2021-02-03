@@ -15,12 +15,16 @@ from goth.runner.proxy import Proxy
 from goth.runner.web_server import WebServer
 
 
+TestFailure.__test__ = False
+
+
 @pytest.fixture(autouse=True)
 def apply_global_monkeypatches(monkeypatch):
     """Apply monkey patches for all tests."""
 
     monkeypatch.setattr(docker, "from_env", mock.MagicMock())
     monkeypatch.setattr(goth.runner.probe, "get_container_address", mock.MagicMock())
+    monkeypatch.setattr(goth.runner.probe.Probe, "name", mock.MagicMock())
     monkeypatch.setattr(
         ComposeNetworkManager, "network_gateway_address", mock.MagicMock()
     )
@@ -91,30 +95,36 @@ def mock_function(monkeypatch):
         else:
             mock._side_effect = _func
         monkeypatch.setattr(class_, method, mock_)
+        if method == "__init__":
+            mock_.return_value = None
         return mock_
 
     return _mock_function
 
 
 @pytest.mark.parametrize(
-    "manager_start_fails, webserver_start_fails, probe_start_fails, proxy_start_fails,"
+    "manager_start_fails, webserver_start_fails, "
+    "probe_init_fails, probe_start_fails, proxy_start_fails, "
     "check_assertion_fails, "
-    "proxy_stop_fails, probe_stop_fails, webserver_stop_fails, manager_stop_fails",
+    "proxy_stop_fails, probe_stop_fails, probe_remove_fails, "
+    "webserver_stop_fails, manager_stop_fails",
     [
-        (0, 0, 0, 0, 0, 0, 0, 0, 0),
-        (1, 0, 0, 0, 0, 0, 0, 0, 0),
-        (0, 1, 0, 0, 0, 0, 0, 0, 0),
-        (0, 0, 1, 0, 0, 0, 0, 0, 0),
-        (0, 0, 0, 1, 0, 0, 0, 0, 0),
-        (0, 0, 0, 0, 1, 0, 0, 0, 0),
-        (0, 0, 0, 0, 0, 1, 0, 0, 0),
-        (0, 0, 0, 0, 0, 0, 1, 0, 0),
-        (0, 0, 0, 0, 0, 0, 0, 1, 0),
-        (0, 0, 0, 0, 0, 0, 0, 0, 1),
-        (0, 0, 0, 1, 0, 1, 0, 0, 0),
-        (0, 0, 0, 1, 0, 0, 1, 0, 0),
-        (0, 0, 0, 1, 0, 0, 0, 1, 0),
-        (0, 0, 0, 1, 0, 0, 0, 0, 1),
+        (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+        (0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
+        (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+        (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+        (0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0),
+        (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+        (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
+        (0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+        (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+        (0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0),
+        (0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0),
+        (0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0),
+        (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1),
     ],
 )
 @pytest.mark.asyncio
@@ -122,11 +132,13 @@ async def test_runner_startup_shutdown(
     mock_function,
     manager_start_fails,
     webserver_start_fails,
+    probe_init_fails,
     probe_start_fails,
     proxy_start_fails,
     check_assertion_fails,
     proxy_stop_fails,
     probe_stop_fails,
+    probe_remove_fails,
     webserver_stop_fails,
     manager_stop_fails,
 ):
@@ -140,6 +152,10 @@ async def test_runner_startup_shutdown(
     )
     web_server_start = mock_function(WebServer, "start", webserver_start_fails)
     web_server_stop = mock_function(WebServer, "stop", webserver_stop_fails)
+    probe_init = mock_function(
+        goth.runner.container.yagna.YagnaContainer, "__init__", probe_init_fails
+    )
+    probe_remove = mock_function(Probe, "remove", probe_remove_fails)
     probe_start = mock_function(Probe, "start", probe_start_fails)
     probe_stop = mock_function(Probe, "stop", probe_stop_fails)
     proxy_start = mock_function(Proxy, "start", proxy_start_fails)
@@ -165,14 +181,21 @@ async def test_runner_startup_shutdown(
     assert web_server_start.called or manager_start_network.failed
     assert proxy_stop.call_count == proxy_start.call_count <= 1
     assert runner_check_assertions.call_count == proxy_start.call_count
+    assert probe_remove.call_count == probe_init.call_count <= 2
     assert probe_stop.call_count == probe_start.call_count <= 2
 
     # Below we assert that each component is started only after the components
     # it depends on start successfully.
     assert web_server_start.called or manager_start_network.failed
-    assert probe_start.called or manager_start_network.failed or web_server_start.failed
+    assert probe_init.called or manager_start_network.failed or web_server_start.failed
+    assert probe_start.called or (
+        manager_start_network.failed or web_server_start.failed or probe_init.failed
+    )
     assert proxy_start.called or (
-        manager_start_network.failed or web_server_start.failed or probe_start.failed
+        manager_start_network.failed
+        or web_server_start.failed
+        or probe_init.failed
+        or probe_start.failed
     )
 
 
@@ -181,14 +204,15 @@ async def test_runner_startup_shutdown(
 async def test_runner_test_failure(mock_function, have_test_failure):
     """Test if test failure callback is called if a TestFailure is raised."""
 
-    for class_, func in (
-        (ComposeNetworkManager, "run"),
-        (WebServer, "run"),
-        (Probe, "run"),
-        (Proxy, "run"),
-        (Runner, "check_assertion_errors"),
+    for class_, funcs in (
+        (ComposeNetworkManager, ("start_network", "stop_network")),
+        (WebServer, ("start", "stop")),
+        (Probe, ("remove", "start", "stop")),
+        (Proxy, ("start", "stop")),
+        (Runner, ("check_assertion_errors",)),
     ):
-        mock_function(class_, func)
+        for func in funcs:
+            mock_function(class_, func)
 
     test_failure_callback = mock.MagicMock()
     runner = mock_runner(test_failure_callback=test_failure_callback)
@@ -205,14 +229,15 @@ async def test_runner_test_failure(mock_function, have_test_failure):
 async def test_runner_cancelled(mock_function, cancel):
     """Test that cancellation callback is called if a runner is cancelled."""
 
-    for class_, func in (
-        (ComposeNetworkManager, "run"),
-        (WebServer, "run"),
-        (Probe, "run"),
-        (Proxy, "run"),
-        (Runner, "check_assertion_errors"),
+    for class_, funcs in (
+        (ComposeNetworkManager, ("start_network", "stop_network")),
+        (WebServer, ("start", "stop")),
+        (Probe, ("remove", "start", "stop")),
+        (Proxy, ("start", "stop")),
+        (Runner, ("check_assertion_errors",)),
     ):
-        mock_function(class_, func)
+        for func in funcs:
+            mock_function(class_, func)
 
     cancellation_callback = mock.MagicMock()
     runner = mock_runner(cancellation_callback=cancellation_callback)
