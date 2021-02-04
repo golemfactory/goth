@@ -19,9 +19,11 @@ def node_environment(
 
     daemon_env = {
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
-        "CHAIN": "mainnet",
+        "CHAIN": "rinkeby",
+        "YA_PAYMENT_NETWORK": "rinkeby",
         "ERC20_RINKEBY_GETH_ADDR": "http://ethereum:8545",
-        "NGNT_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        "RINKEBY_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
         "RUST_BACKTRACE": "1",

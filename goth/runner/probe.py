@@ -135,10 +135,10 @@ class Probe(abc.ABC):
         self.container.start()
 
         # Wait until the daemon is ready to create an app key.
-        self._logger.info("Waiting for GSB identity service to be available")
+        self._logger.info("Waiting for connection to ya-sb-router")
         if self.container.logs:
             await self.container.logs.wait_for_entry(
-                ".*Identity GSB service successfully activated", timeout=30
+                ".*connected with server: ya-sb-router.*", timeout=30
             )
         await self.create_app_key()
 
