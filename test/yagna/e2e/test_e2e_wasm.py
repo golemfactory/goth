@@ -50,12 +50,16 @@ def _topology(
             name="provider_1",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
+            # https://github.com/golemfactory/goth/issues/410
+            privileged_mode=True,
             volumes=provider_volumes,
         ),
         YagnaContainerConfig(
             name="provider_2",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
+            # https://github.com/golemfactory/goth/issues/410
+            privileged_mode=True,
             volumes=provider_volumes,
         ),
     ]
