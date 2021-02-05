@@ -94,7 +94,7 @@ class ComposeNetworkManager:
         command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
 
         await build_yagna_image(self.config.build_env)
-        await build_proxy_image()
+        await build_proxy_image(self.config.build_env.docker_dir)
 
         if (
             force_build

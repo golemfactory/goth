@@ -8,7 +8,7 @@ import shutil
 from tempfile import TemporaryDirectory
 from typing import Callable, List, Optional
 
-from goth.project import DOCKER_DIR, PROJECT_ROOT
+from goth.project import PROJECT_ROOT
 from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
@@ -17,10 +17,13 @@ from goth.runner.download import (
 )
 from goth.runner.process import run_command
 
+
+YAGNA_DOCKERFILE = "yagna-goth.Dockerfile"
+YAGNA_DOCKERFILE_DEB = "yagna-goth-deb.Dockerfile"
+
+
 logger = logging.getLogger(__name__)
 
-DOCKERFILE_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}.Dockerfile"
-DOCKERFILE_DEB_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}-deb.Dockerfile"
 
 EXPECTED_BINARIES = {
     "exe-unit",
@@ -42,6 +45,8 @@ PROXY_IMAGE = "proxy-nginx"
 class YagnaBuildEnvironment:
     """Configuration for the Docker build process of a yagna image."""
 
+    docker_dir: Path
+    """Local path to a directory with Dockerfiles to use for building images."""
     binary_path: Optional[Path]
     """Local path to directory or archive with binaries to be included in the image."""
     branch: Optional[str]
@@ -73,14 +78,14 @@ async def _build_docker_image(
         await run_command(command)
 
 
-async def build_proxy_image() -> None:
+async def build_proxy_image(docker_dir: Path) -> None:
     """Build the proxy-nginx Docker image."""
 
     required_files = (
         Path("goth", "api_monitor", "nginx.conf"),
         Path("goth", "address.py"),
     )
-    proxy_dockerfile = DOCKER_DIR / f"{PROXY_IMAGE}.Dockerfile"
+    proxy_dockerfile = docker_dir / f"{PROXY_IMAGE}.Dockerfile"
 
     def _setup_context(build_dir: Path) -> None:
         nonlocal proxy_dockerfile
@@ -95,7 +100,10 @@ async def build_proxy_image() -> None:
 async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
     """Build the yagna Docker image."""
 
-    dockerfile = DOCKERFILE_DEB_PATH if environment.release_tag else DOCKERFILE_PATH
+    docker_dir = environment.docker_dir
+    dockerfile = docker_dir / (
+        YAGNA_DOCKERFILE_DEB if environment.release_tag else YAGNA_DOCKERFILE
+    )
 
     await _build_docker_image(
         YagnaContainer.IMAGE,
