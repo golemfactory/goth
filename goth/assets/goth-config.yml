@@ -1,0 +1,34 @@
+docker-dir: "docker"
+
+web-root: "web-root"
+
+key-dir: "keys"
+
+build_env:
+  # TODO:
+  # For now these settings are common to all `yagna` containers.
+  # In future we may want to have nodes running different versions
+  # of `yagna` in the test network.
+  #
+  # These are mutually exclusive, only one key should be defined:
+  # yagna-binary-path:
+  # yagna-commit-hash:
+  yagna-release: "latest"
+
+
+requestor:
+  name: "requestor"
+
+providers:
+
+  - names:
+    - "provider-1"
+    - "provider-2"
+    use-proxy: true
+    mount:
+      - read-only: "provider/presets.json"
+        destination: "/root/.local/share/ya-provider/presets.json"
+      - read-only: "provider/hardware.json"
+        destination: "/root/.local/share/ya-provider/hardware.json"
+      - read-write: "../test/yagna/e2e/assets/provider/images"
+        destination: "/root/.local/share/ya-provider/exe-unit/cache/tmp"
