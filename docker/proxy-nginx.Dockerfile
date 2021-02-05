@@ -6,6 +6,10 @@ COPY goth/address.py /root/address.py
 
 SHELL ["/bin/bash", "-c"]
 
+RUN apt-get update && apt-get install -y dos2unix
+
+RUN dos2unix /root/address.py
+
 # This will read from /root/address.py definitions of the form:
 #
 #   VAR = N
@@ -14,9 +18,9 @@ SHELL ["/bin/bash", "-c"]
 # and replace each {VAR} in nginx.conf with N:
 
 RUN  grep -P '^([A-Z_]*_PORT[A-Z_]*)\s*=\s*([0-9]){4,5}$' /root/address.py \
-     | while IFS=$' \t=' read VAR VALUE; do \
-         sed -i "s/{$VAR}/$VALUE/g" /etc/nginx/nginx.conf;\
-     done
+    | while IFS=$' \t=' read VAR VALUE; do \
+    sed -i "s/{$VAR}/$VALUE/g" /etc/nginx/nginx.conf;\
+    done
 
 
 # Try to get the address of `host.docker.internal`.

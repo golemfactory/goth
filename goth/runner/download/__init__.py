@@ -208,12 +208,13 @@ class ArtifactDownloader(GithubDownloader):
             response.raise_for_status()
             logger.info("Downloading artifact. url=%s", archive_url)
 
-            with tempfile.NamedTemporaryFile() as fd:
+            with tempfile.NamedTemporaryFile(delete=False) as fd:
                 fd.write(response.content)
-                logger.debug("extracting zip archive. path=%s", fd.name)
+                fd.flush()
                 cache_dir = self._create_cache_dir(artifact_id)
                 shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
                 logger.info("Extracted package. path=%s", cache_dir)
+                os.remove(fd.name)
 
         return cache_dir
 

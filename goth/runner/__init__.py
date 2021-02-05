@@ -281,4 +281,4 @@ def _install_sigint_handler():
         logger.warning("Received SIGINT")
         task.cancel()
 
-    loop.add_signal_handler(signal.SIGINT, _sigint_handler)
+#    loop.add_signal_handler(signal.SIGINT, _sigint_handler)
