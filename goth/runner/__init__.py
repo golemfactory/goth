@@ -1,7 +1,7 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from contextlib import asynccontextmanager, AsyncExitStack, contextmanager
+from contextlib import asynccontextmanager, AsyncExitStack
 from itertools import chain
 import logging
 import os
@@ -21,15 +21,19 @@ from typing import (
 import docker
 
 from goth.runner.agent import AgentMixin
-from goth.runner.container.compose import ComposeConfig, ComposeNetworkManager
+from goth.runner.container.compose import (
+    ComposeConfig,
+    ComposeNetworkManager,
+    run_compose_network,
+)
 from goth.runner.container.yagna import YagnaContainerConfig
 import goth.runner.container.payment as payment
 from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import LogConfig
-from goth.runner.probe import Probe
-from goth.runner.proxy import Proxy
+from goth.runner.probe import Probe, create_probe, run_probe
+from goth.runner.proxy import Proxy, run_proxy
 from goth.runner.step import step  # noqa: F401
-from goth.runner.web_server import WebServer
+from goth.runner.web_server import WebServer, run_web_server
 
 
 logger = logging.getLogger(__name__)
@@ -42,9 +46,6 @@ class Runner:
 
     api_assertions_module: Optional[str]
     """Name of the module containing assertions to be loaded into the API monitor."""
-
-    assets_path: Path
-    """Path to directory containing yagna assets to be mounted in containers."""
 
     base_log_dir: Path
     """Base directory for all log files created during this test run."""
@@ -77,14 +78,13 @@ class Runner:
         self,
         api_assertions_module: Optional[str],
         logs_path: Path,
-        assets_path: Path,
         compose_config: ComposeConfig,
         test_failure_callback: Callable[[TestFailure], None],
         cancellation_callback: Callable[[], None],
+        web_root_path: Path,
         web_server_port: Optional[int] = None,
     ):
         self.api_assertions_module = api_assertions_module
-        self.assets_path = assets_path
         self.base_log_dir = logs_path / self._get_current_test_name()
         self.probes = []
         self.proxy = None
@@ -95,7 +95,7 @@ class Runner:
             config=compose_config,
             docker_client=docker.from_env(),
         )
-        self._web_server = WebServer(self.web_root_path, web_server_port)
+        self._web_server = WebServer(web_root_path, web_server_port)
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -143,7 +143,7 @@ class Runner:
             log_config.base_dir = scenario_dir
 
             probe = self._exit_stack.enter_context(
-                _create_probe(self, docker_client, config, log_config)
+                create_probe(self, docker_client, config, log_config)
             )
             self.probes.append(probe)
 
@@ -162,7 +162,7 @@ class Runner:
 
         # Start the probes' containers and obtain their IP addresses
         for probe in self.probes:
-            ip_address = await self._exit_stack.enter_async_context(_run_probe(probe))
+            ip_address = await self._exit_stack.enter_async_context(run_probe(probe))
             node_names[ip_address] = probe.name
             container_ports = probe.container.ports
             ports[ip_address] = container_ports
@@ -186,7 +186,7 @@ class Runner:
             ports=ports,
             assertions_module=self.api_assertions_module,
         )
-        self._exit_stack.enter_context(_run_proxy(self.proxy))
+        self._exit_stack.enter_context(run_proxy(self.proxy))
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []
@@ -218,8 +218,7 @@ class Runner:
     @property
     def web_root_path(self) -> Path:
         """Return the directory served by the built-in web server."""
-
-        return self.assets_path / "web-root"
+        return self._web_server.root_path
 
     @asynccontextmanager
     async def __call__(
@@ -248,14 +247,14 @@ class Runner:
         self.base_log_dir.mkdir()
 
         await self._exit_stack.enter_async_context(
-            _run_compose_network(self._compose_manager, self.base_log_dir)
+            run_compose_network(self._compose_manager, self.base_log_dir)
         )
 
         self._create_probes(self.base_log_dir)
 
         await self._exit_stack.enter_async_context(
             # listen on all interfaces
-            _run_web_server(self._web_server, server_address=None)
+            run_web_server(self._web_server, server_address=None)
         )
 
         await self._start_nodes()
@@ -264,73 +263,6 @@ class Runner:
         logger.info("Test finished: %s", self._get_current_test_name())
         await self._exit_stack.aclose()
         payment.clean_up()
-
-
-@asynccontextmanager
-async def _run_compose_network(
-    compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
-) -> None:
-    """Implement AsyncContextManager for starting/stopping compose network manager."""
-
-    try:
-        await compose_manager.start_network(log_dir, force_build)
-        yield
-    finally:
-        await compose_manager.stop_network()
-
-
-@contextmanager
-def _create_probe(
-    runner: "Runner",
-    docker_client: docker.DockerClient,
-    config: YagnaContainerConfig,
-    log_config: LogConfig,
-) -> Probe:
-    """Implement a ContextManager protocol for creating and removing probes."""
-
-    probe: Optional[Probe] = None
-    try:
-        probe = config.probe_type(runner, docker_client, config, log_config)
-        for name, value in config.probe_properties.items():
-            probe.__setattr__(name, value)
-        yield probe
-    finally:
-        if probe:
-            probe.remove()
-
-
-@asynccontextmanager
-async def _run_probe(probe: Probe) -> str:
-    """Implement AsyncContextManager for starting and stopping a probe."""
-
-    try:
-        await probe.start()
-        assert probe.ip_address
-        yield probe.ip_address
-    finally:
-        await probe.stop()
-
-
-@contextmanager
-def _run_proxy(proxy: Proxy) -> Proxy:
-    """Implement ContextManager protocol for running a Proxy."""
-
-    try:
-        proxy.start()
-        yield
-    finally:
-        proxy.stop()
-
-
-@asynccontextmanager
-async def _run_web_server(server: WebServer, server_address: Optional[str]) -> None:
-    """Implement AsyncContextManager protocol for starting/stopping a web server."""
-
-    try:
-        await server.start(server_address)
-        yield
-    finally:
-        await server.stop()
 
 
 def _install_sigint_handler():

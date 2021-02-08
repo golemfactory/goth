@@ -6,7 +6,7 @@ import logging.config
 from pathlib import Path
 import tempfile
 import time
-from typing import Union
+from typing import Optional, Union
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "goth-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
@@ -86,7 +86,7 @@ LOGGING_CONFIG = {
 }
 
 
-def configure_logging(base_dir: Path):
+def configure_logging(base_dir: Path, console_log_level: Optional[str] = None) -> None:
     """Configure the `logging` module.
 
     Updates config with `base_dir` before applying the global configuration.
@@ -97,6 +97,9 @@ def configure_logging(base_dir: Path):
         if "filename" in handler:
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
+
+    if console_log_level:
+        LOGGING_CONFIG["handlers"]["console"]["level"] = console_log_level
 
     logging.config.dictConfig(LOGGING_CONFIG)
     logger.info("started logging. dir=%s", base_dir)
