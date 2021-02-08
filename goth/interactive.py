@@ -1,3 +1,4 @@
+"""Interactive runner for `goth` network."""
 import asyncio
 from datetime import datetime, timezone
 import logging
@@ -31,10 +32,12 @@ def make_logs_dir(base_dir: Path) -> Path:
 
 async def start_network(
     configuration: Configuration,
-    logs_base_dir: Path = Path("logs"),
+    logs_base_dir: Path = Path("goth-logs"),
     build_env_args: Optional[Dict[str, str]] = None,
     console_log_level: Optional[str] = None,
 ):
+    """Start a test network descsribed by `configuration`."""
+
     if build_env_args is not None:
         yagna_binary_path = build_env_args.get("yagna-binary-path")
         build_env = YagnaBuildEnvironment(
@@ -91,7 +94,6 @@ async def start_network(
         # Some test steps may be included in the interactive test as well
         for provider in providers:
             await provider.wait_for_offer_subscribed(timeout=10)
-            # await provider.wait_for_invoice_paid(timeout=1)
 
         print("\n\033[33;1mNow run your requestor agent as follows:\n")
         print(
@@ -102,22 +104,25 @@ async def start_network(
         )
         print("\nPress Ctrl+C at any moment to stop the test harness.\033[0m\n")
 
-        # Assertions may be added at any point. They have to be checked
-        # periodically by calling `runner.check_assertion_errors()`.
-        # They will be also checked automatically on runner exit.
-        # runner.proxy.monitor.add_assertion(_assert_activity_started_destroyed)
-
         while True:
             await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
 
+    # TODO: find out how to specify the command-line arguments in a modular way,
+    # so that arguments for each component (e.g. build environment, web server)
+    # are defined and handled in the component's module, rather than having one
+    # bulky, monolithic parser definition here.
     import argparse
 
     build_env_options = {
-        "yagna-binary-path": "path to local directory or archive containing yagna binaries",
-        "yagna-commit-hash": "git commit hash in yagna repo for which to download binaries",
+        "yagna-binary-path": (
+            "path to local directory or archive containing yagna binaries"
+        ),
+        "yagna-commit-hash": (
+            "git commit hash in yagna repo for which to download binaries"
+        ),
         "yagna-release": (
             "release tag substring specifying which yagna release should be used. "
             "If this is equal to 'latest', latest yagna release will be used."
@@ -132,10 +137,11 @@ if __name__ == "__main__":
         help="Log level for the console log",
     )
     parser.add_argument(
-        "topology",
+        "configuration",
         type=Path,
-        help="Topology description in YAML format",
+        help="Network configuration in YAML format",
     )
+    # TODO: do we want to add such an option? will this be useful?
     parser.add_argument(
         "--dont-build-images",
         action="store_true",
@@ -149,7 +155,7 @@ if __name__ == "__main__":
         group.add_argument(f"--{opt}", action="store", help=help)
     args = parser.parse_args()
 
-    topology = load_yaml(args.topology)
+    configuration = load_yaml(args.configuration)
 
     if args.dont_build_images:
         build_env_args = None
@@ -160,6 +166,6 @@ if __name__ == "__main__":
 
     loop = asyncio.get_event_loop()
     task = start_network(
-        topology, build_env_args=build_env_args, console_log_level=args.log_level
+        configuration, build_env_args=build_env_args, console_log_level=args.log_level
     )
     loop.run_until_complete(task)
