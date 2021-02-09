@@ -30,7 +30,7 @@ class DemandBuilder:
         """Build default properties."""
 
         new_props = {
-            "golem.node.id.name": "test-requestor-{}".format(self._requestor.name),
+            "golem.node.id.name": f"test-requestor-{self._requestor_name}",
             "golem.srv.comp.expiration": int(
                 (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
             ),
