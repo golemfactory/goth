@@ -57,6 +57,8 @@ def _topology(
             environment=provider_env,
             payment_id=payment_id_pool.get_id(),
             volumes=provider_volumes,
+            privileged_mode=True,
+            subnet="goth",
         ),
     ]
 
