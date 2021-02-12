@@ -4,7 +4,6 @@ import asyncio
 from contextlib import asynccontextmanager, AsyncExitStack
 from itertools import chain
 import logging
-import os
 from pathlib import Path
 import sys
 from typing import (
@@ -47,7 +46,7 @@ class Runner:
     api_assertions_module: Optional[str]
     """Name of the module containing assertions to be loaded into the API monitor."""
 
-    base_log_dir: Path
+    log_dir: Path
     """Base directory for all log files created during this test run."""
 
     probes: List[Probe]
@@ -77,7 +76,7 @@ class Runner:
     def __init__(
         self,
         api_assertions_module: Optional[str],
-        logs_path: Path,
+        log_dir: Path,
         compose_config: ComposeConfig,
         test_failure_callback: Callable[[TestFailure], None],
         cancellation_callback: Callable[[], None],
@@ -85,7 +84,7 @@ class Runner:
         web_server_port: Optional[int] = None,
     ):
         self.api_assertions_module = api_assertions_module
-        self.base_log_dir = logs_path / self._get_current_test_name()
+        self.log_dir = log_dir
         self.probes = []
         self.proxy = None
         self._exit_stack = AsyncExitStack()
@@ -146,15 +145,6 @@ class Runner:
                 create_probe(self, docker_client, config, log_config)
             )
             self.probes.append(probe)
-
-    def _get_current_test_name(self) -> str:
-        test_name = os.environ.get("PYTEST_CURRENT_TEST")
-        assert test_name
-        logger.debug("Raw current pytest test=%s", test_name)
-        # Take only the function name of the currently running test
-        test_name = test_name.split("::")[-1].split()[0]
-        logger.debug("Cleaned current test dir name=%s", test_name)
-        return test_name
 
     async def _start_nodes(self):
         node_names: Dict[str, str] = {}
@@ -242,15 +232,12 @@ class Runner:
             self._test_failure_callback(err)
 
     async def _enter(self) -> None:
-        logger.info("Running test: %s", self._get_current_test_name())
-
-        self.base_log_dir.mkdir()
 
         await self._exit_stack.enter_async_context(
-            run_compose_network(self._compose_manager, self.base_log_dir)
+            run_compose_network(self._compose_manager, self.log_dir)
         )
 
-        self._create_probes(self.base_log_dir)
+        self._create_probes(self.log_dir)
 
         await self._exit_stack.enter_async_context(
             # listen on all interfaces
@@ -260,7 +247,6 @@ class Runner:
         await self._start_nodes()
 
     async def _exit(self):
-        logger.info("Test finished: %s", self._get_current_test_name())
         await self._exit_stack.aclose()
         payment.clean_up()
 

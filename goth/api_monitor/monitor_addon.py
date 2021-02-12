@@ -70,7 +70,3 @@ class MonitorAddon:
             self._register_event(error)
         else:
             self._logger.error("Received error for unregistered request: %s", flow)
-
-
-# This is used by mitmproxy to install add-ons
-addons = [MonitorAddon()]

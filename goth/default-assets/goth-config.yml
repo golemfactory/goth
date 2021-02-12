@@ -1,23 +1,25 @@
-docker-dir: "docker"
-
-web-root: "web-root"
-
-key-dir: "keys"
-
-build_env:
+build-environment:
   # TODO:
   # For now these settings are common to all `yagna` containers.
   # In future we may want to have nodes running different versions
   # of `yagna` in the test network.
   #
-  # These are mutually exclusive, only one key should be defined:
+  docker-dir: "docker"
+  # The following settings are mutually exclusive, only one key should be defined:
   # yagna-binary-path:
   # yagna-commit-hash:
-  yagna-release: "latest"
+  yagna-release: "0.6.0-rc7"
+
+
+key-dir: "keys"
+
+
+web-root: "web-root"
 
 
 requestor:
   name: "requestor"
+
 
 providers:
 
@@ -30,5 +32,5 @@ providers:
         destination: "/root/.local/share/ya-provider/presets.json"
       - read-only: "provider/hardware.json"
         destination: "/root/.local/share/ya-provider/hardware.json"
-      - read-write: "../test/yagna/e2e/assets/provider/images"
+      - read-write: "/home/azawlocki/golem/goth/test/yagna/e2e/assets/provider/images"
         destination: "/root/.local/share/ya-provider/exe-unit/cache/tmp"
