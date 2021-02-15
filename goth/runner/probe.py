@@ -101,17 +101,6 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
-    @contextlib.asynccontextmanager
-    async def run(self) -> str:
-        """Implement AsyncContextManager protocol for a probe."""
-
-        try:
-            await self.start()
-            assert self.ip_address
-            yield self.ip_address
-        finally:
-            await self.stop()
-
     async def start(self) -> None:
         """Start the probe.
 
@@ -129,7 +118,12 @@ class Probe(abc.ABC):
         self._logger.info("Stopping probe")
         if self.container.logs:
             await self.container.logs.stop()
-        self.container.remove(force=True)
+
+    def remove(self) -> None:
+        """Remove the underlying container."""
+        if self.container:
+            self.container.remove(force=True)
+            self._logger.debug("Container removed")
 
     async def _start_container(self) -> None:
         """
@@ -141,10 +135,10 @@ class Probe(abc.ABC):
         self.container.start()
 
         # Wait until the daemon is ready to create an app key.
-        self._logger.info("Waiting for GSB identity service to be available")
+        self._logger.info("Waiting for connection to ya-sb-router")
         if self.container.logs:
             await self.container.logs.wait_for_entry(
-                ".*Identity GSB service successfully activated", timeout=30
+                ".*connected with server: ya-sb-router.*", timeout=30
             )
         await self.create_app_key()
 
@@ -198,6 +192,38 @@ class Probe(abc.ABC):
         return key
 
 
+@contextlib.contextmanager
+def create_probe(
+    runner: "Runner",
+    docker_client: DockerClient,
+    config: YagnaContainerConfig,
+    log_config: LogConfig,
+) -> Probe:
+    """Implement a ContextManager protocol for creating and removing probes."""
+
+    probe: Optional[Probe] = None
+    try:
+        probe = config.probe_type(runner, docker_client, config, log_config)
+        for name, value in config.probe_properties.items():
+            probe.__setattr__(name, value)
+        yield probe
+    finally:
+        if probe:
+            probe.remove()
+
+
+@contextlib.asynccontextmanager
+async def run_probe(probe: Probe) -> str:
+    """Implement AsyncContextManager for starting and stopping a probe."""
+
+    try:
+        await probe.start()
+        assert probe.ip_address
+        yield probe.ip_address
+    finally:
+        await probe.stop()
+
+
 class RequestorProbe(ApiClientMixin, Probe):
     """A requestor probe that can make calls to Yagna REST APIs.
 
@@ -221,47 +247,11 @@ class RequestorProbe(ApiClientMixin, Probe):
         proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
+    async def _start_container(self) -> None:
+        await super()._start_container()
 
-class RequestorProbeWithAgent(AgentMixin, RequestorProbe):
-    """A probe subclass that can run a requestor agent.
-
-    The use of ya-requestor is deprecated and supported for the sake of level 0 test
-    scenario compatibility.
-    """
-
-    task_package: str
-    """Value of the `--task-package` argument to `ya-requestor` run by this probe.
-
-    This string may include `{web_server_addr}` and `{web_server_port}` placeholders
-    which will be replaced by the IP address and the port, respectively,
-    of the built-in web server.
-    """
-
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-    ):
-        super().__init__(runner, client, config, log_config)
-
-    async def start_agent(self):
-        """Start the requestor agent and attach to its log stream."""
-
-        self._logger.info("Starting ya-requestor")
-
-        pkg_spec = self.task_package.format(
-            web_server_addr=self.runner.host_address,
-            web_server_port=self.runner.web_server_port,
-        )
-        log_stream = self.container.exec_run(
-            "ya-requestor"
-            f" --app-key {self.app_key} --exe-script /asset/exe_script.json"
-            f" --task-package {pkg_spec}",
-            stream=True,
-        )
-        self.agent_logs.start(log_stream.output)
+        self.cli.payment_fund()
+        self.cli.payment_init(sender_mode=True)
 
 
 class ProviderProbe(AgentMixin, Probe):

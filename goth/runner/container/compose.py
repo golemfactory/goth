@@ -83,16 +83,6 @@ class ComposeNetworkManager:
         self._log_monitors = {}
         self._network_gateway_address = ""
 
-    @contextlib.asynccontextmanager
-    async def run(self, log_dir: Path, force_build: bool = False) -> None:
-        """Implement AsyncContextManager protocol for compose network manager."""
-
-        try:
-            await self.start_network(log_dir, force_build)
-            yield
-        finally:
-            await self.stop_network()
-
     async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
         """Start the compose network based on this manager's compose file.
 
@@ -201,3 +191,16 @@ class ComposeNetworkManager:
                 )
             )
             self._log_monitors[service_name] = monitor
+
+
+@contextlib.asynccontextmanager
+async def run_compose_network(
+    compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
+) -> None:
+    """Implement AsyncContextManager for starting/stopping docker compose network."""
+
+    try:
+        await compose_manager.start_network(log_dir, force_build)
+        yield
+    finally:
+        await compose_manager.stop_network()

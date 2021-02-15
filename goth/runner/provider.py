@@ -15,7 +15,7 @@ class ProviderProbeWithLogSteps(ProviderProbe):
     @step()
     async def wait_for_proposal_accepted(self):
         """Wait until the provider agent subscribes to the offer."""
-        await self._wait_for_agent_log("Decided to AcceptProposal")
+        await self._wait_for_agent_log("Decided to CounterProposal")
 
     @step()
     async def wait_for_agreement_approved(self):
@@ -25,7 +25,7 @@ class ProviderProbeWithLogSteps(ProviderProbe):
     @step()
     async def wait_for_exeunit_started(self):
         """Wait until the provider agent starts the exe-unit."""
-        await self._wait_for_agent_log(r"\[ExeUnit\](.+)Supervisor initialized$")
+        await self._wait_for_agent_log(r"(.*)\[ExeUnit\](.+)Supervisor initialized$")
 
     @step()
     async def wait_for_exeunit_finished(self):

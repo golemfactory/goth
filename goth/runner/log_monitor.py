@@ -198,6 +198,11 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             self._last_checked_line += 1
             event = self.events[self._last_checked_line]
             if predicate(event):
+                logger.debug(
+                    "Found match in past log lines. pattern=%s, match=%s",
+                    pattern,
+                    event.message,
+                )
                 return event
 
         # Otherwise create an assertion that waits for a matching line...
@@ -215,4 +220,11 @@ class LogEventMonitor(EventMonitor[LogEvent]):
         while not assertion.done:
             await asyncio.sleep(0.1)
 
-        return await assertion.result()
+        result: LogEvent = await assertion.result()
+        if result:
+            logger.debug(
+                "Log assertion completed with a match. pattern=%s, match=%s",
+                pattern,
+                result.message,
+            )
+        return result

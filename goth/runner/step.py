@@ -5,6 +5,7 @@ import logging
 import time
 from typing import Optional
 
+from goth.runner.exceptions import StepTimeoutError
 from goth.runner.probe import Probe
 
 
@@ -27,15 +28,19 @@ def step(default_timeout: float = 10.0):
                 self.runner.check_assertion_errors()
                 step_time = time.time() - start_time
                 logger.debug(
-                    "Finished step '%s', result: %s, time: %s",
+                    "Finished step '%s', result: %s, time: %.1f s",
                     step_name,
                     result,
                     step_time,
                 )
+            except asyncio.TimeoutError:
+                step_time = time.time() - start_time
+                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
+                raise StepTimeoutError(step_name, step_time)
             except Exception as exc:
                 step_time = time.time() - start_time
                 logger.error(
-                    "Step '%s' raised %s in %s",
+                    "Step '%s' raised %s in %.1f",
                     step_name,
                     exc.__class__.__name__,
                     step_time,

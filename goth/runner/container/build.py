@@ -20,15 +20,20 @@ from goth.runner.process import run_command
 logger = logging.getLogger(__name__)
 
 DOCKERFILE_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}.Dockerfile"
+DOCKERFILE_DEB_PATH = DOCKER_DIR / f"{YagnaContainer.IMAGE}-deb.Dockerfile"
 
 EXPECTED_BINARIES = {
     "exe-unit",
     "golemsp",
     "ya-provider",
-    "ya-requestor",
-    "ya_sb_router",
     "yagna",
 }
+
+DEB_RELEASE_REPOS = [
+    "ya-service-bus",
+    "ya-runtime-wasi",
+    "ya-runtime-vm",
+]
 
 PROXY_IMAGE = "proxy-nginx"
 
@@ -45,6 +50,8 @@ class YagnaBuildEnvironment:
     """git commit hash in yagna repo for which to download binaries."""
     deb_path: Optional[Path]
     """Local path to .deb file or dir with .deb files to be installed in the image."""
+    release_tag: Optional[str]
+    """Release tag substring used to filter the GitHub release to download."""
 
 
 async def _build_docker_image(
@@ -88,10 +95,12 @@ async def build_proxy_image() -> None:
 async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
     """Build the yagna Docker image."""
 
+    dockerfile = DOCKERFILE_DEB_PATH if environment.release_tag else DOCKERFILE_PATH
+
     await _build_docker_image(
         YagnaContainer.IMAGE,
-        DOCKERFILE_PATH,
-        lambda build_dir: _setup_build_context(build_dir, environment),
+        dockerfile,
+        lambda build_dir: _setup_build_context(build_dir, environment, dockerfile),
     )
 
 
@@ -107,11 +116,13 @@ def _download_artifact(env: YagnaBuildEnvironment, download_path: Path) -> None:
     downloader.download(artifact_name="Yagna Linux", output=download_path, **kwargs)
 
 
-def _download_release(download_path: Path, repo: str, tag_substring: str = "") -> None:
-    downloader = ReleaseDownloader(
-        repo=repo, tag_substring=tag_substring, token=os.environ.get(ENV_API_TOKEN)
+def _download_release(
+    download_path: Path, repo: str, tag_substring: str = "", asset_name: str = ""
+) -> None:
+    downloader = ReleaseDownloader(repo=repo, token=os.environ.get(ENV_API_TOKEN))
+    downloader.download(
+        output=download_path, asset_name=asset_name, tag_substring=tag_substring
     )
-    downloader.download(output=download_path)
 
 
 def _find_expected_binaries(root_path: Path) -> List[Path]:
@@ -133,11 +144,13 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
     return binary_paths
 
 
-def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
+def _setup_build_context(
+    context_dir: Path, env: YagnaBuildEnvironment, dockerfile: Path
+) -> None:
     """Set up the build context for `docker build` command.
 
     This function prepares a directory to be used as build context for
-    yagna-goth.Dockerfile. This includes copying the original Dockerfile and creating
+    building yagna image. This includes copying the original Dockerfile and creating
     two directories: `bin` and `deb`. Depending on the build environment, these will be
     populated with assets from either the local filesystem or downloaded from GitHub.
     """
@@ -152,7 +165,11 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
     context_binary_dir.mkdir()
     context_deb_dir.mkdir()
 
-    if env.binary_path:
+    if env.release_tag:
+        logger.info("Using yagna release. tag_substring=%s", env.release_tag)
+        release_tag = "" if env.release_tag == "latest" else env.release_tag
+        _download_release(context_deb_dir, "yagna", release_tag, "provider")
+    elif env.binary_path:
         if env.binary_path.is_dir():
             logger.info("Using local yagna binaries. path=%s", env.binary_path)
             binary_paths = _find_expected_binaries(env.binary_path)
@@ -173,10 +190,10 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment) -> None:
             logger.info("Using local .deb package. path=%s", env.deb_path)
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
-        _download_release(context_deb_dir, "ya-runtime-wasi")
-        _download_release(context_deb_dir, "ya-runtime-vm")
+        for repo in DEB_RELEASE_REPOS:
+            _download_release(context_deb_dir, repo)
 
     logger.debug(
-        "Copying Dockerfile. source=%s, destination=%s", DOCKERFILE_PATH, context_dir
+        "Copying Dockerfile. source=%s, destination=%s", dockerfile, context_dir
     )
-    shutil.copy2(DOCKERFILE_PATH, context_dir / "Dockerfile")
+    shutil.copy2(dockerfile, context_dir / "Dockerfile")
