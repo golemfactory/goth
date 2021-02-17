@@ -1,14 +1,22 @@
-build-environment:
-  # TODO:
-  # For now these settings are common to all `yagna` containers.
-  # In future we may want to have nodes running different versions
-  # of `yagna` in the test network.
-  #
-  docker-dir: "docker"
-  # The following settings are mutually exclusive, only one key should be defined:
-  # yagna-binary-path:
-  # yagna-commit-hash:
-  yagna-release: "0.6.0-rc7"
+docker-compose:
+
+  docker-dir: "docker/"
+
+  build-environment:
+    # TODO:
+    # For now these settings are common to all `yagna` containers.
+    # In future we may want to have nodes running different versions
+    # of `yagna` in the test network.
+
+    # binary-path: ...
+    # deb-path: ...
+    # branch: ...
+    # commit-hash: ...
+    release-tag: latest
+
+  compose-log-patterns:
+    ethereum: ".*Wallets supplied."
+    zksync: ".*Running on http://0.0.0.0:3030/.*"
 
 
 key-dir: "keys"
@@ -17,16 +25,15 @@ key-dir: "keys"
 web-root: "web-root"
 
 
-requestor:
-  name: "requestor"
+node-types:
+  # Each node type is a collection of attributes common to a group of nodes.
+  # Required attributes are "name" and "class".
 
+  - name: "Requestor"
+    class: "goth.runner.probe.RequestorProbe"
 
-providers:
-
-  - names:
-    - "provider-1"
-    - "provider-2"
-    use-proxy: true
+  - name: "VM-Wasm-Provider"
+    class: "goth.runner.provider.ProviderProbeWithLogSteps"
     mount:
       - read-only: "provider/presets.json"
         destination: "/root/.local/share/ya-provider/presets.json"
@@ -34,3 +41,17 @@ providers:
         destination: "/root/.local/share/ya-provider/hardware.json"
       - read-write: "/home/azawlocki/golem/goth/test/yagna/e2e/assets/provider/images"
         destination: "/root/.local/share/ya-provider/exe-unit/cache/tmp"
+    privileged-mode: True
+
+nodes:
+
+  - name: "requestor"
+    type: "Requestor"
+
+  - name: "provider-1"
+    type: "VM-Wasm-Provider"
+    use-proxy: True
+
+  - name: "provider-2"
+    type: "VM-Wasm-Provider"
+    use-proxy: True

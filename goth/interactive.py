@@ -9,7 +9,6 @@ from goth.address import (
 )
 from goth.configuration import Configuration
 from goth.runner import Runner
-from goth.runner.container.compose import ComposeConfig
 from goth.runner.probe import RequestorProbe
 from goth.runner.provider import ProviderProbeWithLogSteps
 
@@ -23,18 +22,6 @@ async def start_network(
 ):
     """Start a test network descsribed by `configuration`."""
 
-    # TODO: this should belong to the configuration:
-    log_patterns = {
-        "ethereum": ".*Wallets supplied.",
-        "zksync": ".*Running on http://0.0.0.0:3030/.*",
-    }
-
-    compose_config = ComposeConfig(
-        build_env=configuration.build_env,
-        file_path=configuration.compose_file,
-        log_patterns=log_patterns,
-    )
-
     def _handle_test_failure(_err):
         # Interrupt the runner on failure
         loop = asyncio.get_event_loop()
@@ -44,10 +31,9 @@ async def start_network(
 
         loop.create_task(_interrupt())
 
-
     runner = Runner(
         api_assertions_module=None,
-        compose_config=compose_config,
+        compose_config=configuration.compose_config,
         log_dir=log_dir,
         web_root_path=configuration.web_root,
         cancellation_callback=lambda: logger.info("The runner was cancelled"),
