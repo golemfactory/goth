@@ -27,7 +27,8 @@ def make_logs_dir(base_dir: Path) -> Path:
     return log_dir
 
 
-def run(args):
+def start(args):
+    """Start the test network using a configuration read from `args.config_file`."""
 
     configuration = load_yaml(args.config_file)
 
@@ -41,13 +42,19 @@ def run(args):
 
 
 def create_config(args):
+    """Create sample asset files in the directory specified by `args.output_dir`.
+
+    Will also create the directory if it does not exist yet.
+    If any asset file already exists at the given location, it will be overwritten
+    if `args.overwrite` is set, override an exception will be raised.
+    """
 
     output_dir = Path(args.output_dir).resolve()
 
     input_dir = Path(__file__).parent / DEFAULT_ASSETS_DIR
 
     logger.info("Copying default assets from %s to %s", input_dir, output_dir)
-    shutil.copytree(input_dir, output_dir, dirs_exist_ok=args.override)
+    shutil.copytree(input_dir, output_dir, dirs_exist_ok=args.overwrite)
 
 
 if __name__ == "__main__":
@@ -59,35 +66,39 @@ if __name__ == "__main__":
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default=logging.INFO,
-        help="Log level for the console log"
+        help="Log level for the console log",
     )
 
-    subparsers = parser.add_subparsers(help="command help")
+    subparsers = parser.add_subparsers(
+        help="a command to run; add --help to see command-specific options"
+    )
 
-    parser_run = subparsers.add_parser("run", help="start a test network")
-    parser_run.add_argument(
+    parser_start = subparsers.add_parser("start", help="start a test network")
+    parser_start.add_argument(
         "config_file",
-        metavar="<config-file>",
-        help="configuration file for a test network"
+        metavar="CONFIG-FILE",
+        help="configuration file for a test network",
     )
-    parser_run.add_argument(
+    parser_start.add_argument(
         "--log-dir", type=str, help="Base directory for goth logs for this run"
     )
-    parser_run.set_defaults(function=run)
+    parser_start.set_defaults(function=start)
 
     parser_cfg = subparsers.add_parser(
-        "create-assets",
-        help="create a default network configuration and assets"
+        "create-assets", help="create a default network configuration and assets"
     )
     parser_cfg.add_argument(
         "output_dir",
-        metavar="<output-dir>",
-        help="target directory for test network configuration and assets"
+        metavar="OUTPUT-DIR",
+        help="target directory for test network configuration and assets",
     )
     parser_cfg.add_argument(
-        "--override", action="store_true", help="Override existing asset files"
+        "--overwrite", action="store_true", help="Overwrite existing asset files"
     )
     parser_cfg.set_defaults(function=create_config)
 
     args = parser.parse_args()
-    args.function(args)
+    try:
+        args.function(args)
+    except AttributeError:
+        parser.print_help()
