@@ -22,7 +22,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.8.0'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v4
@@ -39,7 +39,7 @@ jobs:
         env:
           ENABLE_VM_TESTS: 'true'
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: poetry run poe ci_test_self_hosted --yagna-release latest
+        run: poetry run poe ci_test_vm_hosted --yagna-release latest
 
       - name: Upload test logs
         uses: actions/upload-artifact@v2
