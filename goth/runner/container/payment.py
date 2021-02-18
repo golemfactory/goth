@@ -42,6 +42,7 @@ class PaymentDriver(str, Enum):
     """Enum listing the payment drivers that can be used with yagna."""
 
     erc20 = "erc20"
+    glmsync = "glmsync"
     zksync = "zksync"
 
 
