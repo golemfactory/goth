@@ -63,7 +63,7 @@ LOGGING_CONFIG = {
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
-        "test.yagna.e2e": {
+        "test.yagna": {
             "handlers": ["console", "runner_file"],
             "propagate": False,
             "level": "DEBUG",

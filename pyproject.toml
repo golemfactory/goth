@@ -52,7 +52,8 @@ ci_test_self_hosted = "pytest -svx test/yagna --ignore test/yagna/interactive --
 e2e_test = "pytest -svx test/yagna/e2e"
 interactive = "pytest -svx test/yagna/interactive/test_interactive_vm.py"
 unit_test = "pytest -svx test/goth"
-provider_test = "pytest -svx test/yagna/module/ya-provider --assets-path=test/yagna/e2e/assets/"
+provider_test = "pytest -svx test/yagna/module/ya-provider --assets-path=test/yagna/e2e/assets"
+payments_test = "pytest -svx test/yagna/module/payments --assets-path=test/yagna/e2e/assets"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
