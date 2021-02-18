@@ -129,9 +129,10 @@ class _ConfigurationParser:
         """Return the value assigned to `key` if defined, otherwise return `default`."""
         return self[key] if key in self else default
 
-    def resolve_path(self, path: str) -> Path:
+    def resolve_path(self, path_str: str) -> Path:
         """Return `path` resolved relative to the directory of the config file."""
-        return (self._config_path.parent / Path(path)).resolve()
+        path = Path(path_str).expanduser()
+        return (self._config_path.parent / path).resolve()
 
     def get_path(self, key: str, required: bool = True) -> Optional[Path]:
         """Return a path assigned to `key`, resolved with `self.resolve_path()`."""
@@ -149,11 +150,11 @@ class _ConfigurationParser:
             # by `source` to a temp file/dir, and mount that copied file/dir
             # in a read/write mode
             if "read-only" in mount_spec:
-                source = self.resolve_path(mount_spec["read-only"])
+                source = mount_spec.get_path("read-only")
                 volumes[source] = dest
             # TODO: "read-write" should
             elif "read-write" in mount_spec:
-                source = self.resolve_path(mount_spec["read-write"])
+                source = mount_spec.get_path("read-write")
                 volumes[source] = dest
         return volumes
 
@@ -196,7 +197,7 @@ def load_yaml(yaml_path: Union[Path, str]) -> Configuration:
     import importlib
 
     with open(str(yaml_path)) as f:
-        dict_ = yaml.load(f)
+        dict_ = yaml.load(f, yaml.FullLoader)
 
         network = _ConfigurationParser(dict_, Path(yaml_path))
 

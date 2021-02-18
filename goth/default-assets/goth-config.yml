@@ -1,3 +1,8 @@
+# Note: values of keys denoting paths are resolved relative to the directory
+# in which this file is located.
+# The tokens `~` and `~user` are also replaced by the corresponding users's
+# home directory.
+
 docker-compose:
 
   docker-dir: "docker/"
@@ -12,7 +17,7 @@ docker-compose:
     # deb-path: ...
     # branch: ...
     # commit-hash: ...
-    release-tag: latest
+    release-tag: "latest"
 
   compose-log-patterns:
     ethereum: ".*Wallets supplied."
@@ -39,7 +44,7 @@ node-types:
         destination: "/root/.local/share/ya-provider/presets.json"
       - read-only: "provider/hardware.json"
         destination: "/root/.local/share/ya-provider/hardware.json"
-      - read-write: "/home/azawlocki/golem/goth/test/yagna/e2e/assets/provider/images"
+      - read-write: "~/.local/share/ya-provider/vm-images"
         destination: "/root/.local/share/ya-provider/exe-unit/cache/tmp"
     privileged-mode: True
 
