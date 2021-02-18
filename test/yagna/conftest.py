@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -113,8 +114,9 @@ def yagna_release(request) -> Optional[str]:
     return request.config.option.yagna_release
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def yagna_build_env(
+    assets_path: Path,
     yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
@@ -123,6 +125,7 @@ def yagna_build_env(
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
+        docker_dir=assets_path / "docker",
         binary_path=yagna_binary_path,
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
@@ -131,7 +134,7 @@ def yagna_build_env(
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def compose_config(yagna_build_env) -> ComposeConfig:
     """Fixture providing the configuration object for running docker-compose network.
 
@@ -143,7 +146,9 @@ def compose_config(yagna_build_env) -> ComposeConfig:
         "zksync": ".*Running on http://0.0.0.0:3030/.*",
     }
     return ComposeConfig(
-        build_env=yagna_build_env, file_path=DEFAULT_COMPOSE_FILE, log_patterns=patterns
+        build_env=yagna_build_env,
+        file_path=yagna_build_env.docker_dir / DEFAULT_COMPOSE_FILE,
+        log_patterns=patterns,
     )
 
 
@@ -237,20 +242,35 @@ def cancellation_callback() -> Callable[[], None]:
 
 
 @pytest.fixture
+def test_logs_dir(logs_path: Path) -> Path:
+    """Provide a directory for all log files related to a single test case."""
+
+    test_name = os.environ["PYTEST_CURRENT_TEST"]
+    # Take only the function name of the currently running test
+    test_name = test_name.split("::")[-1].split()[0]
+
+    logs_dir = logs_path / test_name
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    return logs_dir
+
+
+@pytest.fixture
 def runner(
     assets_path: Path,
     compose_config: ComposeConfig,
-    logs_path: Path,
+    test_logs_dir: Path,
     proxy_assertions_module: str,
     test_failure_callback: Callable[[TestFailure], None],
     cancellation_callback: Callable[[], None],
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
+
     return Runner(
         proxy_assertions_module,
-        logs_path,
-        assets_path,
+        test_logs_dir,
         compose_config,
         test_failure_callback,
         cancellation_callback,
+        web_root_path=assets_path / "web-root",
     )

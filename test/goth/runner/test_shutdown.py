@@ -61,11 +61,11 @@ def mock_runner(test_failure_callback=None, cancellation_callback=None):
 
     return Runner(
         api_assertions_module=None,
-        logs_path=mock.MagicMock(),
-        assets_path=mock.MagicMock(),
+        log_dir=mock.MagicMock(),
         compose_config=mock.MagicMock(),
         test_failure_callback=test_failure_callback,
         cancellation_callback=cancellation_callback,
+        web_root_path=mock.MagicMock(),
     )
 
 
