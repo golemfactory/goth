@@ -13,7 +13,7 @@ jobs:
 
   yagna-e2e:
     name: Run integration tests (yagna E2E)
-    runs-on: self-hosted
+    runs-on: goth
     steps:
 
       - name: Checkout
@@ -22,7 +22,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.8.0'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v4
