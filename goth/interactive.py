@@ -20,7 +20,7 @@ async def start_network(
     configuration: Configuration,
     log_dir: Path = Path("goth-logs"),
 ):
-    """Start a test network descsribed by `configuration`."""
+    """Start a test network described by `configuration`."""
 
     def _handle_test_failure(_err):
         # Interrupt the runner on failure

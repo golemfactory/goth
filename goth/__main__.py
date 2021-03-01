@@ -46,7 +46,7 @@ def create_config(args):
 
     Will also create the directory if it does not exist yet.
     If any asset file already exists at the given location, it will be overwritten
-    if `args.overwrite` is set, override an exception will be raised.
+    if `args.overwrite` is set, otherwise an exception will be raised.
     """
 
     output_dir = Path(args.output_dir).resolve()
