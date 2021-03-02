@@ -9,6 +9,7 @@ from ya_activity import ExeScriptCommandResult, ExeScriptRequest
 from ya_market import AgreementProposal, Demand, DemandOfferBase, Proposal
 from ya_payment import Acceptance, Allocation, Invoice
 
+from goth.node import DEFAULT_SUBNET
 from goth.runner import step
 from goth.runner.probe import Probe, RequestorProbe
 
@@ -80,6 +81,7 @@ class MarketOperationsMixin:
                     (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
                 ),
                 "golem.srv.comp.task_package": task_package,
+                "golem.node.debug.subnet": DEFAULT_SUBNET,
             },
             constraints=constraints,
         )
