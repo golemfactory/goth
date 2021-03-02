@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from ya_market import Demand, DemandOfferBase, Proposal
 
+from goth.node import DEFAULT_SUBNET
 from goth.runner.probe import RequestorProbe
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
@@ -25,6 +26,7 @@ class DemandBuilder:
         self._requestor = requestor
         self._properties = dict()
         self._constraints = "()"
+        self._properties["golem.node.debug.subnet"] = DEFAULT_SUBNET
 
     def props_from_template(self, task_package: str) -> "DemandBuilder":
         """Build default properties."""

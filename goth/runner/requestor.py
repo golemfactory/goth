@@ -127,7 +127,6 @@ class MarketOperationsMixin:
                 logger.debug(
                     "Waiting for proposals. subscription_id=%s", subscription_id
                 )
-                await asyncio.sleep(1.0)
 
         return proposals
 

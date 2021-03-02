@@ -11,6 +11,8 @@ from goth.address import (
     YAGNA_REST_URL,
 )
 
+DEFAULT_SUBNET = "goth"
+
 
 def node_environment(
     rest_api_url_base: str = "", account_list: str = ""
