@@ -136,7 +136,7 @@ async def test_e2e_vm_success(
         for provider in providers:
             await provider.wait_for_offer_subscribed()
 
-        subscription_id, demand = await requestor.subscribe_demand(
+        subscription_id, demand = await requestor.subscribe_template_demand(
             task_package, demand_constraints
         )
 

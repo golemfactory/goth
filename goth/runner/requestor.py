@@ -9,6 +9,7 @@ from ya_activity import ExeScriptCommandResult, ExeScriptRequest
 from ya_market import AgreementProposal, Demand, DemandOfferBase, Proposal
 from ya_payment import Acceptance, Allocation, Invoice
 
+from goth.node import DEFAULT_SUBNET
 from goth.runner import step
 from goth.runner.probe import Probe, RequestorProbe
 
@@ -61,9 +62,17 @@ class MarketOperationsMixin:
 
     @step()
     async def subscribe_demand(
-        self: RequestorProbe, task_package: str, constraints: str
+        self: RequestorProbe, demand: Demand
     ) -> Tuple[str, Demand]:
         """Call subscribe demand on the requestor market api."""
+        subscription_id = await self.market.subscribe_demand(demand)
+        return subscription_id, demand
+
+    @step()
+    async def subscribe_template_demand(
+        self: RequestorProbe, task_package: str, constraints: str
+    ) -> Tuple[str, Demand]:
+        """Build Demand from template and call subscribe demand on market api."""
 
         demand = DemandOfferBase(
             properties={
@@ -72,12 +81,12 @@ class MarketOperationsMixin:
                     (datetime.now() + timedelta(minutes=10)).timestamp() * 1000
                 ),
                 "golem.srv.comp.task_package": task_package,
+                "golem.node.debug.subnet": DEFAULT_SUBNET,
             },
             constraints=constraints,
         )
 
-        subscription_id = await self.market.subscribe_demand(demand)
-        return subscription_id, demand
+        return await self.subscribe_demand(demand)
 
     @step()
     async def unsubscribe_demand(self: RequestorProbe, subscription_id: str) -> None:
@@ -120,7 +129,6 @@ class MarketOperationsMixin:
                 logger.debug(
                     "Waiting for proposals. subscription_id=%s", subscription_id
                 )
-                await asyncio.sleep(1.0)
 
         return proposals
 
@@ -167,6 +175,15 @@ class MarketOperationsMixin:
     async def confirm_agreement(self: RequestorProbe, agreement_id: str) -> None:
         """Call confirm_agreement on the requestor market api."""
         await self.market.confirm_agreement(agreement_id)
+
+    @step()
+    async def terminate_agreement(
+        self: RequestorProbe, agreement_id: str, reason: Optional[str]
+    ):
+        """Call terminate_agreement on the requestor market api."""
+        await self.market.terminate_agreement(
+            agreement_id, request_body={"message": "Terminated by requestor"}
+        )
 
 
 class PaymentOperationsMixin:

@@ -74,7 +74,6 @@ def _topology(
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
-            subnet="goth",
         ),
         YagnaContainerConfig(
             name="provider_2",
@@ -82,7 +81,6 @@ def _topology(
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
-            subnet="goth",
         ),
     ]
 

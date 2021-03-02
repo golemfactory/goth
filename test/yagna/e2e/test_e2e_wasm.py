@@ -91,7 +91,7 @@ async def test_e2e_wasm_success(
             web_server_addr=runner.host_address, web_server_port=runner.web_server_port
         )
 
-        subscription_id, demand = await requestor.subscribe_demand(
+        subscription_id, demand = await requestor.subscribe_template_demand(
             task_package, demand_constraints
         )
 
