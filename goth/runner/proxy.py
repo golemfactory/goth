@@ -55,7 +55,7 @@ class Proxy:
             if self._loop and self._loop.is_running():
                 self._loop.stop()
 
-        self.monitor = EventMonitor(self._logger, on_stop=_stop_callback)
+        self.monitor = EventMonitor("rest", self._logger, on_stop=_stop_callback)
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 

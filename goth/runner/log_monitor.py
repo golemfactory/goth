@@ -134,8 +134,8 @@ class LogEventMonitor(EventMonitor[LogEvent]):
     were logged after this line.
     """
 
-    def __init__(self, log_config: LogConfig):
-        super().__init__()
+    def __init__(self, name: str, log_config: LogConfig):
+        super().__init__(name)
         self._file_logger = _create_file_logger(log_config)
         self._buffer_task = None
         self._last_checked_line = -1

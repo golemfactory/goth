@@ -42,11 +42,12 @@ class AgentMixin(abc.ABC):
             await self.agent_logs.stop()
 
     def _init_log_monitor(self):
-        log_config = LogConfig(file_name=f"{self.name}_agent")
+        name = f"{self.name}_agent"
+        log_config = LogConfig(file_name=name)
         if self.container.log_config:
             log_config.base_dir = self.container.log_config.base_dir
 
-        self.agent_logs = LogEventMonitor(log_config)
+        self.agent_logs = LogEventMonitor(name, log_config)
         self._last_checked_line = -1
 
     async def _wait_for_agent_log(
