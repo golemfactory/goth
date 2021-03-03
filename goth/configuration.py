@@ -21,9 +21,11 @@ class Configuration:
     containers: List[YagnaContainerConfig]
     """A list of container configurations for nodes in the test network."""
 
-    web_root: Path
-    """Path to the root directory of the built-in web server."""
-    # TODO: Allow `None`, meaning: don't start the web server
+    web_root: Optional[Path]
+    """Path to the root directory of the built-in web server.
+
+    `None` means that the web server will not be started.
+    """
 
     compose_config: ComposeConfig
     """Configuration of the underlying docker compose network.
@@ -35,7 +37,7 @@ class Configuration:
         self,
         compose_config: ComposeConfig,
         payment_id_pool: PaymentIdPool,
-        web_root: Path,
+        web_root: Optional[Path] = None,
     ):
         self.containers: List[YagnaContainerConfig] = []
         self.compose_config = compose_config
