@@ -65,7 +65,7 @@ def deb_package(request) -> Optional[Path]:
 
 
 @pytest.fixture(scope="session")
-def logs_path(request) -> Path:
+def session_log_dir(request) -> Path:
     """Fixture which handles the CLI parameter --logs-path.
 
     This also creates a common base log directory for all tests within a given session.
@@ -76,7 +76,7 @@ def logs_path(request) -> Path:
     base_log_dir = Path(logs_path) if logs_path else DEFAULT_LOG_DIR
     base_log_dir = base_log_dir.resolve()
 
-    # Create a unique subdirectory for this test run
+    # Create a unique subdirectory for this test session
     date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
     base_log_dir = base_log_dir / f"goth_{date_str}"
     base_log_dir.mkdir(parents=True)
@@ -113,8 +113,9 @@ def yagna_release(request) -> Optional[str]:
     return request.config.option.yagna_release
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def yagna_build_env(
+    assets_path: Path,
     yagna_binary_path: Optional[Path],
     yagna_branch: Optional[str],
     yagna_commit_hash: Optional[str],
@@ -123,6 +124,7 @@ def yagna_build_env(
 ) -> YagnaBuildEnvironment:
     """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
+        docker_dir=assets_path / "docker",
         binary_path=yagna_binary_path,
         branch=yagna_branch,
         commit_hash=yagna_commit_hash,
@@ -131,7 +133,7 @@ def yagna_build_env(
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def compose_config(yagna_build_env) -> ComposeConfig:
     """Fixture providing the configuration object for running docker-compose network.
 
@@ -143,7 +145,9 @@ def compose_config(yagna_build_env) -> ComposeConfig:
         "zksync": ".*Running on http://0.0.0.0:3030/.*",
     }
     return ComposeConfig(
-        build_env=yagna_build_env, file_path=DEFAULT_COMPOSE_FILE, log_patterns=patterns
+        build_env=yagna_build_env,
+        file_path=yagna_build_env.docker_dir / DEFAULT_COMPOSE_FILE,
+        log_patterns=patterns,
     )
 
 
@@ -238,19 +242,20 @@ def cancellation_callback() -> Callable[[], None]:
 
 @pytest.fixture
 def runner(
+    session_log_dir: Path,
     assets_path: Path,
     compose_config: ComposeConfig,
-    logs_path: Path,
     proxy_assertions_module: str,
     test_failure_callback: Callable[[TestFailure], None],
     cancellation_callback: Callable[[], None],
 ) -> Runner:
     """Fixture providing the `Runner` object for a test."""
+
     return Runner(
-        proxy_assertions_module,
-        logs_path,
-        assets_path,
-        compose_config,
-        test_failure_callback,
-        cancellation_callback,
+        base_log_dir=session_log_dir,
+        compose_config=compose_config,
+        api_assertions_module=proxy_assertions_module,
+        test_failure_callback=test_failure_callback,
+        cancellation_callback=cancellation_callback,
+        web_root_path=assets_path / "web-root",
     )

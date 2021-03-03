@@ -10,7 +10,6 @@ from typing import ClassVar, Dict, Optional
 from docker import DockerClient
 import yaml
 
-from goth.project import DOCKER_DIR
 from goth.runner.container import DockerContainer
 from goth.runner.container.build import (
     build_proxy_image,
@@ -26,7 +25,7 @@ from goth.runner.process import run_command
 logger = logging.getLogger(__name__)
 
 CONTAINER_READY_TIMEOUT = 60  # in seconds
-DEFAULT_COMPOSE_FILE = DOCKER_DIR / "docker-compose.yml"
+DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 
 @dataclass
@@ -94,7 +93,7 @@ class ComposeNetworkManager:
         command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
 
         await build_yagna_image(self.config.build_env)
-        await build_proxy_image()
+        await build_proxy_image(self.config.build_env.docker_dir)
 
         if (
             force_build

@@ -1,12 +1,17 @@
 """Log utilities for the runner."""
 
+import contextlib
 from dataclasses import dataclass
 import logging
 import logging.config
 from pathlib import Path
 import tempfile
 import time
-from typing import Union
+from typing import Optional, Union
+
+import goth
+import goth.api_monitor
+
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "goth-tests"
 FORMATTER_NONE = logging.Formatter("%(message)s")
@@ -44,28 +49,15 @@ LOGGING_CONFIG = {
             "encoding": "utf-8",
             "level": "DEBUG",
         },
-        "proxy_file": {
-            "class": "logging.FileHandler",
-            "formatter": "date",
-            "filename": "%(base_log_dir)s/proxy.log",
-            "encoding": "utf-8",
-            "level": "DEBUG",
-        },
     },
     "loggers": {
-        "goth.runner": {
+        "goth": {
             "handlers": ["console", "runner_file"],
             "propagate": False,
             "level": "DEBUG",
         },
-        # This logger is used also by the assertions loaded into the proxy
-        "goth.runner.proxy": {
-            "handlers": ["proxy_file"],
-            "propagate": True,
-            "level": "DEBUG",
-        },
         "goth.api_monitor": {
-            "handlers": ["proxy_file"],
+            "handlers": [],
             "propagate": False,
             # Setting this to "DEBUG" can help in diagnosing issues with routing
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
@@ -86,7 +78,7 @@ LOGGING_CONFIG = {
 }
 
 
-def configure_logging(base_dir: Path):
+def configure_logging(base_dir: Path, console_log_level: Optional[str] = None) -> None:
     """Configure the `logging` module.
 
     Updates config with `base_dir` before applying the global configuration.
@@ -97,6 +89,9 @@ def configure_logging(base_dir: Path):
         if "filename" in handler:
             # format the handler's filename with the base dir
             handler["filename"] %= {"base_log_dir": str(base_dir)}
+
+    if console_log_level:
+        LOGGING_CONFIG["handlers"]["console"]["level"] = console_log_level
 
     logging.config.dictConfig(LOGGING_CONFIG)
     logger.info("started logging. dir=%s", base_dir)
@@ -110,3 +105,43 @@ class LogConfig:
     base_dir: Path = DEFAULT_LOG_DIR
     formatter: logging.Formatter = FORMATTER_NONE
     level: int = logging.INFO
+
+
+@contextlib.contextmanager
+def configure_logging_for_test(test_log_dir: Path) -> None:
+    """Configure loggers to write to files in `test_log_dir`.
+
+    Implements context manager protocol: on entering the context file handlers
+    will be added to certain loggers; on exiting these handlers will be removed.
+    """
+
+    goth_logger = logging.getLogger(goth.__name__)
+    api_monitor_logger = logging.getLogger(goth.api_monitor.__name__)
+
+    runner_handler = None
+    proxy_handler = None
+
+    try:
+        formatter = logging.Formatter(
+            fmt=LOGGING_CONFIG["formatters"]["date"]["format"],
+            datefmt=LOGGING_CONFIG["formatters"]["date"]["datefmt"],
+        )
+
+        # TODO: ensure the new files created here do not conflict with probe logs
+        runner_handler = logging.FileHandler(str(test_log_dir / "test.log"))
+        runner_handler.setLevel(logging.DEBUG)
+        runner_handler.setFormatter(formatter)
+        goth_logger.addHandler(runner_handler)
+
+        proxy_handler = logging.FileHandler(str(test_log_dir / "proxy.log"))
+        proxy_handler.setLevel(logging.DEBUG)
+        proxy_handler.setFormatter(formatter)
+        api_monitor_logger.addHandler(proxy_handler)
+
+        yield
+
+    finally:
+        if runner_handler in goth_logger.handlers:
+            goth_logger.handlers.remove(runner_handler)
+        if proxy_handler in api_monitor_logger.handlers:
+            api_monitor_logger.handlers.remove(proxy_handler)
