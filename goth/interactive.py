@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from pathlib import Path
+from typing import Optional
 
 from goth.address import (
     YAGNA_BUS_PORT,
@@ -18,26 +19,17 @@ logger = logging.getLogger(__name__)
 
 async def start_network(
     configuration: Configuration,
-    log_dir: Path = Path("goth-logs"),
+    log_dir: Optional[Path] = None,
 ):
     """Start a test network described by `configuration`."""
 
-    def _handle_test_failure(_err):
-        # Interrupt the runner on failure
-        loop = asyncio.get_event_loop()
-
-        async def _interrupt():
-            raise KeyboardInterrupt()
-
-        loop.create_task(_interrupt())
-
     runner = Runner(
-        api_assertions_module=None,
+        base_log_dir=log_dir,
         compose_config=configuration.compose_config,
-        log_dir=log_dir,
+        test_name="interactive",
+        api_assertions_module=None,
         web_root_path=configuration.web_root,
         cancellation_callback=lambda: logger.info("The runner was cancelled"),
-        test_failure_callback=_handle_test_failure,
     )
 
     async with runner(configuration.containers):

@@ -1,9 +1,10 @@
 """Test harness runner class, creating the nodes and running the scenario."""
 
 import asyncio
-from contextlib import asynccontextmanager, AsyncExitStack
+from contextlib import asynccontextmanager, AsyncExitStack, contextmanager
 from itertools import chain
 import logging
+import os
 from pathlib import Path
 import sys
 from typing import (
@@ -28,7 +29,7 @@ from goth.runner.container.compose import (
 from goth.runner.container.yagna import YagnaContainerConfig
 import goth.runner.container.payment as payment
 from goth.runner.exceptions import TestFailure, TemporalAssertionError
-from goth.runner.log import LogConfig
+from goth.runner.log import LogConfig, LOGGING_CONFIG
 from goth.runner.probe import Probe, create_probe, run_probe
 from goth.runner.proxy import Proxy, run_proxy
 from goth.runner.step import step  # noqa: F401
@@ -47,7 +48,10 @@ class Runner:
     """Name of the module containing assertions to be loaded into the API monitor."""
 
     log_dir: Path
-    """Base directory for all log files created during this test run."""
+    """Directory for all log files created during this test run."""
+
+    test_name: str
+    """Name of the test scenario this runner is used in."""
 
     probes: List[Probe]
     """Probes used for the test run."""
@@ -58,8 +62,11 @@ class Runner:
     _test_failure_callback: Callable[[TestFailure], None]
     """A function to be called when `TestFailure` is caught during a test run."""
 
-    _cancellation_callback: Callable[[], None]
-    """A function to be called when `CancellationError` is caught during a test run."""
+    _cancellation_callback: Optional[Callable[[], None]]
+    """A function to be called when `CancellationError` is caught during a test run.
+
+    If not set, the error is propagated.
+    """
 
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
@@ -75,26 +82,33 @@ class Runner:
 
     def __init__(
         self,
-        api_assertions_module: Optional[str],
-        log_dir: Path,
+        base_log_dir: Path,
         compose_config: ComposeConfig,
-        test_failure_callback: Callable[[TestFailure], None],
-        cancellation_callback: Callable[[], None],
-        web_root_path: Path,
+        test_name: Optional[str] = None,
+        api_assertions_module: Optional[str] = None,
+        test_failure_callback: Optional[Callable[[TestFailure], None]] = None,
+        cancellation_callback: Optional[Callable[[], None]] = None,
+        web_root_path: Optional[Path] = None,
         web_server_port: Optional[int] = None,
     ):
+        # Set up the logging directory for this runner
+        self.test_name = test_name or self._current_pytest_test_name() or ""
+        self.log_dir = base_log_dir / self.test_name
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+
         self.api_assertions_module = api_assertions_module
-        self.log_dir = log_dir
         self.probes = []
         self.proxy = None
         self._exit_stack = AsyncExitStack()
-        self._test_failure_callback = test_failure_callback
         self._cancellation_callback = cancellation_callback
+        self._test_failure_callback = test_failure_callback
         self._compose_manager = ComposeNetworkManager(
             config=compose_config,
             docker_client=docker.from_env(),
         )
-        self._web_server = WebServer(web_root_path, web_server_port)
+        self._web_server = (
+            WebServer(web_root_path, web_server_port) if web_root_path else None
+        )
 
     def get_probes(
         self, probe_type: Type[ProbeType], name: str = ""
@@ -145,6 +159,16 @@ class Runner:
                 create_probe(self, docker_client, config, log_config)
             )
             self.probes.append(probe)
+
+    def _current_pytest_test_name(self) -> Optional[str]:
+        test_name = os.environ.get("PYTEST_CURRENT_TEST")
+        if not test_name:
+            return None
+        logger.debug("Raw current pytest test=%s", test_name)
+        # Take only the function name of the currently running test
+        test_name = test_name.split("::")[-1].split()[0]
+        logger.debug("Cleaned current test dir name=%s", test_name)
+        return test_name
 
     async def _start_nodes(self):
         node_names: Dict[str, str] = {}
@@ -203,12 +227,12 @@ class Runner:
     @property
     def web_server_port(self) -> int:
         """Return the port of the build-in web server."""
-        return self._web_server.server_port
+        return self._web_server.server_port if self._web_server else None
 
     @property
     def web_root_path(self) -> Path:
         """Return the directory served by the built-in web server."""
-        return self._web_server.root_path
+        return self._web_server.root_path if self._web_server else None
 
     @asynccontextmanager
     async def __call__(
@@ -225,13 +249,61 @@ class Runner:
                 await self._enter()
                 yield self
             except asyncio.CancelledError:
-                self._cancellation_callback()
+                if self._cancellation_callback:
+                    self._cancellation_callback()
+                else:
+                    raise
             finally:
                 await self._exit()
         except TestFailure as err:
-            self._test_failure_callback(err)
+            if self._test_failure_callback:
+                self._test_failure_callback(err)
+            else:
+                logger.info("Runner stopped due to test failure")
+
+    @contextmanager
+    def _setup_file_logging(self) -> None:
+        """Set up logging to files in `self.log_dir`."""
+
+        import goth
+
+        goth_logger = logging.getLogger(goth.__name__)
+
+        import goth.api_monitor
+
+        api_monitor_logger = logging.getLogger(goth.api_monitor.__name__)
+
+        runner_handler = None
+        proxy_handler = None
+
+        try:
+            formatter = logging.Formatter(
+                fmt=LOGGING_CONFIG["formatters"]["date"]["format"],
+                datefmt=LOGGING_CONFIG["formatters"]["date"]["datefmt"],
+            )
+
+            # TODO: ensure the new files created here do not conflict with probe logs
+            runner_handler = logging.FileHandler(str(self.log_dir / "test.log"))
+            runner_handler.setLevel(logging.DEBUG)
+            runner_handler.setFormatter(formatter)
+            goth_logger.addHandler(runner_handler)
+
+            proxy_handler = logging.FileHandler(str(self.log_dir / "proxy.log"))
+            proxy_handler.setLevel(logging.DEBUG)
+            proxy_handler.setFormatter(formatter)
+            api_monitor_logger.addHandler(proxy_handler)
+
+            yield
+
+        finally:
+            if runner_handler in goth_logger.handlers:
+                goth_logger.handlers.remove(runner_handler)
+            if proxy_handler in api_monitor_logger.handlers:
+                api_monitor_logger.handlers.remove(proxy_handler)
 
     async def _enter(self) -> None:
+        self._exit_stack.enter_context(self._setup_file_logging())
+        logger.info("Running test: %s", self.test_name)
 
         await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
@@ -239,14 +311,16 @@ class Runner:
 
         self._create_probes(self.log_dir)
 
-        await self._exit_stack.enter_async_context(
-            # listen on all interfaces
-            run_web_server(self._web_server, server_address=None)
-        )
+        if self._web_server:
+            await self._exit_stack.enter_async_context(
+                # listen on all interfaces
+                run_web_server(self._web_server, server_address=None)
+            )
 
         await self._start_nodes()
 
     async def _exit(self):
+        logger.info("Test finished: %s", self.test_name)
         await self._exit_stack.aclose()
         payment.clean_up()
 

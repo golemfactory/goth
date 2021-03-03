@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -66,7 +65,7 @@ def deb_package(request) -> Optional[Path]:
 
 
 @pytest.fixture(scope="session")
-def logs_path(request) -> Path:
+def session_log_dir(request) -> Path:
     """Fixture which handles the CLI parameter --logs-path.
 
     This also creates a common base log directory for all tests within a given session.
@@ -77,7 +76,7 @@ def logs_path(request) -> Path:
     base_log_dir = Path(logs_path) if logs_path else DEFAULT_LOG_DIR
     base_log_dir = base_log_dir.resolve()
 
-    # Create a unique subdirectory for this test run
+    # Create a unique subdirectory for this test session
     date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
     base_log_dir = base_log_dir / f"goth_{date_str}"
     base_log_dir.mkdir(parents=True)
@@ -242,24 +241,10 @@ def cancellation_callback() -> Callable[[], None]:
 
 
 @pytest.fixture
-def test_logs_dir(logs_path: Path) -> Path:
-    """Provide a directory for all log files related to a single test case."""
-
-    test_name = os.environ["PYTEST_CURRENT_TEST"]
-    # Take only the function name of the currently running test
-    test_name = test_name.split("::")[-1].split()[0]
-
-    logs_dir = logs_path / test_name
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    return logs_dir
-
-
-@pytest.fixture
 def runner(
+    session_log_dir: Path,
     assets_path: Path,
     compose_config: ComposeConfig,
-    test_logs_dir: Path,
     proxy_assertions_module: str,
     test_failure_callback: Callable[[TestFailure], None],
     cancellation_callback: Callable[[], None],
@@ -267,10 +252,10 @@ def runner(
     """Fixture providing the `Runner` object for a test."""
 
     return Runner(
-        proxy_assertions_module,
-        test_logs_dir,
-        compose_config,
-        test_failure_callback,
-        cancellation_callback,
+        base_log_dir=session_log_dir,
+        compose_config=compose_config,
+        api_assertions_module=proxy_assertions_module,
+        test_failure_callback=test_failure_callback,
+        cancellation_callback=cancellation_callback,
         web_root_path=assets_path / "web-root",
     )

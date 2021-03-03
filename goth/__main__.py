@@ -1,4 +1,5 @@
 """Main entry point to `goth`."""
+import argparse
 import asyncio
 from datetime import datetime, timezone
 import logging
@@ -7,11 +8,10 @@ import shutil
 
 from goth.configuration import load_yaml
 from goth.interactive import start_network
-from goth.runner.log import configure_logging
+from goth.runner.log import configure_logging, DEFAULT_LOG_DIR
 
 
-DEFAULT_ASSETS_DIR = "default-assets"
-DEFAULT_LOG_DIR = "goth-logs"
+DEFAULT_ASSETS_DIR = Path(__file__).parent / "default-assets"
 
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,8 @@ def start(args):
 
     configuration = load_yaml(args.config_file)
 
-    base_log_dir = args.log_dir or Path(DEFAULT_LOG_DIR)
-    log_dir = make_logs_dir(base_log_dir)
+    base_log_dir = args.log_dir or DEFAULT_LOG_DIR
+    log_dir = make_logs_dir(Path(base_log_dir))
     configure_logging(log_dir, args.log_level)
 
     loop = asyncio.get_event_loop()
@@ -51,15 +51,13 @@ def create_config(args):
 
     output_dir = Path(args.output_dir).resolve()
 
-    input_dir = Path(__file__).parent / DEFAULT_ASSETS_DIR
+    input_dir = DEFAULT_ASSETS_DIR
 
     logger.info("Copying default assets from %s to %s", input_dir, output_dir)
     shutil.copytree(input_dir, output_dir, dirs_exist_ok=args.overwrite)
 
 
 if __name__ == "__main__":
-
-    import argparse
 
     parser = argparse.ArgumentParser(prog="goth")
     parser.add_argument(
@@ -98,7 +96,7 @@ if __name__ == "__main__":
     parser_cfg.set_defaults(function=create_config)
 
     args = parser.parse_args()
-    try:
+    if args.function:
         args.function(args)
-    except AttributeError:
+    else:
         parser.print_help()

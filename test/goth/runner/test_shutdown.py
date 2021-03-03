@@ -1,10 +1,12 @@
 """Unit tests that check if a Runner instance is shut down correctly."""
 
 import asyncio
-import pytest
+from pathlib import Path
 from unittest import mock
+import tempfile
 
 import docker
+import pytest
 
 from goth.runner import TestFailure, Runner
 from goth.runner.container.compose import ComposeNetworkManager
@@ -56,12 +58,8 @@ class MockError(Exception):
 def mock_runner(test_failure_callback=None, cancellation_callback=None):
     """Return a Runner instance built from mock arguments."""
 
-    test_failure_callback = test_failure_callback or mock.MagicMock()
-    cancellation_callback = cancellation_callback or mock.MagicMock()
-
     return Runner(
-        api_assertions_module=None,
-        log_dir=mock.MagicMock(),
+        base_log_dir=Path(tempfile.mkdtemp()),
         compose_config=mock.MagicMock(),
         test_failure_callback=test_failure_callback,
         cancellation_callback=cancellation_callback,

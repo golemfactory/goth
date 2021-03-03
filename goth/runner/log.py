@@ -44,28 +44,15 @@ LOGGING_CONFIG = {
             "encoding": "utf-8",
             "level": "DEBUG",
         },
-        "proxy_file": {
-            "class": "logging.FileHandler",
-            "formatter": "date",
-            "filename": "%(base_log_dir)s/proxy.log",
-            "encoding": "utf-8",
-            "level": "DEBUG",
-        },
     },
     "loggers": {
-        "goth.runner": {
+        "goth": {
             "handlers": ["console", "runner_file"],
             "propagate": False,
             "level": "DEBUG",
         },
-        # This logger is used also by the assertions loaded into the proxy
-        "goth.runner.proxy": {
-            "handlers": ["proxy_file"],
-            "propagate": True,
-            "level": "DEBUG",
-        },
         "goth.api_monitor": {
-            "handlers": ["proxy_file"],
+            "handlers": [],
             "propagate": False,
             # Setting this to "DEBUG" can help in diagnosing issues with routing
             # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.

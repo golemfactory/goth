@@ -92,7 +92,7 @@ class EventMonitor(Generic[E]):
         future = asyncio.ensure_future(self._run_worker())
         assert isinstance(future, asyncio.Task)
         self._worker_task = future
-        self._logger.info("Monitor started")
+        self._logger.debug("Monitor started")
 
     def add_event(self, event: E) -> None:
         """Register a new event."""
@@ -109,7 +109,7 @@ class EventMonitor(Generic[E]):
             self._logger.warning("Monitor already stopped")
             return
 
-        self._logger.info("Stopping the monitor...")
+        self._logger.debug("Stopping the monitor...")
         # This will eventually terminate the worker task:
         self._incoming.put_nowait(None)
 
@@ -119,7 +119,7 @@ class EventMonitor(Generic[E]):
         worker = self._worker_task
         self._worker_task = None
         await worker
-        self._logger.info("Monitor stopped")
+        self._logger.debug("Monitor stopped")
 
         if not self.finished:
             # This may happen in case of ill-behaved assertions
