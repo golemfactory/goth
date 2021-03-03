@@ -1,4 +1,4 @@
-"""End to end tests for requesting WASM tasks using goth REST API clients."""
+"""Tests that zero-amount invoices are settled."""
 
 import logging
 from pathlib import Path
@@ -18,7 +18,6 @@ from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
 from ya_payment import InvoiceStatus
-from asyncio import sleep
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ async def test_zero_amount_invoice_is_settled(
             web_server_addr=runner.host_address, web_server_port=runner.web_server_port
         )
 
-        subscription_id, demand = await requestor.subscribe_demand(
+        subscription_id, demand = await requestor.subscribe_template_demand(
             task_package, demand_constraints
         )
 
@@ -122,10 +121,8 @@ async def test_zero_amount_invoice_is_settled(
         #  Zero-amount invoice is issued when agreement is terminated without activity
 
         logger.info("Waiting for the agreement termination... ")
-        # When agreement termination is supported replace the sleep with below lines
-        await sleep(95)  # waiting for agreement timeout
-        # await requestor.terminate_agreement(agreement_id, None)
-        # await provider.wait_for_agreement_terminated()
+        await requestor.terminate_agreement(agreement_id, None)
+        await provider.wait_for_agreement_terminated()
 
         # Payment
 
