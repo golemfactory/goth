@@ -4,6 +4,7 @@ that registers events and checks whether temporal assertions are satisfied.
 """
 
 import asyncio
+from collections import OrderedDict
 import importlib
 import logging
 import sys
@@ -29,6 +30,7 @@ class MonitorLoggerAdapter(logging.LoggerAdapter):
 
     @property
     def handlers(self) -> List[logging.Handler]:
+        """Return the handlers of the base logger."""
         return self._base_logger.handlers
 
 
@@ -43,8 +45,12 @@ class EventMonitor(Generic[E]):
     registered event.
     """
 
-    assertions: List[Assertion[E]]
-    """List of all assertions, active or finished."""
+    assertions: "OrderedDict[Assertion[E], LogLevel]"
+    """List of all assertions, active or finished.
+
+    For each assertion we also store the log level to be used
+    for logging a message when this assertion succeeds.
+    """
 
     name: Optional[str]
     """The name of this monitor, for use in logging."""
@@ -67,7 +73,7 @@ class EventMonitor(Generic[E]):
         logger: Optional[logging.Logger] = None,
         on_stop=None,
     ) -> None:
-        self.assertions = []
+        self.assertions = OrderedDict()
         self.name = name
         self._events = []
         # Delay creating the queue to make sure it's created in the event loop
@@ -81,11 +87,13 @@ class EventMonitor(Generic[E]):
             )
         self._stop_callback = on_stop
 
-    def add_assertion(self, assertion_func: AssertionFunction[E]) -> Assertion:
+    def add_assertion(
+        self, assertion_func: AssertionFunction[E], log_level: LogLevel = logging.INFO
+    ) -> Assertion:
         """Add an assertion function to this monitor."""
 
         result = Assertion(self._events, assertion_func)
-        self.assertions.append(result)
+        self.assertions[result] = log_level
         return result
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
@@ -93,9 +101,8 @@ class EventMonitor(Generic[E]):
 
         # Create assertions here but don't start them yet, to make sure
         # they're started in the same event loop in which they'll be running.
-        self.assertions.extend(
-            Assertion(self._events, func) for func in assertion_funcs
-        )
+        for func in assertion_funcs:
+            self.add_assertion(func)
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -135,7 +142,7 @@ class EventMonitor(Generic[E]):
         """Register a new event."""
 
         if not self.is_running():
-            raise RuntimeError(f"Monitor {self.name} is not running")
+            raise RuntimeError(f"Monitor {self.name or ''} is not running")
 
         self._incoming.put_nowait(event)
 
@@ -211,7 +218,7 @@ class EventMonitor(Generic[E]):
             else "EndOfEvents"
         )
 
-        for a in self.assertions:
+        for a, level in self.assertions.items():
 
             # As new assertions may be added on the fly, we need to make sure
             # that this one has been started already.
@@ -227,7 +234,7 @@ class EventMonitor(Generic[E]):
             if a.accepted:
                 result = await a.result()
                 msg = "Assertion '%s' succeeded after event: %s; result: %s"
-                self._logger.info(msg, a.name, event_descr, result)
+                self._logger.log(level, msg, a.name, event_descr, result)
 
             elif a.failed:
                 await self._report_failure(a, event_descr)
