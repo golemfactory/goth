@@ -96,11 +96,9 @@ async def test_zero_amount_invoice_is_settled(
                 ),
             )
         )[0]
-        logger.info("Collected the proposal")
 
         logger.info("Processing proposal from %s", provider.name)
 
-        # HINT: According to @kubam this is needed.
         counterproposal_id = await requestor.counter_proposal(
             subscription_id, demand, proposal
         )
@@ -133,10 +131,3 @@ async def test_zero_amount_invoice_is_settled(
         invoice = (await requestor.gather_invoices(agreement_id))[0]
         assert invoice.amount == "0"
         assert invoice.status == InvoiceStatus.SETTLED
-
-        # verify the provider invoice is settled
-        # TODO: Expose PaymentOperationMixin from Provider-based probe
-        # pseudo-code:
-        # invoice2 = (await providers.gather_invoices(agreement_id))[0]
-        # assert invoice2.amount == "0"
-        # assert invoice2.status == InvoiceStatus.SETTLED
