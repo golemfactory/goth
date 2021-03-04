@@ -148,10 +148,9 @@ async def wait_for_agreement_termination(requestor, provider, agreement_id):
     """Wait for agreement termination with retries in a given timespan."""
 
     logger.info("Waiting for the agreement termination... ")
-    total_retry_time_seconds = 30
-    start = time.time()
+    timeout_seconds = time.time() + 30
     while True:
-        assert total_retry_time_seconds > time.time() - start, "Retries time exceeded"
+        assert time.time() < timeout_seconds, "Retries time exceeded"
         try:
             await requestor.terminate_agreement(agreement_id, None)
             break
