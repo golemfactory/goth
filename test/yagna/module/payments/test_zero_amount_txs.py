@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import List
 
 import pytest
-import time
-from asyncio import sleep
 
 from goth.address import (
     PROXY_HOST,
@@ -19,7 +17,6 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
-from ya_market.exceptions import ApiException
 from ya_payment import InvoiceStatus
 
 logger = logging.getLogger(__name__)
@@ -122,7 +119,8 @@ async def test_zero_amount_invoice_is_settled(
         logger.info("Got agreement")
 
         #  Zero-amount invoice is issued when agreement is terminated without activity
-        await wait_for_agreement_termination(requestor, provider, agreement_id)
+        await requestor.wait_for_approval(agreement_id)
+        await requestor.terminate_agreement(agreement_id, None)
 
         # Payment
 
@@ -142,19 +140,3 @@ async def test_zero_amount_invoice_is_settled(
         # invoice2 = (await providers.gather_invoices(agreement_id))[0]
         # assert invoice2.amount == "0"
         # assert invoice2.status == InvoiceStatus.SETTLED
-
-
-async def wait_for_agreement_termination(requestor, provider, agreement_id):
-    """Wait for agreement termination with retries in a given timespan."""
-
-    logger.info("Waiting for the agreement termination... ")
-    timeout_seconds = time.time() + 30
-    while True:
-        assert time.time() < timeout_seconds, "Retries time exceeded"
-        try:
-            await requestor.terminate_agreement(agreement_id, None)
-            break
-        except ApiException:
-            logger.info("Retry: Waiting for agreement termination")
-            await sleep(1)
-    await provider.wait_for_agreement_terminated()
