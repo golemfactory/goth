@@ -106,6 +106,7 @@ async def negotiate_agreements(
         agreement_id = await requestor.create_agreement(new_proposal)
         await requestor.confirm_agreement(agreement_id)
         await provider.wait_for_agreement_approved()
+        await requestor.wait_for_approval(agreement_id)
         agreement_providers.append((agreement_id, provider))
 
     await requestor.unsubscribe_demand(subscription_id)

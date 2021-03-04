@@ -177,6 +177,11 @@ class MarketOperationsMixin:
         await self.market.confirm_agreement(agreement_id)
 
     @step()
+    async def wait_for_approval(self: RequestorProbe, agreement_id: str) -> None:
+        """Call wait_for_approval on the requestor market api."""
+        await self.market.wait_for_approval(agreement_id)
+
+    @step()
     async def terminate_agreement(
         self: RequestorProbe, agreement_id: str, reason: Optional[str]
     ):
