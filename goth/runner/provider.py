@@ -63,3 +63,8 @@ class ProviderProbeWithLogSteps(ProviderProbe):
     async def wait_for_invoice_paid(self):
         """Wait until the invoice is paid."""
         await self._wait_for_agent_log("Invoice .+? for agreement .+? was paid")
+
+    @step()
+    async def wait_for_log(self, pattern: str, timeout: float = 1000):
+        """Wait for specific log."""
+        await self._wait_for_agent_log(pattern, timeout)
