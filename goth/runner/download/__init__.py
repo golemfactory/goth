@@ -145,7 +145,7 @@ class ArtifactDownloader(GithubDownloader):
     def _get_workflow(self, workflow_name: str) -> dict:
         """Query the workflow on GitHub Actions."""
         url = f"{self.repo_url}/actions/workflows"
-        logger.info("Fetching workflows. url=%s", url)
+        logger.debug("Fetching workflows. url=%s", url)
         response = self.session.get(url)
         response.raise_for_status()
 
@@ -168,7 +168,7 @@ class ArtifactDownloader(GithubDownloader):
         request = self.session.prepare_request(
             requests.Request("GET", url, params=params)
         )
-        logger.info("Fetching workflow runs. url=%s", request.url)
+        logger.debug("Fetching workflow runs. url=%s", request.url)
 
         def _filter_workflows(response: requests.Response) -> Optional[dict]:
             workflow_runs = response.json()["workflow_runs"]
@@ -186,7 +186,7 @@ class ArtifactDownloader(GithubDownloader):
 
     def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
-        logger.info("Fetching artifacts. url=%s", artifacts_url)
+        logger.debug("Fetching artifacts. url=%s", artifacts_url)
         response = self.session.get(artifacts_url)
         response.raise_for_status()
 
@@ -204,16 +204,17 @@ class ArtifactDownloader(GithubDownloader):
         artifact_id = str(artifact["id"])
         archive_url = artifact["archive_download_url"]
 
+        logger.info("Downloading artifact. url=%s", archive_url)
         with self.session.get(archive_url) as response:
             response.raise_for_status()
-            logger.info("Downloading artifact. url=%s", archive_url)
 
             with tempfile.NamedTemporaryFile() as fd:
                 fd.write(response.content)
-                logger.debug("extracting zip archive. path=%s", fd.name)
+                logger.debug("Extracting zip archive. path=%s", fd.name)
                 cache_dir = self._create_cache_dir(artifact_id)
                 shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
-                logger.info("Extracted package. path=%s", cache_dir)
+                logger.debug("Extracted package. path=%s", cache_dir)
+                logger.info("Downloaded artifact. url=%s", archive_url)
 
         return cache_dir
 
@@ -238,21 +239,20 @@ class ArtifactDownloader(GithubDownloader):
         :param output: directory to which the artifact should be extracted
         :param workflow_name: name of the workflow to select a run from
         """
-        logger.info(
-            "Downloading artifact. name=%s, branch=%s, commit=%s, workflow=%s",
+        logger.debug(
+            "ArtifactDownloader#download. name=%s, branch=%s, commit=%s, workflow=%s",
             artifact_name,
             branch,
             commit,
             workflow_name,
         )
-
         workflow = self._get_workflow(workflow_name)
         latest_run = self._get_latest_run(workflow, branch, commit)
         artifact = self._get_artifact(artifact_name, latest_run)
         if not artifact:
             raise AssetNotFound(f"Artifact not found. name={artifact_name}")
 
-        logger.info("Found matching artifact. artifact=%s", artifact)
+        logger.debug("Found matching artifact. artifact=%s", artifact)
         artifact_id = str(artifact["id"])
         cache_path = self._cache_get(artifact_id)
         if cache_path:
@@ -262,7 +262,7 @@ class ArtifactDownloader(GithubDownloader):
 
         if output:
             shutil.copytree(cache_path, output, dirs_exist_ok=True)
-            logger.info("Copied artifact to output path. output=%s", str(output))
+            logger.debug("Copied artifact to output path. output=%s", str(output))
 
         return output or cache_path
 
@@ -278,22 +278,31 @@ class ReleaseDownloader(GithubDownloader):
         super().__init__(*args, repo=repo, **kwargs)
         self.repo_name = repo
 
-    def _get_latest_release(self, tag_substring: str = "") -> Optional[dict]:
+    def _get_latest_release(
+        self, tag_substring: str, content_type: str
+    ) -> Optional[dict]:
         """Get the latest version, this includes pre-releases.
 
         Only the versions with `tag_name` that contains `self.tag_substring`
         as a substring are considered.
         """
         url = f"{self.repo_url}/releases"
-        logger.info("Fetching releases. url=%s", url)
+        logger.debug("Fetching releases. url=%s", url)
         response = self.session.get(url)
         response.raise_for_status()
 
         all_releases = response.json()
         logger.debug("releases=%s", all_releases)
 
+        def release_filter(release: dict, tag_substring: str) -> bool:
+            has_matching_asset = any(
+                asset["content_type"] == content_type for asset in release["assets"]
+            )
+            has_matching_tag = tag_substring in release["tag_name"]
+            return has_matching_asset and has_matching_tag
+
         matching_releases = (
-            rel for rel in all_releases if tag_substring in rel.get("tag_name", "")
+            rel for rel in all_releases if release_filter(rel, tag_substring)
         )
         return next(matching_releases, None)
 
@@ -313,9 +322,9 @@ class ReleaseDownloader(GithubDownloader):
         download_url = asset["browser_download_url"]
         asset_id = str(asset["id"])
 
+        logger.info("Downloading asset. url=%s", download_url)
         with self.session.get(download_url) as response:
             response.raise_for_status()
-            logger.info("Downloading asset. url=%s", download_url)
             cache_file = self._create_cache_dir(asset_id) / asset["name"]
             with cache_file.open(mode="wb") as fd:
                 fd.write(response.content)
@@ -340,7 +349,7 @@ class ReleaseDownloader(GithubDownloader):
         :param output: file path to where the asset should be saved
         :param tag_substring: substring the release's tag name must contain
         """
-        release = self._get_latest_release(tag_substring)
+        release = self._get_latest_release(tag_substring, content_type)
         if not release:
             raise AssetNotFound(
                 f"Could not find release. "
@@ -354,7 +363,7 @@ class ReleaseDownloader(GithubDownloader):
                 f"content_type={content_type}, asset_name={asset_name}"
             )
 
-        logger.info("Found matching asset. name=%s", asset["name"])
+        logger.debug("Found matching asset. name=%s", asset["name"])
         logger.debug("asset=%s", asset)
 
         asset_id = str(asset["id"])
@@ -367,6 +376,6 @@ class ReleaseDownloader(GithubDownloader):
 
         if output:
             shutil.copy2(cache_path, output)
-            logger.info("Copied release to output path. output=%s", str(output))
+            logger.debug("Copied release to output path. output=%s", str(output))
 
         return output or cache_path
