@@ -31,13 +31,15 @@ class AgentMixin(abc.ABC):
 
     async def start(self):
         """Start the probe and initialize the log monitor."""
+        self.agent_logs = None
         await super().start()
         self._init_log_monitor()
 
     async def stop(self):
         """Stop the probe and the log monitor."""
         await super().stop()
-        await self.agent_logs.stop()
+        if self.agent_logs:
+            await self.agent_logs.stop()
 
     def _init_log_monitor(self):
         log_config = LogConfig(file_name=f"{self.name}_agent")
