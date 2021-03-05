@@ -175,7 +175,7 @@ class ComposeNetworkManager:
         for service_name in self._get_compose_services():
             log_config = LogConfig(service_name)
             log_config.base_dir = log_dir
-            monitor = LogEventMonitor(log_config)
+            monitor = LogEventMonitor(service_name, log_config)
 
             containers = self._docker_client.containers.list(
                 filters={"name": service_name}

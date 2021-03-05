@@ -4,12 +4,37 @@ that registers events and checks whether temporal assertions are satisfied.
 """
 
 import asyncio
+from collections import OrderedDict
 import importlib
 import logging
 import sys
 from typing import Generic, List, Optional, Sequence
 
 from goth.assertions import Assertion, AssertionFunction, E
+
+
+class MonitorLoggerAdapter(logging.LoggerAdapter):
+    """LoggerAdapter adding monitor name to each log message."""
+
+    EXTRA_MONITOR_NAME = "monitor_name"
+
+    _base_logger: logging.Logger
+
+    def __init__(self, base_logger: logging.Logger, *args):
+        super().__init__(base_logger, *args)
+        self._base_logger = base_logger
+
+    def process(self, msg, kwargs):
+        """Process the log message `msg`."""
+        return ("[%s] %s" % (self.extra[self.EXTRA_MONITOR_NAME], msg), kwargs)
+
+    @property
+    def handlers(self) -> List[logging.Handler]:
+        """Return the handlers of the base logger."""
+        return self._base_logger.handlers
+
+
+LogLevel = int
 
 
 class EventMonitor(Generic[E]):
@@ -20,35 +45,55 @@ class EventMonitor(Generic[E]):
     registered event.
     """
 
-    assertions: List[Assertion[E]]
-    """List of all assertions, active or finished."""
+    assertions: "OrderedDict[Assertion[E], LogLevel]"
+    """List of all assertions, active or finished.
+
+    For each assertion we also store the log level to be used
+    for logging a message when this assertion succeeds.
+    """
+
+    name: Optional[str]
+    """The name of this monitor, for use in logging."""
 
     _events: List[E]
     """List of events registered so far."""
-
-    _worker_task: Optional[asyncio.Task]
-    """A worker task that registers events and checks assertions."""
 
     _incoming: "Optional[asyncio.Queue[Optional[E]]]"
     """A queue used to pass the events to the worker task."""
 
     _logger: logging.Logger
+    """A logger instance for this monitor."""
 
-    def __init__(self, logger: Optional[logging.Logger] = None, on_stop=None) -> None:
+    _worker_task: Optional[asyncio.Task]
+    """A worker task that registers events and checks assertions."""
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        logger: Optional[logging.Logger] = None,
+        on_stop=None,
+    ) -> None:
+        self.assertions = OrderedDict()
+        self.name = name
         self._events = []
         # Delay creating the queue to make sure it's created in the event loop
         # used by the worker task.
         self._incoming = None
-        self.assertions = []
         self._worker_task = None
         self._logger = logger or logging.getLogger(__name__)
+        if self.name:
+            self._logger = MonitorLoggerAdapter(
+                self._logger, {MonitorLoggerAdapter.EXTRA_MONITOR_NAME: self.name}
+            )
         self._stop_callback = on_stop
 
-    def add_assertion(self, assertion_func: AssertionFunction[E]) -> Assertion:
+    def add_assertion(
+        self, assertion_func: AssertionFunction[E], log_level: LogLevel = logging.INFO
+    ) -> Assertion:
         """Add an assertion function to this monitor."""
 
         result = Assertion(self._events, assertion_func)
-        self.assertions.append(result)
+        self.assertions[result] = log_level
         return result
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
@@ -56,9 +101,8 @@ class EventMonitor(Generic[E]):
 
         # Create assertions here but don't start them yet, to make sure
         # they're started in the same event loop in which they'll be running.
-        self.assertions.extend(
-            Assertion(self._events, func) for func in assertion_funcs
-        )
+        for func in assertion_funcs:
+            self.add_assertion(func)
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""
@@ -72,7 +116,7 @@ class EventMonitor(Generic[E]):
         # used by `self._logger`.
         mod_logger = mod.__dict__.get("logger")
         if mod_logger and isinstance(mod_logger, logging.Logger):
-            mod_logger.setLevel(self._logger.level)
+            mod_logger.setLevel(self._logger.getEffectiveLevel())
             mod_logger.propagate = False
             for handler in self._logger.handlers:
                 if handler not in mod_logger.handlers:
@@ -98,7 +142,7 @@ class EventMonitor(Generic[E]):
         """Register a new event."""
 
         if not self.is_running():
-            raise RuntimeError("Monitor is not running")
+            raise RuntimeError(f"Monitor {self.name or ''} is not running")
 
         self._incoming.put_nowait(event)
 
@@ -174,7 +218,7 @@ class EventMonitor(Generic[E]):
             else "EndOfEvents"
         )
 
-        for a in self.assertions:
+        for a, level in self.assertions.items():
 
             # As new assertions may be added on the fly, we need to make sure
             # that this one has been started already.
@@ -190,7 +234,7 @@ class EventMonitor(Generic[E]):
             if a.accepted:
                 result = await a.result()
                 msg = "Assertion '%s' succeeded after event: %s; result: %s"
-                self._logger.info(msg, a.name, event_descr, result)
+                self._logger.log(level, msg, a.name, event_descr, result)
 
             elif a.failed:
                 await self._report_failure(a, event_descr)
