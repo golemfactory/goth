@@ -18,7 +18,7 @@ async def run_command(
     env: Optional[dict] = None,
     log_prefix: Optional[str] = None,
     timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
-):
+) -> None:
     """Run a command in a subprocess with timeout and logging.
 
     Lines from stdout and stderr of the subprocess are captured and emitted via
@@ -34,20 +34,20 @@ async def run_command(
     if log_prefix is None:
         log_prefix = f"[{args[0]}] "
 
-    p = subprocess.Popen(
-        args=args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
+    async def _run_command():
 
-    async def _read_output():
-        for line in p.stdout:
+        proc = await asyncio.subprocess.create_subprocess_exec(
+            *args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+
+        while not proc.stdout.at_eof():
+            line = await proc.stdout.readline()
             logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
 
-        return_code = p.poll()
+        return_code = await proc.wait()
         if return_code:
             raise CommandError(
                 f"Command exited abnormally. args={args}, return_code={return_code}"
             )
-        else:
-            await asyncio.sleep(RUN_COMMAND_SLEEP_INTERVAL)
 
-    await asyncio.wait_for(_read_output(), timeout=timeout)
+    await asyncio.wait_for(_run_command(), timeout=timeout)
