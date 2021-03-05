@@ -16,6 +16,7 @@ RUN_COMMAND_DEFAULT_TIMEOUT = 900  # seconds
 async def run_command(
     args: Sequence[str],
     env: Optional[dict] = None,
+    log_level: Optional[int] = logging.DEBUG,
     log_prefix: Optional[str] = None,
     timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
 ) -> None:
@@ -42,7 +43,7 @@ async def run_command(
 
         while not proc.stdout.at_eof():
             line = await proc.stdout.readline()
-            logger.debug("%s%s", log_prefix, line.decode("utf-8").rstrip())
+            logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
 
         return_code = await proc.wait()
         if return_code:

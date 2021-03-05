@@ -4,7 +4,7 @@ import abc
 import asyncio
 import contextlib
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -253,6 +253,37 @@ class RequestorProbe(ApiClientMixin, Probe):
 
         self.cli.payment_fund()
         self.cli.payment_init(sender_mode=True)
+
+    def run_command_on_host(
+        self,
+        command: str,
+        env: Optional[Dict[str, str]] = None,
+        timeout: int = 300,
+    ) -> asyncio.Task:
+        """Run `command` on host asynchronously with given `timeout`.
+
+        The command is run the environment set up for running requestor agents
+        that communicate with the daemon running in this probe's container.
+        """
+
+        from goth.address import YAGNA_BUS_PORT, YAGNA_REST_PORT
+        from goth.runner.process import run_command
+
+        cmd_env = {**env} if env else {}
+        cmd_env.update(
+            {
+                "YAGNA_APPKEY": self.app_key,
+                "YAGNA_API_URL": f"http://{self.ip_address}:{YAGNA_REST_PORT}",
+                "GSB_URL": f"tcp://{self.ip_address}:{YAGNA_BUS_PORT}",
+            }
+        )
+
+        task = asyncio.create_task(
+            run_command(
+                command.split(), cmd_env, log_level=logging.INFO, timeout=timeout
+            )
+        )
+        return task
 
 
 class ProviderProbe(AgentMixin, Probe):
