@@ -34,6 +34,7 @@ def _topology(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     provider_env["IDLE_AGREEMENT_TIMEOUT"] = "5s"
+    provider_env["DEBIT_NOTE_ACCEPTANCE_DEADLINE"] = "7s"
 
     requestor_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
@@ -77,6 +78,7 @@ def build_demand(
         DemandBuilder(requestor)
         .props_from_template(task_package)
         .property("golem.srv.caps.multi-activity", True)
+        .property("golem.com.payment.debit-notes.accept-timeout?", 8)
         .constraints(
             "(&(golem.com.pricing.model=linear)\
             (golem.srv.caps.multi-activity=true)\
@@ -150,6 +152,46 @@ async def test_provider_idle_agreement_after_2_activities(
         await asyncio.sleep(5)
         await providers[0].wait_for_log(
             r"Breaking agreement .*, reason: No activity created", 10
+        )
+
+        await pay_all(requestor, agreement_providers)
+
+
+# Requestor is expected to accept DebitNotes in timeout negotiated in Offer.
+@pytest.mark.asyncio
+async def test_provider_debit_notes_accept_timeout(
+    assets_path: Path,
+    demand_constraints: str,
+    exe_script: dict,
+    payment_id_pool: PaymentIdPool,
+    runner: Runner,
+    task_package_template: str,
+):
+    """Test provider breaking Agreement if Requestor doesn't accept DebitNotes."""
+
+    async with runner(_topology(assets_path, payment_id_pool)):
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+
+        agreement_providers = await negotiate_agreements(
+            requestor,
+            build_demand(requestor, runner, task_package_template),
+            providers,
+        )
+
+        agreement_id, provider = agreement_providers[0]
+
+        await requestor.create_activity(agreement_id)
+        await provider.wait_for_exeunit_started()
+
+        # Wait for first DebitNote sent by Provider.
+        await providers[0].wait_for_log(r"Debit note [.*] for activity [.*] sent.", 60)
+
+        # Negotiated timeout is 8s. Let's wait with some margin.
+        await providers[0].wait_for_log(
+            r"Breaking agreement .*, reason: "
+            r"Requestor isn't accepting DebitNotes in time",
+            12,
         )
 
         await pay_all(requestor, agreement_providers)
