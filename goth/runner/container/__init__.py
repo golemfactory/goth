@@ -121,7 +121,7 @@ class DockerContainer:
         self.log_config = log_config
         self.logs = None
         if self.log_config:
-            self.logs = LogEventMonitor(self.log_config)
+            self.logs = LogEventMonitor(self.name, self.log_config)
 
         self._container = self._client.containers.create(
             self.image,

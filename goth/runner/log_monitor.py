@@ -134,8 +134,8 @@ class LogEventMonitor(EventMonitor[LogEvent]):
     were logged after this line.
     """
 
-    def __init__(self, log_config: LogConfig):
-        super().__init__()
+    def __init__(self, name: str, log_config: LogConfig):
+        super().__init__(name)
         self._file_logger = _create_file_logger(log_config)
         self._buffer_task = None
         self._last_checked_line = -1
@@ -193,7 +193,6 @@ class LogEventMonitor(EventMonitor[LogEvent]):
             return regex.match(log_event.message) is not None
 
         # First examine log lines already seen
-        logger.debug("Checking past log lines. pattern=%s", pattern)
         while self._last_checked_line + 1 < len(self.events):
             self._last_checked_line += 1
             event = self.events[self._last_checked_line]
@@ -206,15 +205,14 @@ class LogEventMonitor(EventMonitor[LogEvent]):
                 return event
 
         # Otherwise create an assertion that waits for a matching line...
-        async def coro(stream) -> LogEvent:
+        async def wait_for_matching_line(stream) -> LogEvent:
             try:
                 log_event = await eventually(stream, predicate, timeout=timeout)
                 return log_event
             finally:
                 self._last_checked_line = len(stream.past_events) - 1
 
-        logger.debug("Creating log assertion. pattern=%s", pattern)
-        assertion = self.add_assertion(coro)
+        assertion = self.add_assertion(wait_for_matching_line, logging.DEBUG)
 
         # ... and wait until the assertion completes
         while not assertion.done:
