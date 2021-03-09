@@ -34,7 +34,7 @@ def _topology(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
     )
     provider_env["IDLE_AGREEMENT_TIMEOUT"] = "5s"
-    provider_env["DEBIT_NOTE_ACCEPTANCE_DEADLINE"] = "7s"
+    provider_env["DEBIT_NOTE_ACCEPTANCE_DEADLINE"] = "9s"
 
     requestor_env = node_environment(
         rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
@@ -58,7 +58,6 @@ def _topology(
             name="provider_1",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
-            payment_id=payment_id_pool.get_id(),
             volumes=provider_volumes,
             privileged_mode=True,
         ),
@@ -113,7 +112,7 @@ async def test_provider_idle_agreement(
 
         await asyncio.sleep(5)
         await providers[0].wait_for_log(
-            r"Breaking agreement .*, reason: No activity created", 10
+            r"Breaking agreement .*, reason: No activity created", 40
         )
 
         await pay_all(requestor, agreement_providers)
@@ -195,3 +194,43 @@ async def test_provider_debit_notes_accept_timeout(
         )
 
         await pay_all(requestor, agreement_providers)
+
+
+# If Provider is unable to send DebitNotes for some period of time, he should
+# break Agreement. This is separate mechanism from DebitNotes keep alive, because
+# here we are unable to send them, so they can't timeout.
+@pytest.mark.asyncio
+async def test_provider_timeout_unresponsive_requestor(
+    assets_path: Path,
+    demand_constraints: str,
+    exe_script: dict,
+    payment_id_pool: PaymentIdPool,
+    runner: Runner,
+    task_package_template: str,
+):
+    """Test provider breaking Agreement if Requestor doesn't accept DebitNotes."""
+
+    async with runner(_topology(assets_path, payment_id_pool)):
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+
+        agreement_providers = await negotiate_agreements(
+            requestor,
+            build_demand(requestor, runner, task_package_template),
+            providers,
+        )
+
+        agreement_id, provider = agreement_providers[0]
+
+        await requestor.create_activity(agreement_id)
+        await provider.wait_for_exeunit_started()
+
+        # Stop Requestor probe. This should kill Yagna Daemon and
+        # make Requestor unreachable, so Provider won't be able to send DebitNotes.
+        requestor.stop()
+
+        # Negotiated timeout is 8s. Let's wait with some margin.
+        await providers[0].wait_for_log(
+            r"Breaking agreement .*, reason: " r"Requestor is unreachable more than",
+            12,
+        )
