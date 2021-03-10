@@ -3,15 +3,19 @@
 import abc
 import asyncio
 import contextlib
+import copy
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+from pathlib import Path
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from docker import DockerClient
 
 from goth.address import (
+    YAGNA_BUS_PORT,
     YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
+from goth.gftp import CONTAINER_MOUNT_POINT, create_gftp_dirs
 from goth.node import DEFAULT_SUBNET
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
@@ -24,6 +28,7 @@ from goth.runner.container.yagna import (
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
+from goth.runner.process import run_command
 
 if TYPE_CHECKING:
     from goth.runner import Runner
@@ -225,6 +230,25 @@ async def run_probe(probe: Probe) -> str:
         await probe.stop()
 
 
+def _setup_gftp_wrapper(
+    config: YagnaContainerConfig,
+) -> Tuple[Path, YagnaContainerConfig]:
+
+    gftp_script_dir, gftp_volume_dir = create_gftp_dirs(config.name)
+    logger.info("Created gftp script at %s", gftp_script_dir)
+
+    new_config = copy.deepcopy(config)
+    new_config.volumes[gftp_volume_dir] = CONTAINER_MOUNT_POINT
+    logger.info(
+        "Gftp volume %s will be mounted at %s in %s",
+        gftp_volume_dir,
+        CONTAINER_MOUNT_POINT,
+        config.name,
+    )
+
+    return gftp_script_dir, new_config
+
+
 class RequestorProbe(ApiClientMixin, Probe):
     """A requestor probe that can make calls to Yagna REST APIs.
 
@@ -235,6 +259,13 @@ class RequestorProbe(ApiClientMixin, Probe):
     _api_base_host: str
     """Base hostname for the Yagna API clients."""
 
+    _gftp_script_dir: Path
+    """Directory containing the `gftp` wrapper script.
+
+    This script forwards requests to the `gftp` binary running
+    in the docker container managed by this probe.
+    """
+
     def __init__(
         self,
         runner: "Runner",
@@ -242,6 +273,7 @@ class RequestorProbe(ApiClientMixin, Probe):
         config: YagnaContainerConfig,
         log_config: LogConfig,
     ):
+        self._gftp_script_dir, config = _setup_gftp_wrapper(config)
         super().__init__(runner, client, config, log_config)
 
         host_port = self.container.ports[YAGNA_REST_PORT]
@@ -254,29 +286,36 @@ class RequestorProbe(ApiClientMixin, Probe):
         self.cli.payment_fund()
         self.cli.payment_init(sender_mode=True)
 
+    def set_agent_env_vars(self, env: Dict[str, str]) -> None:
+        """Extend `env` with vars that need to be set in the agent's environment."""
+
+        path_var = env.get("PATH")
+        env.update(
+            {
+                "YAGNA_APPKEY": self.app_key,
+                "YAGNA_API_URL": f"http://{self.ip_address}:{YAGNA_REST_PORT}",
+                "GSB_URL": f"tcp://{self.ip_address}:{YAGNA_BUS_PORT}",
+                "PATH": f"{self._gftp_script_dir}:{path_var}",
+            }
+        )
+
     def run_command_on_host(
         self,
         command: str,
         env: Optional[Dict[str, str]] = None,
         timeout: int = 300,
     ) -> asyncio.Task:
-        """Run `command` on host asynchronously with given `timeout`.
+        """Run `command` on host in given `env` and with optional `timeout`.
 
-        The command is run the environment set up for running requestor agents
-        that communicate with the daemon running in this probe's container.
+        The command is run the environment extending `env` with variables needed
+        to communicate with the daemon running in this probe's container.
+
+        Returns the `asyncio` task that logs output from the command. The task
+        can be awaited in order to wait until the command completes.
         """
 
-        from goth.address import YAGNA_BUS_PORT, YAGNA_REST_PORT
-        from goth.runner.process import run_command
-
-        cmd_env = {**env} if env else {}
-        cmd_env.update(
-            {
-                "YAGNA_APPKEY": self.app_key,
-                "YAGNA_API_URL": f"http://{self.ip_address}:{YAGNA_REST_PORT}",
-                "GSB_URL": f"tcp://{self.ip_address}:{YAGNA_BUS_PORT}",
-            }
-        )
+        cmd_env = {**env} if env is not None else {}
+        self.set_agent_env_vars(cmd_env)
 
         task = asyncio.create_task(
             run_command(
