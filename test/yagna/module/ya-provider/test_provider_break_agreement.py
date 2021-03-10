@@ -1,5 +1,5 @@
 """End to end tests for requesting WASM tasks using goth REST API clients."""
-import asyncio
+
 import logging
 from pathlib import Path
 from typing import List
@@ -65,7 +65,10 @@ def _topology(
 
 
 def build_demand(
-    requestor: RequestorProbeWithApiSteps, runner: Runner, task_package_template
+    requestor: RequestorProbeWithApiSteps,
+    runner: Runner,
+    task_package_template: str,
+    require_debit_notes=True,
 ):
     """Simplifies creating demand."""
 
@@ -73,18 +76,20 @@ def build_demand(
         web_server_addr=runner.host_address, web_server_port=runner.web_server_port
     )
 
-    return (
+    demand = (
         DemandBuilder(requestor)
         .props_from_template(task_package)
         .property("golem.srv.caps.multi-activity", True)
-        .property("golem.com.payment.debit-notes.accept-timeout?", 8)
         .constraints(
             "(&(golem.com.pricing.model=linear)\
             (golem.srv.caps.multi-activity=true)\
             (golem.runtime.name=wasmtime))"
         )
-        .build()
     )
+
+    if require_debit_notes:
+        demand = demand.property("golem.com.payment.debit-notes.accept-timeout?", 8)
+    return demand.build()
 
 
 # Provider is expected to break Agreement in time configured by
@@ -137,7 +142,9 @@ async def test_provider_idle_agreement_after_2_activities(
 
         agreement_providers = await negotiate_agreements(
             requestor,
-            build_demand(requestor, runner, task_package_template),
+            build_demand(
+                requestor, runner, task_package_template, require_debit_notes=False
+            ),
             providers,
         )
 
