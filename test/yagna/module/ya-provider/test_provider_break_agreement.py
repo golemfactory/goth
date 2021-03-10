@@ -110,10 +110,8 @@ async def test_provider_idle_agreement(
             providers,
         )
 
-        await asyncio.sleep(5)
-        await providers[0].wait_for_log(
-            r"Breaking agreement .*, reason: No activity created", 40
-        )
+        # Break after 5s + 3s margin
+        await providers[0].wait_for_agreement_broken(r"No activity created", timeout=8)
 
         await pay_all(requestor, agreement_providers)
 
@@ -148,10 +146,8 @@ async def test_provider_idle_agreement_after_2_activities(
             logger.info("Running activity %n-th time on %s", i, provider.name)
             await run_activity(requestor, provider, agreement_id, exe_script)
 
-        await asyncio.sleep(5)
-        await providers[0].wait_for_log(
-            r"Breaking agreement .*, reason: No activity created", 10
-        )
+        # Break after 5s + 3s margin
+        await providers[0].wait_for_agreement_broken("No activity created", timeout=8)
 
         await pay_all(requestor, agreement_providers)
 
@@ -184,13 +180,14 @@ async def test_provider_debit_notes_accept_timeout(
         await provider.wait_for_exeunit_started()
 
         # Wait for first DebitNote sent by Provider.
-        await providers[0].wait_for_log(r"Debit note [.*] for activity [.*] sent.", 60)
+        await providers[0].wait_for_log(
+            r"Debit note [.*] for activity [.*] sent.", timeout=60
+        )
 
         # Negotiated timeout is 8s. Let's wait with some margin.
-        await providers[0].wait_for_log(
-            r"Breaking agreement .*, reason: "
-            r"Requestor isn't accepting DebitNotes in time",
-            12,
+        await providers[0].wait_for_agreement_broken(
+            "Requestor isn't accepting DebitNotes in time",
+            timeout=12,
         )
 
         await pay_all(requestor, agreement_providers)
@@ -230,7 +227,7 @@ async def test_provider_timeout_unresponsive_requestor(
         requestor.stop()
 
         # Negotiated timeout is 8s. Let's wait with some margin.
-        await providers[0].wait_for_log(
-            r"Breaking agreement .*, reason: " r"Requestor is unreachable more than",
-            12,
+        await providers[0].wait_for_agreement_broken(
+            "Requestor is unreachable more than",
+            timeout=12,
         )

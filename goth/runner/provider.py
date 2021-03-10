@@ -65,6 +65,12 @@ class ProviderProbeWithLogSteps(ProviderProbe):
         await self._wait_for_agent_log("Invoice .+? for agreement .+? was paid")
 
     @step()
-    async def wait_for_log(self, pattern: str, timeout: float = 1000):
+    async def wait_for_agreement_broken(self, reason: str):
+        """Wait until Provider will break Agreement."""
+        pattern = rf"Breaking agreement .*, reason: {reason}"
+        await self._wait_for_agent_log(pattern)
+
+    @step()
+    async def wait_for_log(self, pattern: str):
         """Wait for specific log."""
-        await self._wait_for_agent_log(pattern, timeout)
+        await self._wait_for_agent_log(pattern)
