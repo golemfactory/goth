@@ -58,12 +58,9 @@ class YagnaBuildEnvironment:
     """Release tag substring used to filter the GitHub release to download."""
 
     @property
-    def is_using_binaries(self) -> bool:
-        """Return true if this environment is set up to use a binary release of yagna.
-
-        These may be binaries downloaded from GitHub Actions or stored locally.
-        """
-        return any([self.binary_path, self.branch, self.commit_hash])
+    def is_using_deb(self) -> bool:
+        """Return true if this environment is set up to use a .deb yagna release."""
+        return not any([self.binary_path, self.branch, self.commit_hash])
 
 
 async def _build_docker_image(
@@ -109,7 +106,7 @@ async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
 
     docker_dir = environment.docker_dir
     dockerfile = docker_dir / (
-        YAGNA_DOCKERFILE if environment.is_using_binaries else YAGNA_DOCKERFILE_DEB
+        YAGNA_DOCKERFILE_DEB if environment.is_using_deb else YAGNA_DOCKERFILE
     )
 
     await _build_docker_image(
