@@ -168,7 +168,14 @@ class _ConfigurationParser:
         log_patterns = self.get("compose-log-patterns")
         log_patterns.ensure_type(dict)
 
-        build_env = self["build-environment"].read_build_env(docker_dir)
+        build_env_config = self["build-environment"]
+        # `build_env_config` may be `None` if no optional build parameters
+        # (binary path, commit hash etc.) are specified in the config file
+        if build_env_config:
+            build_env_config.ensure_type(dict)
+            build_env = build_env_config.read_build_env(docker_dir)
+        else:
+            build_env = YagnaBuildEnvironment(docker_dir)
 
         return ComposeConfig(
             build_env, docker_dir / DEFAULT_COMPOSE_FILE, log_patterns.doc
