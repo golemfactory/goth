@@ -17,7 +17,6 @@ from goth.runner.download import (
 )
 from goth.runner.process import run_command
 
-
 YAGNA_DOCKERFILE = "yagna-goth.Dockerfile"
 YAGNA_DOCKERFILE_DEB = "yagna-goth-deb.Dockerfile"
 
@@ -57,6 +56,11 @@ class YagnaBuildEnvironment:
     """Local path to .deb file or dir with .deb files to be installed in the image."""
     release_tag: Optional[str]
     """Release tag substring used to filter the GitHub release to download."""
+
+    @property
+    def is_using_deb(self) -> bool:
+        """Return true if this environment is set up to use a .deb yagna release."""
+        return not any([self.binary_path, self.branch, self.commit_hash])
 
 
 async def _build_docker_image(
@@ -102,7 +106,7 @@ async def build_yagna_image(environment: YagnaBuildEnvironment) -> None:
 
     docker_dir = environment.docker_dir
     dockerfile = docker_dir / (
-        YAGNA_DOCKERFILE_DEB if environment.release_tag else YAGNA_DOCKERFILE
+        YAGNA_DOCKERFILE_DEB if environment.is_using_deb else YAGNA_DOCKERFILE
     )
 
     await _build_docker_image(
@@ -173,10 +177,8 @@ def _setup_build_context(
     context_binary_dir.mkdir()
     context_deb_dir.mkdir()
 
-    if env.release_tag:
-        logger.info("Using yagna release. tag_substring=%s", env.release_tag)
-        release_tag = "" if env.release_tag == "latest" else env.release_tag
-        _download_release(context_deb_dir, "yagna", release_tag, "provider")
+    if env.branch or env.commit_hash:
+        _download_artifact(env, context_binary_dir)
     elif env.binary_path:
         if env.binary_path.is_dir():
             logger.info("Using local yagna binaries. path=%s", env.binary_path)
@@ -188,7 +190,8 @@ def _setup_build_context(
             logger.info("Using local yagna archive. path=%s", env.binary_path)
             shutil.unpack_archive(env.binary_path, extract_dir=str(context_binary_dir))
     else:
-        _download_artifact(env, context_binary_dir)
+        logger.info("Using yagna release. tag_substring=%s", env.release_tag)
+        _download_release(context_deb_dir, "yagna", env.release_tag or "", "provider")
 
     if env.deb_path:
         if env.deb_path.is_dir():
