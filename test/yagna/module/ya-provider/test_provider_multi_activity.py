@@ -2,10 +2,12 @@
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import List
 
 import pytest
+from ya_activity.exceptions import ApiException
 
 from goth.address import (
     PROXY_HOST,
@@ -55,7 +57,6 @@ def _topology(
             name="provider_1",
             probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
-            payment_id=payment_id_pool.get_id(),
             volumes=provider_volumes,
             privileged_mode=True,
         ),
@@ -123,3 +124,67 @@ async def test_provider_multi_activity(
 
         # Payment
         await pay_all(requestor, agreement_providers)
+
+
+# Provider is expected to reject second activity, if one is already running.
+@pytest.mark.asyncio
+async def test_provider_single_activity_at_once(
+    assets_path: Path,
+    demand_constraints: str,
+    exe_script: dict,
+    payment_id_pool: PaymentIdPool,
+    runner: Runner,
+    task_package_template: str,
+):
+    """Test provider rejecting second activity if one is already running."""
+
+    async with runner(_topology(assets_path, payment_id_pool)):
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+
+        # Market
+        task_package = task_package_template.format(
+            web_server_addr=runner.host_address, web_server_port=runner.web_server_port
+        )
+
+        demand = (
+            DemandBuilder(requestor)
+            .props_from_template(task_package)
+            .property("golem.srv.caps.multi-activity", True)
+            .constraints(
+                "(&(golem.com.pricing.model=linear)\
+                (golem.srv.caps.multi-activity=true)\
+                (golem.runtime.name=wasmtime))"
+            )
+            .build()
+        )
+
+        agreement_providers = await negotiate_agreements(
+            requestor,
+            demand,
+            providers,
+        )
+
+        #  Activity
+        agreement_id, provider = agreement_providers[0]
+
+        activity_id1 = await requestor.create_activity(agreement_id)
+
+        # Creation should fail here.
+        with pytest.raises(ApiException) as e:
+            await requestor.create_activity(agreement_id)
+
+            assert (
+                re.match(
+                    r"terminated. Reason: Only single Activity allowed,"
+                    r" message: Can't create 2 simultaneous Activities.",
+                    e.value.body,
+                )
+                is not None
+            )
+
+        await requestor.destroy_activity(activity_id1)
+        await provider.wait_for_exeunit_finished()
+
+        await requestor.terminate_agreement(agreement_id, None)
+        await provider.wait_for_agreement_terminated()
