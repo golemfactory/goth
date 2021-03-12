@@ -51,3 +51,7 @@ jobs:
       - name: Remove test logs
         if: always()
         run: rm -rf /tmp/goth-tests
+
+      # Only relevant for self-hosted runners
+      - name: Remove poetry virtual env
+        run: poetry env remove python3.8
