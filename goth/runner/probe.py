@@ -6,16 +6,17 @@ import contextlib
 import copy
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import AsyncIterator, Dict, Iterator, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
 from goth.address import (
-    YAGNA_BUS_PORT,
+    YAGNA_BUS_URL,
     YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
-from goth.gftp import CONTAINER_MOUNT_POINT, create_gftp_dirs
+
+from goth import gftp
 from goth.node import DEFAULT_SUBNET
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
@@ -68,6 +69,13 @@ class Probe(abc.ABC):
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
 
+    _gftp_script_dir: Path
+    """Directory containing the `gftp` proxy script.
+
+    This script forwards JSON RPC requests to the `gftp` binary running in the docker
+    container managed by this probe, and returns responses from the binary.
+    """
+
     _yagna_config: YagnaContainerConfig
     """Config object used for setting up the Yagna node for this probe."""
 
@@ -80,11 +88,12 @@ class Probe(abc.ABC):
     ):
         self.runner = runner
         self._docker_client = client
+        self._logger = ProbeLoggingAdapter(
+            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: config.name}
+        )
+        config = self._setup_gftp_proxy(config)
         self.container = YagnaContainer(client, config, log_config)
         self.cli = Cli(self.container).yagna
-        self._logger = ProbeLoggingAdapter(
-            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
-        )
         self._yagna_config = config
 
     def __str__(self):
@@ -106,6 +115,22 @@ class Probe(abc.ABC):
     def name(self) -> str:
         """Name of the container."""
         return self.container.name
+
+    def _setup_gftp_proxy(self, config: YagnaContainerConfig) -> YagnaContainerConfig:
+        """Create a proxy script and a dir for exchanging files with the container."""
+
+        self._gftp_script_dir, gftp_volume_dir = gftp.create_gftp_dirs(config.name)
+        self._logger.info("Created gftp script at %s", self._gftp_script_dir)
+
+        new_config = copy.deepcopy(config)
+        new_config.volumes[gftp_volume_dir] = gftp.CONTAINER_MOUNT_POINT
+        self._logger.info(
+            "Gftp volume %s will be mounted at %s in the container",
+            gftp_volume_dir,
+            gftp.CONTAINER_MOUNT_POINT,
+        )
+
+        return new_config
 
     async def start(self) -> None:
         """Start the probe.
@@ -197,104 +222,17 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-
-@contextlib.contextmanager
-def create_probe(
-    runner: "Runner",
-    docker_client: DockerClient,
-    config: YagnaContainerConfig,
-    log_config: LogConfig,
-) -> Probe:
-    """Implement a ContextManager protocol for creating and removing probes."""
-
-    probe: Optional[Probe] = None
-    try:
-        probe = config.probe_type(runner, docker_client, config, log_config)
-        for name, value in config.probe_properties.items():
-            probe.__setattr__(name, value)
-        yield probe
-    finally:
-        if probe:
-            probe.remove()
-
-
-@contextlib.asynccontextmanager
-async def run_probe(probe: Probe) -> str:
-    """Implement AsyncContextManager for starting and stopping a probe."""
-
-    try:
-        await probe.start()
-        assert probe.ip_address
-        yield probe.ip_address
-    finally:
-        await probe.stop()
-
-
-def _setup_gftp_wrapper(
-    config: YagnaContainerConfig,
-) -> Tuple[Path, YagnaContainerConfig]:
-
-    gftp_script_dir, gftp_volume_dir = create_gftp_dirs(config.name)
-    logger.info("Created gftp script at %s", gftp_script_dir)
-
-    new_config = copy.deepcopy(config)
-    new_config.volumes[gftp_volume_dir] = CONTAINER_MOUNT_POINT
-    logger.info(
-        "Gftp volume %s will be mounted at %s in %s",
-        gftp_volume_dir,
-        CONTAINER_MOUNT_POINT,
-        config.name,
-    )
-
-    return gftp_script_dir, new_config
-
-
-class RequestorProbe(ApiClientMixin, Probe):
-    """A requestor probe that can make calls to Yagna REST APIs.
-
-    This class is used in Level 1 scenarios and as a type of `self`
-    argument for `Market/Payment/ActivityOperationsMixin` methods.
-    """
-
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
-
-    _gftp_script_dir: Path
-    """Directory containing the `gftp` wrapper script.
-
-    This script forwards requests to the `gftp` binary running
-    in the docker container managed by this probe.
-    """
-
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-    ):
-        self._gftp_script_dir, config = _setup_gftp_wrapper(config)
-        super().__init__(runner, client, config, log_config)
-
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
-        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-
-    async def _start_container(self) -> None:
-        await super()._start_container()
-
-        self.cli.payment_fund()
-        self.cli.payment_init(sender_mode=True)
-
     def set_agent_env_vars(self, env: Dict[str, str]) -> None:
-        """Extend `env` with vars that need to be set in the agent's environment."""
+        """Add vars needed to talk to the daemon in this probe's container to `env`."""
 
+        if not self.app_key:
+            raise AttributeError("Yagna application key is not set yet")
         path_var = env.get("PATH")
         env.update(
             {
                 "YAGNA_APPKEY": self.app_key,
-                "YAGNA_API_URL": f"http://{self.ip_address}:{YAGNA_REST_PORT}",
-                "GSB_URL": f"tcp://{self.ip_address}:{YAGNA_BUS_PORT}",
+                "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
+                "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
                 "PATH": f"{self._gftp_script_dir}:{path_var}",
             }
         )
@@ -323,6 +261,67 @@ class RequestorProbe(ApiClientMixin, Probe):
             )
         )
         return task
+
+
+@contextlib.contextmanager
+def create_probe(
+    runner: "Runner",
+    docker_client: DockerClient,
+    config: YagnaContainerConfig,
+    log_config: LogConfig,
+) -> Iterator[Probe]:
+    """Implement a ContextManager protocol for creating and removing probes."""
+
+    probe: Optional[Probe] = None
+    try:
+        probe = config.probe_type(runner, docker_client, config, log_config)
+        for name, value in config.probe_properties.items():
+            probe.__setattr__(name, value)
+        yield probe
+    finally:
+        if probe:
+            probe.remove()
+
+
+@contextlib.asynccontextmanager
+async def run_probe(probe: Probe) -> AsyncIterator[str]:
+    """Implement AsyncContextManager for starting and stopping a probe."""
+
+    try:
+        await probe.start()
+        assert probe.ip_address
+        yield probe.ip_address
+    finally:
+        await probe.stop()
+
+
+class RequestorProbe(ApiClientMixin, Probe):
+    """A requestor probe that can make calls to Yagna REST APIs.
+
+    This class is used in Level 1 scenarios and as a type of `self`
+    argument for `Market/Payment/ActivityOperationsMixin` methods.
+    """
+
+    _api_base_host: str
+    """Base hostname for the Yagna API clients."""
+
+    def __init__(
+        self,
+        runner: "Runner",
+        client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
+    ):
+        super().__init__(runner, client, config, log_config)
+        host_port = self.container.ports[YAGNA_REST_PORT]
+        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
+        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
+
+    async def _start_container(self) -> None:
+        await super()._start_container()
+
+        self.cli.payment_fund()
+        self.cli.payment_init(sender_mode=True)
 
 
 class ProviderProbe(AgentMixin, Probe):

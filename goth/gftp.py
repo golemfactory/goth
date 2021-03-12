@@ -37,7 +37,8 @@ logging.basicConfig(
 logger = logging.getLogger("goth.gftp")
 
 
-# Fixed path at which the volume is mounted in the container
+# Fixed path at which the volume used to exchange files between this script and
+# the `gftp` binary running in the container is mounted in the container
 CONTAINER_MOUNT_POINT = "/gftp_volume"
 
 
@@ -78,7 +79,7 @@ def _mangle_path(path: Path) -> str:
 
 
 def run_gftp_server(gftp_container: str, gftp_volume: Path):
-    """Run the `gftp server` command in `gftp_container` and communitcate with it.
+    """Run the `gftp server` command in `gftp_container` and communicate with it.
 
     Forwards requests read from stdin to the remote command and prints responses
     from the remote command to stdout.
@@ -150,7 +151,9 @@ def run_gftp_server(gftp_container: str, gftp_volume: Path):
                 # it's from the command's stderr
                 logger.debug("stderr: %s", response.strip())
             else:
-                assert False, f"stream_type = {stream_type}"
+                raise ValueError(
+                    f"Unexpected stream type in a frame header: {stream_type}"
+                )
 
     # Reading responses needs to be done in a separate thread, otherwise it'll block
     reader_thread = threading.Thread(target=response_reader, daemon=True)

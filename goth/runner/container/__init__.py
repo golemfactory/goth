@@ -97,6 +97,13 @@ class DockerContainer:
     function.
     """
 
+    restart: Callable
+    """Restart a container.
+
+    Internally, this calls `Container.restart` with any kwargs passed here being
+    forwarded to that function.
+    """
+
     _client: DockerClient
     _container: Container
     _state: State
