@@ -46,15 +46,15 @@ class YagnaBuildEnvironment:
 
     docker_dir: Path
     """Local path to a directory with Dockerfiles to use for building images."""
-    binary_path: Optional[Path]
+    binary_path: Optional[Path] = None
     """Local path to directory or archive with binaries to be included in the image."""
-    branch: Optional[str]
+    branch: Optional[str] = None
     """git branch in yagna repo for which to download binaries."""
-    commit_hash: Optional[str]
+    commit_hash: Optional[str] = None
     """git commit hash in yagna repo for which to download binaries."""
-    deb_path: Optional[Path]
+    deb_path: Optional[Path] = None
     """Local path to .deb file or dir with .deb files to be installed in the image."""
-    release_tag: Optional[str]
+    release_tag: Optional[str] = None
     """Release tag substring used to filter the GitHub release to download."""
 
     @property

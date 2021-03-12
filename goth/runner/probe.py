@@ -3,15 +3,20 @@
 import abc
 import asyncio
 import contextlib
+import copy
 import logging
-from typing import Optional, TYPE_CHECKING
+from pathlib import Path
+from typing import AsyncIterator, Dict, Iterator, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
 from goth.address import (
+    YAGNA_BUS_URL,
     YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
+
+from goth import gftp
 from goth.node import DEFAULT_SUBNET
 from goth.runner.agent import AgentMixin
 from goth.runner.api_client import ApiClientMixin
@@ -24,6 +29,7 @@ from goth.runner.container.yagna import (
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
+from goth.runner.process import run_command
 
 if TYPE_CHECKING:
     from goth.runner import Runner
@@ -63,6 +69,13 @@ class Probe(abc.ABC):
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
 
+    _gftp_script_dir: Path
+    """Directory containing the `gftp` proxy script.
+
+    This script forwards JSON RPC requests to the `gftp` binary running in the docker
+    container managed by this probe, and returns responses from the binary.
+    """
+
     _yagna_config: YagnaContainerConfig
     """Config object used for setting up the Yagna node for this probe."""
 
@@ -75,11 +88,12 @@ class Probe(abc.ABC):
     ):
         self.runner = runner
         self._docker_client = client
+        self._logger = ProbeLoggingAdapter(
+            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: config.name}
+        )
+        config = self._setup_gftp_proxy(config)
         self.container = YagnaContainer(client, config, log_config)
         self.cli = Cli(self.container).yagna
-        self._logger = ProbeLoggingAdapter(
-            logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: self.name}
-        )
         self._yagna_config = config
 
     def __str__(self):
@@ -101,6 +115,22 @@ class Probe(abc.ABC):
     def name(self) -> str:
         """Name of the container."""
         return self.container.name
+
+    def _setup_gftp_proxy(self, config: YagnaContainerConfig) -> YagnaContainerConfig:
+        """Create a proxy script and a dir for exchanging files with the container."""
+
+        self._gftp_script_dir, gftp_volume_dir = gftp.create_gftp_dirs(config.name)
+        self._logger.info("Created gftp script at %s", self._gftp_script_dir)
+
+        new_config = copy.deepcopy(config)
+        new_config.volumes[gftp_volume_dir] = gftp.CONTAINER_MOUNT_POINT
+        self._logger.info(
+            "Gftp volume %s will be mounted at %s in the container",
+            gftp_volume_dir,
+            gftp.CONTAINER_MOUNT_POINT,
+        )
+
+        return new_config
 
     async def start(self) -> None:
         """Start the probe.
@@ -192,6 +222,46 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
+    def set_agent_env_vars(self, env: Dict[str, str]) -> None:
+        """Add vars needed to talk to the daemon in this probe's container to `env`."""
+
+        if not self.app_key:
+            raise AttributeError("Yagna application key is not set yet")
+        path_var = env.get("PATH")
+        env.update(
+            {
+                "YAGNA_APPKEY": self.app_key,
+                "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
+                "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
+                "PATH": f"{self._gftp_script_dir}:{path_var}",
+            }
+        )
+
+    def run_command_on_host(
+        self,
+        command: str,
+        env: Optional[Dict[str, str]] = None,
+        timeout: int = 300,
+    ) -> asyncio.Task:
+        """Run `command` on host in given `env` and with optional `timeout`.
+
+        The command is run the environment extending `env` with variables needed
+        to communicate with the daemon running in this probe's container.
+
+        Returns the `asyncio` task that logs output from the command. The task
+        can be awaited in order to wait until the command completes.
+        """
+
+        cmd_env = {**env} if env is not None else {}
+        self.set_agent_env_vars(cmd_env)
+
+        task = asyncio.create_task(
+            run_command(
+                command.split(), cmd_env, log_level=logging.INFO, timeout=timeout
+            )
+        )
+        return task
+
 
 @contextlib.contextmanager
 def create_probe(
@@ -199,7 +269,7 @@ def create_probe(
     docker_client: DockerClient,
     config: YagnaContainerConfig,
     log_config: LogConfig,
-) -> Probe:
+) -> Iterator[Probe]:
     """Implement a ContextManager protocol for creating and removing probes."""
 
     probe: Optional[Probe] = None
@@ -214,7 +284,7 @@ def create_probe(
 
 
 @contextlib.asynccontextmanager
-async def run_probe(probe: Probe) -> str:
+async def run_probe(probe: Probe) -> AsyncIterator[str]:
     """Implement AsyncContextManager for starting and stopping a probe."""
 
     try:
@@ -243,7 +313,6 @@ class RequestorProbe(ApiClientMixin, Probe):
         log_config: LogConfig,
     ):
         super().__init__(runner, client, config, log_config)
-
         host_port = self.container.ports[YAGNA_REST_PORT]
         proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
         self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
