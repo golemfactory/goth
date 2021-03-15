@@ -192,6 +192,13 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
+    def kill_daemon(self):
+        """Kill yagna daemon inside container."""
+        # This assumes, that there's only one process called yagna in daemon.
+        self.container.exec_run(
+            'bash -c "while [ -n `pgrep yagna` ]; do pkill yagna; date; sleep 1; done"'
+        )
+
 
 @contextlib.contextmanager
 def create_probe(
