@@ -188,7 +188,7 @@ async def test_provider_debit_notes_accept_timeout(
 
         # Wait for first DebitNote sent by Provider.
         await providers[0].wait_for_log(
-            r"Debit note [.*] for activity [.*] sent.", timeout=60
+            r"Debit note \[.*\] for activity \[.*\] sent.", timeout=30
         )
 
         # Negotiated timeout is 8s. Let's wait with some margin.
@@ -226,14 +226,17 @@ async def test_provider_timeout_unresponsive_requestor(
 
         agreement_id, provider = agreement_providers[0]
 
+        # Create activity without waiting. Otherwise Provider will manage
+        # to send first DebitNote, before we kill Requestor Yagna daemon.
+        # loop = asyncio.get_event_loop()
         await requestor.create_activity(agreement_id)
-        await provider.wait_for_exeunit_started()
 
         # Stop Requestor probe. This should kill Yagna Daemon and
         # make Requestor unreachable, so Provider won't be able to send DebitNotes.
-        requestor.stop()
+        requestor.kill_daemon()
 
         # Negotiated timeout is 8s. Let's wait with some margin.
+        # await task
         await providers[0].wait_for_agreement_broken(
             "Requestor is unreachable more than",
             timeout=12,
