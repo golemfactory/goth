@@ -43,3 +43,12 @@ def test_payment_status_with_address(yagna_container):
 
     status = yagna.payment_status()
     assert status
+
+
+def test_payment_drivers(yagna_container):
+    """Test `payment drivers` subcommand."""
+
+    yagna = Cli(yagna_container).yagna
+
+    drivers = yagna.payment_drivers()
+    assert drivers
