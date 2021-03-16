@@ -45,6 +45,30 @@ class PaymentStatus:
         )
 
 
+@dataclass(frozen=True)
+class Network:
+    """Contains information about `Network`."""
+
+    default_token: str
+    tokens: Dict[str, str]
+
+
+@dataclass(frozen=True)
+class Driver:
+    """Contains driver details fields."""
+
+    default_network: str
+    networks: Dict[str, Network]
+
+    @staticmethod
+    def from_dict(source: dict):
+        """Parse a dict into an instance of `Driver` class."""
+        return Driver(
+            default_network=source["default_network"],
+            networks={key: Network(**val) for key, val in source["networks"].items()},
+        )
+
+
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
@@ -97,3 +121,13 @@ class YagnaPaymentMixin:
         args = make_args("payment", "status", driver.name, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
         return PaymentStatus.from_dict(output)
+
+    def payment_drivers(self: CommandRunner,) -> Dict[str, Driver]:
+        """Run `<cmd> payment drivers` without any extra args.
+
+        Parse the command's output as a `Dict[str, Driver]` and return it.
+        """
+
+        args = make_args("payment", "drivers")
+        output = self.run_json_command(Dict, *args)
+        return {key: Driver.from_dict(val) for key, val in output.items()}
