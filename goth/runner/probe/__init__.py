@@ -1,4 +1,4 @@
-"""Classes and helpers for managing Probes."""
+"""Package related to goth's probe interface."""
 
 import abc
 import asyncio
@@ -19,7 +19,6 @@ from goth.address import (
 from goth import gftp
 from goth.node import DEFAULT_SUBNET
 from goth.runner.agent import AgentMixin
-from goth.runner.api_client import ApiClientMixin
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
@@ -29,6 +28,8 @@ from goth.runner.container.yagna import (
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
+from goth.runner.probe.steps import RequestorApiMixin
+from goth.runner.probe.rest_client import RestApiComponent
 from goth.runner.process import run_command
 
 if TYPE_CHECKING:
@@ -53,6 +54,9 @@ class Probe(abc.ABC):
     This interface consists of several independent modules which may be extended
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
+
+    api: RestApiComponent
+    """Component with clients for all three yagna REST APIs."""
 
     runner: "Runner"
     """A runner that created this probe."""
@@ -139,6 +143,13 @@ class Probe(abc.ABC):
         """
 
         await self._start_container()
+
+        host_port = self.container.ports[YAGNA_REST_PORT]
+        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
+        api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
+        if not self.app_key:
+            raise RuntimeError("No app key found. container=%s", self.name)
+        self.api = RestApiComponent(api_base_host, self.app_key)
 
     async def stop(self):
         """
@@ -295,27 +306,12 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
         await probe.stop()
 
 
-class RequestorProbe(ApiClientMixin, Probe):
+class RequestorProbe(RequestorApiMixin, Probe):
     """A requestor probe that can make calls to Yagna REST APIs.
 
     This class is used in Level 1 scenarios and as a type of `self`
     argument for `Market/Payment/ActivityOperationsMixin` methods.
     """
-
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
-
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-    ):
-        super().__init__(runner, client, config, log_config)
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
-        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
     async def _start_container(self) -> None:
         await super()._start_container()

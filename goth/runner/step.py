@@ -3,10 +3,12 @@ import asyncio
 import functools
 import logging
 import time
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from goth.runner.exceptions import StepTimeoutError
-from goth.runner.probe import Probe
+
+if TYPE_CHECKING:
+    from goth.runner.probe import Probe
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ def step(default_timeout: float = 10.0):
 
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(self: Probe, *args, timeout: Optional[float] = None):
+        async def wrapper(self: "Probe", *args, timeout: Optional[float] = None):
             timeout = timeout if timeout is not None else default_timeout
             step_name = f"{self.name}.{func.__name__}(timeout={timeout})"
             start_time = time.time()

@@ -48,7 +48,7 @@ ClientTVar = TypeVar("ClientTVar", covariant=True)
 class ApiModule(Protocol[ConfTVar, ClientTVar]):
     """Representation of a REST API module.
 
-    Used for typing `ApiClientMixin._create_api_client`.
+    Used for typing `YagnaApiModule._create_api_client`.
     """
 
     def Configuration(self, host: str) -> ConfTVar:
@@ -60,8 +60,8 @@ class ApiModule(Protocol[ConfTVar, ClientTVar]):
         pass
 
 
-class ApiClientMixin:
-    """Provides client objects for Yagna REST APIs."""
+class RestApiComponent:
+    """Component with clients for all three yagna REST APIs."""
 
     activity: ActivityApiClient
     """Activity API client for the requestor daemon."""
@@ -72,23 +72,20 @@ class ApiClientMixin:
     payment: ya_payment.RequestorApi
     """Payment API client for the requestor daemon."""
 
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
+    _app_key: str
 
-    async def start(self):
-        """Start the probe and initialize the API clients."""
-
-        await super().start()
-        self._init_activity_api(self._api_base_host)
-        self._init_payment_api(self._api_base_host)
-        self._init_market_api(self._api_base_host)
+    def __init__(self, base_hostname: str, app_key: str):
+        self._app_key = app_key
+        self._init_activity_api(base_hostname)
+        self._init_payment_api(base_hostname)
+        self._init_market_api(base_hostname)
 
     def _create_api_client(
         self, api_module: ApiModule[ConfTVar, ClientTVar], api_url: str
     ) -> ClientTVar:
         api_url = ensure_no_trailing_slash(str(api_url))
         config: ConfTVar = api_module.Configuration(api_url)
-        config.access_token = self.app_key
+        config.access_token = self._app_key
         return api_module.ApiClient(config)
 
     def _init_activity_api(self, api_base_host: str) -> None:
