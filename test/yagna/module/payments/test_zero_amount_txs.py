@@ -115,7 +115,8 @@ async def test_zero_amount_invoice_is_settled(
         await requestor.unsubscribe_demand(subscription_id)
         logger.info("Got agreement")
 
-        #  Zero-amount invoice is issued when agreement is terminated without activity
+        #  Zero-amount invoice is issued when agreement is terminated
+        #  without activity
         await requestor.wait_for_approval(agreement_id)
         await requestor.terminate_agreement(agreement_id, None)
 
