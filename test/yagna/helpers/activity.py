@@ -54,7 +54,7 @@ def wasi_exe_script(runner: Runner, output_file: str = "upload_file"):
         {"start": {"args": []}},
         {
             "transfer": {
-                "from": "http://3.249.139.167:8000/LICENSE",
+                "from": f"{web_server_addr}/params.json",
                 "to": "container:/input/file_in",
             }
         },
