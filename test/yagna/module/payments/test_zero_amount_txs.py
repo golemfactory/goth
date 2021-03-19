@@ -62,7 +62,6 @@ def _topology(
 async def test_zero_amount_invoice_is_settled(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
