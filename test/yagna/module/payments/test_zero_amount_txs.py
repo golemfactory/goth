@@ -43,7 +43,6 @@ def _topology(
         YagnaContainerConfig(
             name="requestor",
             probe_type=RequestorProbeWithApiSteps,
-            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
@@ -62,7 +61,6 @@ def _topology(
 async def test_zero_amount_invoice_is_settled(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -116,7 +114,8 @@ async def test_zero_amount_invoice_is_settled(
         await requestor.unsubscribe_demand(subscription_id)
         logger.info("Got agreement")
 
-        #  Zero-amount invoice is issued when agreement is terminated without activity
+        #  Zero-amount invoice is issued when agreement is terminated
+        #  without activity
         await requestor.wait_for_approval(agreement_id)
         await requestor.terminate_agreement(agreement_id, None)
 
