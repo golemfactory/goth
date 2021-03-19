@@ -4,11 +4,11 @@ from abc import ABC
 import logging
 import os
 from pathlib import Path
-import re
 import shutil
 import tempfile
-from typing import Any, Callable, Optional
+from typing import Optional
 
+from ghapi.all import GhApi, paged
 import requests
 
 logging.basicConfig(
@@ -41,8 +41,9 @@ class AssetNotFound(Exception):
 class GithubDownloader(ABC):
     """Base class for downloading assets using GitHub's REST API."""
 
-    repo_url: str
-    """Repo URL to be used as base in API requests."""
+    gh_api: GhApi
+    """GitHub api"""
+
     session: requests.Session
     """Session object for making HTTP requests."""
 
@@ -65,7 +66,7 @@ class GithubDownloader(ABC):
         if purge_cache:
             shutil.rmtree(ASSET_CACHE_DIR)
 
-        self.repo_url = BASE_URL + f"/{owner}/{repo}"
+        self.gh_api = GhApi(owner=owner, repo=repo, token=token)
         self.session = requests.Session()
         self.session.headers["Authorization"] = f"token {token}"
 
@@ -82,77 +83,16 @@ class GithubDownloader(ABC):
         asset_path.mkdir(exist_ok=True, parents=True)
         return asset_path
 
-    def _parse_link_header(self, header_value: str) -> dict:
-        """Parse URLs and their relative positions from a `Link` header value.
-
-        The value of a `Link` header consists of comma-separated tuples, where each
-        tuple has a pagination URL and its `rel` attribute.
-        `rel` describes its URL's relation to the request the header originates from.
-        The value of the `rel` attribute is one of the following:
-        `first`, `prev`, `next`, `last`.
-        """
-        relation_to_url = {}
-        links = [link.strip() for link in header_value.split(",")]
-
-        for link in links:
-            result = re.search(r'<(\S+)>; rel="(\S+)"', link)
-            if not result:
-                raise LookupError
-
-            url = result.group(1)
-            relation = result.group(2)
-            relation_to_url[relation] = url
-
-        return relation_to_url
-
-    def _search_with_pagination(
-        self,
-        initial_request: requests.PreparedRequest,
-        selector: Callable[[requests.Response], Any],
-    ):
-        """Search response data with `Link` header pagination support.
-
-        First request is made using `initial_request`. Consecutive requests are made
-        based on the `Link` header until the last page is reached
-        (i.e. no `next` URL is present). The `selector` function is called for each
-        response received. If the result from `selector` is non-null, this function
-        exits early returning that result.
-        """
-        response = self.session.send(initial_request)
-        logger.debug("_search_with_pagination. initial_url=%s", response.url)
-
-        while True:
-            response.raise_for_status()
-
-            result = selector(response)
-            if result:
-                logger.debug("_search_with_pagination. result=%s", result)
-                return result
-
-            relation_to_url = self._parse_link_header(response.headers["Link"])
-            logger.debug("_search_with_pagination. relation_to_url=%s", relation_to_url)
-            next_url = relation_to_url.get("next")
-            if next_url:
-                logger.debug("_search_with_pagination. next_url=%s", next_url)
-                response = self.session.get(next_url)
-            else:
-                return None
-
 
 class ArtifactDownloader(GithubDownloader):
     """Downloader for GitHub Actions artifacts using GitHub's REST API."""
 
     def _get_workflow(self, workflow_name: str) -> dict:
         """Query the workflow on GitHub Actions."""
-        url = f"{self.repo_url}/actions/workflows"
-        logger.debug("Fetching workflows. url=%s", url)
-        response = self.session.get(url)
-        response.raise_for_status()
-
-        workflows = response.json()["workflows"]
-        logger.debug("workflows=%s", workflows)
-        workflow = next(filter(lambda w: w["name"] == workflow_name, workflows))
+        logger.debug("Fetching workflows. name=%s", workflow_name)
+        workflow = next(filter(lambda w: w["name"] == "CI", self.gh_api.actions.list_repo_workflows().workflows))
         logger.debug("workflow=%s", workflow)
+
         return workflow
 
     def _get_latest_run(
@@ -160,29 +100,18 @@ class ArtifactDownloader(GithubDownloader):
     ) -> dict:
         """Filter out the latest workflow run."""
         workflow_id = workflow["id"]
-        url = f"{self.repo_url}/actions/workflows/{workflow_id}/runs"
-        params = {"status": "completed"}
-        if not commit:
-            params["branch"] = branch
+        logger.debug("Fetching workflow runs. workflow_id=%s", workflow_id)
 
-        request = self.session.prepare_request(
-            requests.Request("GET", url, params=params)
-        )
-        logger.debug("Fetching workflow runs. url=%s", request.url)
+        if commit:
+            paged_workflow_runs = paged(self.gh_api.list_workflow_runs, workflow_id, status="completed")
 
-        def _filter_workflows(response: requests.Response) -> Optional[dict]:
-            workflow_runs = response.json()["workflow_runs"]
-            if commit:
+            for page in paged_workflow_runs:
                 return next(
-                    filter(lambda r: r["head_sha"].startswith(commit), workflow_runs),
+                    filter(lambda r: r["head_sha"].startswith(commit), page.workflow_runs),
                     None,
                 )
-            else:
-                return workflow_runs[0]
 
-        workflow_run = self._search_with_pagination(request, _filter_workflows)
-        logger.debug("workflow_run=%s", workflow_run)
-        return workflow_run
+        return self.gh_api.list_workflow_runs(workflow_id, branch=branch, status="completed").workflow_runs[0]
 
     def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
@@ -205,16 +134,14 @@ class ArtifactDownloader(GithubDownloader):
         archive_url = artifact["archive_download_url"]
 
         logger.info("Downloading artifact. url=%s", archive_url)
-        with self.session.get(archive_url) as response:
-            response.raise_for_status()
 
-            with tempfile.NamedTemporaryFile() as fd:
-                fd.write(response.content)
-                logger.debug("Extracting zip archive. path=%s", fd.name)
-                cache_dir = self._create_cache_dir(artifact_id)
-                shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
-                logger.debug("Extracted package. path=%s", cache_dir)
-                logger.info("Downloaded artifact. url=%s", archive_url)
+        with tempfile.NamedTemporaryFile() as fd:
+            fd.write(self.gh_api.actions.download_artifact(artifact_id, archive_format="zip"))
+            logger.debug("Extracting zip archive. path=%s", fd.name)
+            cache_dir = self._create_cache_dir(artifact_id)
+            shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
+            logger.debug("Extracted package. path=%s", cache_dir)
+            logger.info("Downloaded artifact. url=%s", archive_url)
 
         return cache_dir
 
@@ -286,12 +213,7 @@ class ReleaseDownloader(GithubDownloader):
         Only the versions with `tag_name` that contains `self.tag_substring`
         as a substring are considered.
         """
-        url = f"{self.repo_url}/releases"
-        logger.debug("Fetching releases. url=%s", url)
-        response = self.session.get(url)
-        response.raise_for_status()
-
-        all_releases = response.json()
+        all_releases = self.gh_api.repos.list_releases()
         logger.debug("releases=%s", all_releases)
 
         def release_filter(release: dict, tag_substring: str) -> bool:
