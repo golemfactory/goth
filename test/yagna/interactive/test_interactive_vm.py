@@ -64,7 +64,6 @@ def _topology(
         YagnaContainerConfig(
             name="requestor",
             probe_type=RequestorProbe,
-            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
