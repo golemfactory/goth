@@ -174,17 +174,6 @@ def assets_path(request) -> Path:
 
 
 @pytest.fixture(scope="module")
-def exe_script(assets_path: Path) -> list:
-    """Fixture which parses the exe_script.json file from `assets_path` dir."""
-
-    exe_script_path = assets_path / "requestor" / "exe_script.json"
-    with exe_script_path.open() as fd:
-        loaded = json.load(fd)
-        assert isinstance(loaded, list)
-        return loaded
-
-
-@pytest.fixture(scope="module")
 def task_package_template() -> str:
     """Fixture which provides the Demand's `golem.srv.comp.task_package` property.
 
