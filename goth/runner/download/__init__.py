@@ -106,10 +106,10 @@ class ArtifactDownloader(GithubDownloader):
             paged_workflow_runs = paged(self.gh_api.list_workflow_runs, workflow_id, status="completed")
 
             for page in paged_workflow_runs:
-                return next(
-                    filter(lambda r: r["head_sha"].startswith(commit), page.workflow_runs),
-                    None,
-                )
+                workflow_runs = next(filter(lambda r: r["head_sha"].startswith(commit), page.workflow_runs), None)
+
+                if workflow_runs:
+                    return workflow_runs
 
         return self.gh_api.list_workflow_runs(workflow_id, branch=branch, status="completed").workflow_runs[0]
 
