@@ -40,7 +40,7 @@ async def test_assertion_accept_immediately():
     await task
     assert assertion.done
     assert assertion.accepted
-    assert await assertion.result() == 43
+    assert assertion.result() == 43
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,7 @@ async def test_assertion_accept_with_delay():
     await task
     assert assertion.done
     assert assertion.accepted
-    assert await assertion.result() == 43
+    assert assertion.result() == 43
 
 
 @pytest.mark.asyncio
@@ -95,7 +95,7 @@ async def test_assertion_consumes_one():
     events.append(2)
     await assertion.update_events()
     assert assertion.accepted
-    assert await assertion.result() == 2
+    assert assertion.result() == 2
 
 
 @pytest.mark.asyncio
@@ -113,7 +113,7 @@ async def test_assertion_fails_on_event():
     await assertion.update_events()
     assert assertion.failed
     with pytest.raises(AssertionError):
-        await assertion.result()
+        _ = assertion.result()
 
 
 @pytest.mark.asyncio
@@ -144,7 +144,7 @@ async def test_assertion_consumes_three():
     events.append(3)
     await assertion.update_events()
     assert assertion.accepted
-    assert await assertion.result() == 6
+    assert assertion.result() == 6
 
 
 @pytest.mark.asyncio
@@ -164,7 +164,7 @@ async def test_assertion_end_events():
 
     await assertion.update_events(events_ended=True)
     assert assertion.accepted
-    assert await assertion.result() == 44
+    assert assertion.result() == 44
 
 
 @pytest.mark.asyncio
@@ -185,7 +185,7 @@ async def test_assertion_end_events_raises():
     await assertion.update_events(events_ended=True)
     assert assertion.failed
     with pytest.raises(AssertionError):
-        await assertion.result()
+        assertion.result()
 
 
 @pytest.mark.asyncio
@@ -209,7 +209,7 @@ async def test_assertion_consumes_all():
 
     await assertion.update_events(events_ended=True)
     assert assertion.done
-    assert await assertion.result() == events
+    assert assertion.result() == events
 
 
 @pytest.mark.asyncio
@@ -282,7 +282,7 @@ async def test_past_events():
     await assertion.update_events(events_ended=True)
 
     assert assertion.accepted
-    assert await assertion.result() == [3, 2, 1]
+    assert assertion.result() == [3, 2, 1]
 
 
 @pytest.mark.parametrize(
@@ -319,7 +319,7 @@ async def test_eventually_with_timeout(timeout, accept, result_predicate):
 
     assert assertion.accepted is accept
     try:
-        result = await assertion.result()
+        result = assertion.result()
     except Exception as error:
         result = error
     assert result_predicate(result)
@@ -393,7 +393,7 @@ async def test_composite_assertion():
     await asyncio.sleep(0.1)
     await assertion.update_events(events_ended=True)
 
-    assert await assertion.result() == (True, False, False)
+    assert assertion.result() == (True, False, False)
 
 
 @pytest.mark.asyncio
@@ -401,10 +401,131 @@ async def test_start_twice_raises():
     """Test whether starting an already started assertion raises a `RuntimeError`."""
     events = []
 
-    async def func(stream):
+    async def func(_stream):
         return
 
     assertion = Assertion(events, func)
     assertion.start()
     with pytest.raises(RuntimeError):
         assertion.start()
+
+
+@pytest.mark.asyncio
+async def test_result_raises_invalidstateerror():
+    """Test that `result()` raises an exception when the result is not ready."""
+
+    async def func(stream):
+        async for e in stream:
+            if e == 1:
+                return
+
+    assertion = Assertion([], func)
+    with pytest.raises(asyncio.InvalidStateError):
+        assertion.result()
+
+    assertion.start()
+    with pytest.raises(asyncio.InvalidStateError):
+        assertion.result()
+
+    # In order not to leave assertion's task pending
+    await assertion.update_events(events_ended=True)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_result_already_done():
+    """Test that `wait_for_result()` returns the result of a done assertion."""
+
+    async def func(_stream):
+        return 6
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    result = await assertion.wait_for_result()
+    assert result == 6
+
+
+@pytest.mark.asyncio
+async def test_wait_for_result_success():
+    """Test that `wait_for_result()` waits for the assertion's result."""
+
+    async def func(_stream):
+        await asyncio.sleep(0.1)
+        return 7
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    assert not assertion.done
+    result = await assertion.wait_for_result()
+    assert result == 7
+
+
+@pytest.mark.asyncio()
+async def test_wait_for_result_failure():
+    """Test that `wait_for_result()` waits for the assertion's exception."""
+
+    async def func(stream):
+        await asyncio.sleep(0.1)
+        raise AssertionError()
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    assert not assertion.done
+    with pytest.raises(AssertionError):
+        await assertion.wait_for_result()
+
+
+@pytest.mark.asyncio
+async def test_wait_for_result_timeout_success():
+    """Test that `wait_for_result` with timeout returns the assertion's result."""
+
+    async def func(_stream):
+        await asyncio.sleep(0.1)
+        return 8
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    assert not assertion.done
+    result = await assertion.wait_for_result(timeout=1.0)
+    assert result == 8
+
+
+@pytest.mark.asyncio
+async def test_wait_for_result_timeout_failure():
+    """Test that `wait_for_result` with timeout raises the assertion's exception."""
+
+    async def func(stream):
+        await asyncio.sleep(0.1)
+        raise AssertionError()
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    assert not assertion.done
+    with pytest.raises(AssertionError):
+        await assertion.wait_for_result(timeout=1.0)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_result_timeout_raises():
+    """Test that `wait_for_result` with timeout raises TimeoutError."""
+
+    async def func(stream):
+        await asyncio.sleep(1.0)
+        return 9
+
+    assertion = Assertion([], func)
+    assertion.start()
+
+    assert not assertion.done
+    with pytest.raises(asyncio.TimeoutError):
+        await assertion.wait_for_result(timeout=0.1)
+
+    # The is cancelled and should fail with AssertionError("Assertion cancelled")
+    assert assertion.failed
+    with pytest.raises(AssertionError) as error:
+        _ = assertion.result()
+    assert "Assertion cancelled" in str(error)
