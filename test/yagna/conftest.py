@@ -1,7 +1,6 @@
 """Code common for all pytest modules in this package."""
 
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 from typing import Callable, Optional
 
