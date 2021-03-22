@@ -37,7 +37,7 @@ class MonitorAddon:
         """Log an API event and add it to the monitor."""
 
         self._logger.debug("%s", event)
-        self._monitor.add_event(event)
+        self._monitor.add_event_sync(event)
 
     def request(self, flow: HTTPFlow) -> None:
         """Register a request."""
