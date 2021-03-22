@@ -122,7 +122,9 @@ class YagnaPaymentMixin:
         output = self.run_json_command(Dict, *args)
         return PaymentStatus.from_dict(output)
 
-    def payment_drivers(self: CommandRunner,) -> Dict[str, Driver]:
+    def payment_drivers(
+        self: CommandRunner,
+    ) -> Dict[str, Driver]:
         """Run `<cmd> payment drivers` without any extra args.
 
         Parse the command's output as a `Dict[str, Driver]` and return it.
