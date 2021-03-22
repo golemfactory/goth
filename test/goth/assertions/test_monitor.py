@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from goth.assertions import EventStream
-from goth.assertions.monitor import EventMonitor
+from goth.assertions.monitor import EventMonitor, WaitableEventMonitor
 
 
 # Events are just integers
@@ -74,7 +74,7 @@ async def assert_fancy_property(stream: Events) -> int:
 
 @pytest.mark.asyncio
 async def test_assertions():
-    """Test a dummy set of assertions agains a list of int's."""
+    """Test a dummy set of assertions against a list of int's."""
 
     monitor: EventMonitor[int] = EventMonitor()
     monitor.add_assertions(
@@ -88,9 +88,10 @@ async def test_assertions():
     monitor.start()
 
     for n in [1, 3, 4, 6, 3, 8, 9, 10]:
-        monitor.add_event(n)
-        # Need this sleep to make sure the assertions consume the events
-        await asyncio.sleep(0.2)
+        await monitor.add_event(n)
+
+    # Need this sleep to make sure the assertions consume the events
+    await asyncio.sleep(0.1)
 
     failed = {a.name.rsplit(".", 1)[-1] for a in monitor.failed}
     assert failed == {"assert_increasing"}
@@ -115,7 +116,7 @@ async def test_not_started_raises_on_add_event():
     monitor: EventMonitor[int] = EventMonitor()
 
     with pytest.raises(RuntimeError):
-        monitor.add_event(1)
+        await monitor.add_event(1)
 
 
 @pytest.mark.asyncio
@@ -128,4 +129,65 @@ async def test_stopped_raises_on_add_event():
     await monitor.stop()
 
     with pytest.raises(RuntimeError):
-        monitor.add_event(1)
+        await monitor.add_event(1)
+
+
+@pytest.mark.asyncio
+async def test_waitable_monitor():
+    """Test if `WaitableMonitor.wait_for_event()` respects event ordering."""
+
+    monitor = WaitableEventMonitor()
+    monitor.start()
+
+    events = []
+
+    async def wait_for_events():
+        events.append(await monitor.wait_for_event(lambda e: e == 1))
+        events.append(await monitor.wait_for_event(lambda e: e == 2))
+        events.append(await monitor.wait_for_event(lambda e: e == 3))
+
+    await monitor.add_event(0)
+    await monitor.add_event(1)
+    await monitor.add_event(2)
+    await monitor.add_event(0)
+
+    task = asyncio.create_task(wait_for_events())
+    await asyncio.sleep(0.1)
+    assert events == [1, 2]
+
+    await monitor.add_event(3)
+    await asyncio.sleep(0.1)
+    assert events == [1, 2, 3]
+
+    assert task.done()
+    await monitor.stop()
+
+
+@pytest.mark.asyncio
+async def test_waitable_monitor_timeout_error():
+    """Test if `WaitableMonitor.wait_for_event()` raises `TimeoutError` on timeout."""
+
+    monitor: WaitableEventMonitor[int] = WaitableEventMonitor()
+    monitor.start()
+
+    with pytest.raises(asyncio.TimeoutError):
+        await monitor.wait_for_event(lambda e: e == 1, timeout=0.1)
+
+    await monitor.stop()
+
+
+@pytest.mark.asyncio
+async def test_waitable_monitor_timeout_success():
+    """Test if `WaitableMonitor.wait_for_event()` return success before timeout."""
+
+    monitor = WaitableEventMonitor()
+    monitor.start()
+
+    async def worker_task():
+        await asyncio.sleep(0.1)
+        await monitor.add_event(1)
+
+    asyncio.create_task(worker_task())
+
+    await monitor.wait_for_event(lambda e: e == 1, timeout=1.0)
+    await monitor.stop()
