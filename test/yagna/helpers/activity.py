@@ -6,8 +6,9 @@ from pathlib import Path
 from goth.runner import Runner
 
 
-def vm_exe_script(runner: Runner, output_file: str):
+def vm_exe_script(runner: Runner, output_file: str = "output.png"):
     """VM exe script builder."""
+    """Create a VM exe script for running a Blender task."""
 
     output_path = Path(runner.web_root_path) / output_file
     if output_path.exists():
@@ -42,6 +43,7 @@ def vm_exe_script(runner: Runner, output_file: str):
 
 def wasi_exe_script(runner: Runner, output_file: str = "upload_file"):
     """WASI exe script builder."""
+    """Create a WASI exe script for running a WASI tutorial task."""
 
     output_path = Path(runner.web_root_path) / output_file
     if output_path.exists():
