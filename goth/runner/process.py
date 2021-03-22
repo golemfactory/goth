@@ -17,8 +17,9 @@ async def run_command(
     args: Sequence[str],
     env: Optional[dict] = None,
     log_level: Optional[int] = logging.DEBUG,
+    cmd_logger: Optional[logging.Logger] = None,
     log_prefix: Optional[str] = None,
-    timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
+    timeout: float = RUN_COMMAND_DEFAULT_TIMEOUT,
 ) -> None:
     """Run a command in a subprocess with timeout and logging.
 
@@ -32,8 +33,12 @@ async def run_command(
     """
     logger.info("Running local command: %s", " ".join(args))
 
-    if log_prefix is None:
-        log_prefix = f"[{args[0]}] "
+    if cmd_logger:
+        log_prefix = ""
+    else:
+        cmd_logger = logger
+        if log_prefix is None:
+            log_prefix = f"[{args[0]}] "
 
     async def _run_command():
 
@@ -43,7 +48,7 @@ async def run_command(
 
         while not proc.stdout.at_eof():
             line = await proc.stdout.readline()
-            logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
+            cmd_logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
 
         return_code = await proc.wait()
         if return_code:

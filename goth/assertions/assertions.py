@@ -41,7 +41,7 @@ else:
 AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
-class Assertion(AsyncIterable[E]):  # Awaitable[Any]):
+class Assertion(AsyncIterable[E]):
     """A class for executing assertion coroutines.
 
     An instance of this class wraps a coroutine (called the "assertion coroutine")
