@@ -168,6 +168,8 @@ class Assertion(AsyncIterable[E]):  # Awaitable[Any]):
         Optional `timeout` is in seconds, `None` means to wait indefinitely
         (this is the default).
         """
+        if not self._task:
+            raise asyncio.InvalidStateError("Assertion not started")
 
         if timeout is None:
             return await self._task
@@ -244,17 +246,3 @@ class Assertion(AsyncIterable[E]):  # Awaitable[Any]):
             # the assertion coroutine raises an exception), `_notify_update_events()`
             # must be called after returning from the assertion coroutine.
             self._notify_update_events()
-
-    # def __await__(self) -> Generator[Any, None, Any]:
-    #     """Make this assertion `Awaitable`.
-    #
-    #     The expression `await assertion` waits until `assertion` is done and then
-    #     yields `assertion.result()` (which may raise an exception if the assertion
-    #     failed).
-    #     """
-    #
-    #     if not self._task:
-    #         raise asyncio.InvalidStateError("Assertion not started")
-    #
-    #     return self._task.__await__()
-    #     # return self._task.__iter__()
