@@ -7,10 +7,11 @@ import logging.config
 from pathlib import Path
 import tempfile
 import time
-from typing import Optional, Union
+from typing import Iterator, Optional, Union
 
 import goth
 import goth.api_monitor
+from goth.assertions.monitor import EventMonitor
 
 
 DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "goth-tests"
@@ -145,3 +146,34 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
             goth_logger.handlers.remove(runner_handler)
         if proxy_handler in api_monitor_logger.handlers:
             api_monitor_logger.handlers.remove(proxy_handler)
+
+
+class MonitorHandler(logging.Handler):
+    """A logging handler that passes messages from log records to an event monitor."""
+
+    def __init__(self, monitor: EventMonitor[str]):
+        self._monitor = monitor
+        super().__init__()
+
+    def handle(self, record: logging.LogRecord) -> None:
+        """Add the `record`'s message to the associated event monitor."""
+        self._monitor.add_event_sync(record.getMessage())
+
+
+@contextlib.contextmanager
+def monitored_logger(name: str, monitor: EventMonitor[str]) -> Iterator[logging.Logger]:
+    """Get logger identified by `name` and attach the given event monitor to it.
+
+    The monitor will receive all messages emitted by the logger as events.
+    Upon exiting from this context manager, the monitor will be detached
+    from the logger.
+    """
+
+    logger_ = logging.getLogger(name)
+    handler = MonitorHandler(monitor)
+    try:
+        logger_.addHandler(handler)
+        yield logger_
+    finally:
+        if handler in logger_.handlers:
+            logger_.removeHandler(handler)
