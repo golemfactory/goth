@@ -108,7 +108,8 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
         delay=True,
     )
     handler.setFormatter(config.formatter)
-    logger_ = logging.getLogger(str(config.file_name))
+    logger_name = f"{config.base_dir}.{config.file_name}"
+    logger_ = logging.getLogger(logger_name)
     logger_.setLevel(config.level)
     logger_.addHandler(handler)
     logger_.propagate = False
