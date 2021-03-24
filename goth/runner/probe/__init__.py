@@ -27,7 +27,12 @@ from goth.runner.container.yagna import (
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
 from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
-from goth.runner.probe.steps import RequestorApiMixin
+from goth.runner.probe.mixin import (
+    ActivityApiMixin,
+    MarketApiMixin,
+    PaymentApiMixin,
+    ProviderLogMixin,
+)
 from goth.runner.probe.rest_client import RestApiComponent
 from goth.runner.process import run_command
 
@@ -140,10 +145,7 @@ class Probe(abc.ABC):
         return new_config
 
     async def start(self) -> None:
-        """Start the probe.
-
-        This method is extended in subclasses and mixins.
-        """
+        """Start the probe."""
 
         await self._start_container()
         self.api = RestApiComponent(self)
@@ -305,7 +307,7 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
         await probe.stop()
 
 
-class RequestorProbe(RequestorApiMixin, Probe):
+class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
     """A requestor probe that can make calls to Yagna REST APIs.
 
     This class is used in Level 1 scenarios and as a type of `self`
@@ -319,8 +321,12 @@ class RequestorProbe(RequestorApiMixin, Probe):
         self.cli.payment_init(sender_mode=True)
 
 
-class ProviderProbe(Probe):
+class ProviderProbe(MarketApiMixin, PaymentApiMixin, ProviderLogMixin, Probe):
     """A probe subclass that can run a provider agent."""
+
+    provider_agent: ProviderAgentComponent
+    """The agent component running `ya-provider` for this probe.
+    This field is added for convenience to make getting this agent instance easier."""
 
     def __init__(
         self,
@@ -332,4 +338,5 @@ class ProviderProbe(Probe):
         subnet: str = DEFAULT_SUBNET,
     ):
         super().__init__(runner, client, config, log_config)
-        self.agents.add(ProviderAgentComponent(self, subnet, agent_preset))
+        self.provider_agent = ProviderAgentComponent(self, subnet, agent_preset)
+        self.agents.add(self.provider_agent)

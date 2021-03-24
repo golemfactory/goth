@@ -7,9 +7,7 @@ from datetime import datetime, timedelta
 from ya_market import Demand, DemandOfferBase, Proposal
 
 from goth.node import DEFAULT_SUBNET
-from goth.runner.probe import RequestorProbe
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 class DemandBuilder:
     """Helper for building custom Demands.
 
-    Use if RequestorProbeWithApiSteps.subscribe_template_demand function
+    Use if RequestorProbe.subscribe_template_demand function
     is not enough for you.
     """
 
@@ -65,11 +63,11 @@ class DemandBuilder:
 
 
 async def negotiate_agreements(
-    requestor: RequestorProbeWithApiSteps,
+    requestor: RequestorProbe,
     demand: Demand,
-    providers: List[ProviderProbeWithLogSteps],
+    providers: List[ProviderProbe],
     proposal_filter: Optional[Callable[[Proposal], bool]] = lambda p: True,
-) -> List[Tuple[str, ProviderProbeWithLogSteps]]:
+) -> List[Tuple[str, ProviderProbe]]:
     """Negotiate agreements with supplied providers.
 
     Use negotiate_agreements function, when you don't need any custom negotiation

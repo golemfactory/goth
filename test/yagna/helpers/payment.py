@@ -2,13 +2,12 @@
 
 from typing import List, Tuple
 
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 async def pay_all(
-    requestor: RequestorProbeWithApiSteps,
-    agreements: List[Tuple[str, ProviderProbeWithLogSteps]],
+    requestor: RequestorProbe,
+    agreements: List[Tuple[str, ProviderProbe]],
 ):
     """Pay for all Agreements."""
     for agreement_id, provider in agreements:

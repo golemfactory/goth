@@ -15,8 +15,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +40,14 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             # https://github.com/golemfactory/goth/issues/410
             privileged_mode=True,
@@ -56,7 +55,7 @@ def _topology(
         ),
         YagnaContainerConfig(
             name="provider_2",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             # https://github.com/golemfactory/goth/issues/410
             privileged_mode=True,
@@ -79,8 +78,8 @@ async def test_e2e_wasm_success(
     topology = _topology(assets_path, payment_id_pool)
 
     async with runner(topology):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         # Market
 
