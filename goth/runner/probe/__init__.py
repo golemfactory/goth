@@ -6,7 +6,7 @@ import contextlib
 import copy
 import logging
 from pathlib import Path
-from typing import AsyncIterator, Dict, Iterator, List, Optional, TYPE_CHECKING
+from typing import AsyncIterator, Dict, Iterator, Optional, Set, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -54,8 +54,8 @@ class Probe(abc.ABC):
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
 
-    agents: List[AgentComponent]
-    """List of agent components that will be started as part of this probe."""
+    agents: Set[AgentComponent]
+    """Set of agent components that will be started as part of this probe."""
 
     api: RestApiComponent
     """Component with clients for all three yagna REST APIs."""
@@ -92,7 +92,7 @@ class Probe(abc.ABC):
         config: YagnaContainerConfig,
         log_config: LogConfig,
     ):
-        self.agents = []
+        self.agents = set()
         self.runner = runner
         self._docker_client = client
         self._logger = ProbeLoggingAdapter(
@@ -332,4 +332,4 @@ class ProviderProbe(Probe):
         subnet: str = DEFAULT_SUBNET,
     ):
         super().__init__(runner, client, config, log_config)
-        self.agents.append(ProviderAgentComponent(self, subnet, agent_preset))
+        self.agents.add(ProviderAgentComponent(self, subnet, agent_preset))

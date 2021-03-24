@@ -26,10 +26,16 @@ class AgentComponent(ProbeComponent, abc.ABC):
     present in the log buffer.
     """
 
-    @property
-    @abc.abstractmethod
-    def name(self) -> str:
-        """Name of this agent component to be used when creating its log file."""
+    name: str
+    """Name of this agent to be used when creating its log file.
+    This should be unique when compared to other agents running as part of a
+    single test. A good example includes both the probe's name, as well as the
+    type of the agent itself, e.g.: `provider_1_ya-provider`.
+    """
+
+    def __init__(self, probe: "Probe", name: str):
+        super().__init__(probe)
+        self.name = name
 
     async def start(self, *args, **kwargs):
         """Start the agent binary and initialize the internal log monitor."""
@@ -55,6 +61,14 @@ class AgentComponent(ProbeComponent, abc.ABC):
         entry = await self.log_monitor.wait_for_entry(pattern, timeout)
         return entry
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if type(self) is type(other):
+            return self.__hash__() == other.__hash__()
+        return False
+
 
 class ProviderAgentComponent(AgentComponent):
     """Probe component which runs `ya-provider` in the probe's container."""
@@ -65,13 +79,8 @@ class ProviderAgentComponent(AgentComponent):
     subnet: str
     """Name of the subnet to which the provider agent connects."""
 
-    @property
-    def name(self) -> str:
-        """Name of this agent component to be used when creating its log file."""
-        return "{self.probe.name}_ya-provider_agent"
-
     def __init__(self, probe: "Probe", subnet: str, agent_preset: Optional[str] = None):
-        super().__init__(probe)
+        super().__init__(probe, f"{probe.name}_ya-provider")
         self.agent_preset = agent_preset
         self.subnet = subnet
 
