@@ -6,7 +6,7 @@ import contextlib
 import copy
 import logging
 from pathlib import Path
-from typing import AsyncIterator, Dict, Iterator, Optional, TYPE_CHECKING
+from typing import AsyncIterator, Dict, Iterator, List, Optional, TYPE_CHECKING
 
 from docker import DockerClient
 
@@ -18,7 +18,6 @@ from goth.address import (
 
 from goth import gftp
 from goth.node import DEFAULT_SUBNET
-from goth.runner.agent import AgentMixin
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
@@ -28,6 +27,7 @@ from goth.runner.container.yagna import (
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig
+from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
 from goth.runner.probe.steps import RequestorApiMixin
 from goth.runner.probe.rest_client import RestApiComponent
 from goth.runner.process import run_command
@@ -54,6 +54,9 @@ class Probe(abc.ABC):
     This interface consists of several independent modules which may be extended
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
+
+    agents: List[AgentComponent]
+    """List of agent components that will be started as part of this probe."""
 
     api: RestApiComponent
     """Component with clients for all three yagna REST APIs."""
@@ -90,6 +93,7 @@ class Probe(abc.ABC):
         config: YagnaContainerConfig,
         log_config: LogConfig,
     ):
+        self.agents = []
         self.runner = runner
         self._docker_client = client
         self._logger = ProbeLoggingAdapter(
@@ -147,9 +151,7 @@ class Probe(abc.ABC):
         host_port = self.container.ports[YAGNA_REST_PORT]
         proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
         api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-        if not self.app_key:
-            raise RuntimeError("No app key found. container=%s", self.name)
-        self.api = RestApiComponent(api_base_host, self.app_key)
+        self.api = RestApiComponent(self, api_base_host)
 
     async def stop(self):
         """
@@ -158,6 +160,8 @@ class Probe(abc.ABC):
         Once stopped, a probe cannot be restarted.
         """
         self._logger.info("Stopping probe")
+        for agent in self.agents:
+            await agent.stop()
         if self.container.logs:
             await self.container.logs.stop()
 
@@ -320,14 +324,8 @@ class RequestorProbe(RequestorApiMixin, Probe):
         self.cli.payment_init(sender_mode=True)
 
 
-class ProviderProbe(AgentMixin, Probe):
+class ProviderProbe(Probe):
     """A probe subclass that can run a provider agent."""
-
-    agent_preset: Optional[str]
-    """Name of the preset to be used when placing a market offer."""
-
-    subnet: str
-    """Name of the subnet to which the provider agent connects."""
 
     def __init__(
         self,
@@ -339,20 +337,4 @@ class ProviderProbe(AgentMixin, Probe):
         subnet: str = DEFAULT_SUBNET,
     ):
         super().__init__(runner, client, config, log_config)
-        self.agent_preset = agent_preset
-        self.subnet = subnet
-
-    async def start_agent(self):
-        """Start the provider agent and attach to its log stream."""
-
-        self._logger.info("Starting ya-provider")
-
-        if self.agent_preset:
-            self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
-        self.container.exec_run(f"ya-provider config set --subnet {self.subnet}")
-
-        log_stream = self.container.exec_run(
-            f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
-            stream=True,
-        )
-        self.agent_logs.start(log_stream.output)
+        self.agents.append(ProviderAgentComponent(self, subnet, agent_preset))

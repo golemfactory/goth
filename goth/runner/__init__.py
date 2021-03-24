@@ -20,7 +20,6 @@ from typing import (
 
 import docker
 
-from goth.runner.agent import AgentMixin
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
@@ -127,12 +126,14 @@ class Runner:
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
-        agent_probes = self.get_probes(probe_type=AgentMixin)  # type: ignore
+        probe_agents = []
+        for probe in self.probes:
+            probe_agents.extend(chain(probe.agents))
 
         monitors = chain.from_iterable(
             (
                 (probe.container.logs for probe in self.probes),
-                (probe.agent_logs for probe in agent_probes),
+                (agent.log_monitor for agent in probe_agents),
                 [self.proxy.monitor] if self.proxy else [],
             )
         )
@@ -204,8 +205,8 @@ class Runner:
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []
-        for probe in self.get_probes(probe_type=AgentMixin):
-            awaitables.append(probe.start_agent())
+        for probe in self.probes:
+            awaitables.extend([a.start() for a in probe.agents])
         await asyncio.gather(*awaitables)
 
     @property

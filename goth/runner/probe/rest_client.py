@@ -1,7 +1,7 @@
 """Module containing classes related to the yagna REST API client."""
 import dataclasses
 import logging
-from typing import TypeVar
+from typing import TypeVar, TYPE_CHECKING
 
 from typing_extensions import Protocol
 
@@ -15,6 +15,10 @@ from goth.address import (
     MARKET_API_URL,
     PAYMENT_API_URL,
 )
+from goth.runner.probe.component import ProbeComponent
+
+if TYPE_CHECKING:
+    from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -60,22 +64,20 @@ class ApiModule(Protocol[ConfTVar, ClientTVar]):
         pass
 
 
-class RestApiComponent:
-    """Component with clients for all three yagna REST APIs."""
+class RestApiComponent(ProbeComponent):
+    """Component with clients for yagna REST APIs."""
 
     activity: ActivityApiClient
-    """Activity API client for the requestor daemon."""
+    """Activity API client."""
 
     market: ya_market.RequestorApi
-    """Market API client for the requestor daemon."""
+    """Market API client."""
 
     payment: ya_payment.RequestorApi
-    """Payment API client for the requestor daemon."""
+    """Payment API client."""
 
-    _app_key: str
-
-    def __init__(self, base_hostname: str, app_key: str):
-        self._app_key = app_key
+    def __init__(self, probe: "Probe", base_hostname: str):
+        super().__init__(probe)
         self._init_activity_api(base_hostname)
         self._init_payment_api(base_hostname)
         self._init_market_api(base_hostname)
@@ -85,7 +87,9 @@ class RestApiComponent:
     ) -> ClientTVar:
         api_url = ensure_no_trailing_slash(str(api_url))
         config: ConfTVar = api_module.Configuration(api_url)
-        config.access_token = self._app_key
+        if not self.probe.app_key:
+            raise RuntimeError("No app key found. probe=%s", self.probe.name)
+        config.access_token = self.probe.app_key
         return api_module.ApiClient(config)
 
     def _init_activity_api(self, api_base_host: str) -> None:
