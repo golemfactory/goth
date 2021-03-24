@@ -12,7 +12,6 @@ from docker import DockerClient
 
 from goth.address import (
     YAGNA_BUS_URL,
-    YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
 
@@ -147,11 +146,7 @@ class Probe(abc.ABC):
         """
 
         await self._start_container()
-
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
-        api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-        self.api = RestApiComponent(self, api_base_host)
+        self.api = RestApiComponent(self)
 
     async def stop(self):
         """
