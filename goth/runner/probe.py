@@ -36,7 +36,7 @@ from goth.runner.container.yagna import (
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
 from goth.runner.log import LogConfig, monitored_logger
-from goth.runner.log_monitor import PatternMatchingWaitableMonitor
+from goth.runner.log_monitor import PatternMatchingEventMonitor
 from goth.runner import process
 
 
@@ -252,18 +252,18 @@ class Probe(abc.ABC):
         command: str,
         env: Optional[Dict[str, str]] = None,
         command_timeout: float = 300,
-    ) -> Iterator[Tuple[asyncio.Task, PatternMatchingWaitableMonitor]]:
+    ) -> Iterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
         The command is run in the environment extending `env` with variables needed
         to communicate with the daemon running in this probe's container.
 
-        Internally, this method used `process.run_command()` to run `command`.
+        Internally, this method uses `process.run_command()` to run `command`.
         The argument `command_timeout` is passed as the `timeout` parameter to
         `process.run_command()`.
 
         Returns the `asyncio` task that logs output from the command, and an event
-        monitor that observes lines out output produced by the command.
+        monitor that observes lines of output produced by the command.
 
         The task can be awaited in order to wait until the command completes.
         The monitor can be used for asserting properties of the command's output.
@@ -271,7 +271,7 @@ class Probe(abc.ABC):
         cmd_env = {**env} if env is not None else {}
         self.set_agent_env_vars(cmd_env)
 
-        cmd_monitor = PatternMatchingWaitableMonitor(name="command output")
+        cmd_monitor = PatternMatchingEventMonitor(name="command output")
         cmd_monitor.start()
 
         try:

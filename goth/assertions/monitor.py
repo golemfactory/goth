@@ -64,6 +64,13 @@ class EventMonitor(Generic[E]):
     _incoming: "asyncio.Queue[Optional[E]]"
     """A queue used to pass the events to the worker task."""
 
+    _last_checked_event: int
+    """The index of the last event examined by `wait_for_event()` method.
+
+    Subsequent calls to `wait_for_event` will only look at events that occurred
+    after this event.
+    """
+
     _logger: Union[logging.Logger, MonitorLoggerAdapter]
     """A logger instance for this monitor."""
 
@@ -82,14 +89,14 @@ class EventMonitor(Generic[E]):
         self._event_loop = asyncio.get_event_loop()
         self._events = []
         self._incoming = asyncio.Queue()
-        self._worker_task = None
-
+        self._last_checked_event = -1
         self._logger = logger or logging.getLogger(__name__)
         if self.name:
             self._logger = MonitorLoggerAdapter(
                 self._logger, {MonitorLoggerAdapter.EXTRA_MONITOR_NAME: self.name}
             )
         self._stop_callback = on_stop
+        self._worker_task = None
 
     def add_assertion(
         self, assertion_func: AssertionFunction[E], log_level: LogLevel = logging.INFO
@@ -129,9 +136,10 @@ class EventMonitor(Generic[E]):
     def start(self) -> None:
         """Start tracing events.
 
-        Starting a monitor is decoupled from its initialisation. This allows the user
-        to add assertions to the monitor before starting to register events. Such
-        assertions are thus guaranteed no to "miss" any event registered by the monitor.
+        Starting a monitor is decoupled from its initialisation. This allows the
+        user to add assertions to the monitor before starting to register events.
+        Such assertions are thus guaranteed not to "miss" any event registered
+        by the monitor.
         """
 
         if self.is_running():
@@ -143,6 +151,11 @@ class EventMonitor(Generic[E]):
 
     async def add_event(self, event: E) -> None:
         """Register a new event."""
+
+        # Note: this method is `async` even though it does not perform any `await`.
+        # This is to ensure that it's directly callable only from code running in
+        # an event loop, which in turn guarantees that tasks waiting for input from
+        # `self._incoming` will be notified.
 
         if not self.is_running():
             raise RuntimeError(f"Monitor {self.name or ''} is not running")
@@ -288,26 +301,6 @@ class EventMonitor(Generic[E]):
         """Return True iif all assertions are done."""
 
         return all(a.done for a in self.assertions)
-
-
-class WaitableEventMonitor(EventMonitor[E]):
-    """An `EventMonitor` that can be used to wait for specific events."""
-
-    _last_checked_event: int
-    """The index of the last event examined by `wait_for_event()` method.
-
-    Subsequent calls to `wait_for_event` will only look at events that occurred
-    after this event.
-    """
-
-    def __init__(
-        self,
-        name: Optional[str] = None,
-        logger: Optional[logging.Logger] = None,
-        on_stop=None,
-    ) -> None:
-        super().__init__(name, logger, on_stop)
-        self._last_checked_event = -1
 
     async def wait_for_event(
         self, predicate: Callable[[E], bool], timeout: Optional[float] = None
