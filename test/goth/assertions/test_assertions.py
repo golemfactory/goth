@@ -524,7 +524,7 @@ async def test_wait_for_result_timeout_raises():
     with pytest.raises(asyncio.TimeoutError):
         await assertion.wait_for_result(timeout=0.1)
 
-    # The is cancelled and should fail with AssertionError("Assertion cancelled")
+    # Assertion is cancelled and should fail with AssertionError("Assertion cancelled")
     assert assertion.failed
     with pytest.raises(AssertionError) as error:
         _ = assertion.result()

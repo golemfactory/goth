@@ -10,7 +10,7 @@ from typing import Iterator, Optional, Sequence
 
 from func_timeout.StoppableThread import StoppableThread
 
-from goth.assertions.monitor import E, WaitableEventMonitor
+from goth.assertions.monitor import E, EventMonitor
 from goth.runner.exceptions import StopThreadException
 from goth.runner.log import LogConfig
 
@@ -114,18 +114,20 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
     return logger_
 
 
-class PatternMatchingWaitableMonitor(WaitableEventMonitor[E]):
-    """A `WaitableEventMonitor` that can wait for events that match regex patterns."""
+class PatternMatchingEventMonitor(EventMonitor[E]):
+    """An `EventMonitor` that can wait for events that match regex patterns."""
 
     def event_str(self, event: E) -> str:
         """Return the string associated with `event` on which to perform matching."""
         return str(event)
 
-    async def wait_for_pattern(self, pattern: str, timeout: float = 1000) -> E:
+    async def wait_for_pattern(
+        self, pattern: str, timeout: Optional[float] = None
+    ) -> E:
         """Wait for an event with string representation matching `pattern`.
 
         The semantics for this method is as for
-        `EventProgressMonitor.wait_for_event(predicate, timeout)`, with `predicate(e)`
+        `EventMonitor.wait_for_event(predicate, timeout)`, with `predicate(e)`
         being true iff `event_str(e)` matches `pattern`, for any event `e`.
         """
 
@@ -136,7 +138,7 @@ class PatternMatchingWaitableMonitor(WaitableEventMonitor[E]):
         return event
 
 
-class LogEventMonitor(PatternMatchingWaitableMonitor[LogEvent]):
+class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
     """Log buffer supporting logging to a file and waiting for a line pattern match.
 
     `log_config` parameter holds the configuration of the file logger.
@@ -200,12 +202,15 @@ class LogEventMonitor(PatternMatchingWaitableMonitor[LogEvent]):
         except StopThreadException:
             return
 
-    async def wait_for_entry(self, pattern: str, timeout: float = 1000) -> LogEvent:
+    async def wait_for_entry(
+        self, pattern: str, timeout: Optional[float] = None
+    ) -> LogEvent:
         """Search log for a log entry with the message matching `pattern`.
 
         The first call to this method will examine all log entries gathered
         since this monitor was started and then, if needed, will wait for
-        up to `timeout` seconds for a matching entry.
+        up to `timeout` seconds (or indefinitely, if `timeout` is `None`)
+        for a matching entry.
 
         Subsequent calls will examine all log entries gathered since
         the previous call returned and then wait for up to `timeout` seconds.

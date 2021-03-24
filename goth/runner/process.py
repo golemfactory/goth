@@ -28,7 +28,11 @@ async def run_command(
 
     :param args: sequence consisting of the program to run along with its arguments
     :param env: dict with environment for the command
-    :param log_prefix: prefix for log lines emitted. Default: name of the command
+    :param log_level: logging level at which command output will be logged
+    :param cmd_logger: optional logger instance used to log output from the command;
+        if not set the default module logger will be used
+    :param log_prefix: prefix for log lines with command output; ignored if `cmd_logger`
+        is specified. Default: name of the command
     :param timeout: timeout for the command, in seconds. Default: 15 minutes
     """
     logger.info("Running local command: %s", " ".join(args))
