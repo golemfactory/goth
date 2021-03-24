@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from goth.assertions import EventStream
-from goth.assertions.monitor import EventMonitor, WaitableEventMonitor
+from goth.assertions.monitor import EventMonitor
 
 
 # Events are just integers
@@ -113,7 +113,7 @@ async def test_assertions():
 async def test_not_started_raises_on_add_event():
     """Test whether `add_event()` invoked before starting the monitor raises error."""
 
-    monitor: EventMonitor[int] = EventMonitor()
+    monitor = EventMonitor()
 
     with pytest.raises(RuntimeError):
         await monitor.add_event(1)
@@ -123,7 +123,7 @@ async def test_not_started_raises_on_add_event():
 async def test_stopped_raises_on_add_event():
     """Test whether `add_event()` invoked after stopping the monitor raises error."""
 
-    monitor: EventMonitor[int] = EventMonitor()
+    monitor = EventMonitor()
 
     monitor.start()
     await monitor.stop()
@@ -136,7 +136,7 @@ async def test_stopped_raises_on_add_event():
 async def test_waitable_monitor():
     """Test if `WaitableMonitor.wait_for_event()` respects event ordering."""
 
-    monitor = WaitableEventMonitor()
+    monitor = EventMonitor()
     monitor.start()
 
     events = []
@@ -167,7 +167,7 @@ async def test_waitable_monitor():
 async def test_waitable_monitor_timeout_error():
     """Test if `WaitableMonitor.wait_for_event()` raises `TimeoutError` on timeout."""
 
-    monitor: WaitableEventMonitor[int] = WaitableEventMonitor()
+    monitor = EventMonitor()
     monitor.start()
 
     with pytest.raises(asyncio.TimeoutError):
@@ -180,7 +180,7 @@ async def test_waitable_monitor_timeout_error():
 async def test_waitable_monitor_timeout_success():
     """Test if `WaitableMonitor.wait_for_event()` return success before timeout."""
 
-    monitor = WaitableEventMonitor()
+    monitor = EventMonitor()
     monitor.start()
 
     async def worker_task():
