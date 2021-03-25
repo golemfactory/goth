@@ -10,8 +10,7 @@ from typing import Iterator, Optional, Sequence
 
 from func_timeout.StoppableThread import StoppableThread
 
-from goth.assertions.monitor import EventMonitor
-from goth.assertions.operators import eventually
+from goth.assertions.monitor import E, EventMonitor
 from goth.runner.exceptions import StopThreadException
 from goth.runner.log import LogConfig
 
@@ -108,37 +107,63 @@ def _create_file_logger(config: LogConfig) -> logging.Logger:
         delay=True,
     )
     handler.setFormatter(config.formatter)
-    logger_ = logging.getLogger(str(config.file_name))
+    logger_name = f"{config.base_dir}.{config.file_name}"
+    logger_ = logging.getLogger(logger_name)
     logger_.setLevel(config.level)
     logger_.addHandler(handler)
     logger_.propagate = False
     return logger_
 
 
-class LogEventMonitor(EventMonitor[LogEvent]):
+class PatternMatchingEventMonitor(EventMonitor[E]):
+    """An `EventMonitor` that can wait for events that match regex patterns."""
+
+    def event_str(self, event: E) -> str:
+        """Return the string associated with `event` on which to perform matching."""
+        return str(event)
+
+    async def wait_for_pattern(
+        self, pattern: str, timeout: Optional[float] = None
+    ) -> E:
+        """Wait for an event with string representation matching `pattern`.
+
+        The semantics for this method is as for
+        `EventMonitor.wait_for_event(predicate, timeout)`, with `predicate(e)`
+        being true iff `event_str(e)` matches `pattern`, for any event `e`.
+        """
+
+        regex = re.compile(pattern)
+        event = await self.wait_for_event(
+            lambda e: regex.match(self.event_str(e)) is not None, timeout
+        )
+        return event
+
+
+class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
     """Log buffer supporting logging to a file and waiting for a line pattern match.
 
     `log_config` parameter holds the configuration of the file logger.
     Consecutive values are interpreted as lines by splitting them on the new line
     character.
-    Internally it uses an asyncio task to read the stream and add lines to the buffer.
+    Internally it uses a thread to read the stream and add lines to the buffer.
     """
 
     _buffer_task: Optional[StoppableThread]
     _file_logger: logging.Logger
     _in_stream: Iterator[bytes]
-    _last_checked_line: int
-    """The index of the last line examined while waiting for log messages.
 
-    Subsequent calls to `wait_for_agent_log()` will only look at lines that
-    were logged after this line.
-    """
-
-    def __init__(self, name: str, log_config: LogConfig):
+    def __init__(self, name: str, log_config: Optional[LogConfig] = None):
         super().__init__(name)
-        self._file_logger = _create_file_logger(log_config)
+        if log_config:
+            self._file_logger = _create_file_logger(log_config)
+        else:
+            self._file_logger = logging.getLogger(name)
         self._buffer_task = None
-        self._last_checked_line = -1
+        self._loop = asyncio.get_event_loop()
+
+    def event_str(self, event: LogEvent) -> str:
+        """Return the string associated with `event` on which to perform matching."""
+        return event.message
 
     @property
     def events(self) -> Sequence[LogEvent]:
@@ -173,56 +198,28 @@ class LogEventMonitor(EventMonitor[LogEvent]):
                     self._file_logger.info(line)
 
                     event = LogEvent(line)
-                    self.add_event(event)
+                    self.add_event_sync(event)
+
         except StopThreadException:
             return
 
-    async def wait_for_entry(self, pattern: str, timeout: float = 1000) -> LogEvent:
+    async def wait_for_entry(
+        self, pattern: str, timeout: Optional[float] = None
+    ) -> LogEvent:
         """Search log for a log entry with the message matching `pattern`.
 
         The first call to this method will examine all log entries gathered
         since this monitor was started and then, if needed, will wait for
-        up to `timeout` seconds for a matching entry.
+        up to `timeout` seconds (or indefinitely, if `timeout` is `None`)
+        for a matching entry.
 
         Subsequent calls will examine all log entries gathered since
         the previous call returned and then wait for up to `timeout` seconds.
         """
-        regex = re.compile(pattern)
-
-        def predicate(log_event) -> bool:
-            return regex.match(log_event.message) is not None
-
-        # First examine log lines already seen
-        while self._last_checked_line + 1 < len(self.events):
-            self._last_checked_line += 1
-            event = self.events[self._last_checked_line]
-            if predicate(event):
-                logger.debug(
-                    "Found match in past log lines. pattern=%s, match=%s",
-                    pattern,
-                    event.message,
-                )
-                return event
-
-        # Otherwise create an assertion that waits for a matching line...
-        async def wait_for_matching_line(stream) -> LogEvent:
-            try:
-                log_event = await eventually(stream, predicate, timeout=timeout)
-                return log_event
-            finally:
-                self._last_checked_line = len(stream.past_events) - 1
-
-        assertion = self.add_assertion(wait_for_matching_line, logging.DEBUG)
-
-        # ... and wait until the assertion completes
-        while not assertion.done:
-            await asyncio.sleep(0.1)
-
-        result: LogEvent = await assertion.result()
-        if result:
-            logger.debug(
-                "Log assertion completed with a match. pattern=%s, match=%s",
-                pattern,
-                result.message,
-            )
-        return result
+        event = await self.wait_for_pattern(pattern, timeout)
+        logger.debug(
+            "Log assertion completed with a match. pattern=%s, match=%s",
+            pattern,
+            event.message,
+        )
+        return event

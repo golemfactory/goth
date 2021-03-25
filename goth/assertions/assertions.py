@@ -44,9 +44,8 @@ AssertionFunction = Callable[[EventStream[E]], Coroutine]
 class Assertion(AsyncIterable[E]):
     """A class for executing assertion coroutines.
 
-    An instance of this class wraps a coroutine function (called the
-    "assertion coroutine") and provides an asynchronous generator of
-    events that the assertion coroutine processes.
+    An instance of this class wraps a coroutine (called the "assertion coroutine")
+    and provides an asynchronous generator of events that this coroutine processes.
     After creating an instance of this class, its client should await
     the `update_events()` method each time a new event is appended to the list
     of events (the list is passed as an argument to `Assertion()`).
@@ -98,13 +97,20 @@ class Assertion(AsyncIterable[E]):
         if self.started:
             raise RuntimeError("Assertion already started")
 
-        def on_done(*args) -> None:
-            """Notify the tasks waiting until this assertion updates."""
-            self._notify_update_events()
+        async def func_wrapper():
+            """Ensure `_notify_update_events` is called after processing each event.
+
+            See also comments in `_create_generator()`.
+            """
+            try:
+                return await self._func(self)
+            except asyncio.CancelledError:
+                raise AssertionError("Assertion cancelled")
+            finally:
+                self._notify_update_events()
 
         assert self._func is not None
-        self._task = asyncio.create_task(self._func(self))
-        self._task.add_done_callback(on_done)
+        self._task = asyncio.create_task(func_wrapper())
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
         return self._task
@@ -126,27 +132,54 @@ class Assertion(AsyncIterable[E]):
     @property
     def accepted(self) -> bool:
         """Return `True` iff this assertion finished execution successfuly."""
-        return self.started and self._task.done() and self._task.exception() is None
+        return (
+            self._task is not None
+            and self._task.done()
+            and self._task.exception() is None
+        )
 
     @property
     def failed(self) -> bool:
         """Return `True` iff this assertion finished execution by failing."""
-        return self.started and self._task.done() and self._task.exception() is not None
+        return (
+            self._task is not None
+            and self._task.done()
+            and self._task.exception() is not None
+        )
 
-    async def result(self) -> Any:
+    def result(self) -> Any:
         """Return the result of this assertion.
 
-        If the assertion succeeded its result will be returned.
-        If it failed, the exception will be raised.
-        If the assertion hasn't finished yet, `None` will be returned.
-        If it hasn't been started, `asyncio.InvalidStateError` will be raised.
+        The semantics is similar to that of the `result()` method of `asyncio.Task`
+        (https://docs.python.org/3/library/asyncio-task.html#task-object):
+        If the assertion is done, the result of the assertion coroutine is returned
+        or the exception raised by the coroutine is re-raised.
+        If the assertion is not done (in particular, if hasn't been started) then
+        this method raises `asyncio.InvalidStateError`.
         """
-        if not self.started:
+        if not self._task:
             raise asyncio.InvalidStateError("Assertion not started")
 
-        if self._task.done():
+        return self._task.result()
+
+    async def wait_for_result(self, timeout: Optional[float] = None) -> Any:
+        """Wait until this assertion's result becomes available and return it.
+
+        Optional `timeout` is in seconds, `None` means to wait indefinitely
+        (this is the default).
+        """
+        if not self._task:
+            raise asyncio.InvalidStateError("Assertion not started")
+
+        if timeout is None:
             return await self._task
-        return None
+
+        try:
+            return await asyncio.wait_for(self._task, timeout=timeout)
+        finally:
+            # This is to retrieve exception from `self._task` so no unretrieved
+            # exceptions are reported when the event loop closes.
+            _ = self._task.exception()
 
     async def update_events(self, events_ended: bool = False) -> None:
         """Notify the assertion that a new event has been added."""
@@ -183,6 +216,8 @@ class Assertion(AsyncIterable[E]):
 
     def _notify_update_events(self) -> None:
         """Notify tasks waiting in `update_events()` that the update is processed."""
+        if not self._ready or not self._processed:
+            raise asyncio.InvalidStateError("Assertion not started")
         self._ready.clear()
         self._processed.set()
 
@@ -209,5 +244,5 @@ class Assertion(AsyncIterable[E]):
             #
             # In case the control does not return (since the events end or
             # the assertion coroutine raises an exception), `_notify_update_events()`
-            # is called in the done callback for the coroutine task.
+            # must be called after returning from the assertion coroutine.
             self._notify_update_events()

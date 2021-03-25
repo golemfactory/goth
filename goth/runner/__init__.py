@@ -201,7 +201,7 @@ class Runner:
             ports=ports,
             assertions_module=self.api_assertions_module,
         )
-        self._exit_stack.enter_context(run_proxy(self.proxy))
+        await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
         # Collect all agent enabled probes and start them in parallel
         awaitables = []

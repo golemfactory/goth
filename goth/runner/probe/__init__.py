@@ -6,7 +6,15 @@ import contextlib
 import copy
 import logging
 from pathlib import Path
-from typing import AsyncIterator, Dict, Iterator, Optional, Set, TYPE_CHECKING
+from typing import (
+    AsyncIterator,
+    Dict,
+    Iterator,
+    Optional,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from docker import DockerClient
 
@@ -17,6 +25,7 @@ from goth.address import (
 
 from goth import gftp
 from goth.node import DEFAULT_SUBNET
+from goth.runner import process
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
@@ -25,7 +34,8 @@ from goth.runner.container.yagna import (
     PAYMENT_MOUNT_PATH,
 )
 from goth.runner.exceptions import KeyAlreadyExistsError
-from goth.runner.log import LogConfig
+from goth.runner.log import LogConfig, monitored_logger
+from goth.runner.log_monitor import PatternMatchingEventMonitor
 from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
 from goth.runner.probe.mixin import (
     ActivityApiMixin,
@@ -34,7 +44,7 @@ from goth.runner.probe.mixin import (
     ProviderLogMixin,
 )
 from goth.runner.probe.rest_client import RestApiComponent
-from goth.runner.process import run_command
+
 
 if TYPE_CHECKING:
     from goth.runner import Runner
@@ -249,30 +259,59 @@ class Probe(abc.ABC):
             }
         )
 
-    def run_command_on_host(
+    @contextlib.asynccontextmanager
+    async def run_command_on_host(
         self,
         command: str,
         env: Optional[Dict[str, str]] = None,
-        timeout: int = 300,
-    ) -> asyncio.Task:
+        command_timeout: float = 300,
+    ) -> Iterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
-        The command is run the environment extending `env` with variables needed
+        The command is run in the environment extending `env` with variables needed
         to communicate with the daemon running in this probe's container.
 
-        Returns the `asyncio` task that logs output from the command. The task
-        can be awaited in order to wait until the command completes.
-        """
+        Internally, this method uses `process.run_command()` to run `command`.
+        The argument `command_timeout` is passed as the `timeout` parameter to
+        `process.run_command()`.
 
+        Returns the `asyncio` task that logs output from the command, and an event
+        monitor that observes lines of output produced by the command.
+
+        The task can be awaited in order to wait until the command completes.
+        The monitor can be used for asserting properties of the command's output.
+        """
         cmd_env = {**env} if env is not None else {}
         self.set_agent_env_vars(cmd_env)
 
-        task = asyncio.create_task(
-            run_command(
-                command.split(), cmd_env, log_level=logging.INFO, timeout=timeout
-            )
-        )
-        return task
+        cmd_monitor = PatternMatchingEventMonitor(name="command output")
+        cmd_monitor.start()
+
+        try:
+            with monitored_logger(
+                f"goth.{self.name}.command_output", cmd_monitor
+            ) as cmd_logger:
+                cmd_task = asyncio.create_task(
+                    process.run_command(
+                        command.split(),
+                        cmd_env,
+                        log_level=logging.INFO,
+                        cmd_logger=cmd_logger,
+                        timeout=command_timeout,
+                    )
+                )
+                yield cmd_task, cmd_monitor
+
+        except Exception as e:
+            logger.warning(f"Cancelling command on error: {e!r}")
+            if cmd_task and not cmd_task.done():
+                cmd_task.cancel()
+            raise
+
+        finally:
+            await cmd_monitor.stop()
+            logger.debug("Waiting for the command to finish")
+            await asyncio.gather(cmd_task, return_exceptions=True)
 
 
 @contextlib.contextmanager

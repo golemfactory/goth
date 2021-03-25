@@ -17,6 +17,7 @@ from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbe
+from test.yagna.helpers.activity import vm_exe_script
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,6 @@ def _topology(
         YagnaContainerConfig(
             name="requestor",
             probe_type=RequestorProbe,
-            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
@@ -66,39 +66,6 @@ def _topology(
             volumes=provider_volumes,
             privileged_mode=True,
         ),
-    ]
-
-
-def _exe_script(runner: Runner, output_file: str):
-
-    output_path = Path(runner.web_root_path) / output_file
-    if output_path.exists():
-        os.remove(output_path)
-
-    web_server_addr = f"http://{runner.host_address}:{runner.web_server_port}"
-
-    return [
-        {"deploy": {}},
-        {"start": {}},
-        {
-            "transfer": {
-                "from": f"{web_server_addr}/scene.blend",
-                "to": "container:/golem/resource/scene.blend",
-            }
-        },
-        {
-            "transfer": {
-                "from": f"{web_server_addr}/params.json",
-                "to": "container:/golem/work/params.json",
-            }
-        },
-        {"run": {"entry_point": "/golem/entrypoints/run-blender.sh", "args": []}},
-        {
-            "transfer": {
-                "from": f"container:/golem/output/{output_file}",
-                "to": f"{web_server_addr}/upload/{output_file}",
-            }
-        },
     ]
 
 
@@ -125,7 +92,7 @@ async def test_e2e_vm_success(
         if output_path.exists():
             os.remove(output_path)
 
-        exe_script = _exe_script(runner, output_file)
+        exe_script = vm_exe_script(runner, output_file)
 
         requestor = runner.get_probes(probe_type=RequestorProbe)[0]
         providers = runner.get_probes(probe_type=ProviderProbe)

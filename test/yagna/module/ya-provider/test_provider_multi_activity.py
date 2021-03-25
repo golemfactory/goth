@@ -16,6 +16,7 @@ from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import ProviderProbe, RequestorProbe
+from test.yagna.helpers.activity import wasi_exe_script
 
 from test.yagna.helpers.negotiation import negotiate_agreements, DemandBuilder
 from test.yagna.helpers.payment import pay_all
@@ -46,7 +47,6 @@ def _topology(
         YagnaContainerConfig(
             name="requestor",
             probe_type=RequestorProbe,
-            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
@@ -68,7 +68,6 @@ def _topology(
 async def test_provider_multi_activity(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -103,6 +102,8 @@ async def test_provider_multi_activity(
         )
 
         #  Activity
+        exe_script = wasi_exe_script(runner)
+
         for agreement_id, provider in agreement_providers:
             for i in range(0, 3):
                 logger.info("Running activity %n-th time on %s", i, provider.name)
