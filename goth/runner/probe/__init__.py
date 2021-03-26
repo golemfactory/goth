@@ -325,12 +325,16 @@ def create_probe(
 
     probe: Optional[Probe] = None
     try:
+        logger.debug(
+            "Creating probe. config=%s, probe_type=%s", config, config.probe_type
+        )
         probe = config.probe_type(runner, docker_client, config, log_config)
         for name, value in config.probe_properties.items():
             probe.__setattr__(name, value)
         yield probe
     finally:
         if probe:
+            logger.debug("Removing probe. name=%s", probe.name)
             probe.remove()
 
 
@@ -339,6 +343,7 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
     """Implement AsyncContextManager for starting and stopping a probe."""
 
     try:
+        logger.debug("Starting probe. name=%s", probe.name)
         await probe.start()
         assert probe.ip_address
         yield probe.ip_address
