@@ -352,11 +352,7 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
 
 
 class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
-    """A requestor probe that can make calls to Yagna REST APIs.
-
-    This class is used in Level 1 scenarios and as a type of `self`
-    argument for `Market/Payment/ActivityOperationsMixin` methods.
-    """
+    """A probe subclass with activity API steps and requestor payment init."""
 
     async def _start_container(self) -> None:
         await super()._start_container()

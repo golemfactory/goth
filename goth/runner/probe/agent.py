@@ -36,10 +36,11 @@ class AgentComponent(ProbeComponent, abc.ABC):
     def __init__(self, probe: "Probe", name: str):
         super().__init__(probe)
         self.name = name
+        self._init_log_monitor()
 
+    @abc.abstractmethod
     async def start(self, *args, **kwargs):
         """Start the agent binary and initialize the internal log monitor."""
-        self._init_log_monitor()
 
     async def stop(self, *args, **kwargs):
         """Stop the agent binary and its log monitor."""
