@@ -1,6 +1,14 @@
 name: codestyle
+
 on:
   push:
+    branches:
+      - master
+      # - <your-branch>    # put your branch name here to test it @ GH Actions
+  pull_request:
+    branches:
+      - master
+
 jobs:
   codestyle:
     name: Check code style
