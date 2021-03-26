@@ -3,7 +3,7 @@ import asyncio
 import contextlib
 import logging
 import threading
-from typing import Mapping, Optional
+from typing import AsyncIterator, Mapping, Optional
 
 from mitmproxy import options
 import mitmproxy.utils.debug
@@ -61,14 +61,15 @@ class Proxy:
 
     def start(self):
         """Start the proxy thread."""
+        self.monitor.start()
         self._proxy_thread.start()
         self._server_ready.wait()
 
-    def stop(self):
+    async def stop(self):
         """Start the proxy monitor and thread."""
         if not self._loop:
             raise RuntimeError("Event loop is not set")
-        asyncio.run_coroutine_threadsafe(self.monitor.stop(), self._loop)
+        await self.monitor.stop()
         self._proxy_thread.join()
 
     def _run_mitmproxy(self):
@@ -80,8 +81,6 @@ class Proxy:
         # thread and hence cannot have signal handlers installed.
         self._loop.add_signal_handler = lambda *args_: None
         asyncio.set_event_loop(self._loop)
-
-        self.monitor.start()
 
         self._logger.info("Starting embedded mitmproxy...")
 
@@ -103,12 +102,12 @@ class Proxy:
         self._logger.info("Embedded mitmproxy exited")
 
 
-@contextlib.contextmanager
-def run_proxy(proxy: Proxy) -> Proxy:
-    """Implement ContextManager protocol for stating and stopping a Proxy."""
+@contextlib.asynccontextmanager
+async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
+    """Implement AsyncContextManager protocol for stating and stopping a Proxy."""
 
     try:
         proxy.start()
         yield
     finally:
-        proxy.stop()
+        await proxy.stop()

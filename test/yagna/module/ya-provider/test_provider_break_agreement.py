@@ -17,7 +17,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
 
-from test.yagna.helpers.activity import run_activity
+from test.yagna.helpers.activity import run_activity, wasi_exe_script
 from test.yagna.helpers.negotiation import negotiate_agreements, DemandBuilder
 from test.yagna.helpers.payment import pay_all
 
@@ -98,7 +98,6 @@ def build_demand(
 async def test_provider_idle_agreement(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -129,7 +128,6 @@ async def test_provider_idle_agreement(
 async def test_provider_idle_agreement_after_2_activities(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -151,7 +149,9 @@ async def test_provider_idle_agreement_after_2_activities(
         agreement_id, provider = agreement_providers[0]
         for i in range(0, 2):
             logger.info("Running activity %n-th time on %s", i, provider.name)
-            await run_activity(requestor, provider, agreement_id, exe_script)
+            await run_activity(
+                requestor, provider, agreement_id, wasi_exe_script(runner)
+            )
 
         # Break after 5s + 3s margin
         await providers[0].wait_for_agreement_broken("No activity created", timeout=8)
@@ -164,7 +164,6 @@ async def test_provider_idle_agreement_after_2_activities(
 async def test_provider_debit_notes_accept_timeout(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -207,7 +206,6 @@ async def test_provider_debit_notes_accept_timeout(
 async def test_provider_timeout_unresponsive_requestor(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,

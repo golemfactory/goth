@@ -17,6 +17,7 @@ from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.provider import ProviderProbeWithLogSteps
 from goth.runner.requestor import RequestorProbeWithApiSteps
+from test.yagna.helpers.activity import wasi_exe_script
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,6 @@ def _topology(
         YagnaContainerConfig(
             name="requestor",
             probe_type=RequestorProbeWithApiSteps,
-            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
@@ -69,7 +69,6 @@ def _topology(
 async def test_e2e_wasm_success(
     assets_path: Path,
     demand_constraints: str,
-    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -132,6 +131,7 @@ async def test_e2e_wasm_success(
 
         #  Activity
 
+        exe_script = wasi_exe_script(runner)
         num_commands = len(exe_script)
 
         for agreement_id, provider in agreement_providers:

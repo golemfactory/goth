@@ -17,8 +17,9 @@ async def run_command(
     args: Sequence[str],
     env: Optional[dict] = None,
     log_level: Optional[int] = logging.DEBUG,
+    cmd_logger: Optional[logging.Logger] = None,
     log_prefix: Optional[str] = None,
-    timeout: int = RUN_COMMAND_DEFAULT_TIMEOUT,
+    timeout: float = RUN_COMMAND_DEFAULT_TIMEOUT,
 ) -> None:
     """Run a command in a subprocess with timeout and logging.
 
@@ -27,13 +28,21 @@ async def run_command(
 
     :param args: sequence consisting of the program to run along with its arguments
     :param env: dict with environment for the command
-    :param log_prefix: prefix for log lines emitted. Default: name of the command
+    :param log_level: logging level at which command output will be logged
+    :param cmd_logger: optional logger instance used to log output from the command;
+        if not set the default module logger will be used
+    :param log_prefix: prefix for log lines with command output; ignored if `cmd_logger`
+        is specified. Default: name of the command
     :param timeout: timeout for the command, in seconds. Default: 15 minutes
     """
     logger.info("Running local command: %s", " ".join(args))
 
-    if log_prefix is None:
-        log_prefix = f"[{args[0]}] "
+    if cmd_logger:
+        log_prefix = ""
+    else:
+        cmd_logger = logger
+        if log_prefix is None:
+            log_prefix = f"[{args[0]}] "
 
     async def _run_command():
 
@@ -43,7 +52,7 @@ async def run_command(
 
         while not proc.stdout.at_eof():
             line = await proc.stdout.readline()
-            logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
+            cmd_logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
 
         return_code = await proc.wait()
         if return_code:
