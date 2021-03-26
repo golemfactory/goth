@@ -126,9 +126,7 @@ class Runner:
     def check_assertion_errors(self) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
-        probe_agents = []
-        for probe in self.probes:
-            probe_agents.extend(chain(probe.agents))
+        probe_agents = chain(*(probe.agents for probe in self.probes))
 
         monitors = chain.from_iterable(
             (
