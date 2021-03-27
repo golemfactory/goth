@@ -10,6 +10,7 @@ import tempfile
 from typing import Optional
 
 from ghapi.all import GhApi, paged
+from fastcore.utils import obj2dict
 import requests
 
 logging.basicConfig(
@@ -225,7 +226,7 @@ class ReleaseDownloader(GithubDownloader):
         as a substring are considered.
         """
         all_releases = self.gh_api.repos.list_releases()
-        logger.debug("releases=%s", all_releases)
+        logger.debug("releases=%s", json.dumps(obj2dict(all_releases)))
 
         def release_filter(release: dict, tag_substring: str) -> bool:
             has_matching_asset = any(
@@ -243,7 +244,7 @@ class ReleaseDownloader(GithubDownloader):
         self, release: dict, content_type: str, asset_name: Optional[str] = None
     ) -> Optional[dict]:
         assets = release["assets"]
-        logger.debug("assets=%s", assets)
+        logger.debug("assets=%s", json.dumps(obj2dict(assets)))
 
         content_assets = filter(lambda a: a["content_type"] == content_type, assets)
         if content_assets and asset_name:
