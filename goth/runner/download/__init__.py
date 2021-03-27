@@ -42,7 +42,7 @@ class GithubDownloader(ABC):
     """Base class for downloading assets using GitHub's REST API."""
 
     gh_api: GhApi
-    """GitHub api"""
+    """GitHub REST API client."""
 
     session: requests.Session
     """Session object for making HTTP requests."""
