@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 ASSET_CACHE_DIR = Path(tempfile.gettempdir()) / "goth_asset_cache"
 
-BASE_URL = "https://api.github.com/repos"
-
 ENV_API_TOKEN = "GITHUB_API_TOKEN"
 ENV_YAGNA_BRANCH = "YAGNA_BRANCH"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
@@ -104,15 +102,24 @@ class ArtifactDownloader(GithubDownloader):
         logger.debug("Fetching workflow runs. workflow_id=%s", workflow_id)
 
         if commit:
-            paged_workflow_runs = paged(self.gh_api.list_workflow_runs, workflow_id, status="completed")
+            paged_workflow_runs = paged(
+                self.gh_api.list_workflow_runs, workflow_id, status="completed"
+            )
 
             for page in paged_workflow_runs:
-                workflow_runs = next(filter(lambda r: r["head_sha"].startswith(commit), page.workflow_runs), None)
+                workflow_runs = next(
+                    filter(
+                        lambda r: r["head_sha"].startswith(commit), page.workflow_runs
+                    ),
+                    None,
+                )
 
                 if workflow_runs:
                     return workflow_runs
 
-        return self.gh_api.list_workflow_runs(workflow_id, branch=branch, status="completed").workflow_runs[0]
+        return self.gh_api.list_workflow_runs(
+            workflow_id, branch=branch, status="completed"
+        ).workflow_runs[0]
 
     def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
@@ -137,7 +144,9 @@ class ArtifactDownloader(GithubDownloader):
         logger.info("Downloading artifact. url=%s", archive_url)
 
         with tempfile.NamedTemporaryFile() as fd:
-            fd.write(self.gh_api.actions.download_artifact(artifact_id, archive_format="zip"))
+            fd.write(
+                self.gh_api.actions.download_artifact(artifact_id, archive_format="zip")
+            )
             logger.debug("Extracting zip archive. path=%s", fd.name)
             cache_dir = self._create_cache_dir(artifact_id)
             shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
