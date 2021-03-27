@@ -3,6 +3,7 @@
 from abc import ABC
 import logging
 import os
+import json
 from pathlib import Path
 import shutil
 import tempfile
@@ -296,7 +297,7 @@ class ReleaseDownloader(GithubDownloader):
             )
 
         logger.debug("Found matching asset. name=%s", asset["name"])
-        logger.debug("asset=%s", asset)
+        logger.debug("asset=%s", json.dumps(asset))
 
         asset_id = str(asset["id"])
         cache_path = self._cache_get(asset_id)
