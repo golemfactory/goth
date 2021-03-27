@@ -79,7 +79,7 @@ class GithubDownloader(ABC):
         return None
 
     def _create_cache_dir(self, asset_id: str) -> Path:
-        asset_path: Path = ASSET_CACHE_DIR / "{}".format(asset_id)
+        asset_path: Path = ASSET_CACHE_DIR / asset_id
         asset_path.mkdir(exist_ok=True, parents=True)
         return asset_path
 
@@ -140,7 +140,6 @@ class ArtifactDownloader(GithubDownloader):
 
         Return path to the extracted artifact.
         """
-        artifact_id = str(artifact["id"])
         archive_url = artifact["archive_download_url"]
 
         logger.info("Downloading artifact. url=%s", archive_url)
@@ -150,7 +149,7 @@ class ArtifactDownloader(GithubDownloader):
         with tempfile.NamedTemporaryFile() as fd:
             fd.write(response.content)
             logger.debug("Extracting zip archive. path=%s", fd.name)
-            cache_dir = self._create_cache_dir(artifact["id"])
+            cache_dir = self._create_cache_dir(str(artifact["id"]))
             shutil.unpack_archive(fd.name, format="zip", extract_dir=str(cache_dir))
             logger.debug("Extracted package. path=%s", cache_dir)
             logger.info("Downloaded artifact. url=%s", archive_url)
@@ -258,7 +257,7 @@ class ReleaseDownloader(GithubDownloader):
         logger.info("Downloading asset. url=%s", download_url)
         with self.session.get(download_url) as response:
             response.raise_for_status()
-            cache_file = self._create_cache_dir(asset_id) / asset["name"]
+            cache_file = self._create_cache_dir(str(asset["id"])) / asset["name"]
             with cache_file.open(mode="wb") as fd:
                 fd.write(response.content)
             logger.info("Downloaded asset. path=%s", str(cache_file))
