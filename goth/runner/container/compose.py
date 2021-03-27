@@ -72,9 +72,7 @@ class ComposeNetworkManager:
     """IP address of the gateway for the docker network."""
 
     def __init__(
-        self,
-        docker_client: DockerClient,
-        config: ComposeConfig,
+        self, docker_client: DockerClient, config: ComposeConfig,
     ):
         self.config = config
         self.config.file_path = config.file_path.resolve()
