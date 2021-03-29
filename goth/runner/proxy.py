@@ -44,18 +44,16 @@ class Proxy:
         self._node_names = node_names
         self._ports = ports
         self._logger = logging.getLogger(__name__)
+
+        # `self._loop` is the event loop used by the mitmproxy thread,
+        # we'll need to set it when running in that thread, not here.
         self._loop = None
         self._proxy_thread = threading.Thread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
         )
         self._server_ready = threading.Event()
 
-        def _stop_callback():
-            """Stop `loop` so `proxy_thread` can terminate."""
-            if self._loop and self._loop.is_running():
-                self._loop.stop()
-
-        self.monitor = EventMonitor("rest", self._logger, on_stop=_stop_callback)
+        self.monitor = EventMonitor("rest", self._logger)
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 
@@ -69,8 +67,9 @@ class Proxy:
         """Start the proxy monitor and thread."""
         if not self._loop:
             raise RuntimeError("Event loop is not set")
-        await self.monitor.stop()
+        self._loop.stop()
         self._proxy_thread.join()
+        await self.monitor.stop()
 
     def _run_mitmproxy(self):
         """Ran by `self.proxy_thread`."""
