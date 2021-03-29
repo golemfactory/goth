@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser_cfg.set_defaults(function=create_config)
 
     args = parser.parse_args()
-    if args.function:
+    try:
         args.function(args)
-    else:
+    except AttributeError:
         parser.print_help()
