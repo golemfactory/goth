@@ -44,20 +44,12 @@ async def test_payment_driver_list(
     runner: Runner,
     task_package_template: str,
 ):
-    """Test successful flow requesting WASM tasks with goth REST API client."""
+    """Test just the requestor's CLI command, no need to setup provider."""
 
     topology = _topology(payment_id_pool)
 
     async with runner(topology):
         requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-
-        task_package = task_package_template.format(
-            web_server_addr=runner.host_address, web_server_port=runner.web_server_port
-        )
-
-        subscription_id, demand = await requestor.subscribe_template_demand(
-            task_package, demand_constraints
-        )
 
         res = requestor.cli.payment_drivers()
         assert res and res.items()
