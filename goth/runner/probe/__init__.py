@@ -160,6 +160,11 @@ class Probe(abc.ABC):
         await self._start_container()
         self.api = RestApiComponent(self)
 
+    async def start_agents(self):
+        """Start all of the probe's agents."""
+        for agent in self.agents:
+            await agent.start()
+
     async def stop(self):
         """
         Stop the probe, removing the Docker container of the daemon being tested.

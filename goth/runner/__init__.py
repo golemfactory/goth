@@ -199,9 +199,7 @@ class Runner:
         await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
         # Collect all agent enabled probes and start them in parallel
-        awaitables = []
-        for probe in self.probes:
-            awaitables.extend([a.start() for a in probe.agents])
+        awaitables = [probe.start_agents() for probe in self.probes]
         await asyncio.gather(*awaitables)
 
     @property
