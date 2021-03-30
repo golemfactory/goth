@@ -55,9 +55,8 @@ class AgentComponent(ProbeComponent, abc.ABC):
             log_config.base_dir = probe.container.log_config.base_dir
 
         self.log_monitor = LogEventMonitor(self.name, log_config)
-        self._last_checked_line = -1
 
-    async def wait_for_log(self, pattern: str, timeout: float = 1000) -> LogEvent:
+    async def wait_for_log(self, pattern: str, timeout: Optional[float] = None) -> LogEvent:
         """Search agent logs for a log line with the message matching `pattern`."""
         entry = await self.log_monitor.wait_for_entry(pattern, timeout)
         return entry
