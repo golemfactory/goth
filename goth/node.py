@@ -29,7 +29,7 @@ def node_environment(
         "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info",
         "YA_PAYMENT_NETWORK": "rinkeby",
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
-        "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/donate",
+        "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
         "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
         # left for compatibility with yagna prior to commit 800efe13
         "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",

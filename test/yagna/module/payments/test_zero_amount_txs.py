@@ -99,9 +99,11 @@ async def test_zero_amount_invoice_is_settled(
         counterproposal_id = await requestor.counter_proposal(
             subscription_id, demand, proposal
         )
+        logger.info("Counter proposal %s", counterproposal_id)
         await provider.wait_for_proposal_accepted()
 
         new_proposals = await requestor.wait_for_proposals(subscription_id, (provider,))
+        logger.info(new_proposals)
         new_proposal = new_proposals[0]
         assert new_proposal.prev_proposal_id == counterproposal_id
 
