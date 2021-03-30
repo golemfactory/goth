@@ -247,7 +247,7 @@ class EventMonitor(Generic[E]):
             else "EndOfEvents"
         )
 
-        for a, level in self.assertions.items():
+        for a, level in list(self.assertions.items()):
 
             if a.done:
                 continue
