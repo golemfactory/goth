@@ -9,7 +9,6 @@ from typing import (
     List,
     Optional,
     Protocol,
-    Set,
     Sequence,
     Tuple,
     TYPE_CHECKING,
@@ -36,8 +35,8 @@ class ProbeProtocol(Protocol):
     This is mainly to fix mypy errors when using `Probe` directly as `self` type.
     """
 
-    agents: "Set[AgentComponent]"
-    """Set of agent components that will be started as part of a probe."""
+    agents: "List[AgentComponent]"
+    """List of agent components that will be started as part of a probe."""
 
     api: "RestApiComponent"
     """REST API probe component."""

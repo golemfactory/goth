@@ -56,18 +56,12 @@ class AgentComponent(ProbeComponent, abc.ABC):
 
         self.log_monitor = LogEventMonitor(self.name, log_config)
 
-    async def wait_for_log(self, pattern: str, timeout: Optional[float] = None) -> LogEvent:
+    async def wait_for_log(
+        self, pattern: str, timeout: Optional[float] = None
+    ) -> LogEvent:
         """Search agent logs for a log line with the message matching `pattern`."""
         entry = await self.log_monitor.wait_for_entry(pattern, timeout)
         return entry
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __eq__(self, other):
-        if type(self) is type(other):
-            return self.__hash__() == other.__hash__()
-        return False
 
 
 class ProviderAgentComponent(AgentComponent):

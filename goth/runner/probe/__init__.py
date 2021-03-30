@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+from collections import OrderedDict
 import contextlib
 import copy
 import logging
@@ -10,8 +11,8 @@ from typing import (
     AsyncIterator,
     Dict,
     Iterator,
+    List,
     Optional,
-    Set,
     Tuple,
     TYPE_CHECKING,
 )
@@ -69,9 +70,6 @@ class Probe(abc.ABC):
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
 
-    agents: Set[AgentComponent]
-    """Set of agent components that will be started as part of this probe."""
-
     api: RestApiComponent
     """Component with clients for all three yagna REST APIs."""
 
@@ -86,6 +84,12 @@ class Probe(abc.ABC):
 
     ip_address: Optional[str] = None
     """An IP address of the daemon's container in the Docker network."""
+
+    _agents: "OrderedDict[str, AgentComponent]"
+    """Collection of agent components that will be started as part of this probe.
+
+    Keys are agent names, values are subclasses of `AgentComponent`.
+    """
 
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
@@ -107,8 +111,8 @@ class Probe(abc.ABC):
         config: YagnaContainerConfig,
         log_config: LogConfig,
     ):
-        self.agents = set()
         self.runner = runner
+        self._agents = OrderedDict()
         self._docker_client = client
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: config.name}
@@ -120,6 +124,11 @@ class Probe(abc.ABC):
 
     def __str__(self):
         return self.name
+
+    @property
+    def agents(self) -> List[AgentComponent]:
+        """List of agent components that will be started as part of this probe."""
+        return list(self._agents.values())
 
     @property
     def address(self) -> Optional[str]:
@@ -153,6 +162,14 @@ class Probe(abc.ABC):
         )
 
         return new_config
+
+    def add_agent(self, agent: AgentComponent) -> None:
+        """Add an agent to be started for this probe."""
+        if self._agents.get(agent.name):
+            raise KeyAlreadyExistsError(
+                f"Probe already has agent component with name: `{agent.name}`"
+            )
+        self._agents[agent.name] = agent
 
     async def start(self) -> None:
         """Start the probe."""
@@ -384,4 +401,4 @@ class ProviderProbe(MarketApiMixin, PaymentApiMixin, ProviderLogMixin, Probe):
     ):
         super().__init__(runner, client, config, log_config)
         self.provider_agent = ProviderAgentComponent(self, subnet, agent_preset)
-        self.agents.add(self.provider_agent)
+        self.add_agent(self.provider_agent)
