@@ -21,8 +21,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.probe import RequestorProbe
-from goth.runner.provider import ProviderProbeWithLogSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 logger = logging.getLogger(__name__)
@@ -69,14 +68,14 @@ def _topology(
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
         ),
         YagnaContainerConfig(
             name="provider_2",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
@@ -141,19 +140,20 @@ async def test_interactive_vm(
 
     async with runner(topology):
 
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        providers = runner.get_probes(probe_type=ProviderProbe)
         requestor = runner.get_probes(probe_type=RequestorProbe)[0]
 
         # Some test steps may be included in the interactive test as well
         for provider in providers:
             await provider.wait_for_offer_subscribed(timeout=10)
 
+        subnet = providers[0].provider_agent.subnet
         print("\n\033[33;1mNow run your requestor agent as follows:\n")
         print(
             f"$  YAGNA_APPKEY={requestor.app_key} "
             f"YAGNA_API_URL=http://{requestor.ip_address}:{YAGNA_REST_PORT} "
             f"GSB_URL=tcp://{requestor.ip_address}:{YAGNA_BUS_PORT} "
-            f"examples/blender/blender.py --subnet {providers[0].subnet}"
+            f"examples/blender/blender.py --subnet {subnet}"
         )
         print("\nPress Ctrl+C at any moment to stop the test harness.\033[0m\n")
 

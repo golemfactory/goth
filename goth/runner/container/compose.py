@@ -199,7 +199,11 @@ async def run_compose_network(
     """Implement AsyncContextManager for starting/stopping docker compose network."""
 
     try:
+        logger.debug(
+            "Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build
+        )
         await compose_manager.start_network(log_dir, force_build)
         yield
     finally:
+        logger.debug("Stopping compose network")
         await compose_manager.stop_network()

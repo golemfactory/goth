@@ -90,7 +90,9 @@ async def run_web_server(server: WebServer, server_address: Optional[str]) -> No
     """Implement AsyncContextManager protocol for starting/stopping a web server."""
 
     try:
+        logger.debug("Starting web server. address=%s", server_address)
         await server.start(server_address)
         yield
     finally:
+        logger.debug("Stopping web server. address=%s", server_address)
         await server.stop()

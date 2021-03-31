@@ -21,6 +21,9 @@ from goth.api_monitor.monitor_addon import MonitorAddon
 mitmproxy.utils.debug.register_info_dumpers = lambda *args: None
 
 
+logger = logging.getLogger(__name__)
+
+
 class Proxy:
     """Proxy using mitmproxy to generate events out of http calls."""
 
@@ -104,10 +107,12 @@ class Proxy:
 
 @contextlib.asynccontextmanager
 async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
-    """Implement AsyncContextManager protocol for stating and stopping a Proxy."""
+    """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
 
     try:
+        logger.debug("Starting mitmproxy")
         proxy.start()
         yield
     finally:
+        logger.debug("Stopping mitmproxy")
         await proxy.stop()

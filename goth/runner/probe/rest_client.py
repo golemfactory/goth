@@ -1,7 +1,7 @@
 """Module containing classes related to the yagna REST API client."""
 import dataclasses
 import logging
-from typing import TypeVar
+from typing import TypeVar, TYPE_CHECKING
 
 from typing_extensions import Protocol
 
@@ -14,7 +14,13 @@ from goth.address import (
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
+    YAGNA_REST_PORT,
+    YAGNA_REST_URL,
 )
+from goth.runner.probe.component import ProbeComponent
+
+if TYPE_CHECKING:
+    from goth.runner.probe import Probe
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +54,7 @@ ClientTVar = TypeVar("ClientTVar", covariant=True)
 class ApiModule(Protocol[ConfTVar, ClientTVar]):
     """Representation of a REST API module.
 
-    Used for typing `ApiClientMixin._create_api_client`.
+    Used for typing `YagnaApiModule._create_api_client`.
     """
 
     def Configuration(self, host: str) -> ConfTVar:
@@ -60,35 +66,39 @@ class ApiModule(Protocol[ConfTVar, ClientTVar]):
         pass
 
 
-class ApiClientMixin:
-    """Provides client objects for Yagna REST APIs."""
+class RestApiComponent(ProbeComponent):
+    """Component with clients for yagna REST APIs."""
 
     activity: ActivityApiClient
-    """Activity API client for the requestor daemon."""
+    """Activity API client."""
 
     market: ya_market.RequestorApi
-    """Market API client for the requestor daemon."""
+    """Market API client."""
 
     payment: ya_payment.RequestorApi
-    """Payment API client for the requestor daemon."""
+    """Payment API client."""
 
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
+    def __init__(self, probe: "Probe"):
+        super().__init__(probe)
 
-    async def start(self):
-        """Start the probe and initialize the API clients."""
+        # We reach the daemon through MITM proxy running on localhost using the
+        # container's unique port mapping
+        host_port = probe.container.ports[YAGNA_REST_PORT]
+        proxy_ip = "127.0.0.1"
+        base_hostname = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
 
-        await super().start()
-        self._init_activity_api(self._api_base_host)
-        self._init_payment_api(self._api_base_host)
-        self._init_market_api(self._api_base_host)
+        self._init_activity_api(base_hostname)
+        self._init_payment_api(base_hostname)
+        self._init_market_api(base_hostname)
 
     def _create_api_client(
         self, api_module: ApiModule[ConfTVar, ClientTVar], api_url: str
     ) -> ClientTVar:
         api_url = ensure_no_trailing_slash(str(api_url))
         config: ConfTVar = api_module.Configuration(api_url)
-        config.access_token = self.app_key
+        if not self.probe.app_key:
+            raise RuntimeError("No app key found. probe=%s", self.probe.name)
+        config.access_token = self.probe.app_key
         return api_module.ApiClient(config)
 
     def _init_activity_api(self, api_base_host: str) -> None:
