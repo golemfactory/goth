@@ -1,0 +1,137 @@
+name: Build and publish a release
+
+on:
+  release:
+    types: [prereleased, released]
+
+jobs:
+  test:
+    name: Run checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run black formatter in check mode
+        run: poetry run poe codeformat
+      
+      - name: Run flake8 codestyle checker
+        run: poetry run poe codestyle
+
+      - name: Run unit tests
+        run: poetry run poe unit_test
+
+  build:
+    needs: [test]
+    name: Build the release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
+
+      - name: Get git release tag
+        run: echo "::set-output name=git-release-tag::goth $(git describe --tags)"
+        id: git_describe
+
+      - name: Get package version
+        run: echo "::set-output name=poetry-version::$(poetry version)"
+        id: poetry_version
+
+      - name: Fail on version mismatch
+        run: exit 1
+        if:
+          ${{ steps.git_describe.outputs.git-release-tag !=
+          steps.poetry_version.outputs.poetry-version }}
+
+      - name: Build the release
+        run: poetry build
+
+      - name: Store the built package
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist
+
+  test_publish:
+    needs: [build]
+    name: Publish the release to test.pypi
+    runs-on: ubuntu-latest
+    if: ${{ github.event.action == 'prereleased' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
+
+      - name: Retrieve the built package
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+          path: dist
+      - name: Publish to pypi
+        run: |
+          poetry config repositories.testpypi https://test.pypi.org/legacy/
+          poetry publish -r testpypi -u __token__ -p ${{ secrets.TESTPYPI_TOKEN }}
+
+  publish:
+    needs: [build]
+    name: Publish the release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.action == 'released' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Configure poetry
+        uses: Gr1N/setup-poetry@v4
+        with:
+          poetry-version: 1.1.4
+
+      - name: Retrieve the built package
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+          path: dist
+      - name: Publish to pypi
+        run: |
+          poetry publish -u __token__ -p ${{ secrets.PYPI_TOKEN }}

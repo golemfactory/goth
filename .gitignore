@@ -3,3 +3,4 @@ __pycache__/
 *$py.class
 .mypy_cache/
 goth/*.egg-info
+dist
