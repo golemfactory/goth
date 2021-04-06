@@ -92,7 +92,7 @@ class ArtifactDownloader(GithubDownloader):
         logger.debug("Fetching workflows. name=%s", workflow_name)
         workflows = self.gh_api.actions.list_repo_workflows().workflows
         workflow = next(filter(lambda w: w["name"] == workflow_name, workflows))
-        logger.debug("workflow=%s", workflow)
+        logger.debug("workflow=%s", json.dumps(obj2dict(workflow)))
 
         return workflow
 
