@@ -101,7 +101,7 @@ class Proxy:
                 super().start()
 
         args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
-        main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+        _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
         self._logger.info("Embedded mitmproxy exited")
 
 
