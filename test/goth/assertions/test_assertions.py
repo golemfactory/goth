@@ -529,3 +529,34 @@ async def test_wait_for_result_timeout_raises():
     with pytest.raises(AssertionError) as error:
         _ = assertion.result()
     assert "Assertion cancelled" in str(error)
+
+
+async def toplevel(_stream):
+    """Do nothing, be just a function with one sentence, imperative mode docstring."""
+    ...
+
+
+@pytest.mark.asyncio
+async def test_assertion_names():
+    """Test if assertion names are constructed correctly."""
+
+    async def inner(_stream):
+        ...
+
+    def make_assertion(_arg):
+        async def innermost(_stream):
+            ...
+
+        return innermost
+
+    a1 = Assertion([], toplevel)
+    assert a1.name == f"{__name__}.toplevel"
+
+    a2 = Assertion([], inner)
+    assert a2.name == f"{__name__}.test_assertion_names.inner"
+
+    a3 = Assertion([], make_assertion(1))
+    assert a3.name == f"{__name__}.test_assertion_names.make_assertion.innermost"
+
+    a4 = Assertion([], toplevel, name="I'm an assertion")
+    assert a4.name == "I'm an assertion"
