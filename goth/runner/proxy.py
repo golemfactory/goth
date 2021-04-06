@@ -7,7 +7,7 @@ from typing import AsyncIterator, Mapping, Optional
 
 from mitmproxy import options
 import mitmproxy.utils.debug
-from mitmproxy.tools import main, cmdline, dump
+from mitmproxy.tools import _main, cmdline, dump
 
 from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
