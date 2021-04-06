@@ -105,8 +105,7 @@ class MarketApiMixin:
         """Call counter_proposal_demand on the market api."""
 
         proposal = DemandOfferBase(
-            constraints=demand.constraints,
-            properties=demand.properties,
+            constraints=demand.constraints, properties=demand.properties,
         )
 
         counter_proposal = await self.api.market.counter_proposal_demand(
