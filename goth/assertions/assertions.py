@@ -78,10 +78,27 @@ class Assertion(AsyncIterable[E]):
     _generator: Optional[AsyncIterator[E]]
     """An asynchronous generator that provides events to the assertion coroutine."""
 
-    def __init__(self, events: Sequence[E], func: AssertionFunction) -> None:
+    def __init__(
+        self, events: Sequence[E], func: AssertionFunction, name: Optional[str] = None
+    ) -> None:
+        """Create an assertion that processes `events` as prescribed by `func`.
+
+        The `name` argument may be `None` only if `func` refers to a function defined
+        with `async def func(...)`. In such cases, the assertion's name will be
+        constructed from the `__module__` and `__qualname__` attributes of `func`.
+        If `func` is not of this form and `name` is `None` then a `ValueError` will be
+        raised.
+        """
         self.past_events = events
         self.events_ended = False
-        self.name = f"{func.__module__}.{func.__name__}"
+        try:
+            self.name = name or (
+                f"{func.__module__}.{func.__qualname__.replace('<locals>.', '')}"
+            )
+        except Exception:
+            raise ValueError(
+                "Cannot construct assertion name and `name` parameter is not set."
+            )
         self._func = func
         # Creating asyncio objects is decoupled from object initialisation to
         # allow this object to be created and run in different threads (and thus

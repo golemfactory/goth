@@ -99,11 +99,14 @@ class EventMonitor(Generic[E]):
         self._worker_task = None
 
     def add_assertion(
-        self, assertion_func: AssertionFunction[E], log_level: LogLevel = logging.INFO
+        self,
+        assertion_func: AssertionFunction[E],
+        name: Optional[str] = None,
+        log_level: LogLevel = logging.INFO,
     ) -> Assertion:
         """Add an assertion function to this monitor."""
 
-        assertion = Assertion(self._events, assertion_func)
+        assertion = Assertion(self._events, assertion_func, name=name)
         assertion.start()
         self._logger.debug("Assertion '%s' started", assertion.name)
         self.assertions[assertion] = log_level
@@ -332,7 +335,7 @@ class EventMonitor(Generic[E]):
                     return e
             raise AssertionError("No matching event occurred")
 
-        assertion = self.add_assertion(wait_for_match, logging.DEBUG)
+        assertion = self.add_assertion(wait_for_match, log_level=logging.DEBUG)
 
         # ... and wait until the assertion completes
         return await assertion.wait_for_result(timeout=timeout)
