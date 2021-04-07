@@ -95,7 +95,11 @@ async def test_provider_multi_activity(
             .build()
         )
 
-        agreement_providers = await negotiate_agreements(requestor, demand, providers,)
+        agreement_providers = await negotiate_agreements(
+            requestor,
+            demand,
+            providers,
+        )
 
         #  Activity
         exe_script = wasi_exe_script(runner)

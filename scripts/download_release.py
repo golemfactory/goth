@@ -13,7 +13,10 @@ from goth.runner.download import (
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", "--content-type", default=DEFAULT_CONTENT_TYPE)
 parser.add_argument(
-    "-n", "--name", help="Substring the asset to download should contain.", type=str,
+    "-n",
+    "--name",
+    help="Substring the asset to download should contain.",
+    type=str,
 )
 parser.add_argument(
     "-o",

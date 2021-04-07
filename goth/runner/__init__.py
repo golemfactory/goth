@@ -102,7 +102,8 @@ class Runner:
         self._cancellation_callback = cancellation_callback
         self._test_failure_callback = test_failure_callback
         self._compose_manager = ComposeNetworkManager(
-            config=compose_config, docker_client=docker.from_env(),
+            config=compose_config,
+            docker_client=docker.from_env(),
         )
         self._web_server = (
             WebServer(web_root_path, web_server_port) if web_root_path else None

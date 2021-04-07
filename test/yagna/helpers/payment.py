@@ -6,7 +6,8 @@ from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 async def pay_all(
-    requestor: RequestorProbe, agreements: List[Tuple[str, ProviderProbe]],
+    requestor: RequestorProbe,
+    agreements: List[Tuple[str, ProviderProbe]],
 ):
     """Pay for all Agreements."""
     for agreement_id, provider in agreements:

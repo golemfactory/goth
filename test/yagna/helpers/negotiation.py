@@ -57,7 +57,8 @@ class DemandBuilder:
     def build(self) -> DemandOfferBase:
         """Create Demand from supplied parameters."""
         return DemandOfferBase(
-            properties=self._properties, constraints=self._constraints,
+            properties=self._properties,
+            constraints=self._constraints,
         )
 
 
@@ -79,7 +80,9 @@ async def negotiate_agreements(
     subscription_id, demand = await requestor.subscribe_demand(demand)
 
     proposals = await requestor.wait_for_proposals(
-        subscription_id, providers, proposal_filter,
+        subscription_id,
+        providers,
+        proposal_filter,
     )
     logger.info("Collected %s proposals", len(proposals))
 

@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 async def start_network(
-    configuration: Configuration, log_dir: Optional[Path] = None,
+    configuration: Configuration,
+    log_dir: Optional[Path] = None,
 ):
     """Start a test network described by `configuration`."""
 

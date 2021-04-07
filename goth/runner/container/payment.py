@@ -139,7 +139,10 @@ class PaymentIdPool:
         key = self._get_key()
         account_list = [
             Account(
-                address=f"0x{key.address}", driver=driver, receive=receive, send=send,
+                address=f"0x{key.address}",
+                driver=driver,
+                receive=receive,
+                send=send,
             )
             for driver in drivers
         ]
