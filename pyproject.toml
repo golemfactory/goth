@@ -33,6 +33,7 @@ transitions = "^0.8.1"
 typing_extensions = "^3.7.4.2"
 urllib3 = "1.25.*"
 ya-aioclient = "^0.5"
+ghapi = "^0.1.16"
 
 [tool.poetry.dev-dependencies]
 black = "20.8b1"
