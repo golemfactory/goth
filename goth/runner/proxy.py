@@ -5,6 +5,7 @@ import logging
 import threading
 from typing import AsyncIterator, Mapping, Optional
 
+from func_timeout.StoppableThread import StoppableThread
 from mitmproxy import options
 import mitmproxy.utils.debug
 from mitmproxy.tools import _main, cmdline, dump
@@ -14,6 +15,7 @@ from goth.assertions.monitor import EventMonitor
 from goth.api_monitor.api_events import APIEvent
 from goth.api_monitor.router_addon import RouterAddon
 from goth.api_monitor.monitor_addon import MonitorAddon
+from goth.runner.exceptions import StopThreadException
 
 # This function in `mitmproxy` will try to register signal handlers
 # which will fail since the proxy does not run in the main thread.
@@ -28,7 +30,7 @@ class Proxy:
     """Proxy using mitmproxy to generate events out of http calls."""
 
     monitor: EventMonitor[APIEvent]
-    _proxy_thread: threading.Thread
+    _proxy_thread: StoppableThread
     _logger: logging.Logger
     _loop: Optional[asyncio.AbstractEventLoop]
     _node_names: Mapping[str, str]
@@ -48,7 +50,7 @@ class Proxy:
         self._ports = ports
         self._logger = logging.getLogger(__name__)
         self._loop = None
-        self._proxy_thread = threading.Thread(
+        self._proxy_thread = StoppableThread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
         )
         self._server_ready = threading.Event()
@@ -73,7 +75,7 @@ class Proxy:
         if not self._loop:
             raise RuntimeError("Event loop is not set")
         await self.monitor.stop()
-        self._proxy_thread.join()
+        self._proxy_thread.stop(StopThreadException)
 
     def _run_mitmproxy(self):
         """Ran by `self.proxy_thread`."""
