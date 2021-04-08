@@ -17,6 +17,7 @@ from goth.api_monitor.router_addon import RouterAddon
 from goth.api_monitor.monitor_addon import MonitorAddon
 from goth.runner.exceptions import StopThreadException
 
+
 # This function in `mitmproxy` will try to register signal handlers
 # which will fail since the proxy does not run in the main thread.
 # So we monkey-patch it to no-op.
@@ -32,7 +33,6 @@ class Proxy:
     monitor: EventMonitor[APIEvent]
     _proxy_thread: StoppableThread
     _logger: logging.Logger
-    _loop: Optional[asyncio.AbstractEventLoop]
     _node_names: Mapping[str, str]
     _server_ready: threading.Event
     """Mapping of IP addresses to node names"""
@@ -49,18 +49,12 @@ class Proxy:
         self._node_names = node_names
         self._ports = ports
         self._logger = logging.getLogger(__name__)
-        self._loop = None
         self._proxy_thread = StoppableThread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
         )
         self._server_ready = threading.Event()
 
-        def _stop_callback():
-            """Stop `loop` so `proxy_thread` can terminate."""
-            if self._loop and self._loop.is_running():
-                self._loop.stop()
-
-        self.monitor = EventMonitor("rest", self._logger, on_stop=_stop_callback)
+        self.monitor = EventMonitor("rest", self._logger)
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 
@@ -71,21 +65,20 @@ class Proxy:
         self._server_ready.wait()
 
     async def stop(self):
-        """Start the proxy monitor and thread."""
-        if not self._loop:
-            raise RuntimeError("Event loop is not set")
-        await self.monitor.stop()
+        """Stop the proxy thread and the monitor."""
         self._proxy_thread.stop(StopThreadException)
+        self._proxy_thread.join()
+        await self.monitor.stop()
 
     def _run_mitmproxy(self):
         """Ran by `self.proxy_thread`."""
 
-        self._loop = asyncio.new_event_loop()
+        loop = asyncio.new_event_loop()
         # Monkey patch the loop to set its `add_signal_handler` method to no-op.
         # The original method would raise error since the loop will run in a non-main
         # thread and hence cannot have signal handlers installed.
-        self._loop.add_signal_handler = lambda *args_: None
-        asyncio.set_event_loop(self._loop)
+        loop.add_signal_handler = lambda *args_: None
+        asyncio.set_event_loop(loop)
 
         self._logger.info("Starting embedded mitmproxy...")
 
