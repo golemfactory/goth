@@ -19,7 +19,7 @@ class KeyAlreadyExistsError(CommandError):
     """Specific duplicate key subclass of the CommandError."""
 
 
-class StopThreadException(Exception):
+class StopThreadException(BaseException):
     """Exception used to stop a running `StoppableThread`."""
 
 
