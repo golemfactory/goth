@@ -10,6 +10,8 @@ import logging
 import sys
 from typing import Callable, Generic, List, Optional, Sequence, Union
 
+import colors
+
 from goth.assertions import Assertion, AssertionFunction, E
 
 
@@ -257,15 +259,20 @@ class EventMonitor(Generic[E]):
 
             await a.update_events(events_ended=events_ended)
 
+            if a.done:
+                self._logger.debug(
+                    "Assertion '%s' finished after event %s", a.name, event_descr
+                )
+
             if a.accepted:
                 result = a.result()
-                msg = "Assertion '%s' succeeded after event: %s; result: %s"
-                self._logger.log(level, msg, a.name, event_descr, result)
+                msg = colors.green("Assertion '%s' succeeded; result: %s", style="bold")
+                self._logger.log(level, msg, a.name, result)
 
             elif a.failed:
-                await self._report_failure(a, event_descr)
+                await self._report_failure(a)
 
-    async def _report_failure(self, a: Assertion, event_descr: str) -> None:
+    async def _report_failure(self, a: Assertion) -> None:
         try:
             a.result()
         except Exception as exc:
@@ -276,10 +283,8 @@ class EventMonitor(Generic[E]):
             # functions are left.
             for _ in (1, 2, 3):
                 tb = tb.tb_next if tb else tb
-            msg = "Assertion '%s' failed after event: %s; cause: %s"
-            self._logger.error(
-                msg, a.name, event_descr, exc, exc_info=(type(exc), exc, tb)
-            )
+            msg = colors.red("Assertion '%s' failed; cause: %s", style="bold")
+            self._logger.error(msg, a.name, exc, exc_info=(type(exc), exc, tb))
 
     @property
     def satisfied(self) -> Sequence[Assertion[E]]:
