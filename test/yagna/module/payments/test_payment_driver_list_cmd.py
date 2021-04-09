@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import pytest
 
@@ -15,8 +15,32 @@ from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.container.build import YagnaBuildEnvironment
+
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="module")
+def yagna_build_env(
+    assets_path: Path,
+    yagna_binary_path: Optional[Path],
+    yagna_branch: Optional[str],
+    # yagna_commit_hash: Optional[str],
+    deb_package: Optional[Path],
+    yagna_release: Optional[str],
+) -> YagnaBuildEnvironment:
+    """Override the default fixture to force using specific yagna commit."""
+
+    """Fixture which provides the build environment for yagna Docker images."""
+    return YagnaBuildEnvironment(
+        docker_dir=assets_path / "docker",
+        binary_path=yagna_binary_path,
+        branch=yagna_branch,
+        commit_hash="c4d1dd7",
+        deb_path=deb_package,
+        release_tag=yagna_release,
+    )
 
 
 def _topology(payment_id_pool: PaymentIdPool) -> List[YagnaContainerConfig]:
