@@ -15,6 +15,7 @@ from goth.api_monitor.api_events import APIEvent
 from goth.api_monitor.router_addon import RouterAddon
 from goth.api_monitor.monitor_addon import MonitorAddon
 
+
 # This function in `mitmproxy` will try to register signal handlers
 # which will fail since the proxy does not run in the main thread.
 # So we monkey-patch it to no-op.
@@ -30,7 +31,7 @@ class Proxy:
     monitor: EventMonitor[APIEvent]
     _proxy_thread: threading.Thread
     _logger: logging.Logger
-    _loop: Optional[asyncio.AbstractEventLoop]
+    _mitmproxy_runner: Optional[dump.DumpMaster]
     _node_names: Mapping[str, str]
     _server_ready: threading.Event
     """Mapping of IP addresses to node names"""
@@ -47,18 +48,13 @@ class Proxy:
         self._node_names = node_names
         self._ports = ports
         self._logger = logging.getLogger(__name__)
-        self._loop = None
         self._proxy_thread = threading.Thread(
             target=self._run_mitmproxy, name="ProxyThread", daemon=True
         )
         self._server_ready = threading.Event()
+        self._mitmproxy_runner = None
 
-        def _stop_callback():
-            """Stop `loop` so `proxy_thread` can terminate."""
-            if self._loop and self._loop.is_running():
-                self._loop.stop()
-
-        self.monitor = EventMonitor("rest", self._logger, on_stop=_stop_callback)
+        self.monitor = EventMonitor("rest", self._logger)
         if assertions_module:
             self.monitor.load_assertions(assertions_module)
 
@@ -69,23 +65,15 @@ class Proxy:
         self._server_ready.wait()
 
     async def stop(self):
-        """Start the proxy monitor and thread."""
-        if not self._loop:
-            raise RuntimeError("Event loop is not set")
-        await self.monitor.stop()
+        """Stop the proxy thread and the monitor."""
+        if self._mitmproxy_runner:
+            self._mitmproxy_runner.shutdown()
         self._proxy_thread.join()
+        self._logger.info("The mitmproxy thread has finished")
+        await self.monitor.stop()
 
     def _run_mitmproxy(self):
-        """Ran by `self.proxy_thread`."""
-
-        self._loop = asyncio.new_event_loop()
-        # Monkey patch the loop to set its `add_signal_handler` method to no-op.
-        # The original method would raise error since the loop will run in a non-main
-        # thread and hence cannot have signal handlers installed.
-        self._loop.add_signal_handler = lambda *args_: None
-        asyncio.set_event_loop(self._loop)
-
-        self._logger.info("Starting embedded mitmproxy...")
+        """Run by `self.proxy_thread`."""
 
         # This class is nested since it needs to refer to the `monitor` attribute
         # of the enclosing instance of `Proxy`.
@@ -96,12 +84,27 @@ class Proxy:
                 inner_self.addons.add(MonitorAddon(self.monitor))
 
             def start(inner_self):
-                self._server_ready.set()
-                self._logger.info("Embedded mitmproxy started")
                 super().start()
+                self._mitmproxy_runner = inner_self
+                self._logger.info("Embedded mitmproxy started")
+                self._server_ready.set()
 
-        args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
-        _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+        try:
+            loop = asyncio.new_event_loop()
+            # Monkey patch the loop to set its `add_signal_handler` method to no-op.
+            # The original method would raise error since the loop will run in
+            # a non-main thread and hence cannot have signal handlers installed.
+            loop.add_signal_handler = lambda *args_: None
+            asyncio.set_event_loop(loop)
+
+            self._logger.info("Starting embedded mitmproxy...")
+
+            args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
+            _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+
+        except Exception:
+            self._logger.exception("Exception in mitmproxy thread")
+
         self._logger.info("Embedded mitmproxy exited")
 
 
