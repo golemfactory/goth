@@ -63,3 +63,5 @@ async def test_payment_driver_list(
 
         token = network.tokens.get(network.default_token, None)
         assert token, "Token should belong to the Network"
+
+        logger.info("Test succeeded!")
