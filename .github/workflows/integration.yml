@@ -63,7 +63,3 @@ jobs:
         # In future we'll be able to use the `--all` flag here to remove envs for
         # all Python versions (https://github.com/python-poetry/poetry/issues/3208).
         run: poetry env remove python3.8
-
-      - name: Remove Docker containers
-        continue-on-error: true
-        run: docker rm -f $(docker ps -a -q)
