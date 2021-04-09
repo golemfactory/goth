@@ -12,10 +12,10 @@ from goth.address import (
 )
 from goth.node import node_environment
 from goth.runner import Runner
+from goth.runner.container.build import YagnaBuildEnvironment
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.requestor import RequestorProbeWithApiSteps
-from goth.runner.container.build import YagnaBuildEnvironment
+from goth.runner.probe import RequestorProbe
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,6 @@ def yagna_build_env(
 ) -> YagnaBuildEnvironment:
     """Override the default fixture to force using specific yagna commit."""
 
-    """Fixture which provides the build environment for yagna Docker images."""
     return YagnaBuildEnvironment(
         docker_dir=assets_path / "docker",
         binary_path=yagna_binary_path,
@@ -53,7 +52,7 @@ def _topology(payment_id_pool: PaymentIdPool) -> List[YagnaContainerConfig]:
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
@@ -73,7 +72,7 @@ async def test_payment_driver_list(
     topology = _topology(payment_id_pool)
 
     async with runner(topology):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
 
         res = requestor.cli.payment_drivers()
         assert res and res.items()
