@@ -155,16 +155,25 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
             api_monitor_logger.handlers.remove(proxy_handler)
 
 
-class MonitorHandler(logging.Handler):
-    """A logging handler that passes messages from log records to an event monitor."""
+class MonitoringFilter(logging.Filter):
+    """A logging `Filter` that feeds messages to the underlying event monitor.
 
-    def __init__(self, monitor: EventMonitor[str]):
-        self._monitor = monitor
+    After doing this it also adds some color to the messages for greater fun.
+    """
+
+    def __init__(self, monitor: EventMonitor[str], color: Optional[str] = None):
         super().__init__()
+        self._monitor: EventMonitor[str] = monitor
+        self._color: Optional[str] = color
 
-    def handle(self, record: logging.LogRecord) -> None:
-        """Add the `record`'s message to the associated event monitor."""
-        self._monitor.add_event_sync(record.getMessage())
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Pass the record's message to the monitor, add colors to the message."""
+        message = record.getMessage()
+        self._monitor.add_event_sync(message)
+        if self._color:
+            record.msg = colors.color(message, fg=self._color)
+        record.args = ()
+        return True
 
 
 @contextlib.contextmanager
@@ -177,10 +186,9 @@ def monitored_logger(name: str, monitor: EventMonitor[str]) -> Iterator[logging.
     """
 
     logger_ = logging.getLogger(name)
-    handler = MonitorHandler(monitor)
+    filter = MonitoringFilter(monitor, "cyan")
+    logger_.filters.insert(0, filter)
     try:
-        logger_.addHandler(handler)
         yield logger_
     finally:
-        if handler in logger_.handlers:
-            logger_.removeHandler(handler)
+        logger.removeFilter(filter)
