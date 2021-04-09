@@ -9,6 +9,8 @@ import tempfile
 import time
 from typing import Iterator, Optional, Union
 
+import colors
+
 import goth
 import goth.api_monitor
 from goth.assertions.monitor import EventMonitor
@@ -20,19 +22,24 @@ FORMATTER_NONE = logging.Formatter("%(message)s")
 logger = logging.getLogger(__name__)
 
 
-class UTCFormatter(logging.Formatter):
-    """Custom `logging` formatter that uses `time.gmtime`."""
+class CustomFileLogFormatter(logging.Formatter):
+    """`Formatter` that uses `time.gmtime` for time and strips ANSI color codes."""
 
     converter = time.gmtime
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the message and remove ANSI color codes from it."""
+        text = super().format(record)
+        return colors.strip_color(text)
 
 
 LOGGING_CONFIG = {
     "version": 1,
     "formatters": {
         "none": {"format": "%(message)s"},
-        "simple": {"format": "%(levelname)-8s [%(name)-30s] %(message)s"},
-        "date": {
-            "()": UTCFormatter,
+        "console": {"format": "%(levelname)-8s [%(name)-30s] %(message)s"},
+        "file": {
+            "()": CustomFileLogFormatter,
             "format": "%(asctime)s %(levelname)-8s %(name)-30s %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S%z",
         },
@@ -40,12 +47,12 @@ LOGGING_CONFIG = {
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "console",
             "level": "INFO",
         },
         "runner_file": {
             "class": "logging.FileHandler",
-            "formatter": "date",
+            "formatter": "file",
             "filename": "%(base_log_dir)s/runner.log",
             "encoding": "utf-8",
             "level": "DEBUG",
@@ -123,9 +130,9 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
     proxy_handler = None
 
     try:
-        formatter = logging.Formatter(
-            fmt=LOGGING_CONFIG["formatters"]["date"]["format"],
-            datefmt=LOGGING_CONFIG["formatters"]["date"]["datefmt"],
+        formatter = CustomFileLogFormatter(
+            fmt=LOGGING_CONFIG["formatters"]["file"]["format"],
+            datefmt=LOGGING_CONFIG["formatters"]["file"]["datefmt"],
         )
 
         # TODO: ensure the new files created here do not conflict with probe logs
