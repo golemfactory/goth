@@ -32,6 +32,10 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
 
+      - name: Remove Docker containers
+        continue-on-error: true
+        run: docker rm -f $(docker ps -a -q)
+
       - name: Log in to GitHub Docker repository
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
 
