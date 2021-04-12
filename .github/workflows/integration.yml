@@ -36,7 +36,7 @@ jobs:
         continue-on-error: true
         run: |
           sudo apt-get install -y jq
-          docker network inspect docker_default | jq ".[0].Containers | map(.Name)" | tee /dev/stderr | xargs --max-args 1 -- docker network disconnect -f docker_default
+          docker network inspect docker_default | jq ".[0].Containers | map(.Name)[]" | tee /dev/stderr | xargs --max-args 1 -- docker network disconnect -f docker_default
 
       - name: Remove Docker containers
         continue-on-error: true
