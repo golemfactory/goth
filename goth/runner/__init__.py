@@ -253,7 +253,7 @@ class Runner:
             if self._test_failure_callback:
                 self._test_failure_callback(err)
             else:
-                logger.info("Runner stopped due to test failure")
+                raise
 
     async def _enter(self) -> None:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
