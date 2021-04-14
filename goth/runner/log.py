@@ -185,10 +185,10 @@ def monitored_logger(name: str, monitor: EventMonitor[str]) -> Iterator[logging.
     from the logger.
     """
 
-    logger_ = logging.getLogger(name)
+    logger_to_monitor = logging.getLogger(name)
     filter = MonitoringFilter(monitor, "cyan")
-    logger_.filters.insert(0, filter)
+    logger_to_monitor.filters.insert(0, filter)
     try:
-        yield logger_
+        yield logger_to_monitor
     finally:
-        logger.removeFilter(filter)
+        logger_to_monitor.removeFilter(filter)
