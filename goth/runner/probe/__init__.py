@@ -34,7 +34,7 @@ from goth.runner.container.yagna import (
     YagnaContainerConfig,
     PAYMENT_MOUNT_PATH,
 )
-from goth.runner.exceptions import KeyAlreadyExistsError
+from goth.runner.exceptions import KeyAlreadyExistsError, TemporalAssertionError
 from goth.runner.log import LogConfig, monitored_logger
 from goth.runner.log_monitor import PatternMatchingEventMonitor
 from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
@@ -313,6 +313,7 @@ class Probe(abc.ABC):
             with monitored_logger(
                 f"goth.{self.name}.command_output", cmd_monitor
             ) as cmd_logger:
+
                 cmd_task = asyncio.create_task(
                     process.run_command(
                         command.split(),
@@ -324,6 +325,9 @@ class Probe(abc.ABC):
                 )
                 yield cmd_task, cmd_monitor
 
+                await cmd_task
+                logger.debug("Command task has finished")
+
         except Exception as e:
             logger.warning(f"Cancelling command on error: {e!r}")
             if cmd_task and not cmd_task.done():
@@ -332,8 +336,8 @@ class Probe(abc.ABC):
 
         finally:
             await cmd_monitor.stop()
-            logger.debug("Waiting for the command to finish")
-            await asyncio.gather(cmd_task, return_exceptions=True)
+            for assertion in cmd_monitor.failed:
+                raise TemporalAssertionError(assertion.name)
 
 
 @contextlib.contextmanager
