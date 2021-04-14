@@ -17,9 +17,6 @@ python3 --version
 
 If you don't have Python installed, download the appropriate package and follow instructions from the [releases page](https://www.python.org/downloads/).
 
-For the sake of compatibility with other projects and/or your local Python 3 installation you can install [`pyenv`](https://github.com/pyenv/pyenv) to manage and switch between multiple Python versions. The `pyenv` installer can be found [here](https://github.com/pyenv/pyenv-installer).
-You can also use your preferred way of managing Python virtual environments to achieve this.
-
 #### Project installation
 `goth` is not (yet) available as a standalone package, therefore you will need to set up its development environment in order to use it.
 
@@ -76,12 +73,14 @@ The above command makes use of [`poethepoet`](https://github.com/nat-n/poethepoe
 poetry run poe
 ```
 
-For more granular control (e.g. running one specific test file) you can also invoke pytest directly to run tests:
+By default, `poetry` looks for the required Python version on your `PATH` and creates a Python virtual environment for the project if there's none configured yet. All of the project's dependencies will be installed in that virtual environment.
+
+For more granular control (e.g. running one specific test file) you can also invoke `pytest` directly to run tests:
 ```
 pytest -svx test/yagna/e2e/test_e2e_wasm.py
 ```
 
-The test runner of choice for `goth` is `pytest`, therefore each test is defined as a separate Python function in a given `.py` file.
+Following `pytest` convention, each test is defined as a separate Python function in a given `.py` file.
 
 Every test run consists of the following steps:
 1. `docker-compose` is used to start the so-called "static" containers (e.g. local blockchain, HTTP proxy) and create a common Docker network for all containers participating in the test.
@@ -119,7 +118,7 @@ poetry run poe e2e_test --yagna-binary-path /path/to/binaries
 ```
 
 #### Yagna commit hash
-By default, `goth` uses a `yagna` binary from the latest GitHub Actions successful build on `master` branch. This option can be used to override that behaviour. The value here needs to be a git commit hash being the head for one of the build workflow runs:
+This option makes `goth` use a `yagna` package associated with a specific git commit. The value here needs to be a git commit hash being the head for a successful GitHub Actions build workflow run:
 ```
 poetry run poe e2e_test --yagna-commit-hash b0ac62f
 ```
@@ -129,6 +128,13 @@ Path to a local .deb file or a directory containing a number of such archives. A
 ```
 poetry run poe e2e_test --yagna-deb-path path/to/yagna.deb
 ```
+
+#### Yagna release
+By default, `goth` uses a `yagna` package from the latest GitHub release (or pre-release). To choose a different release to be used for a test run, use the option `--yagna-release`:
+```
+poetry run poe e2e_test --yagna-release 0.6.4-rc1
+```
+The value for this option (`0.6.4-rc1` in the example above) should be a substring of the release's tag.
 
 ### Troubleshooting integration test runs
 All components launched during the integration test run record their logs in a pre-determined location. By default, this location is: `$TEMP_DIR/goth-tests`, where `$TEMP_DIR` is the path of the directory used for temporary files. This path will depend either on the shell environment or the operating system on which the tests are being run (see [`tempfile.gettempdir`](https://docs.python.org/3/library/tempfile.html) for more details). This default location can be overridden using the option `--logs-path` when running tests.
