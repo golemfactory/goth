@@ -1,7 +1,8 @@
 """Defines a class representing `goth` configuration."""
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
+import dpath.util
 import yaml
 
 from goth.address import YAGNA_REST_URL, PROXY_HOST
@@ -13,6 +14,14 @@ from goth.runner.container.compose import (
 from goth.runner.container.payment import PaymentIdPool
 from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
+
+
+Override = Tuple[str, Any]
+"""Type representing a single value override in a YAML config file.
+
+First element is a path within the file, e.g.: `"docker-compose.build-environment"`.
+Second element is the value to be inserted under the given path.
+"""
 
 
 class Configuration:
@@ -83,8 +92,8 @@ class ConfigurationParseError(Exception):
 class _ConfigurationParser:
     """A class for reading `goth` configuration from a `dict` instance."""
 
-    # A type for documents parsed by configuration parser
     Doc = Union[Dict[str, Any], List[Any]]
+    """Type for documents parsed by _ConfigurationParser."""
 
     def __init__(self, doc: Doc, config_path: Optional[Path], root_key: str = ""):
         self._doc: _ConfigurationParser.Doc = doc
@@ -107,7 +116,6 @@ class _ConfigurationParser:
             raise ConfigurationParseError(f"Required key is missing: {child_key}")
 
     def __iter__(self):
-
         if isinstance(self._doc, dict):
             return iter(self._doc)
 
@@ -165,10 +173,12 @@ class _ConfigurationParser:
         self.ensure_type(dict)
 
         docker_dir = self.get_path("docker-dir")
+        assert docker_dir
+
         log_patterns = self.get("compose-log-patterns")
         log_patterns.ensure_type(dict)
 
-        build_env_config = self["build-environment"]
+        build_env_config = self.get("build-environment")
         # `build_env_config` may be `None` if no optional build parameters
         # (binary path, commit hash etc.) are specified in the config file
         if build_env_config:
@@ -200,13 +210,26 @@ class _ConfigurationParser:
         )
 
 
-def load_yaml(yaml_path: Union[Path, str]) -> Configuration:
-    """Load a configuration from a YAML file at `yaml_path'."""
+def load_yaml(
+    yaml_path: Union[Path, str], overrides: Optional[List[Override]] = None
+) -> Configuration:
+    """Load a configuration from a YAML file at `yaml_path'.
+
+    It's possible to override values from the YAML file through the use of `overrides`.
+    Each override is a tuple of a dict path and a value to insert at that path.
+    Dict paths are dot-separated flattened paths in the YAML file, e.g.:
+    `"docker-compose.build-environment.binary-path"`.
+
+    Currently, it's not possible to override values inside a list as there's no support
+    for indexing lists in the config file.
+    """
 
     import importlib
 
     with open(str(yaml_path)) as f:
-        dict_ = yaml.load(f, yaml.FullLoader)
+        dict_: Dict[str, Any] = yaml.load(f, yaml.FullLoader)
+        if overrides:
+            _apply_overrides(dict_, overrides)
 
         network = _ConfigurationParser(dict_, Path(yaml_path))
 
@@ -252,3 +275,16 @@ def load_yaml(yaml_path: Union[Path, str]) -> Configuration:
             )
 
     return config
+
+
+def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
+    for (dict_path, value) in overrides:
+        path_list: List[str] = dict_path.split(".")
+
+        leaf = dpath.util.get(dict_, path_list, default=None)
+        # if the path's last element does not exist, add it as a new dict
+        if not leaf:
+            leaf_name = path_list.pop()
+            value = {leaf_name: value}
+
+        dpath.util.new(dict_, path_list, value)
