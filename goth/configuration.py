@@ -219,6 +219,9 @@ def load_yaml(
     Each override is a tuple of a dict path and a value to insert at that path.
     Dict paths are dot-separated flattened paths in the YAML file, e.g.:
     `"docker-compose.build-environment.binary-path"`.
+
+    Currently, it's not possible to override values inside a list as there's no support
+    for indexing lists in the config file.
     """
 
     import importlib
