@@ -2,8 +2,16 @@
 
 ![codestyle](https://github.com/golemfactory/goth/workflows/codestyle/badge.svg?event=push)
 ![test](https://github.com/golemfactory/goth/workflows/test/badge.svg?event=push)
+![version](https://badge.fury.io/py/goth.svg)
 
 `goth` is an integration testing framework intended to aid the development process of [`yagna`](https://github.com/golemfactory/yagna) itself, as well as apps built on top of it.
+
+## Installation
+`goth` is available as a package on both [test.pypi.org](https://test.pypi.org/) and [pypi.org](https://pypi.org/). You can install it through `pip`:
+```
+pip install goth
+```
+Or include it in your `pyproject.toml`, e.g. when using [`poetry`](https://python-poetry.org/) to manage your dependencies.
 
 ## Running the tests locally
 
@@ -17,9 +25,7 @@ python3 --version
 
 If you don't have Python installed, download the appropriate package and follow instructions from the [releases page](https://www.python.org/downloads/).
 
-#### Project installation
-`goth` is not (yet) available as a standalone package, therefore you will need to set up its development environment in order to use it.
-
+#### Development environment setup
 ##### poetry
 `goth` uses [`poetry`](https://python-poetry.org/) to manage its dependencies and provide a runner for common tasks (e.g. running E2E tests).
 If you don't have `poetry` available on your system then follow its [installation instructions](https://python-poetry.org/docs/#installation) before proceeding.
