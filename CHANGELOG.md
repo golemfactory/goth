@@ -10,9 +10,15 @@
 
 ### Other changes
 
-## [0.2.2] - 2021-04-15
+## [0.2.3] - 2021-04-19
 
 ### Other changes
+- added CHANGELOG.md and CONTRIBUTING.md files [#487](https://github.com/golemfactory/goth/pull/487)
+- updated default goth assets [#490](https://github.com/golemfactory/goth/pull/490)
+
+## [0.2.2] - 2021-04-15
+
+### Features
 - enabled overriding values when parsing `goth-config.yml` file [#489](https://github.com/golemfactory/goth/pull/489)
 
 ## [0.2.1] - 2021-04-14
