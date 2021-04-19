@@ -1,6 +1,4 @@
 # Ignore everything in this directory
 *
-# With some exceptions
+# Except .gitignore itself
 !.gitignore
-!params.json
-!upload
