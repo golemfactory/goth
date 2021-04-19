@@ -10,6 +10,11 @@
 
 ### Other changes
 
+## [0.2.2] - 2021-04-15
+
+### Other changes
+- enabled overriding values when parsing `goth-config.yml` file [#489](https://github.com/golemfactory/goth/pull/489)
+
 ## [0.2.1] - 2021-04-14
 
 ### Bugfixes
