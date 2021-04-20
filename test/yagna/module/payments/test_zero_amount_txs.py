@@ -14,8 +14,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 
 from ya_payment import InvoiceStatus
 
@@ -42,13 +41,13 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             # https://github.com/golemfactory/goth/issues/410
             privileged_mode=True,
@@ -70,8 +69,8 @@ async def test_zero_amount_invoice_is_settled(
     topology = _topology(assets_path, payment_id_pool)
 
     async with runner(topology):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        provider = runner.get_probes(probe_type=ProviderProbeWithLogSteps)[0]
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        provider = runner.get_probes(probe_type=ProviderProbe)[0]
 
         # Market
 
@@ -103,13 +102,14 @@ async def test_zero_amount_invoice_is_settled(
         logger.info("Counter proposal %s", counterproposal_id)
         await provider.wait_for_proposal_accepted()
 
-        new_proposals = await requestor.wait_for_proposals(subscription_id, (provider,))
-        logger.info(new_proposals)
-        new_proposal = new_proposals[0]
-        assert new_proposal.prev_proposal_id == counterproposal_id
+        new_proposals = await requestor.wait_for_proposals(
+            subscription_id,
+            (provider,),
+            lambda proposal: proposal.prev_proposal_id == counterproposal_id,
+        )
 
         # Here: Agreement
-        agreement_id = await requestor.create_agreement(new_proposal)
+        agreement_id = await requestor.create_agreement(new_proposals[0])
         await requestor.confirm_agreement(agreement_id)
         await provider.wait_for_agreement_approved()
 

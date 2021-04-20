@@ -1,7 +1,8 @@
-"""Classes and helpers for managing Probes."""
+"""Package related to goth's probe interface."""
 
 import abc
 import asyncio
+from collections import OrderedDict
 import contextlib
 import copy
 import logging
@@ -10,6 +11,7 @@ from typing import (
     AsyncIterator,
     Dict,
     Iterator,
+    List,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -19,14 +21,12 @@ from docker import DockerClient
 
 from goth.address import (
     YAGNA_BUS_URL,
-    YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
 
 from goth import gftp
 from goth.node import DEFAULT_SUBNET
-from goth.runner.agent import AgentMixin
-from goth.runner.api_client import ApiClientMixin
+from goth.runner import process
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
@@ -34,10 +34,17 @@ from goth.runner.container.yagna import (
     YagnaContainerConfig,
     PAYMENT_MOUNT_PATH,
 )
-from goth.runner.exceptions import KeyAlreadyExistsError
+from goth.runner.exceptions import KeyAlreadyExistsError, TemporalAssertionError
 from goth.runner.log import LogConfig, monitored_logger
 from goth.runner.log_monitor import PatternMatchingEventMonitor
-from goth.runner import process
+from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
+from goth.runner.probe.mixin import (
+    ActivityApiMixin,
+    MarketApiMixin,
+    PaymentApiMixin,
+    ProviderLogMixin,
+)
+from goth.runner.probe.rest_client import RestApiComponent
 
 
 if TYPE_CHECKING:
@@ -63,6 +70,9 @@ class Probe(abc.ABC):
     in subclasses (see `ProviderProbe` and `RequestorProbe`).
     """
 
+    api: RestApiComponent
+    """Component with clients for all three yagna REST APIs."""
+
     runner: "Runner"
     """A runner that created this probe."""
 
@@ -74,6 +84,12 @@ class Probe(abc.ABC):
 
     ip_address: Optional[str] = None
     """An IP address of the daemon's container in the Docker network."""
+
+    _agents: "OrderedDict[str, AgentComponent]"
+    """Collection of agent components that will be started as part of this probe.
+
+    Keys are agent names, values are subclasses of `AgentComponent`.
+    """
 
     _docker_client: DockerClient
     """A docker client used to create the deamon's container."""
@@ -96,6 +112,7 @@ class Probe(abc.ABC):
         log_config: LogConfig,
     ):
         self.runner = runner
+        self._agents = OrderedDict()
         self._docker_client = client
         self._logger = ProbeLoggingAdapter(
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: config.name}
@@ -107,6 +124,11 @@ class Probe(abc.ABC):
 
     def __str__(self):
         return self.name
+
+    @property
+    def agents(self) -> List[AgentComponent]:
+        """List of agent components that will be started as part of this probe."""
+        return list(self._agents.values())
 
     @property
     def address(self) -> Optional[str]:
@@ -141,13 +163,24 @@ class Probe(abc.ABC):
 
         return new_config
 
-    async def start(self) -> None:
-        """Start the probe.
+    def add_agent(self, agent: AgentComponent) -> None:
+        """Add an agent to be started for this probe."""
+        if self._agents.get(agent.name):
+            raise KeyAlreadyExistsError(
+                f"Probe already has agent component with name: `{agent.name}`"
+            )
+        self._agents[agent.name] = agent
 
-        This method is extended in subclasses and mixins.
-        """
+    async def start(self) -> None:
+        """Start the probe."""
 
         await self._start_container()
+        self.api = RestApiComponent(self)
+
+    async def start_agents(self):
+        """Start all of the probe's agents."""
+        for agent in self.agents:
+            await agent.start()
 
     async def stop(self):
         """
@@ -156,6 +189,8 @@ class Probe(abc.ABC):
         Once stopped, a probe cannot be restarted.
         """
         self._logger.info("Stopping probe")
+        for agent in self.agents:
+            await agent.stop()
         if self.container.logs:
             await self.container.logs.stop()
 
@@ -285,6 +320,7 @@ class Probe(abc.ABC):
             with monitored_logger(
                 f"goth.{self.name}.command_output", cmd_monitor
             ) as cmd_logger:
+
                 cmd_task = asyncio.create_task(
                     process.run_command(
                         command.split(),
@@ -296,6 +332,9 @@ class Probe(abc.ABC):
                 )
                 yield cmd_task, cmd_monitor
 
+                await cmd_task
+                logger.debug("Command task has finished")
+
         except Exception as e:
             logger.warning(f"Cancelling command on error: {e!r}")
             if cmd_task and not cmd_task.done():
@@ -304,8 +343,8 @@ class Probe(abc.ABC):
 
         finally:
             await cmd_monitor.stop()
-            logger.debug("Waiting for the command to finish")
-            await asyncio.gather(cmd_task, return_exceptions=True)
+            for assertion in cmd_monitor.failed:
+                raise TemporalAssertionError(assertion.name)
 
 
 @contextlib.contextmanager
@@ -319,12 +358,16 @@ def create_probe(
 
     probe: Optional[Probe] = None
     try:
+        logger.debug(
+            "Creating probe. config=%s, probe_type=%s", config, config.probe_type
+        )
         probe = config.probe_type(runner, docker_client, config, log_config)
         for name, value in config.probe_properties.items():
             probe.__setattr__(name, value)
         yield probe
     finally:
         if probe:
+            logger.debug("Removing probe. name=%s", probe.name)
             probe.remove()
 
 
@@ -333,6 +376,7 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
     """Implement AsyncContextManager for starting and stopping a probe."""
 
     try:
+        logger.debug("Starting probe. name=%s", probe.name)
         await probe.start()
         assert probe.ip_address
         yield probe.ip_address
@@ -340,27 +384,8 @@ async def run_probe(probe: Probe) -> AsyncIterator[str]:
         await probe.stop()
 
 
-class RequestorProbe(ApiClientMixin, Probe):
-    """A requestor probe that can make calls to Yagna REST APIs.
-
-    This class is used in Level 1 scenarios and as a type of `self`
-    argument for `Market/Payment/ActivityOperationsMixin` methods.
-    """
-
-    _api_base_host: str
-    """Base hostname for the Yagna API clients."""
-
-    def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-    ):
-        super().__init__(runner, client, config, log_config)
-        host_port = self.container.ports[YAGNA_REST_PORT]
-        proxy_ip = "127.0.0.1"  # use the host-mapped proxy port
-        self._api_base_host = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
+class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
+    """A probe subclass with activity API steps and requestor payment init."""
 
     async def _start_container(self) -> None:
         await super()._start_container()
@@ -369,14 +394,12 @@ class RequestorProbe(ApiClientMixin, Probe):
         self.cli.payment_init(sender_mode=True)
 
 
-class ProviderProbe(AgentMixin, Probe):
+class ProviderProbe(MarketApiMixin, PaymentApiMixin, ProviderLogMixin, Probe):
     """A probe subclass that can run a provider agent."""
 
-    agent_preset: Optional[str]
-    """Name of the preset to be used when placing a market offer."""
-
-    subnet: str
-    """Name of the subnet to which the provider agent connects."""
+    provider_agent: ProviderAgentComponent
+    """The agent component running `ya-provider` for this probe.
+    This field is added for convenience to make getting this agent instance easier."""
 
     def __init__(
         self,
@@ -388,20 +411,5 @@ class ProviderProbe(AgentMixin, Probe):
         subnet: str = DEFAULT_SUBNET,
     ):
         super().__init__(runner, client, config, log_config)
-        self.agent_preset = agent_preset
-        self.subnet = subnet
-
-    async def start_agent(self):
-        """Start the provider agent and attach to its log stream."""
-
-        self._logger.info("Starting ya-provider")
-
-        if self.agent_preset:
-            self.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
-        self.container.exec_run(f"ya-provider config set --subnet {self.subnet}")
-
-        log_stream = self.container.exec_run(
-            f"ya-provider run" f" --app-key {self.app_key} --node-name {self.name}",
-            stream=True,
-        )
-        self.agent_logs.start(log_stream.output)
+        self.provider_agent = ProviderAgentComponent(self, subnet, agent_preset)
+        self.add_agent(self.provider_agent)

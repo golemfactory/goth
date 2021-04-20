@@ -17,8 +17,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 from test.yagna.helpers.activity import wasi_exe_script
 
 from test.yagna.helpers.negotiation import negotiate_agreements, DemandBuilder
@@ -49,13 +48,13 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
@@ -77,8 +76,8 @@ async def test_provider_multi_activity(
     """Test provider handling multiple activities in single Agreement."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         # Market
         task_package = task_package_template.format(
@@ -139,8 +138,8 @@ async def test_provider_single_activity_at_once(
     """Test provider rejecting second activity if one is already running."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         # Market
         task_package = task_package_template.format(

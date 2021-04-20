@@ -191,3 +191,32 @@ async def test_waitable_monitor_timeout_success():
 
     await monitor.wait_for_event(lambda e: e == 1, timeout=1.0)
     await monitor.stop()
+
+
+@pytest.mark.asyncio
+async def test_add_assertion_while_checking():
+    """Test if adding an assertion while iterating over existing assertions works.
+
+    See https://github.com/golemfactory/goth/issues/464
+    """
+
+    monitor = EventMonitor()
+
+    async def long_running_assertion_1(stream: Events):
+        async for _ in stream:
+            await asyncio.sleep(0.05)
+
+    async def long_running_assertion_2(stream: Events):
+        async for _ in stream:
+            await asyncio.sleep(0.05)
+
+    monitor.add_assertion(long_running_assertion_1)
+    monitor.add_assertion(long_running_assertion_2)
+    monitor.start()
+
+    await monitor.add_event(1)
+    await asyncio.sleep(0)
+    # Add a new assertion while long_running_assertions are still being checked
+    monitor.add_assertion(assert_all_positive)
+
+    await monitor.stop()

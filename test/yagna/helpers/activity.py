@@ -5,13 +5,12 @@ import os
 from pathlib import Path
 
 from goth.runner import Runner
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import RequestorProbe, ProviderProbe
 
 
 async def run_activity(
-    requestor: RequestorProbeWithApiSteps,
-    provider: ProviderProbeWithLogSteps,
+    requestor: RequestorProbe,
+    provider: ProviderProbe,
     agreement_id: str,
     exe_script: dict,
 ):

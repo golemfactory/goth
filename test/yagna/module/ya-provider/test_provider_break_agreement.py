@@ -14,8 +14,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import RequestorProbe, ProviderProbe
 
 from test.yagna.helpers.activity import run_activity, wasi_exe_script
 from test.yagna.helpers.negotiation import negotiate_agreements, DemandBuilder
@@ -49,14 +48,14 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             volumes=provider_volumes,
             privileged_mode=True,
@@ -65,7 +64,7 @@ def _topology(
 
 
 def build_demand(
-    requestor: RequestorProbeWithApiSteps,
+    requestor: RequestorProbe,
     runner: Runner,
     task_package_template: str,
     require_debit_notes=True,
@@ -105,8 +104,8 @@ async def test_provider_idle_agreement(
     """Test provider breaking idle Agreement."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         agreement_providers = await negotiate_agreements(
             requestor,
@@ -135,8 +134,8 @@ async def test_provider_idle_agreement_after_2_activities(
     """Test provider breaking idle Agreement after 2 Activities were computed."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         agreement_providers = await negotiate_agreements(
             requestor,
@@ -171,8 +170,8 @@ async def test_provider_debit_notes_accept_timeout(
     """Test provider breaking Agreement if Requestor doesn't accept DebitNotes."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         agreement_providers = await negotiate_agreements(
             requestor,
@@ -213,8 +212,8 @@ async def test_provider_timeout_unresponsive_requestor(
     """Test provider breaking Agreement if Requestor doesn't accept DebitNotes."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         agreement_providers = await negotiate_agreements(
             requestor,

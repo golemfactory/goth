@@ -178,9 +178,9 @@ class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
 
     async def stop(self) -> None:
         """Stop the monitor."""
-        await super().stop()
         if self._buffer_task:
             self._buffer_task.stop(StopThreadException)
+        await super().stop()
 
     def update_stream(self, in_stream: Iterator[bytes]):
         """Update the stream when restarting a container."""

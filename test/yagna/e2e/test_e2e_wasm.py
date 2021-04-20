@@ -15,8 +15,7 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.provider import ProviderProbeWithLogSteps
-from goth.runner.requestor import RequestorProbeWithApiSteps
+from goth.runner.probe import ProviderProbe, RequestorProbe
 from test.yagna.helpers.activity import wasi_exe_script
 
 logger = logging.getLogger(__name__)
@@ -42,13 +41,13 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbeWithApiSteps,
+            probe_type=RequestorProbe,
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             # https://github.com/golemfactory/goth/issues/410
             privileged_mode=True,
@@ -56,7 +55,7 @@ def _topology(
         ),
         YagnaContainerConfig(
             name="provider_2",
-            probe_type=ProviderProbeWithLogSteps,
+            probe_type=ProviderProbe,
             environment=provider_env,
             # https://github.com/golemfactory/goth/issues/410
             privileged_mode=True,
@@ -78,8 +77,8 @@ async def test_e2e_wasm_success(
     topology = _topology(assets_path, payment_id_pool)
 
     async with runner(topology):
-        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
-        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
+        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
+        providers = runner.get_probes(probe_type=ProviderProbe)
 
         # Market
 
@@ -115,12 +114,12 @@ async def test_e2e_wasm_success(
             await provider.wait_for_proposal_accepted()
 
             new_proposals = await requestor.wait_for_proposals(
-                subscription_id, (provider,)
+                subscription_id,
+                (provider,),
+                lambda proposal: proposal.prev_proposal_id == counterproposal_id,
             )
-            new_proposal = new_proposals[0]
-            assert new_proposal.prev_proposal_id == counterproposal_id
 
-            agreement_id = await requestor.create_agreement(new_proposal)
+            agreement_id = await requestor.create_agreement(new_proposals[0])
             await requestor.confirm_agreement(agreement_id)
             await provider.wait_for_agreement_approved()
             await requestor.wait_for_approval(agreement_id)
