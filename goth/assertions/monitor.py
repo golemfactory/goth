@@ -8,7 +8,7 @@ from collections import OrderedDict
 import importlib
 import logging
 import sys
-from typing import Callable, Generic, List, Optional, Sequence, Union
+from typing import Callable, Generic, List, Optional, Sequence, Set, Union
 
 import colors
 
@@ -76,6 +76,9 @@ class EventMonitor(Generic[E]):
     _logger: Union[logging.Logger, MonitorLoggerAdapter]
     """A logger instance for this monitor."""
 
+    _reported: Set[Assertion[E]]
+    """The set of assertions for which acceptance or failure has been reported."""
+
     _worker_task: Optional[asyncio.Task]
     """A worker task that registers events and checks assertions."""
 
@@ -97,6 +100,7 @@ class EventMonitor(Generic[E]):
             self._logger = MonitorLoggerAdapter(
                 self._logger, {MonitorLoggerAdapter.EXTRA_MONITOR_NAME: self.name}
             )
+        self._reported = set()
         self._stop_callback = on_stop
         self._worker_task = None
 
@@ -245,6 +249,12 @@ class EventMonitor(Generic[E]):
             await self._check_assertions(events_ended)
 
     async def _check_assertions(self, events_ended: bool) -> None:
+        """Notify assertions that a new event has occurred.
+
+        Should be called exactly once after a new event is added
+        to `self._events` or after the monitor is stopped, with
+        `events_ended` set to `True`.
+        """
 
         event_descr = (
             f"#{len(self._events)} ({self._events[-1]})"
@@ -252,23 +262,26 @@ class EventMonitor(Generic[E]):
             else "EndOfEvents"
         )
 
+        # Notify all active (not done) assertions about the new event.
+        for a in list(self.assertions.keys()):
+            if not a.done:
+                await a.update_events(events_ended=events_ended)
+
+        # Report acceptance/failure for all assertions that completed
+        # since last check.
         for a, level in list(self.assertions.items()):
 
-            if a.done:
+            if not a.done or a in self._reported:
                 continue
 
-            await a.update_events(events_ended=events_ended)
-
-            if a.done:
-                self._logger.debug(
-                    "Assertion '%s' finished after event %s", a.name, event_descr
-                )
-
+            self._reported.add(a)
+            self._logger.debug(
+                "Assertion '%s' finished after event %s", a.name, event_descr
+            )
             if a.accepted:
                 result = a.result()
                 msg = colors.green("Assertion '%s' succeeded; result: %s", style="bold")
                 self._logger.log(level, msg, a.name, result)
-
             elif a.failed:
                 await self._report_failure(a)
 

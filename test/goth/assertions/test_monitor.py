@@ -1,5 +1,4 @@
 """Test the `assertions.monitor`."""
-
 import asyncio
 
 import pytest
@@ -220,3 +219,57 @@ async def test_add_assertion_while_checking():
     monitor.add_assertion(assert_all_positive)
 
     await monitor.stop()
+
+
+@pytest.mark.asyncio
+async def test_assertion_results_reported(caplog):
+    """Test that assertion success and failure are logged.
+
+    This used to be a problem for assertions that do not succeed or fail
+    immediately after consuming an event. For example if an assertion
+    contains `asyncio.wait_for()` then it may raise an exception some time
+    after it consumed any event. After the failure, the monitor will not
+    feed new events to the assertion. But it should report the failure
+    (exactly once).
+    """
+
+    monitor = EventMonitor()
+
+    async def never_accept(events):
+        async for _ in events:
+            pass
+
+    async def await_impossible(events):
+        await asyncio.wait_for(never_accept(events), timeout=0.1)
+
+    async def await_inevitable(events):
+        try:
+            await asyncio.wait_for(never_accept(events), timeout=0.1)
+        except asyncio.TimeoutError:
+            return "I'm fine!"
+
+    monitor.add_assertion(await_impossible)
+    monitor.add_assertion(await_inevitable)
+    monitor.start()
+
+    await monitor.add_event(1)
+    # At this point the assertions are still alive
+    assert not monitor.done
+
+    await asyncio.sleep(0.3)
+    # The assertions should be done now
+    assert monitor.failed
+    assert monitor.satisfied
+
+    # Stopping the monitor should trigger logging assertion success and
+    # failure messages
+    await monitor.stop()
+
+    assert any(
+        record.levelname == "ERROR" and "failed" in record.message
+        for record in caplog.records
+    )
+    assert any(
+        record.levelname == "INFO" and "I'm fine!" in record.message
+        for record in caplog.records
+    )
