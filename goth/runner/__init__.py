@@ -18,8 +18,10 @@ from typing import (
     TypeVar,
 )
 
+import colors
 import docker
 
+from goth.assertions.monitor import EventMonitor
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
@@ -123,7 +125,7 @@ class Runner:
         probes = [p for p in probes if isinstance(p, probe_type)]
         return cast(List[ProbeType], probes)
 
-    def check_assertion_errors(self) -> None:
+    def check_assertion_errors(self, *extra_monitors: EventMonitor) -> None:
         """If any monitor reports an assertion error, raise the first error."""
 
         probe_agents = chain(*(probe.agents for probe in self.probes))
@@ -133,6 +135,7 @@ class Runner:
                 (probe.container.logs for probe in self.probes),
                 (agent.log_monitor for agent in probe_agents),
                 [self.proxy.monitor] if self.proxy else [],
+                extra_monitors,
             )
         )
         failed = chain.from_iterable(
@@ -257,7 +260,7 @@ class Runner:
 
     async def _enter(self) -> None:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
-        logger.info("Running test: %s", self.test_name)
+        logger.info(colors.yellow("Running test: %s"), self.test_name)
 
         await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
@@ -274,7 +277,7 @@ class Runner:
         await self._start_nodes()
 
     async def _exit(self):
-        logger.info("Test finished: %s", self.test_name)
+        logger.info(colors.yellow("Test finished: %s"), self.test_name)
         await self._exit_stack.aclose()
         payment.clean_up()
 
