@@ -6,6 +6,5 @@ RUN chmod +x /usr/bin/* \
     && apt install -y ./*.deb \
     && apt install -y libssl-dev ca-certificates \
     && update-ca-certificates \
-    && apt install -y procps \
     && ln -s /usr/bin/exe-unit /usr/lib/yagna/plugins/exe-unit
 ENTRYPOINT /usr/bin/yagna

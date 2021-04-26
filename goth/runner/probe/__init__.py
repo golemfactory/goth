@@ -266,13 +266,6 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-    def kill_daemon(self):
-        """Kill yagna daemon inside container."""
-        # This assumes, that there's only one process called yagna in daemon.
-        self.container.exec_run(
-            'bash -c "while [ -n `pgrep yagna` ]; do pkill yagna; date; sleep 1; done"'
-        )
-
     def set_agent_env_vars(self, env: Dict[str, str]) -> None:
         """Add vars needed to talk to the daemon in this probe's container to `env`."""
 
