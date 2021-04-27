@@ -217,7 +217,10 @@ class ReleaseDownloader(GithubDownloader):
         self.repo_name = repo
 
     def _get_latest_release(
-        self, tag_substring: str, content_type: str
+        self,
+        tag_substring: str,
+        content_type: str,
+        use_unstable: bool = False,
     ) -> Optional[dict]:
         """Get the latest version, this includes pre-releases.
 
@@ -228,6 +231,9 @@ class ReleaseDownloader(GithubDownloader):
         logger.debug("releases=%s", json.dumps(obj2dict(all_releases)))
 
         def release_filter(release: dict, tag_substring: str) -> bool:
+            if not use_unstable and release["prerelease"]:
+                return False
+
             has_matching_asset = any(
                 asset["content_type"] == content_type for asset in release["assets"]
             )
@@ -270,6 +276,7 @@ class ReleaseDownloader(GithubDownloader):
         content_type: str = DEFAULT_CONTENT_TYPE,
         output: Optional[Path] = None,
         tag_substring: str = "",
+        use_unstable: bool = False,
     ) -> Path:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
@@ -280,8 +287,9 @@ class ReleaseDownloader(GithubDownloader):
         :param content_type: content-type string for the asset to download
         :param output: file path to where the asset should be saved
         :param tag_substring: substring the release's tag name must contain
+        :param use_unstable: if True, pre-releases will be included
         """
-        release = self._get_latest_release(tag_substring, content_type)
+        release = self._get_latest_release(tag_substring, content_type, use_unstable)
         if not release:
             raise AssetNotFound(
                 f"Could not find release. "
