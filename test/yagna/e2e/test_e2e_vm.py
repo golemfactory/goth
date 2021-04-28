@@ -149,7 +149,7 @@ async def test_e2e_vm_success(
             await provider.wait_for_exeunit_started()
             batch_id = await requestor.call_exec(activity_id, json.dumps(exe_script))
             await requestor.collect_results(
-                activity_id, batch_id, num_commands, timeout=300
+                activity_id, batch_id, num_commands, timeout=600
             )
             await requestor.destroy_activity(activity_id)
             await provider.wait_for_exeunit_finished()
