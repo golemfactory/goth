@@ -83,7 +83,7 @@ async def test_e2e_vm_success(
     async with runner(topology):
         task_package = (
             "hash:sha3:9a3b5d67b0b27746283cb5f287c13eab1beaa12d92a9f536b747c7ae:"
-            "http://3.249.139.167:8000/local-image-c76719083b.gvmi"
+            "http://yacn2.dev.golem.network:8000/local-image-c76719083b.gvmi"
         )
 
         output_file = "out0000.png"
@@ -149,7 +149,7 @@ async def test_e2e_vm_success(
             await provider.wait_for_exeunit_started()
             batch_id = await requestor.call_exec(activity_id, json.dumps(exe_script))
             await requestor.collect_results(
-                activity_id, batch_id, num_commands, timeout=300
+                activity_id, batch_id, num_commands, timeout=600
             )
             await requestor.destroy_activity(activity_id)
             await provider.wait_for_exeunit_finished()

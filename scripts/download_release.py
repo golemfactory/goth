@@ -24,6 +24,12 @@ parser.add_argument(
     help="Output path, may be either a file or a directory.",
     type=Path,
 )
+parser.add_argument(
+    "-u",
+    "--unstable",
+    help="If set, pre-releases will be included.",
+    action="store_true",
+)
 parser.add_argument("-t", "--token", default=DEFAULT_TOKEN)
 parser.add_argument(
     "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
@@ -40,4 +46,6 @@ parser.add_argument("repo", help="Name of the git repository to be used.")
 if __name__ == "__main__":
     args = parser.parse_args()
     downloader = ReleaseDownloader(args.repo, token=args.token, verbose=args.verbose)
-    downloader.download(args.name, args.content_type, args.output, args.tag)
+    downloader.download(
+        args.name, args.content_type, args.output, args.tag, args.unstable
+    )

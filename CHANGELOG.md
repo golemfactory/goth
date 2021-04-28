@@ -10,6 +10,18 @@
 
 ### Other changes
 
+## [0.2.4] - 2021-04-27
+
+### Features
+- added optional `extra_monitors` parameter to `Runner#check_assertion_errors` [#495](https://github.com/golemfactory/goth/pull/495)
+- added the `--unstable` option to release downloader script [#500](https://github.com/golemfactory/goth/pull/500)
+
+### Bugfixes
+- fixed reporting of assertion success and failure in `EventMonitor` [#495](https://github.com/golemfactory/goth/pull/495)
+
+### Other changes
+- changed the `yagna` Docker image builder to use stable releases by default [#500](https://github.com/golemfactory/goth/pull/500)
+
 ## [0.2.3] - 2021-04-19
 
 ### Other changes
