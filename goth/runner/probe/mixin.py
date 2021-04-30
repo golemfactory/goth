@@ -334,3 +334,14 @@ class ProviderLogMixin:
     async def wait_for_invoice_paid(self: ProviderProbeProtocol):
         """Wait until the invoice is paid."""
         await self.provider_agent.wait_for_log("Invoice .+? for agreement .+? was paid")
+
+    @step()
+    async def wait_for_agreement_broken(self, reason: str):
+        """Wait until Provider will break Agreement."""
+        pattern = rf"Breaking agreement .*, reason: {reason}"
+        await self.provider_agent.wait_for_log(pattern)
+
+    @step()
+    async def wait_for_log(self, pattern: str):
+        """Wait for specific log."""
+        await self.provider_agent.wait_for_log(pattern)

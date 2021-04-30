@@ -15,8 +15,8 @@ from goth.node import node_environment
 from goth.runner import Runner
 from goth.runner.container.payment import PaymentIdPool
 from goth.runner.container.yagna import YagnaContainerConfig
-from goth.runner.probe import ProviderProbe, RequestorProbe
-from test.yagna.helpers.activity import wasi_exe_script
+from goth.runner.provider import ProviderProbeWithLogSteps
+from goth.runner.requestor import RequestorProbeWithApiSteps
 
 from test.yagna.helpers.negotiation import negotiate_agreements, DemandBuilder
 from test.yagna.helpers.payment import pay_all
@@ -46,13 +46,14 @@ def _topology(
     return [
         YagnaContainerConfig(
             name="requestor",
-            probe_type=RequestorProbe,
+            probe_type=RequestorProbeWithApiSteps,
+            volumes={assets_path / "requestor": "/asset"},
             environment=requestor_env,
             payment_id=payment_id_pool.get_id(),
         ),
         YagnaContainerConfig(
             name="provider_1",
-            probe_type=ProviderProbe,
+            probe_type=ProviderProbeWithLogSteps,
             environment=provider_env,
             payment_id=payment_id_pool.get_id(),
             volumes=provider_volumes,
@@ -68,6 +69,7 @@ def _topology(
 async def test_provider_multi_activity(
     assets_path: Path,
     demand_constraints: str,
+    exe_script: dict,
     payment_id_pool: PaymentIdPool,
     runner: Runner,
     task_package_template: str,
@@ -75,8 +77,8 @@ async def test_provider_multi_activity(
     """Test provider handling multiple activities in single Agreement."""
 
     async with runner(_topology(assets_path, payment_id_pool)):
-        requestor = runner.get_probes(probe_type=RequestorProbe)[0]
-        providers = runner.get_probes(probe_type=ProviderProbe)
+        requestor = runner.get_probes(probe_type=RequestorProbeWithApiSteps)[0]
+        providers = runner.get_probes(probe_type=ProviderProbeWithLogSteps)
 
         # Market
         task_package = task_package_template.format(
@@ -102,8 +104,6 @@ async def test_provider_multi_activity(
         )
 
         #  Activity
-        exe_script = wasi_exe_script(runner)
-
         for agreement_id, provider in agreement_providers:
             for i in range(0, 3):
                 logger.info("Running activity %n-th time on %s", i, provider.name)
