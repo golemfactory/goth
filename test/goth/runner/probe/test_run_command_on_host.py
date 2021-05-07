@@ -60,4 +60,4 @@ async def test_run_command_on_host(monkeypatch):
         monitor,
     ):
 
-        monitor.wait_for_pattern(".*eChO", timeout=10)
+        await monitor.wait_for_pattern(".*eChO", timeout=10)
