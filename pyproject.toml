@@ -49,14 +49,7 @@ pytest = "^6.2"
 [tool.poe.tasks]
 codeformat = "black -v --check --diff ."
 codestyle = "flake8"
-# ugly hack to make assets work, fix progress tracked here: https://github.com/golemfactory/yagna-integration/issues/336
-ci_test = "pytest -svx test/yagna --ignore test/yagna/interactive --assets-path=/home/runner/work/yagna/yagna/test/yagna/e2e/assets"
-ci_test_self_hosted = "pytest -svx test/yagna --ignore test/yagna/interactive --assets-path=/opt/actions-runner/_work/goth/goth/test/yagna/e2e/assets"
-e2e_test = "pytest -svx test/yagna/e2e"
-interactive = "pytest -svx test/yagna/interactive/test_interactive_vm.py"
 unit_test = "pytest -svx test/goth"
-provider_test = "pytest -svx test/yagna/module/ya-provider --assets-path=test/yagna/e2e/assets"
-payments_test = "pytest -svx test/yagna/module/payments --assets-path=test/yagna/e2e/assets"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
