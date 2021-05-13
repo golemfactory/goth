@@ -21,7 +21,7 @@ def node_environment(
 
     daemon_env = {
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
-        "ERC20_RINKEBY_GETH_ADDR": "http://ethereum:8545",
+        "RINKEBY_GETH_ADDR": "http://ethereum:8545",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "IDLE_AGREEMENT_TIMEOUT": "600s",
         "MEAN_CYCLIC_BCAST_INTERVAL": "5s",
