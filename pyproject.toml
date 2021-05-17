@@ -49,6 +49,7 @@ pytest = "^6.2"
 [tool.poe.tasks]
 codeformat = "black -v --check --diff ."
 codestyle = "flake8"
+interactive = "python -m goth start goth/default-assets/goth-config.yml"
 unit_test = "pytest -svx test/goth"
 
 [build-system]
