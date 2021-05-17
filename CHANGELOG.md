@@ -10,6 +10,17 @@
 
 ### Other changes
 
+## [0.3.0] - 2021-05-17
+
+### Breaking changes
+- removed `yagna` integration tests from the repo [#503](https://github.com/golemfactory/goth/pull/503)
+
+### Features
+- added `poe` job for running `goth` interactive mode [bde7d5f](https://github.com/golemfactory/goth/commit/bde7d5faca9570af3455bd56c738c385ecd760a0)
+
+### Other changes
+- updated `GETH_ADDR` env variable in `yagna` nodes started by `goth` [#504](https://github.com/golemfactory/goth/pull/504)
+
 ## [0.2.4] - 2021-04-27
 
 ### Features
