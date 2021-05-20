@@ -59,7 +59,8 @@ class Configuration:
         name: str,
         use_proxy: bool,
         privileged_mode: bool,
-        volumes: Optional[Dict[Path, Path]],
+        environment: Optional[Dict[str, str]] = None,
+        volumes: Optional[Dict[Path, Path]] = None,
         **kwargs,
     ) -> None:
         """Add configuration of a new requestor or provider node."""
@@ -70,6 +71,8 @@ class Configuration:
             )
         else:
             node_env = node_environment()
+        if environment:
+            node_env.update(environment)
 
         container_cfg = YagnaContainerConfig(
             name=name,
@@ -168,6 +171,24 @@ class _ConfigurationParser:
                 volumes[source] = dest
         return volumes
 
+    def read_environment(self) -> Dict[str, str]:
+        """Read a specification of environment variables from this parser's document.
+
+        The variables must be strings in the form: "{NAME}={VALUE}".
+        """
+        self.ensure_type(list)
+        environment = {}
+        for env_var in self:
+            name_value_pair = env_var.split("=")
+            if len(name_value_pair) != 2:
+                raise ConfigurationParseError(
+                    f"Invalid format of environment variable {env_var}, "
+                    f"expected `VAR_NAME=VAR_VALUE`."
+                )
+            name, value = name_value_pair
+            environment[name] = value
+        return environment
+
     def read_compose_config(self) -> ComposeConfig:
         """Read a `ComposeConfig` instance from this parser's document."""
         self.ensure_type(dict)
@@ -257,20 +278,24 @@ def load_yaml(
             mounts = node_type.get("mount")
             volumes = mounts.read_volumes_spec() if mounts else {}
 
+            env = node_type.get("environment")
+            env_dict = env.read_environment() if env else {}
+
             privileged_mode = node_type.get("privileged-mode", False)
 
-            node_types[name] = (class_, volumes, privileged_mode)
+            node_types[name] = (class_, volumes, privileged_mode, env_dict)
 
         for node in network["nodes"]:
             name = node["name"]
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
-            class_, volumes, privileged_mode = node_types[type_name]
+            class_, volumes, privileged_mode, env_dict = node_types[type_name]
             config.add_node(
                 class_,
                 name,
                 use_proxy=use_proxy,
                 privileged_mode=privileged_mode,
+                environment=env_dict,
                 volumes=volumes,
             )
 
