@@ -9,11 +9,11 @@ from tempfile import gettempdir
 from typing import Iterator, List, Optional, Sequence
 from uuid import uuid4
 
-from goth.project import TEST_DIR
+from goth.project import DEFAULT_ASSETS_DIR
 
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
-DEFAULT_KEY_DIR = Path(TEST_DIR, "yagna", "keys")
+DEFAULT_KEY_DIR = Path(DEFAULT_ASSETS_DIR / "keys")
 
 
 def get_id_directory() -> Path:

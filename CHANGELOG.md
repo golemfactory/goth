@@ -10,6 +10,29 @@
 
 ### Other changes
 
+## [0.3.0] - 2021-05-17
+
+### Breaking changes
+- removed `yagna` integration tests from the repo [#503](https://github.com/golemfactory/goth/pull/503)
+
+### Features
+- added `poe` job for running `goth` interactive mode [bde7d5f](https://github.com/golemfactory/goth/commit/bde7d5faca9570af3455bd56c738c385ecd760a0)
+
+### Other changes
+- updated `GETH_ADDR` env variable in `yagna` nodes started by `goth` [#504](https://github.com/golemfactory/goth/pull/504)
+
+## [0.2.4] - 2021-04-27
+
+### Features
+- added optional `extra_monitors` parameter to `Runner#check_assertion_errors` [#495](https://github.com/golemfactory/goth/pull/495)
+- added the `--unstable` option to release downloader script [#500](https://github.com/golemfactory/goth/pull/500)
+
+### Bugfixes
+- fixed reporting of assertion success and failure in `EventMonitor` [#495](https://github.com/golemfactory/goth/pull/495)
+
+### Other changes
+- changed the `yagna` Docker image builder to use stable releases by default [#500](https://github.com/golemfactory/goth/pull/500)
+
 ## [0.2.3] - 2021-04-19
 
 ### Other changes
