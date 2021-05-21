@@ -179,7 +179,7 @@ class _ConfigurationParser:
         self.ensure_type(list)
         environment = {}
         for env_var in self:
-            name_value_pair = env_var.split("=")
+            name_value_pair = env_var.split("=", 1)
             if len(name_value_pair) != 2:
                 raise ConfigurationParseError(
                     f"Invalid format of environment variable {env_var}, "
