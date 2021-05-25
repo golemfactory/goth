@@ -10,6 +10,14 @@
 
 ### Other changes
 
+## [0.3.1] - 2021-05-25
+
+### Features
+- enabled setting environment variables through `goth-config.yml` [#505](https://github.com/golemfactory/goth/pull/505)
+- added generic `wait_for_log` step to provider probe [#434](https://github.com/golemfactory/goth/pull/434)
+
+### Other changes
+
 ## [0.3.0] - 2021-05-17
 
 ### Breaking changes
