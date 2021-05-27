@@ -10,7 +10,7 @@
 
 ### Other changes
 
-## [0.3.2] - 2021-05-26
+## [0.3.2] - 2021-05-27
 
 ### Features
 - pinned specific revision of `debian` Docker image to be used as base in default Dockerfiles [c31288e](https://github.com/golemfactory/goth/commit/c31288edbb3e45235877b0674d36104d8b4a2af3)
