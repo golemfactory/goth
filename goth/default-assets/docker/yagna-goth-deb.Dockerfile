@@ -1,5 +1,5 @@
-# see: https://github.com/golemfactory/ya-service-bus/issues/31
-FROM debian@sha256:bfc52d4a307296ece86057c74b899818fb154b33b42e8074a6bea848e84a3e71
+# debian:bullseye-slim, 2021-05-12
+FROM debian@sha256:e827c9bc6913625ec75c8b466e6e79a6b936d0801956be607bce08a07078f57a
 COPY deb/* ./
 RUN chmod +x /usr/bin/* \
     && apt update \
