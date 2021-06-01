@@ -10,6 +10,11 @@
 
 ### Other changes
 
+## [0.4.0] - 2021-06-01
+
+### Breaking changes
+- changed regex used for waiting on yagna REST API to come online (compatible with `yagna` 0.7+) [#508](https://github.com/golemfactory/goth/pull/508)
+
 ## [0.3.2] - 2021-05-27
 
 ### Features
