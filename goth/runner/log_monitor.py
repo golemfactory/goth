@@ -47,7 +47,7 @@ class LogEvent:
 
             try:
                 formatted_time = datetime.strptime(
-                    result["datetime"], "%Y-%m-%dT%H:%M:%SZ"
+                    result["datetime"], "%Y-%m-%dT%H:%M:%S.%f%z"
                 )
             except Exception:
                 pass
