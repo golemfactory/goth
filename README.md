@@ -52,7 +52,7 @@ docker run hello-world
 pip install goth
 ```
 
-It is encouraged to use a Python virtual environment. TODO
+It is encouraged to use a Python virtual environment.
 
 ## Usage
 
