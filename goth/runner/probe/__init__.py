@@ -38,12 +38,7 @@ from goth.runner.exceptions import KeyAlreadyExistsError, TemporalAssertionError
 from goth.runner.log import LogConfig, monitored_logger
 from goth.runner.log_monitor import PatternMatchingEventMonitor
 from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
-from goth.runner.probe.mixin import (
-    ActivityApiMixin,
-    MarketApiMixin,
-    PaymentApiMixin,
-    ProviderLogMixin,
-)
+from goth.runner.probe.mixin import ActivityApiMixin, MarketApiMixin, PaymentApiMixin
 from goth.runner.probe.rest_client import RestApiComponent
 
 
@@ -387,7 +382,7 @@ class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
         self.cli.payment_init(sender_mode=True)
 
 
-class ProviderProbe(MarketApiMixin, PaymentApiMixin, ProviderLogMixin, Probe):
+class ProviderProbe(MarketApiMixin, PaymentApiMixin, Probe):
     """A probe subclass that can run a provider agent."""
 
     provider_agent: ProviderAgentComponent
