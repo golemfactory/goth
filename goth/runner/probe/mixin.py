@@ -23,7 +23,7 @@ from goth.runner.step import step
 
 if TYPE_CHECKING:
     from goth.runner.probe import Probe
-    from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
+    from goth.runner.probe.agent import AgentComponent
     from goth.runner.probe.rest_client import RestApiComponent
 
 logger = logging.getLogger(__name__)
