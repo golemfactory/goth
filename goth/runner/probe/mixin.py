@@ -23,7 +23,7 @@ from goth.runner.step import step
 
 if TYPE_CHECKING:
     from goth.runner.probe import Probe
-    from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
+    from goth.runner.probe.agent import AgentComponent
     from goth.runner.probe.rest_client import RestApiComponent
 
 logger = logging.getLogger(__name__)
@@ -260,88 +260,3 @@ class PaymentApiMixin:
             )
             await self.api.payment.accept_invoice(invoice_event.invoice_id, acceptance)
             logger.debug("Accepted invoice. id=%s", invoice_event.invoice_id)
-
-
-class ProviderProbeProtocol(ProbeProtocol, Protocol):
-    """Protocol class representing `ProviderProbe` class.
-
-    This is mainly to fix mypy errors when used as `self` in mixins.
-    """
-
-    provider_agent: "ProviderAgentComponent"
-    """The agent component running `ya-provider` for this probe.
-    This field is added for convenience to make getting this agent instance easier."""
-
-
-class ProviderLogMixin:
-    """Provider probe mixin which adds step functions that wait for specific logs."""
-
-    @step()
-    async def wait_for_offer_subscribed(self: ProviderProbeProtocol):
-        """Wait until the provider agent subscribes to the offer."""
-        await self.provider_agent.wait_for_log("Subscribed offer")
-
-    @step()
-    async def wait_for_proposal_accepted(self: ProviderProbeProtocol):
-        """Wait until the provider agent subscribes to the offer."""
-        await self.provider_agent.wait_for_log("Decided to CounterProposal")
-
-    @step()
-    async def wait_for_agreement_approved(self: ProviderProbeProtocol):
-        """Wait until the provider agent subscribes to the offer."""
-        await self.provider_agent.wait_for_log("Decided to ApproveAgreement")
-
-    @step()
-    async def wait_for_exeunit_started(self: ProviderProbeProtocol):
-        """Wait until the provider agent starts the exe-unit."""
-        await self.provider_agent.wait_for_log(
-            r"(.*)\[ExeUnit\](.+)Supervisor initialized$"
-        )
-
-    @step()
-    async def wait_for_exeunit_finished(self: ProviderProbeProtocol):
-        """Wait until exe-unit finishes."""
-        await self.provider_agent.wait_for_log(
-            "ExeUnit process exited with status Finished - exit code: 0"
-        )
-
-    @step()
-    async def wait_for_agreement_terminated(self: ProviderProbeProtocol):
-        """Wait until Agreement will be terminated.
-
-        This can happen for 2 reasons (both caught by this function):
-        - Requestor terminates - most common case
-        - Provider terminates - it happens for compatibility with previous
-        versions of API without `terminate` endpoint implemented. Moreover
-        Provider can terminate, because Agreements condition where broken.
-        """
-        await self.provider_agent.wait_for_log(r"Agreement \[.*\] terminated by")
-
-    @step()
-    async def wait_for_agreement_cleanup(self: ProviderProbeProtocol):
-        """Wait until Provider will cleanup all allocated resources.
-
-        This can happen before or after Agreement terminated log will be printed.
-        """
-        await self.provider_agent.wait_for_log(r"Agreement \[.*\] cleanup finished.")
-
-    @step()
-    async def wait_for_invoice_sent(self: ProviderProbeProtocol):
-        """Wait until the invoice is sent."""
-        await self.provider_agent.wait_for_log("Invoice (.+) sent")
-
-    @step(default_timeout=300)
-    async def wait_for_invoice_paid(self: ProviderProbeProtocol):
-        """Wait until the invoice is paid."""
-        await self.provider_agent.wait_for_log("Invoice .+? for agreement .+? was paid")
-
-    @step()
-    async def wait_for_agreement_broken(self, reason: str):
-        """Wait until Provider will break Agreement."""
-        pattern = rf"Breaking agreement .*, reason: {reason}"
-        await self.provider_agent.wait_for_log(pattern)
-
-    @step()
-    async def wait_for_log(self, pattern: str):
-        """Wait for specific log."""
-        await self.provider_agent.wait_for_log(pattern)
