@@ -1,14 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2021-06-29
 
 ### Breaking changes
-
-### Bugfixes
-
-### Features
-
-### Other changes
+- removed `ProviderLogMixin`, provider log assertions have been moved to `yagna` repo tests [#514](https://github.com/golemfactory/goth/pull/514)
 
 ## [0.4.0] - 2021-06-01
 
