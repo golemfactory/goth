@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Script to convert raw hex private keys to keystore files.
+Script to convert keystore files to raw hex private keys.
 
-- `raw hex private keys` are found in the ganache logs ( ethereum.log )
-- `keystore files` are used to import identities into yagna
+- `keystore files` are used to import/export identities into yagna
+- `raw hex private keys` are used in metamask
 """
 
 from eth_keyfile import extract_key_from_keyfile
-import json
 import sys
 
 if __name__ == "__main__":
