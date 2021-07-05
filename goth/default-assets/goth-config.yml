@@ -45,7 +45,7 @@ node-types:
       - read-only: "provider/hardware.json"
         destination: "/root/.local/share/ya-provider/hardware.json"
       - read-write: "~/.local/share/ya-provider/vm-images"
-        destination: "/root/.local/share/ya-provider/exe-unit/cache/tmp"
+        destination: "/root/.local/share/ya-provider/exe-unit/cache"
     privileged-mode: True
 
 nodes:
