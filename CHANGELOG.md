@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.1] - 2021-07-05
+
+### Bugfixes
+- updated default mount point for `yagna` provider image cache [c546dd2](https://github.com/golemfactory/goth/commit/c546dd2b8eafe4bd65e782f2d73e60d5b6136eec)
+
 ## [0.5.0] - 2021-06-29
 
 ### Breaking changes
