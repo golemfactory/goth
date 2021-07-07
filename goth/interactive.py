@@ -34,7 +34,7 @@ async def start_network(
 
         # Some test steps may be included in the interactive test as well
         for provider in providers:
-            await provider.wait_for_offer_subscribed(timeout=10)
+            await provider.provider_agent.wait_for_log("Subscribed offer")
 
         print("\n\033[33;1mNow run your requestor agent as follows:\n")
         env = {"PATH": "$PATH"}
