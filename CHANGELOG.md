@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.2] - 2021-07-07
+
+### Bugfixes
+- fixed `goth` interactive mode log assertion [d36a149](https://github.com/golemfactory/goth/commit/d36a14924ece26cc44a5f551ee840e1f0b426617)
+
 ## [0.5.1] - 2021-07-05
 
 ### Bugfixes
