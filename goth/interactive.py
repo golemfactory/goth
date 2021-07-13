@@ -2,7 +2,8 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
+import tempfile
+from typing import Dict, Optional
 
 from goth.configuration import Configuration
 from goth.runner import Runner
@@ -10,6 +11,14 @@ from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 logger = logging.getLogger(__name__)
+
+env_file = Path(tempfile.gettempdir()) / "goth_interactive.env"
+
+
+def _write_env_file(env: Dict[str, str]) -> None:
+    with env_file.open("w") as f:
+        for key, val in env.items():
+            f.write(f"export {key}={val}\n")
 
 
 async def start_network(
@@ -36,12 +45,13 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        print("\n\033[33;1mNow run your requestor agent as follows:\n")
         env = {"PATH": "$PATH"}
         requestor.set_agent_env_vars(env)
-        env_vars = " ".join([f"{key}={val}" for key, val in env.items()])
+        _write_env_file(env)
+
+        print("\n\033[33;1mNow run your requestor agent as follows:\n")
         subnet = providers[0].provider_agent.subnet
-        print(f"$ {env_vars} examples/blender/blender.py --subnet {subnet}")
+        print(f"source {str(env_file)} && your/requestor/agent.py --subnet {subnet}")
 
         print("\nPress Ctrl+C at any moment to stop the test harness.\033[0m\n")
 
