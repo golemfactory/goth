@@ -303,7 +303,7 @@ class Probe(abc.ABC):
         The monitor can be used for asserting properties of the command's output.
         """
         cmd_env = {**env} if env is not None else {}
-        self.set_agent_env_vars(cmd_env)
+        cmd_env.update(self.get_agent_env_vars())
 
         cmd_monitor = PatternMatchingEventMonitor(name="command output")
         cmd_monitor.start()
