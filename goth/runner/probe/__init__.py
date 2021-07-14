@@ -262,11 +262,15 @@ class Probe(abc.ABC):
         return key
 
     def set_agent_env_vars(self, env: Dict[str, str]) -> None:
-        """Add vars needed to talk to the daemon in this probe's container to `env`."""
+        """Add vars needed to talk to the daemon in this probe's container to `env`.
+
+        If `env` contains the key `PATH`, its value gets prepended with a path to the
+        directory containing the gftp proxy script.
+        """
 
         if not self.app_key:
             raise AttributeError("Yagna application key is not set yet")
-        path_var = env.get("PATH")
+        path_var = env.get("PATH") or "$PATH"
         env.update(
             {
                 "YAGNA_APPKEY": self.app_key,

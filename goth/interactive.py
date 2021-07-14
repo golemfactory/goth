@@ -45,7 +45,6 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        env = {"PATH": "$PATH"}
         requestor.set_agent_env_vars(env)
         _write_env_file(env)
 
