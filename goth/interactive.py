@@ -45,13 +45,16 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        _write_env_file(requestor.get_agent_env_vars())
-
-        print("\n\033[33;1mNow run your requestor agent as follows:\n")
+        requestor_env = requestor.get_agent_env_vars()
         subnet = providers[0].provider_agent.subnet
-        print(f"source {str(env_file)} && your/requestor/agent.py --subnet {subnet}")
+        requestor_env["YAGNA_SUBNET"] = subnet
+        _write_env_file(requestor_env)
 
-        print("\nPress Ctrl+C at any moment to stop the test harness.\033[0m\n")
+        print("\n\033[33;1mLocal goth network ready!\n")
+        print("You can now load the requestor configuration variables to your shell:\n")
+        print(f"source {str(env_file)}\n")
+        print("And then run your requestor agent from that same shell.\n")
+        print("Press Ctrl+C at any moment to stop the local network.\033[0m\n")
 
         while True:
             await asyncio.sleep(5)

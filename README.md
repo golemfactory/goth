@@ -85,14 +85,18 @@ python -m goth start your/output/dir/goth-config.yml
 
 If everything went well you should see the following output:
 ```
-Now run your requestor agent as follows:
+Local goth network ready!
 
-$ PATH=/tmp/...:$PATH YAGNA_APPKEY=3438...7901 YAGNA_API_URL=http://172.19.0.6:6000 GSB_URL=tcp://172.19.0.6:6010 examples/blender/blender.py --subnet goth
+You can now load the requestor configuration variables to your shell:
 
-Press Ctrl+C at any moment to stop the test harness.
+source /tmp/goth_interactive.env
+
+And then run your requestor agent from that same shell.
+
+Press Ctrl+C at any moment to stop the local network.
 ```
 
-This is a special case of `goth`'s usage. Running this command does not execute a test, but rather sets up a local Golem network which can be used for debugging purposes. Therefore, you are presented with the parameters required to connect to the `yagna` requestor running inside of this network.
+This is a special case of `goth`'s usage. Running this command does not execute a test, but rather sets up a local Golem network which can be used for debugging purposes. The parameters required to connect to the requestor `yagna` node running in this network are output to the file `/tmp/goth_interactive.env` and can be `source`d from your shell.
 
 ### Creating and running test cases
 Take a look at the `yagna` integration tests [`README`](https://github.com/golemfactory/yagna/blob/master/goth_tests/README.md) to learn more about writing and launching your own test cases.
