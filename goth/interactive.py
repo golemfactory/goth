@@ -45,8 +45,7 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        requestor.set_agent_env_vars(env)
-        _write_env_file(env)
+        _write_env_file(requestor.get_agent_env_vars())
 
         print("\n\033[33;1mNow run your requestor agent as follows:\n")
         subnet = providers[0].provider_agent.subnet
