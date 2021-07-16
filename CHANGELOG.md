@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.0] - 2021-07-16
+
+### Breaking changes
+- dependency update: `goth` now uses `ya-aioclient` v0.6.x; projects that use `goth` v0.6.x and `ya-aioclient` need to update their version of `ya-aioclient` to v0.6.x [#515](https://github.com/golemfactory/goth/pull/515)
+
 ## [0.5.2] - 2021-07-07
 
 ### Bugfixes
