@@ -1,7 +1,7 @@
 """Probe mixins containing high-level steps."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import (
     Callable,
@@ -250,6 +250,7 @@ class PaymentApiMixin:
                 spent_amount=0,
                 remaining_amount=0,
                 make_deposit=True,
+                timestamp=datetime.now(timezone.utc),
             )
             allocation_result = await self.api.payment.create_allocation(allocation)
             logger.debug("Created allocation. id=%s", allocation_result)
