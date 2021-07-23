@@ -11,7 +11,7 @@ from typing import Iterator, Optional, Sequence
 from func_timeout.StoppableThread import StoppableThread
 
 from goth.assertions.monitor import E, EventMonitor
-from goth.runner.exceptions import StopThreadException
+import goth.runner.exceptions as goth_exceptions
 from goth.runner.log import LogConfig
 
 logger = logging.getLogger(__name__)
@@ -133,10 +133,16 @@ class PatternMatchingEventMonitor(EventMonitor[E]):
         """
 
         regex = re.compile(pattern)
-        event = await self.wait_for_event(
-            lambda e: regex.match(self.event_str(e)) is not None, timeout
-        )
-        return event
+        try:
+            event = await self.wait_for_event(
+                lambda e: regex.match(self.event_str(e)) is not None, timeout
+            )
+            return event
+        except asyncio.TimeoutError:
+            raise goth_exceptions.TimeoutError(
+                f"Log monitor timed out waiting for event. "
+                f"pattern={pattern}, timeout={timeout}"
+            )
 
 
 class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
@@ -179,13 +185,13 @@ class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
     async def stop(self) -> None:
         """Stop the monitor."""
         if self._buffer_task:
-            self._buffer_task.stop(StopThreadException)
+            self._buffer_task.stop(goth_exceptions.StopThreadException)
         await super().stop()
 
     def update_stream(self, in_stream: Iterator[bytes]):
         """Update the stream when restarting a container."""
         if self._buffer_task:
-            self._buffer_task.stop(StopThreadException)
+            self._buffer_task.stop(goth_exceptions.StopThreadException)
         self._in_stream = in_stream
         self._buffer_task = StoppableThread(target=self._buffer_input, daemon=True)
         self._buffer_task.start()
@@ -200,7 +206,7 @@ class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
                     event = LogEvent(line)
                     self.add_event_sync(event)
 
-        except StopThreadException:
+        except goth_exceptions.StopThreadException:
             return
 
     async def wait_for_entry(
