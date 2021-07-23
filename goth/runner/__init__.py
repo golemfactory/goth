@@ -182,7 +182,8 @@ class Runner:
             future_gather = asyncio.gather(*awaitables)
             await future_gather
         except Exception as e:
-            future_gather.cancel()
+            if not future_gather.done():
+                future_gather.cancel()
             logger.error(f"Starting probes failed: {e!r}")
             raise e
 
