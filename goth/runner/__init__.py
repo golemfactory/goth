@@ -173,16 +173,28 @@ class Runner:
         node_names: Dict[str, str] = {}
         ports: Dict[str, dict] = {}
 
-        # Start the probes' containers and obtain their IP addresses
+        # Start all probes in parallel, cancel on error
+        awaitables = [
+            self._exit_stack.enter_async_context(run_probe(probe))
+            for probe in self.probes
+        ]
+        try:
+            future_gather = asyncio.gather(*awaitables)
+            await future_gather
+        except Exception as e:
+            future_gather.cancel()
+            logger.error(f"Starting probes failed: {e!r}")
+            raise e
+
+        # Obtain the probes' IP addresses and port mappings
         for probe in self.probes:
-            ip_address = await self._exit_stack.enter_async_context(run_probe(probe))
-            node_names[ip_address] = probe.name
+            node_names[probe.ip_address] = probe.name
             container_ports = probe.container.ports
-            ports[ip_address] = container_ports
+            ports[probe.ip_address] = container_ports
             logger.debug(
-                "Probe for %s started on IP: %s with port mapping: %s",
+                "Probe for %s started. IP address: %s, port mapping: %s",
                 probe.name,
-                ip_address,
+                probe.ip_address,
                 container_ports,
             )
 
