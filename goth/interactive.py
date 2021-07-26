@@ -48,12 +48,16 @@ async def start_network(
         requestor_env = requestor.get_agent_env_vars()
         subnet = providers[0].provider_agent.subnet
         requestor_env["YAGNA_SUBNET"] = subnet
-        _write_env_file(requestor_env)
 
-        print("\n\033[33;1mLocal goth network ready!\n")
+        _write_env_file(requestor_env)
+        env_vars = " ".join([f"{key}={val}" for key, val in requestor_env.items()])
+
+        print("\n\033[33;1mLocal goth network ready!")
         print("You can now load the requestor configuration variables to your shell:\n")
         print(f"source {str(env_file)}\n")
-        print("And then run your requestor agent from that same shell.\n")
+        print("And then run your requestor agent from that same shell.")
+        print("You can also use the variables directly like so:\n")
+        print(f"{env_vars} your/requestor/agent\n")
         print("Press Ctrl+C at any moment to stop the local network.\033[0m\n")
 
         while True:
