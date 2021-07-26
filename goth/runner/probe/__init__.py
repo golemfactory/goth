@@ -324,7 +324,7 @@ class Probe(abc.ABC):
                 logger.debug("Command task has finished")
 
         except Exception as e:
-            logger.warning(f"Cancelling command on error: {e!r}")
+            logger.error(f"Cancelling command on error: {e!r}")
             if cmd_task and not cmd_task.done():
                 cmd_task.cancel()
             raise
