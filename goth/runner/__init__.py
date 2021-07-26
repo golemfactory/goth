@@ -173,17 +173,17 @@ class Runner:
         node_names: Dict[str, str] = {}
         ports: Dict[str, dict] = {}
 
-        # Start all probes in parallel, cancel on error
-        awaitables = [
-            self._exit_stack.enter_async_context(run_probe(probe))
+        # Start all probes as asyncio tasks in parallel, cancel them on error
+        probe_tasks = [
+            asyncio.create_task(self._exit_stack.enter_async_context(run_probe(probe)))
             for probe in self.probes
         ]
         try:
-            future_gather = asyncio.gather(*awaitables)
+            future_gather = asyncio.gather(*probe_tasks)
             await future_gather
         except Exception as e:
-            if not future_gather.done():
-                future_gather.cancel()
+            for task in probe_tasks:
+                task.cancel()
             logger.error(f"Starting probes failed: {e!r}")
             raise e
 

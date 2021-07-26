@@ -127,6 +127,7 @@ def mock_function(monkeypatch):
 )
 @pytest.mark.asyncio
 async def test_runner_startup_shutdown(
+    caplog,
     mock_function,
     manager_start_fails,
     webserver_start_fails,
@@ -195,6 +196,8 @@ async def test_runner_startup_shutdown(
         or probe_init.failed
         or probe_start.failed
     )
+    if proxy_start.failed:
+        assert "Starting probes failed: MockError" in caplog.text
 
 
 @pytest.mark.parametrize("have_test_failure", [False, True])
