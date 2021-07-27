@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.1] - 2021-07-27
+
+### Other changes
+- improved error reporting on timeouts in log monitors [#524](https://github.com/golemfactory/goth/pull/524)
+- updated probe startup logic to start all probes in parallel [#523](https://github.com/golemfactory/goth/pull/523)
+
+## [0.6.0] - 2021-07-16
+
+### Breaking changes
+- dependency update: `goth` now uses `ya-aioclient` v0.6.x; projects that use `goth` v0.6.x and `ya-aioclient` need to update their version of `ya-aioclient` to v0.6.x [#515](https://github.com/golemfactory/goth/pull/515)
+
 ## [0.5.2] - 2021-07-07
 
 ### Bugfixes
@@ -30,8 +41,6 @@
 ### Features
 - enabled setting environment variables through `goth-config.yml` [#505](https://github.com/golemfactory/goth/pull/505)
 - added generic `wait_for_log` step to provider probe [#434](https://github.com/golemfactory/goth/pull/434)
-
-### Other changes
 
 ## [0.3.0] - 2021-05-17
 

@@ -43,3 +43,6 @@ class TemporalAssertionError(TestFailure):
 
 class TimeoutError(Exception):
     """Exception for when a timeout occurs."""
+
+    def __init__(self, msg: str):
+        super().__init__(msg)

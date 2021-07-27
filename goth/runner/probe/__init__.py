@@ -328,7 +328,7 @@ class Probe(abc.ABC):
                 logger.debug("Command task has finished")
 
         except Exception as e:
-            logger.warning(f"Cancelling command on error: {e!r}")
+            logger.error(f"Cancelling command on error: {e!r}")
             if cmd_task and not cmd_task.done():
                 cmd_task.cancel()
             raise
@@ -365,7 +365,10 @@ def create_probe(
 
 @contextlib.asynccontextmanager
 async def run_probe(probe: Probe) -> AsyncIterator[str]:
-    """Implement AsyncContextManager for starting and stopping a probe."""
+    """Implement AsyncContextManager for starting and stopping a probe.
+
+    Yields the probe's assigned IP address.
+    """
 
     try:
         logger.debug("Starting probe. name=%s", probe.name)
