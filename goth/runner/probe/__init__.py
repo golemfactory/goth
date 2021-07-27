@@ -361,7 +361,10 @@ def create_probe(
 
 @contextlib.asynccontextmanager
 async def run_probe(probe: Probe) -> AsyncIterator[str]:
-    """Implement AsyncContextManager for starting and stopping a probe."""
+    """Implement AsyncContextManager for starting and stopping a probe.
+
+    Yields the probe's assigned IP address.
+    """
 
     try:
         logger.debug("Starting probe. name=%s", probe.name)
