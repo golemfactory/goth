@@ -50,7 +50,8 @@ pytest = "^6.2"
 codeformat = "black -v --check --diff ."
 codestyle = "flake8"
 interactive = "python -m goth start goth/default-assets/goth-config.yml"
-unit_test = "pytest -svx test/goth"
+unit_test = "pytest -svx test/unit"
+integration_test = "pytest -svx test/integration"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

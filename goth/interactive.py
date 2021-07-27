@@ -12,7 +12,7 @@ from goth.runner.probe import ProviderProbe, RequestorProbe
 
 logger = logging.getLogger(__name__)
 
-env_file = Path(tempfile.gettempdir()) / "goth_interactive.env"
+env_file: Path = Path(tempfile.gettempdir()) / "goth_interactive.env"
 
 
 def _write_env_file(env: Dict[str, str]) -> None:
