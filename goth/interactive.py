@@ -2,7 +2,8 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
+import tempfile
+from typing import Dict, Optional
 
 from goth.configuration import Configuration
 from goth.runner import Runner
@@ -10,6 +11,14 @@ from goth.runner.probe import ProviderProbe, RequestorProbe
 
 
 logger = logging.getLogger(__name__)
+
+env_file: Path = Path(tempfile.gettempdir()) / "goth_interactive.env"
+
+
+def _write_env_file(env: Dict[str, str]) -> None:
+    with env_file.open("w") as f:
+        for key, val in env.items():
+            f.write(f"export {key}={val}\n")
 
 
 async def start_network(
@@ -36,14 +45,20 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        print("\n\033[33;1mNow run your requestor agent as follows:\n")
-        env = {"PATH": "$PATH"}
-        requestor.set_agent_env_vars(env)
-        env_vars = " ".join([f"{key}={val}" for key, val in env.items()])
+        requestor_env = requestor.get_agent_env_vars()
         subnet = providers[0].provider_agent.subnet
-        print(f"$ {env_vars} examples/blender/blender.py --subnet {subnet}")
+        requestor_env["YAGNA_SUBNET"] = subnet
 
-        print("\nPress Ctrl+C at any moment to stop the test harness.\033[0m\n")
+        _write_env_file(requestor_env)
+        env_vars = " ".join([f"{key}={val}" for key, val in requestor_env.items()])
+
+        print("\n\033[33;1mLocal goth network ready!")
+        print("You can now load the requestor configuration variables to your shell:\n")
+        print(f"source {str(env_file)}\n")
+        print("And then run your requestor agent from that same shell.")
+        print("You can also use the variables directly like so:\n")
+        print(f"{env_vars} your/requestor/agent\n")
+        print("Press Ctrl+C at any moment to stop the local network.\033[0m\n")
 
         while True:
             await asyncio.sleep(5)

@@ -261,20 +261,24 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-    def set_agent_env_vars(self, env: Dict[str, str]) -> None:
-        """Add vars needed to talk to the daemon in this probe's container to `env`."""
+    def get_agent_env_vars(self, path_var: str = "$PATH") -> Dict[str, str]:
+        """Get env vars needed to talk to the daemon in this probe's container.
+
+        The returned vars include the `PATH` variable as it needs to include the
+        directory which contains the gftp proxy script.
+        By default, the `PATH` value is: `{gftp_script_dir}:$PATH`, allowing for shell
+        substitution of `$PATH`. This part can be overridden by setting the `path_var`
+        argument.
+        """
 
         if not self.app_key:
             raise AttributeError("Yagna application key is not set yet")
-        path_var = env.get("PATH")
-        env.update(
-            {
-                "YAGNA_APPKEY": self.app_key,
-                "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
-                "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
-                "PATH": f"{self._gftp_script_dir}:{path_var}",
-            }
-        )
+        return {
+            "YAGNA_APPKEY": self.app_key,
+            "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
+            "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
+            "PATH": f"{self._gftp_script_dir}:{path_var}",
+        }
 
     @contextlib.asynccontextmanager
     async def run_command_on_host(
@@ -299,7 +303,7 @@ class Probe(abc.ABC):
         The monitor can be used for asserting properties of the command's output.
         """
         cmd_env = {**env} if env is not None else {}
-        self.set_agent_env_vars(cmd_env)
+        cmd_env.update(self.get_agent_env_vars())
 
         cmd_monitor = PatternMatchingEventMonitor(name="command output")
         cmd_monitor.start()
