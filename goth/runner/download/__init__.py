@@ -103,8 +103,8 @@ class ArtifactDownloader(GithubDownloader):
         workflow_id = workflow["id"]
         logger.debug("Fetching workflow runs. workflow_id=%s", workflow_id)
 
-        branch_query = lambda run: run["head_branch"] == branch
-        commit_query = lambda run: run["head_sha"].startswith(commit)
+        branch_query = lambda run: run["head_branch"] == branch  # noqa: E731
+        commit_query = lambda run: run["head_sha"].startswith(commit)  # noqa: E731
 
         paged_workflow_runs = paged(
             self.gh_api.actions.list_workflow_runs,
