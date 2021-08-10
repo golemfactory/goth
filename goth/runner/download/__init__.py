@@ -98,30 +98,35 @@ class ArtifactDownloader(GithubDownloader):
 
     def _get_latest_run(
         self, workflow: dict, branch: str, commit: Optional[str] = None
-    ) -> dict:
-        """Filter out the latest workflow run."""
+    ) -> Optional[dict]:
+        """Filter out the latest successful workflow run."""
         workflow_id = workflow["id"]
         logger.debug("Fetching workflow runs. workflow_id=%s", workflow_id)
 
-        if commit:
-            paged_workflow_runs = paged(
-                self.gh_api.actions.list_workflow_runs, workflow_id, status="completed"
+        branch_query = lambda run: run["head_branch"] == branch
+        commit_query = lambda run: run["head_sha"].startswith(commit)
+
+        paged_workflow_runs = paged(
+            self.gh_api.actions.list_workflow_runs,
+            workflow_id,
+            conclusion="success",
+        )
+
+        for page in paged_workflow_runs:
+            latest_run = next(
+                filter(commit_query if commit else branch_query, page.workflow_runs),
+                None,
             )
 
-            for page in paged_workflow_runs:
-                workflow_runs = next(
-                    filter(
-                        lambda r: r["head_sha"].startswith(commit), page.workflow_runs
-                    ),
-                    None,
+            if latest_run:
+                logger.debug("latest_run=%s", json.dumps(obj2dict(latest_run)))
+                return latest_run
+            else:
+                logger.debug(
+                    "page.workflow_runs=%s", json.dumps(obj2dict(page.workflow_runs))
                 )
 
-                if workflow_runs:
-                    return workflow_runs
-
-        return self.gh_api.actions.list_workflow_runs(
-            workflow_id, branch=branch, status="completed"
-        ).workflow_runs[0]
+        return None
 
     def _get_artifact(self, artifact_name: str, workflow_run: dict) -> Optional[dict]:
         artifacts_url = workflow_run["artifacts_url"]
@@ -186,6 +191,10 @@ class ArtifactDownloader(GithubDownloader):
         )
         workflow = self._get_workflow(workflow_name)
         latest_run = self._get_latest_run(workflow, branch, commit)
+        if not latest_run:
+            raise RuntimeError(
+                f"Failed to find latest workflow run. workflow_name={workflow_name}"
+            )
         artifact = self._get_artifact(artifact_name, latest_run)
         if not artifact:
             raise AssetNotFound(f"Artifact not found. name={artifact_name}")
