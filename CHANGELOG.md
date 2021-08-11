@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.2] - 2021-08-11
+
+### Features
+- output interactive mode env variables to a file [#520](https://github.com/golemfactory/goth/pull/520)
+
+### Bugfixes
+- fix fetching latest workflow run when downloading a GitHub artifact [#531](https://github.com/golemfactory/goth/pull/531)
+
+### Other changes
+- bump aiohttp from 3.7.3 to 3.7.4 [#527](https://github.com/golemfactory/goth/pull/527)
+
+### Other changes
+- improved error reporting on timeouts in log monitors [#524](https://github.com/golemfactory/goth/pull/524)
+- updated probe startup logic to start all probes in parallel [#523](https://github.com/golemfactory/goth/pull/523)
+
 ## [0.6.1] - 2021-07-27
 
 ### Other changes
