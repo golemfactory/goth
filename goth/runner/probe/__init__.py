@@ -6,6 +6,7 @@ from collections import OrderedDict
 import contextlib
 import copy
 import logging
+import os
 from pathlib import Path
 from typing import (
     AsyncIterator,
@@ -261,23 +262,31 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
-    def get_agent_env_vars(self, path_var: str = "$PATH") -> Dict[str, str]:
+    def get_agent_env_vars(self, expand_path: bool = True) -> Dict[str, str]:
         """Get env vars needed to talk to the daemon in this probe's container.
 
-        The returned vars include the `PATH` variable as it needs to include the
-        directory which contains the gftp proxy script.
-        By default, the `PATH` value is: `{gftp_script_dir}:$PATH`, allowing for shell
-        substitution of `$PATH`. This part can be overridden by setting the `path_var`
-        argument.
+        The returned vars include the `PATH` variable as it needs to contain the
+        directory in which the gftp proxy script resides.
+        The value of the result's `PATH` variable gets prefixed with the gftp script's
+        directory, so it will look like this: `/tmp/some_gftp_dir:$PATH`.
+
+        When `expand_path` is `True` (default behaviour) the `$PATH` in the above
+        example gets expanded to the system's actual `PATH` variable (taken from
+        `os.environ`).
+        When `expand_path` is `False` the `$PATH` part stays as-is (useful for shell
+        substitution).
         """
 
         if not self.app_key:
             raise AttributeError("Yagna application key is not set yet")
+
+        path: str = os.environ["PATH"] if expand_path else "$PATH"
+
         return {
             "YAGNA_APPKEY": self.app_key,
             "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
             "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
-            "PATH": f"{self._gftp_script_dir}:{path_var}",
+            "PATH": f"{self._gftp_script_dir}:{path}",
         }
 
     @contextlib.asynccontextmanager
@@ -286,7 +295,7 @@ class Probe(abc.ABC):
         command: str,
         env: Optional[Dict[str, str]] = None,
         command_timeout: float = 300,
-    ) -> Iterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
+    ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
         The command is run in the environment extending `env` with variables needed
