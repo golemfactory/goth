@@ -22,6 +22,7 @@ from docker import DockerClient
 
 from goth.address import (
     YAGNA_BUS_URL,
+    YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
 
@@ -262,6 +263,23 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
+    def get_yagna_api_url(self) -> str:
+        """Return the URL through which this probe's daemon can be reached.
+
+        This URL can be used to access yagna APIs from outside of the probe's
+        container, for example, from a requestor script running on host.
+
+        The URL may point directly to the IP address of this probe in the Docker
+        network, or a port on localhost on which the MITM proxy listens, depending
+        on the `use_proxy` setting in the probe's configuration.
+        """
+
+        if self._yagna_config.use_proxy:
+            return YAGNA_REST_URL.substitute(
+                host="127.0.0.1", port=self.container.ports[YAGNA_REST_PORT]
+            )
+        return YAGNA_REST_URL.substitute(host=self.ip_address)
+
     def get_agent_env_vars(self, expand_path: bool = True) -> Dict[str, str]:
         """Get env vars needed to talk to the daemon in this probe's container.
 
@@ -284,7 +302,7 @@ class Probe(abc.ABC):
 
         return {
             "YAGNA_APPKEY": self.app_key,
-            "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
+            "YAGNA_API_URL": self.get_yagna_api_url(),
             "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
             "PATH": f"{self._gftp_script_dir}:{path}",
         }

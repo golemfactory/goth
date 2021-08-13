@@ -52,6 +52,7 @@ nodes:
 
   - name: "requestor"
     type: "Requestor"
+    use-proxy: True
 
   - name: "provider-1"
     type: "VM-Wasm-Provider"
