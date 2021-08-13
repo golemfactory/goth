@@ -45,7 +45,7 @@ async def start_network(
         for provider in providers:
             await provider.provider_agent.wait_for_log("Subscribed offer")
 
-        requestor_env = requestor.get_agent_env_vars()
+        requestor_env = requestor.get_agent_env_vars(expand_path=False)
         subnet = providers[0].provider_agent.subnet
         requestor_env["YAGNA_SUBNET"] = subnet
 
