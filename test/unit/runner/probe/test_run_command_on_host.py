@@ -14,7 +14,7 @@ async def test_run_command_on_host(monkeypatch):
 
     runner = MagicMock()
     docker_client = MagicMock()
-    container_config = MagicMock()
+    container_config = MagicMock(use_proxy=False)
     log_config = MagicMock()
 
     monkeypatch.setattr(goth.runner.probe, "YagnaContainer", MagicMock(spec="ports"))
