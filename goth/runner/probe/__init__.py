@@ -13,6 +13,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Mapping,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -340,7 +341,7 @@ class Probe(abc.ABC):
     async def run_command_on_host(
         self,
         command: str,
-        env: Optional[Dict[str, str]] = None,
+        env: Optional[Mapping[str, str]] = None,
         command_timeout: float = 300,
     ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
@@ -361,7 +362,9 @@ class Probe(abc.ABC):
         cmd_env = {**env} if env is not None else {}
         cmd_env.update(self.get_agent_env_vars())
 
-        cmd_monitor = PatternMatchingEventMonitor(name="command output")
+        cmd_monitor: PatternMatchingEventMonitor = PatternMatchingEventMonitor(
+            name="command output"
+        )
         cmd_monitor.start()
 
         try:
