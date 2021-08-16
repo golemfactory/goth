@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.3] - 2021-08-16
+
+### Bugfixes
+- expand path variable in `Probe.get_agent_env_vars` [#534](https://github.com/golemfactory/goth/pull/534)
+
 ## [0.6.2] - 2021-08-11
 
 ### Features
