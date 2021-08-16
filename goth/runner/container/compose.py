@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
-from typing import ClassVar, Dict, Optional, Tuple
+from typing import AsyncIterator, ClassVar, Dict, Optional
 
 from docker import DockerClient
 import yaml
@@ -95,7 +95,7 @@ class ComposeNetworkManager:
 
     async def start_network(
         self, log_dir: Path, force_build: bool = False
-    ) -> Dict[str, Tuple[str, str]]:
+    ) -> Dict[str, ContainerInfo]:
         """Start the compose network based on this manager's compose file.
 
         This step may include (re)building the network's docker images.
@@ -221,7 +221,7 @@ class ComposeNetworkManager:
 @contextlib.asynccontextmanager
 async def run_compose_network(
     compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
-) -> Dict[str, ContainerInfo]:
+) -> AsyncIterator[Dict[str, ContainerInfo]]:
     """Implement AsyncContextManager for starting/stopping docker compose network."""
 
     try:
