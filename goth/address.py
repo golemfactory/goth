@@ -95,11 +95,28 @@ YAGNA_REST_URL = DefaultTemplate(
     default={"port": YAGNA_REST_PORT, "protocol": YAGNA_REST_PROTOCOL},
 )
 
-# Range of ports on the host which can be mapped to yagna daemons' REST API port
+# Range of ports on the host to which yagna daemon ports in containers can be mapped.
+# Port $YAGNA_REST_PORT on N-th started yagna container is mapped to port
+# $HOST_REST_PORT_START + (N-1) on the host.
+
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
 HOST_REST_PORT_START = 6001
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
 HOST_REST_PORT_END = 6100
+
+# Ports in the range $HOST_REST_PORT_START .. $HOST_REST_PORT_END are also used
+# by the nginx-proxy container. A request made to port $HOST_REST_PORT_START + (N-1)
+# on nginx-proxy container is forwarded to the MITM proxy (that runs on host)
+# which then forwards the request to $YAGNA_REST_PORT on the N-th yagna container.
+
+# To enable access to those nginx-proxy ports from outside of the Docker network
+# on non-Linux systems, we map ports $HOST_REST_PORT_START .. $HOST_REST_PORT_END on
+# the nginx-proxy to ports ($HOST_REST_PORT_START + O) .. ($HOST_REST_PORT_END + O)
+# on the host, where the offset O is the value of the variable HOST_NGINX_PORT_OFFSET
+# defined below.
+# NOTE: this value has to be consistent with a port mapping definition for the
+# `nginx-proxy` container in `docker-compose.yml`.
+HOST_NGINX_PORT_OFFSET = 10000
 
 
 # Port used by the mitmproxy instance
