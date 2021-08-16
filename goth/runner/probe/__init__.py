@@ -21,6 +21,7 @@ from typing import (
 from docker import DockerClient
 
 from goth.address import (
+    HOST_NGINX_PORT_OFFSET,
     YAGNA_BUS_URL,
     YAGNA_REST_PORT,
     YAGNA_REST_URL,
@@ -144,6 +145,16 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
+    @property
+    def host_rest_port(self) -> int:
+        """Host port to which yagna API port on this probe's container is mapped to."""
+        return self.container.ports[YAGNA_REST_PORT]
+
+    @property
+    def nginx_rest_port(self) -> int:
+        """Host port to which the nginx port assigned to this probe is mapped to."""
+        return self.host_rest_port + HOST_NGINX_PORT_OFFSET
+
     def _setup_gftp_proxy(self, config: YagnaContainerConfig) -> YagnaContainerConfig:
         """Create a proxy script and a dir for exchanging files with the container."""
 
@@ -226,6 +237,22 @@ class Probe(abc.ABC):
         )
         self._logger.info("IP address: %s", self.ip_address)
 
+        nginx_ip_address = self.runner.nginx_container_address
+        self._logger.info(
+            "Yagna API host:port in Docker network: "
+            "%s:%s (direct), %s:%s (through proxy)",
+            self.ip_address,
+            YAGNA_REST_PORT,
+            nginx_ip_address,
+            self.host_rest_port,
+        )
+        self._logger.info(
+            "Yagna API host:port via localhost: "
+            "127.0.0.1:%s (direct), 127.0.0.1:%s (through proxy)",
+            self.host_rest_port,
+            self.nginx_rest_port,
+        )
+
     async def create_app_key(self, key_name: str = "test_key") -> str:
         """Attempt to create a new app key on the Yagna daemon.
 
@@ -274,11 +301,13 @@ class Probe(abc.ABC):
         on the `use_proxy` setting in the probe's configuration.
         """
 
-        if self._yagna_config.use_proxy:
-            return YAGNA_REST_URL.substitute(
-                host="127.0.0.1", port=self.container.ports[YAGNA_REST_PORT]
-            )
-        return YAGNA_REST_URL.substitute(host=self.ip_address)
+        # Port on the host to which yagna API port in the container is mapped
+        host_port = (
+            self.nginx_rest_port
+            if self._yagna_config.use_proxy
+            else self.host_rest_port
+        )
+        return YAGNA_REST_URL.substitute(host="127.0.0.1", port=host_port)
 
     def get_agent_env_vars(self, expand_path: bool = True) -> Dict[str, str]:
         """Get env vars needed to talk to the daemon in this probe's container.

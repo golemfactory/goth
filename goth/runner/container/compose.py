@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, Tuple
 
 from docker import DockerClient
 import yaml
@@ -47,6 +47,17 @@ class ComposeConfig:
     """
 
 
+@dataclass
+class ContainerInfo:
+    """Info on a Docker container started by a Runner."""
+
+    address: str
+    """The container's IP address in the Docker network"""
+
+    image: str
+    """The container's image name"""
+
+
 class ComposeNetworkManager:
     """Class which manages a docker-compose network.
 
@@ -82,7 +93,9 @@ class ComposeNetworkManager:
         self._log_monitors = {}
         self._network_gateway_address = ""
 
-    async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
+    async def start_network(
+        self, log_dir: Path, force_build: bool = False
+    ) -> Dict[str, Tuple[str, str]]:
         """Start the compose network based on this manager's compose file.
 
         This step may include (re)building the network's docker images.
@@ -106,7 +119,12 @@ class ComposeNetworkManager:
 
         self._start_log_monitors(log_dir)
         await self._wait_for_containers()
-        self._log_running_containers()
+        container_infos = self._get_running_containers()
+        for name, info in container_infos.items():
+            logger.info(
+                "[%-25s] IP address: %-15s image: %s", name, info.address, info.image
+            )
+        return container_infos
 
     async def _wait_for_containers(self) -> None:
         logger.info("Waiting for compose containers to be ready")
@@ -162,6 +180,14 @@ class ComposeNetworkManager:
 
         return self._network_gateway_address
 
+    def _get_running_containers(self) -> Dict[str, ContainerInfo]:
+        info = {}
+        for container in self._docker_client.containers.list():
+            address = get_container_address(self._docker_client, container.name)
+            image = container.image.tags[0]
+            info[container.name] = ContainerInfo(address, image)
+        return info
+
     def _log_running_containers(self):
         for container in self._docker_client.containers.list():
             logger.info(
@@ -195,15 +221,15 @@ class ComposeNetworkManager:
 @contextlib.asynccontextmanager
 async def run_compose_network(
     compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
-) -> None:
+) -> Dict[str, ContainerInfo]:
     """Implement AsyncContextManager for starting/stopping docker compose network."""
 
     try:
         logger.debug(
             "Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build
         )
-        await compose_manager.start_network(log_dir, force_build)
-        yield
+        containers = await compose_manager.start_network(log_dir, force_build)
+        yield containers
     finally:
         logger.debug("Stopping compose network")
         await compose_manager.stop_network()

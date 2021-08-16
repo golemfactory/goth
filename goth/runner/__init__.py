@@ -25,6 +25,7 @@ from goth.assertions.monitor import EventMonitor
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
+    ContainerInfo,
     run_compose_network,
 )
 from goth.runner.container.yagna import YagnaContainerConfig
@@ -72,13 +73,19 @@ class Runner:
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
+    _container_info: Optional[Dict[str, ContainerInfo]]
+    """Info on containers started by this runner, indexed by container name."""
+
     _exit_stack: AsyncExitStack
     """A stack of `AsyncContextManager` instances to be closed on runner shutdown."""
+
+    _nginx_container_address: Optional[str]
+    """An IP address of the container running nginx proxy."""
 
     _topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
-    _web_server: WebServer
+    _web_server: Optional[WebServer]
     """A built-in web server."""
 
     def __init__(
@@ -107,6 +114,8 @@ class Runner:
             config=compose_config,
             docker_client=docker.from_env(),
         )
+        self._container_info = None
+        self._nginx_container_address = None
         self._web_server = (
             WebServer(web_root_path, web_server_port) if web_root_path else None
         )
@@ -235,6 +244,26 @@ class Runner:
             return "host.docker.internal"
 
     @property
+    def nginx_container_address(self) -> str:
+        """Return the IP address in the Docker network of the nginx-proxy container."""
+
+        if not self._nginx_container_address:
+            if self._container_info is None:
+                raise RuntimeError("Docker compose network not started")
+            nginx_containers = [
+                info.address
+                for name, info in self._container_info.items()
+                if "nginx" in name
+            ]
+            assert len(nginx_containers) == 1, (
+                "Expected to find a single nginx container,"
+                f" found {len(nginx_containers)} instead"
+            )
+            self._nginx_container_address = nginx_containers[0]
+
+        return self._nginx_container_address
+
+    @property
     def web_server_port(self) -> Optional[int]:
         """Return the port of the build-in web server."""
         return self._web_server.server_port if self._web_server else None
@@ -275,7 +304,7 @@ class Runner:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
         logger.info(colors.yellow("Running test: %s"), self.test_name)
 
-        await self._exit_stack.enter_async_context(
+        self._container_info = await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
         )
 

@@ -3,7 +3,7 @@ import os
 import pytest
 from unittest.mock import MagicMock
 
-from goth.address import YAGNA_BUS_URL, YAGNA_REST_URL
+from goth.address import YAGNA_BUS_URL, YAGNA_REST_URL, YAGNA_REST_PORT
 import goth.runner.container.yagna
 from goth.runner.probe import RequestorProbe
 
@@ -16,12 +16,10 @@ async def test_run_command_on_host(monkeypatch):
     docker_client = MagicMock()
     container_config = MagicMock(use_proxy=False)
     log_config = MagicMock()
+    container_rest_port = 6006
 
     monkeypatch.setattr(goth.runner.probe, "YagnaContainer", MagicMock(spec="ports"))
     monkeypatch.setattr(goth.runner.probe, "Cli", MagicMock(spec="yagna"))
-    monkeypatch.setattr(
-        goth.runner.probe, "get_container_address", lambda *_args: "1.2.3.4"
-    )
     monkeypatch.setattr(RequestorProbe, "app_key", "0xcafebabe")
 
     probe = RequestorProbe(
@@ -30,6 +28,7 @@ async def test_run_command_on_host(monkeypatch):
         config=container_config,
         log_config=log_config,
     )
+    probe.container.ports = {YAGNA_REST_PORT: container_rest_port}
 
     async def func(lines):
         # The monitor should guarantee that we don't skip any events
@@ -50,7 +49,9 @@ async def test_run_command_on_host(monkeypatch):
     result = await assertion.wait_for_result(timeout=1)
 
     assert result["YAGNA_APPKEY"] == probe.app_key
-    assert result["YAGNA_API_URL"] == YAGNA_REST_URL.substitute(host=None)
+    assert result["YAGNA_API_URL"] == YAGNA_REST_URL.substitute(
+        host="127.0.0.1", port=container_rest_port
+    )
     assert result["GSB_URL"] == YAGNA_BUS_URL.substitute(host=None)
 
     # Let's make sure that another command can be run without problems
