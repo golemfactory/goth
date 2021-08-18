@@ -25,7 +25,6 @@ from goth.assertions.monitor import EventMonitor
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
-    ContainerInfo,
     run_compose_network,
 )
 from goth.runner.container.yagna import YagnaContainerConfig
@@ -41,6 +40,14 @@ from goth.runner.web_server import WebServer, run_web_server
 logger = logging.getLogger(__name__)
 
 ProbeType = TypeVar("ProbeType", bound=Probe)
+
+
+PROXY_NGINX_SERVICE_NAME = "proxy-nginx"
+"""Name of the nginx proxy service in the Docker network.
+
+Must match the service name in the config file used by the runner's
+compose network manager.
+"""
 
 
 class Runner:
@@ -73,14 +80,11 @@ class Runner:
     _compose_manager: ComposeNetworkManager
     """Manager for the docker-compose network portion of the test."""
 
-    _container_info: Optional[Dict[str, ContainerInfo]]
-    """Info on containers started by this runner, indexed by container name."""
-
     _exit_stack: AsyncExitStack
     """A stack of `AsyncContextManager` instances to be closed on runner shutdown."""
 
-    _nginx_container_address: Optional[str]
-    """The IP address of the container running nginx proxy."""
+    _nginx_service_address: Optional[str]
+    """The IP address of the nginx service in the Docker network."""
 
     _topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
@@ -114,8 +118,7 @@ class Runner:
             config=compose_config,
             docker_client=docker.from_env(),
         )
-        self._container_info = None
-        self._nginx_container_address = None
+        self._nginx_service_address = None
         self._web_server = (
             WebServer(web_root_path, web_server_port) if web_root_path else None
         )
@@ -245,23 +248,10 @@ class Runner:
 
     @property
     def nginx_container_address(self) -> str:
-        """Return the IP address in the Docker network of the nginx-proxy container."""
-
-        if not self._nginx_container_address:
-            if self._container_info is None:
-                raise RuntimeError("Docker compose network not started")
-            nginx_containers = [
-                info.address
-                for name, info in self._container_info.items()
-                if "nginx" in name
-            ]
-            assert len(nginx_containers) == 1, (
-                "Expected to find a single nginx proxy container,"
-                f" found {len(nginx_containers)} instead"
-            )
-            self._nginx_container_address = nginx_containers[0]
-
-        return self._nginx_container_address
+        """Return the IP address of the proxy-nginx service in the Docker network."""
+        if not self._nginx_service_address:
+            raise RuntimeError("Docker network not started")
+        return self._nginx_service_address
 
     @property
     def web_server_port(self) -> Optional[int]:
@@ -304,9 +294,17 @@ class Runner:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
         logger.info(colors.yellow("Running test: %s"), self.test_name)
 
-        self._container_info = await self._exit_stack.enter_async_context(
+        container_info = await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
         )
+        for info in container_info.values():
+            if PROXY_NGINX_SERVICE_NAME in info.aliases:
+                self._nginx_service_address = info.address
+                break
+        else:
+            raise RuntimeError(
+                f"Service {PROXY_NGINX_SERVICE_NAME} not found in the Docker network"
+            )
 
         self._create_probes(self.log_dir)
 

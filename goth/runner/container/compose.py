@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
-from typing import AsyncIterator, ClassVar, Dict, Optional
+from typing import AsyncIterator, ClassVar, Dict, List, Optional
 
 from docker import DockerClient
 import yaml
@@ -16,7 +16,7 @@ from goth.runner.container.build import (
     build_yagna_image,
     YagnaBuildEnvironment,
 )
-from goth.runner.container.utils import get_container_address
+from goth.runner.container.utils import get_container_network_info
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
@@ -49,10 +49,13 @@ class ComposeConfig:
 
 @dataclass
 class ContainerInfo:
-    """Info on a Docker container started by a Runner."""
+    """Info on a Docker container started by Docker compose."""
 
     address: str
     """The container's IP address in the Docker network"""
+
+    aliases: List[str]
+    """Container aliases in the Docker network"""
 
     image: str
     """The container's image name"""
@@ -98,6 +101,7 @@ class ComposeNetworkManager:
     ) -> Dict[str, ContainerInfo]:
         """Start the compose network based on this manager's compose file.
 
+        Returns information on containers started in the compose network.
         This step may include (re)building the network's docker images.
         """
         # Stop the network in case it's already running (e.g. from a previous test)
@@ -183,19 +187,12 @@ class ComposeNetworkManager:
     def _get_running_containers(self) -> Dict[str, ContainerInfo]:
         info = {}
         for container in self._docker_client.containers.list():
-            address = get_container_address(self._docker_client, container.name)
-            image = container.image.tags[0]
-            info[container.name] = ContainerInfo(address, image)
-        return info
-
-    def _log_running_containers(self):
-        for container in self._docker_client.containers.list():
-            logger.info(
-                "[%-25s] IP address: %-15s image: %s",
-                container.name,
-                get_container_address(self._docker_client, container.name),
-                container.image.tags[0],
+            address, aliases = get_container_network_info(
+                self._docker_client, container.name
             )
+            image = container.image.tags[0]
+            info[container.name] = ContainerInfo(address, aliases, image)
+        return info
 
     def _start_log_monitors(self, log_dir: Path) -> None:
         for service_name in self._get_compose_services():
@@ -222,7 +219,10 @@ class ComposeNetworkManager:
 async def run_compose_network(
     compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
 ) -> AsyncIterator[Dict[str, ContainerInfo]]:
-    """Implement AsyncContextManager for starting/stopping docker compose network."""
+    """Implement AsyncContextManager for starting/stopping docker compose network.
+
+    Yields information on containers started in the compose network.
+    """
 
     try:
         logger.debug(

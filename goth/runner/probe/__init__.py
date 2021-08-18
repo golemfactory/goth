@@ -236,8 +236,6 @@ class Probe(abc.ABC):
         self.ip_address = get_container_address(
             self._docker_client, self.container.name
         )
-        self._logger.info("IP address: %s", self.ip_address)
-
         nginx_ip_address = self.runner.nginx_container_address
         self._logger.info(
             "Yagna API host:port in Docker network: "

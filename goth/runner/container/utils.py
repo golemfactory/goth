@@ -1,6 +1,6 @@
 """Utilities related to Docker containers."""
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from docker import DockerClient
 
@@ -8,12 +8,12 @@ from goth.runner.container import DockerContainer
 from goth.runner.exceptions import ContainerNotFoundError
 
 
-def get_container_address(
+def get_container_network_info(
     client: DockerClient,
     container_name: str,
     network_name: str = DockerContainer.DEFAULT_NETWORK,
-) -> str:
-    """Get the IP address of a container in a given network.
+) -> Tuple[str, List[str]]:
+    """Get the IP address and the aliases of a container in a given network.
 
     The name of the container does not have to be exact, it may be a substring.
     In case of more than one container name matching the given string, the first
@@ -29,7 +29,25 @@ def get_container_address(
 
     container = matching_containers[0]
     container_networks = container.attrs["NetworkSettings"]["Networks"]
-    return container_networks[network_name]["IPAddress"]
+    network = container_networks[network_name]
+    return network["IPAddress"], network["Aliases"]
+
+
+def get_container_address(
+    client: DockerClient,
+    container_name: str,
+    network_name: str = DockerContainer.DEFAULT_NETWORK,
+) -> str:
+    """Get the IP address and the aliases of a container in a given network.
+
+    The name of the container does not have to be exact, it may be a substring.
+    In case of more than one container name matching the given string, the first
+    container is returned, as listed by the Docker daemon.
+
+    Raises `ContainerNotFoundError` if no matching container is found.
+    Raises `KeyError` if the container is not connected to the specified network.
+    """
+    return get_container_network_info(client, container_name, network_name)[0]
 
 
 def get_volumes_spec(
