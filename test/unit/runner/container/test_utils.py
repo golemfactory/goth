@@ -20,7 +20,10 @@ def mock_container():
     mock_container.attrs = {
         "NetworkSettings": {
             "Networks": {
-                DockerContainer.DEFAULT_NETWORK: {"IPAddress": TEST_IP_ADDRESS}
+                DockerContainer.DEFAULT_NETWORK: {
+                    "IPAddress": TEST_IP_ADDRESS,
+                    "Aliases": [],
+                }
             }
         }
     }

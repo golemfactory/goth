@@ -8,8 +8,8 @@ import tempfile
 import docker
 import pytest
 
-from goth.runner import TestFailure, Runner
-from goth.runner.container.compose import ComposeNetworkManager
+from goth.runner import TestFailure, Runner, PROXY_NGINX_SERVICE_NAME
+from goth.runner.container.compose import ComposeNetworkManager, ContainerInfo
 import goth.runner.container.utils
 from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Probe
@@ -71,7 +71,7 @@ def mock_runner(test_failure_callback=None, cancellation_callback=None):
 def mock_function(monkeypatch):
     """Return a function that performs monkey-patching of functions or coroutines."""
 
-    def _mock_function(class_, method, fails=0):
+    def _mock_function(class_, method, fails=0, result=None):
 
         call = f"{class_.__name__}.{method}()"
         mock_ = mock.MagicMock()
@@ -84,9 +84,10 @@ def mock_function(monkeypatch):
                 mock_.failed = True
                 raise MockError(mock_)
             print(f"{call} succeeds")
+            return result
 
         async def _coro(*args):
-            _func(*args)
+            return _func(*args)
 
         if asyncio.iscoroutinefunction(class_.__dict__[method]):
             mock_.side_effect = _coro
@@ -98,6 +99,13 @@ def mock_function(monkeypatch):
         return mock_
 
     return _mock_function
+
+
+MOCK_CONTAINER_INFO = {
+    "whatever": ContainerInfo(
+        "doesn't really matter", PROXY_NGINX_SERVICE_NAME, "who cares?"
+    )
+}
 
 
 @pytest.mark.parametrize(
@@ -144,7 +152,10 @@ async def test_runner_startup_shutdown(
     """Test if runner components are started and shut down correctly."""
 
     manager_start_network = mock_function(
-        ComposeNetworkManager, "start_network", manager_start_fails
+        ComposeNetworkManager,
+        "start_network",
+        manager_start_fails,
+        result=MOCK_CONTAINER_INFO,
     )
     manager_stop_network = mock_function(
         ComposeNetworkManager, "stop_network", manager_stop_fails
@@ -200,20 +211,27 @@ async def test_runner_startup_shutdown(
         assert "Starting probes failed: MockError" in caplog.text
 
 
+_FUNCTIONS_TO_MOCK = (
+    (
+        ComposeNetworkManager,
+        ("start_network", "stop_network"),
+        (MOCK_CONTAINER_INFO, None),
+    ),
+    (WebServer, ("start", "stop"), (None, None)),
+    (Probe, ("remove", "start", "stop"), (None, None, None)),
+    (Proxy, ("start", "stop"), (None, None)),
+    (Runner, ("check_assertion_errors",), (None,)),
+)
+
+
 @pytest.mark.parametrize("have_test_failure", [False, True])
 @pytest.mark.asyncio
 async def test_runner_test_failure(mock_function, have_test_failure):
     """Test if test failure callback is called if a TestFailure is raised."""
 
-    for class_, funcs in (
-        (ComposeNetworkManager, ("start_network", "stop_network")),
-        (WebServer, ("start", "stop")),
-        (Probe, ("remove", "start", "stop")),
-        (Proxy, ("start", "stop")),
-        (Runner, ("check_assertion_errors",)),
-    ):
-        for func in funcs:
-            mock_function(class_, func)
+    for class_, funcs, results in _FUNCTIONS_TO_MOCK:
+        for func, result in zip(funcs, results):
+            mock_function(class_, func, result=result)
 
     test_failure_callback = mock.MagicMock()
     runner = mock_runner(test_failure_callback=test_failure_callback)
@@ -230,15 +248,9 @@ async def test_runner_test_failure(mock_function, have_test_failure):
 async def test_runner_cancelled(mock_function, cancel):
     """Test that cancellation callback is called if a runner is cancelled."""
 
-    for class_, funcs in (
-        (ComposeNetworkManager, ("start_network", "stop_network")),
-        (WebServer, ("start", "stop")),
-        (Probe, ("remove", "start", "stop")),
-        (Proxy, ("start", "stop")),
-        (Runner, ("check_assertion_errors",)),
-    ):
-        for func in funcs:
-            mock_function(class_, func)
+    for class_, funcs, results in _FUNCTIONS_TO_MOCK:
+        for func, result in zip(funcs, results):
+            mock_function(class_, func, result=result)
 
     cancellation_callback = mock.MagicMock()
     runner = mock_runner(cancellation_callback=cancellation_callback)
