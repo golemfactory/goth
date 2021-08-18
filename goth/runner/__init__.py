@@ -80,7 +80,7 @@ class Runner:
     """A stack of `AsyncContextManager` instances to be closed on runner shutdown."""
 
     _nginx_container_address: Optional[str]
-    """An IP address of the container running nginx proxy."""
+    """The IP address of the container running nginx proxy."""
 
     _topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
@@ -256,7 +256,7 @@ class Runner:
                 if "nginx" in name
             ]
             assert len(nginx_containers) == 1, (
-                "Expected to find a single nginx container,"
+                "Expected to find a single nginx proxy container,"
                 f" found {len(nginx_containers)} instead"
             )
             self._nginx_container_address = nginx_containers[0]
