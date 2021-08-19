@@ -42,6 +42,14 @@ logger = logging.getLogger(__name__)
 ProbeType = TypeVar("ProbeType", bound=Probe)
 
 
+PROXY_NGINX_SERVICE_NAME = "proxy-nginx"
+"""Name of the nginx proxy service in the Docker network.
+
+Must match the service name in the config file used by the runner's
+compose network manager.
+"""
+
+
 class Runner:
     """Manages the nodes and runs the scenario on them."""
 
@@ -75,10 +83,13 @@ class Runner:
     _exit_stack: AsyncExitStack
     """A stack of `AsyncContextManager` instances to be closed on runner shutdown."""
 
+    _nginx_service_address: Optional[str]
+    """The IP address of the nginx service in the Docker network."""
+
     _topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
-    _web_server: WebServer
+    _web_server: Optional[WebServer]
     """A built-in web server."""
 
     def __init__(
@@ -107,6 +118,7 @@ class Runner:
             config=compose_config,
             docker_client=docker.from_env(),
         )
+        self._nginx_service_address = None
         self._web_server = (
             WebServer(web_root_path, web_server_port) if web_root_path else None
         )
@@ -235,6 +247,13 @@ class Runner:
             return "host.docker.internal"
 
     @property
+    def nginx_container_address(self) -> str:
+        """Return the IP address of the proxy-nginx service in the Docker network."""
+        if not self._nginx_service_address:
+            raise RuntimeError("Docker network not started")
+        return self._nginx_service_address
+
+    @property
     def web_server_port(self) -> Optional[int]:
         """Return the port of the build-in web server."""
         return self._web_server.server_port if self._web_server else None
@@ -275,9 +294,17 @@ class Runner:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
         logger.info(colors.yellow("Running test: %s"), self.test_name)
 
-        await self._exit_stack.enter_async_context(
+        container_info = await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
         )
+        for info in container_info.values():
+            if PROXY_NGINX_SERVICE_NAME in info.aliases:
+                self._nginx_service_address = info.address
+                break
+        else:
+            raise RuntimeError(
+                f"Service {PROXY_NGINX_SERVICE_NAME} not found in the Docker network"
+            )
 
         self._create_probes(self.log_dir)
 

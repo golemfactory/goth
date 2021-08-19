@@ -82,6 +82,7 @@ class Configuration:
             subnet="goth",
             volumes=volumes,
             payment_id=self._id_pool.get_id(),
+            use_proxy=use_proxy,
             **kwargs,
         )
 

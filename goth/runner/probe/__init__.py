@@ -13,6 +13,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Mapping,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -21,7 +22,9 @@ from typing import (
 from docker import DockerClient
 
 from goth.address import (
+    HOST_NGINX_PORT_OFFSET,
     YAGNA_BUS_URL,
+    YAGNA_REST_PORT,
     YAGNA_REST_URL,
 )
 
@@ -143,6 +146,16 @@ class Probe(abc.ABC):
         """Name of the container."""
         return self.container.name
 
+    @property
+    def host_rest_port(self) -> int:
+        """Host port to which yagna API port on this probe's container is mapped to."""
+        return self.container.ports[YAGNA_REST_PORT]
+
+    @property
+    def nginx_rest_port(self) -> int:
+        """Host port to which the nginx port assigned to this probe is mapped to."""
+        return self.host_rest_port + HOST_NGINX_PORT_OFFSET
+
     def _setup_gftp_proxy(self, config: YagnaContainerConfig) -> YagnaContainerConfig:
         """Create a proxy script and a dir for exchanging files with the container."""
 
@@ -223,7 +236,21 @@ class Probe(abc.ABC):
         self.ip_address = get_container_address(
             self._docker_client, self.container.name
         )
-        self._logger.info("IP address: %s", self.ip_address)
+        nginx_ip_address = self.runner.nginx_container_address
+        self._logger.info(
+            "Yagna API host:port in Docker network: "
+            "%s:%s (direct), %s:%s (through proxy)",
+            self.ip_address,
+            YAGNA_REST_PORT,
+            nginx_ip_address,
+            self.host_rest_port,
+        )
+        self._logger.info(
+            "Yagna API host:port via localhost: "
+            "127.0.0.1:%s (direct), 127.0.0.1:%s (through proxy)",
+            self.host_rest_port,
+            self.nginx_rest_port,
+        )
 
     async def create_app_key(self, key_name: str = "test_key") -> str:
         """Attempt to create a new app key on the Yagna daemon.
@@ -262,6 +289,25 @@ class Probe(abc.ABC):
             key = app_key.key
         return key
 
+    def get_yagna_api_url(self) -> str:
+        """Return the URL through which this probe's daemon can be reached.
+
+        This URL can be used to access yagna APIs from outside of the probe's
+        container, for example, from a requestor script running on host.
+
+        The URL may point directly to the IP address of this probe in the Docker
+        network, or a port on localhost on which the MITM proxy listens, depending
+        on the `use_proxy` setting in the probe's configuration.
+        """
+
+        # Port on the host to which yagna API port in the container is mapped
+        host_port = (
+            self.nginx_rest_port
+            if self._yagna_config.use_proxy
+            else self.host_rest_port
+        )
+        return YAGNA_REST_URL.substitute(host="127.0.0.1", port=host_port)
+
     def get_agent_env_vars(self, expand_path: bool = True) -> Dict[str, str]:
         """Get env vars needed to talk to the daemon in this probe's container.
 
@@ -284,7 +330,7 @@ class Probe(abc.ABC):
 
         return {
             "YAGNA_APPKEY": self.app_key,
-            "YAGNA_API_URL": YAGNA_REST_URL.substitute(host=self.ip_address),
+            "YAGNA_API_URL": self.get_yagna_api_url(),
             "GSB_URL": YAGNA_BUS_URL.substitute(host=self.ip_address),
             "PATH": f"{self._gftp_script_dir}:{path}",
         }
@@ -293,7 +339,7 @@ class Probe(abc.ABC):
     async def run_command_on_host(
         self,
         command: str,
-        env: Optional[Dict[str, str]] = None,
+        env: Optional[Mapping[str, str]] = None,
         command_timeout: float = 300,
     ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
@@ -314,7 +360,9 @@ class Probe(abc.ABC):
         cmd_env = {**env} if env is not None else {}
         cmd_env.update(self.get_agent_env_vars())
 
-        cmd_monitor = PatternMatchingEventMonitor(name="command output")
+        cmd_monitor: PatternMatchingEventMonitor = PatternMatchingEventMonitor(
+            name="command output"
+        )
         cmd_monitor.start()
 
         try:

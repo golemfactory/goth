@@ -38,6 +38,14 @@ class YagnaContainerConfig(DockerContainerConfig):
     payment_id: Optional[payment.PaymentId]
     """Custom key and payment accounts to be imported into yagna ID service."""
 
+    use_proxy: bool
+    """Whether the probe will route REST API calls through MITM proxy.
+
+    This setting is used when initializing the `api` component of the probe
+    instantiated from this config, as well as to define the environment in which
+    commands run by `Probe.run_command_on_host()` are run.
+    """
+
     def __init__(
         self,
         name: str,
@@ -47,6 +55,7 @@ class YagnaContainerConfig(DockerContainerConfig):
         environment: Optional[Dict[str, str]] = None,
         privileged_mode: bool = False,
         payment_id: Optional[payment.PaymentId] = None,
+        use_proxy: bool = False,
         **probe_properties,
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
@@ -54,6 +63,7 @@ class YagnaContainerConfig(DockerContainerConfig):
         self.probe_properties = probe_properties or {}
         self.environment = environment or {}
         self.payment_id = payment_id
+        self.use_proxy = use_proxy
 
 
 class YagnaContainer(DockerContainer):

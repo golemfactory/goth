@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
-from typing import ClassVar, Dict, Optional
+from typing import AsyncIterator, ClassVar, Dict, List, Optional
 
 from docker import DockerClient
 import yaml
@@ -16,7 +16,7 @@ from goth.runner.container.build import (
     build_yagna_image,
     YagnaBuildEnvironment,
 )
-from goth.runner.container.utils import get_container_address
+from goth.runner.container.utils import get_container_network_info
 from goth.runner.exceptions import ContainerNotFoundError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
@@ -45,6 +45,20 @@ class ComposeConfig:
     from this dict to perform ready checks on services. For each service (key)
     the manager will wait for a log line to match the regex pattern (value).
     """
+
+
+@dataclass
+class ContainerInfo:
+    """Info on a Docker container started by Docker compose."""
+
+    address: str
+    """The container's IP address in the Docker network"""
+
+    aliases: List[str]
+    """Container aliases in the Docker network"""
+
+    image: str
+    """The container's image name"""
 
 
 class ComposeNetworkManager:
@@ -82,9 +96,12 @@ class ComposeNetworkManager:
         self._log_monitors = {}
         self._network_gateway_address = ""
 
-    async def start_network(self, log_dir: Path, force_build: bool = False) -> None:
+    async def start_network(
+        self, log_dir: Path, force_build: bool = False
+    ) -> Dict[str, ContainerInfo]:
         """Start the compose network based on this manager's compose file.
 
+        Returns information on containers started in the compose network.
         This step may include (re)building the network's docker images.
         """
         # Stop the network in case it's already running (e.g. from a previous test)
@@ -106,7 +123,12 @@ class ComposeNetworkManager:
 
         self._start_log_monitors(log_dir)
         await self._wait_for_containers()
-        self._log_running_containers()
+        container_infos = self._get_running_containers()
+        for name, info in container_infos.items():
+            logger.info(
+                "[%-25s] IP address: %-15s image: %s", name, info.address, info.image
+            )
+        return container_infos
 
     async def _wait_for_containers(self) -> None:
         logger.info("Waiting for compose containers to be ready")
@@ -162,14 +184,15 @@ class ComposeNetworkManager:
 
         return self._network_gateway_address
 
-    def _log_running_containers(self):
+    def _get_running_containers(self) -> Dict[str, ContainerInfo]:
+        info = {}
         for container in self._docker_client.containers.list():
-            logger.info(
-                "[%-25s] IP address: %-15s image: %s",
-                container.name,
-                get_container_address(self._docker_client, container.name),
-                container.image.tags[0],
+            address, aliases = get_container_network_info(
+                self._docker_client, container.name
             )
+            image = container.image.tags[0]
+            info[container.name] = ContainerInfo(address, aliases, image)
+        return info
 
     def _start_log_monitors(self, log_dir: Path) -> None:
         for service_name in self._get_compose_services():
@@ -195,15 +218,18 @@ class ComposeNetworkManager:
 @contextlib.asynccontextmanager
 async def run_compose_network(
     compose_manager: ComposeNetworkManager, log_dir: Path, force_build: bool = False
-) -> None:
-    """Implement AsyncContextManager for starting/stopping docker compose network."""
+) -> AsyncIterator[Dict[str, ContainerInfo]]:
+    """Implement AsyncContextManager for starting/stopping docker compose network.
+
+    Yields information on containers started in the compose network.
+    """
 
     try:
         logger.debug(
             "Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build
         )
-        await compose_manager.start_network(log_dir, force_build)
-        yield
+        containers = await compose_manager.start_network(log_dir, force_build)
+        yield containers
     finally:
         logger.debug("Stopping compose network")
         await compose_manager.stop_network()

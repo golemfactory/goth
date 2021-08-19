@@ -14,8 +14,6 @@ from goth.address import (
     ACTIVITY_API_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
-    YAGNA_REST_PORT,
-    YAGNA_REST_URL,
 )
 from goth.runner.probe.component import ProbeComponent
 
@@ -80,13 +78,7 @@ class RestApiComponent(ProbeComponent):
 
     def __init__(self, probe: "Probe"):
         super().__init__(probe)
-
-        # We reach the daemon through MITM proxy running on localhost using the
-        # container's unique port mapping
-        host_port = probe.container.ports[YAGNA_REST_PORT]
-        proxy_ip = "127.0.0.1"
-        base_hostname = YAGNA_REST_URL.substitute(host=proxy_ip, port=host_port)
-
+        base_hostname = probe.get_yagna_api_url()
         self._init_activity_api(base_hostname)
         self._init_payment_api(base_hostname)
         self._init_market_api(base_hostname)
