@@ -56,25 +56,29 @@ async def test_use_proxy(default_goth_config: Path, log_dir: Path) -> None:
 
     async with runner(goth_config.containers):
 
+        # Ceck it `use-proxy` flags in the config are correctly interpreted
+        for probe in runner.probes:
+            assert probe.uses_proxy == (probe.name != "provider-2")
+
+        # Make an API call to the requestor daemon
         for probe in runner.probes:
             if isinstance(probe, RequestorProbe):
                 await probe.api.payment.get_requestor_accounts()
 
-        # Make sure provider agents make some API calls
+        # Give provider agents time to make some API calls
         await asyncio.sleep(10)
 
+        # Assert that API calls were intercepted for probes configured to use proxy
+        # and not intercepted for the probe configured not to use it
         for probe in runner.probes:
             if probe.uses_proxy:
                 assertion = runner.proxy.monitor.add_assertion(
                     partial(api_call_made, probe.container.name),
                     name=f"api_call_made({probe.container.name})",
                 )
-                assert await assertion.wait_for_result()
-
-        for probe in runner.probes:
-            if not probe.uses_proxy:
+            else:
                 assertion = runner.proxy.monitor.add_assertion(
                     partial(no_api_call_made, probe.container.name),
                     name=f"no_api_call_made({probe.container.name})",
                 )
-                assert await assertion.wait_for_result()
+            assert await assertion.wait_for_result()
