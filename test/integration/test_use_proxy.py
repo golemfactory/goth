@@ -35,7 +35,7 @@ async def no_api_call_made(container_name: str, stream: EventStream[APIEvent]) -
 
 @pytest.mark.asyncio
 async def test_use_proxy(default_goth_config: Path, log_dir: Path) -> None:
-    """Test if runner correctly sets up agent-deamon communication through proxy."""
+    """Test if runner correctly sets up agent-daemon communication through proxy."""
 
     overrides = [
         (
