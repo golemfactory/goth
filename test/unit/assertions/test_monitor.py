@@ -3,7 +3,7 @@ import asyncio
 
 import pytest
 
-from goth.assertions import EventStream
+from goth.assertions import Assertion, EventStream
 from goth.assertions.monitor import EventMonitor
 
 
@@ -71,19 +71,25 @@ async def assert_fancy_property(stream: Events) -> int:
     return m
 
 
+@pytest.mark.parametrize("add_existing", [False, True])
 @pytest.mark.asyncio
-async def test_assertions():
+async def test_assertions(add_existing: bool):
     """Test a dummy set of assertions against a list of int's."""
 
     monitor: EventMonitor[int] = EventMonitor()
-    monitor.add_assertions(
-        [
-            assert_all_positive,
-            assert_increasing,
-            assert_eventually_five,
-            assert_fancy_property,
-        ]
-    )
+
+    functions = [
+        assert_all_positive,
+        assert_increasing,
+        assert_eventually_five,
+        assert_fancy_property,
+    ]
+    for func in functions:
+        if add_existing:
+            assertion = Assertion(func)
+            monitor.add_assertion(assertion)
+        else:
+            monitor.add_assertion(func)
     monitor.start()
 
     for n in [1, 3, 4, 6, 3, 8, 9, 10]:

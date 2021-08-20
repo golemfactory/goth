@@ -258,7 +258,7 @@ class Runner:
         await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
         for assertion in self._pending_api_assertions:
-            self.proxy.monitor.attach_assertion(assertion)
+            self.proxy.monitor.add_assertion(assertion)
         self._pending_api_assertions = []
 
     @property
