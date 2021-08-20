@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from goth.project import PROJECT_ROOT
+from goth.runner.log import configure_logging
 
 
 @pytest.fixture
@@ -14,6 +15,7 @@ def log_dir() -> Path:
     date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
     log_dir = base_dir / f"goth_{date_str}"
     log_dir.mkdir(parents=True)
+    configure_logging(log_dir)
     return log_dir
 
 
