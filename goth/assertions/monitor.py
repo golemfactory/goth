@@ -112,11 +112,20 @@ class EventMonitor(Generic[E]):
     ) -> Assertion:
         """Add an assertion function to this monitor."""
 
-        assertion = Assertion(self._events, assertion_func, name=name)
-        assertion.start()
+        assertion = Assertion(assertion_func, name=name)
+        self.attach_assertion(assertion, log_level)
+        return assertion
+
+    def attach_assertion(
+        self,
+        assertion: Assertion[E],
+        log_level: LogLevel = logging.INFO,
+    ) -> None:
+        """Attach an assertion to this monitor and start it."""
+
+        assertion.start(self._events)
         self._logger.debug("Assertion '%s' started", assertion.name)
         self.assertions[assertion] = log_level
-        return assertion
 
     def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
         """Add a list of assertion functions to this monitor."""

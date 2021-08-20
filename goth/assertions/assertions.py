@@ -1,6 +1,7 @@
 """Coroutine-based implementation of temporal assertions."""
 
 import asyncio
+from functools import partial
 
 from typing import (
     Any,
@@ -41,6 +42,33 @@ else:
 AssertionFunction = Callable[[EventStream[E]], Coroutine]
 
 
+def _function_name(func: Callable) -> str:
+    """Invent a name for `func`.
+
+    Works for callables that are functions defined with `(async) def`
+    or are built with `functools.partial(f, args)`, when `f` is defined
+    with `(async) def`.
+
+    Raises `ValueError` for other arguments.
+    """
+
+    if hasattr(func, "__module__") and hasattr(func, "__qualname__"):
+        return f"{func.__module__}.{func.__qualname__.replace('<locals>.', '')}"
+    elif isinstance(func, partial):
+        name = _function_name(func.func)
+        name += (
+            "("
+            + ", ".join(
+                [str(arg) for arg in func.args]
+                + [f"{key}={val}" for key, val in func.keywords.items()]
+            )
+            + ")"
+        )
+        return name
+    else:
+        raise ValueError(f"Cannot construct name for {func}")
+
+
 class Assertion(AsyncIterable[E]):
     """A class for executing assertion coroutines.
 
@@ -54,9 +82,6 @@ class Assertion(AsyncIterable[E]):
     and `failed` properties.
     """
 
-    past_events: Sequence[E]
-    """See `EventStream`."""
-
     events_ended: bool
     """See `EventStream`."""
 
@@ -65,6 +90,9 @@ class Assertion(AsyncIterable[E]):
 
     _func: Optional[AssertionFunction]
     """A coroutine function that is executed for this assertion."""
+
+    _past_events: Optional[Sequence[E]]
+    """A sequence of past events ordered chronologically."""
 
     _task: Optional[asyncio.Task]
     """A task in which the assertion coroutine runs."""
@@ -78,28 +106,22 @@ class Assertion(AsyncIterable[E]):
     _generator: Optional[AsyncIterator[E]]
     """An asynchronous generator that provides events to the assertion coroutine."""
 
-    def __init__(
-        self, events: Sequence[E], func: AssertionFunction, name: Optional[str] = None
-    ) -> None:
+    def __init__(self, func: AssertionFunction, name: Optional[str] = None) -> None:
         """Create an assertion that processes `events` as prescribed by `func`.
 
         The `name` argument may be `None` only if `func` refers to a function defined
-        with `async def func(...)`. In such cases, the assertion's name will be
-        constructed from the `__module__` and `__qualname__` attributes of `func`.
-        If `func` is not of this form and `name` is `None` then a `ValueError` will be
-        raised.
+        with `async def func(...)` or is an application of `functools.partial` to such
+        a function. In such cases, the assertion's name will be constructed from the
+        `__module__` and `__qualname__` attributes of the function and, if `func` is
+        constructed using `partial`, the arguments passed to `partial`.
+
+        If `func` is not of this form and `name` is `None` then a `ValueError`
+        will be raised.
         """
-        self.past_events = events
         self.events_ended = False
-        try:
-            self.name = name or (
-                f"{func.__module__}.{func.__qualname__.replace('<locals>.', '')}"
-            )
-        except Exception:
-            raise ValueError(
-                "Cannot construct assertion name and `name` parameter is not set."
-            )
+        self.name = name if name else _function_name(func)
         self._func = func
+        self._past_events = None
         # Creating asyncio objects is decoupled from object initialisation to
         # allow this object to be created and run in different threads (and thus
         # in different event loops).
@@ -108,7 +130,15 @@ class Assertion(AsyncIterable[E]):
         self._processed = None
         self._generator = None
 
-    def start(self) -> asyncio.Task:
+    @property
+    def past_events(self) -> Sequence[E]:
+        """Return the sequence of past events."""
+
+        if self._past_events is None:
+            raise asyncio.InvalidStateError("Assertion not started")
+        return self._past_events
+
+    def start(self, events: Sequence[E]) -> asyncio.Task:
         """Create asyncio task that runs this assertion."""
 
         if self.started:
@@ -127,6 +157,7 @@ class Assertion(AsyncIterable[E]):
                 self._notify_update_events()
 
         assert self._func is not None
+        self._past_events = events
         self._task = asyncio.create_task(func_wrapper())
         self._ready = asyncio.Event()
         self._processed = asyncio.Event()
