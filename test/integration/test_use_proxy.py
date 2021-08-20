@@ -15,16 +15,16 @@ from goth.api_monitor.api_events import APIEvent, APIRequest
 
 
 async def api_call_made(container_name: str, stream: EventStream[APIEvent]) -> bool:
-    """Assert that an API call to `container_name` has been made in the past."""
+    """Assert that an API call to `container_name` is made."""
 
-    for event in stream.past_events:
+    async for event in stream:
         if isinstance(event, APIRequest) and event.callee == f"{container_name}:daemon":
             return True
     raise AssertionError(f"No API call to {container_name} registered by proxy")
 
 
 async def no_api_call_made(container_name: str, stream: EventStream[APIEvent]) -> bool:
-    """Assert that no API call to `container_name` has been made in the past."""
+    """Assert that no API call to `container_name` is made."""
 
     try:
         await api_call_made(container_name, stream)
@@ -54,6 +54,10 @@ async def test_use_proxy(default_goth_config: Path, log_dir: Path) -> None:
         compose_config=goth_config.compose_config,
     )
 
+    requestor_assertion = runner.add_api_assertion(partial(api_call_made, "requestor"))
+    runner.add_api_assertion(partial(api_call_made, "provider-1"))
+    runner.add_api_assertion(partial(no_api_call_made, "provider-2"))
+
     async with runner(goth_config.containers):
 
         # Ceck it `use-proxy` flags in the config are correctly interpreted
@@ -65,20 +69,7 @@ async def test_use_proxy(default_goth_config: Path, log_dir: Path) -> None:
             if isinstance(probe, RequestorProbe):
                 await probe.api.payment.get_requestor_accounts()
 
-        # Give provider agents time to make some API calls
-        await asyncio.sleep(10)
+        await requestor_assertion.wait_for_result(1.0)
 
-        # Assert that API calls were intercepted for probes configured to use proxy
-        # and not intercepted for the probe configured not to use it
-        for probe in runner.probes:
-            if probe.uses_proxy:
-                assertion = runner.proxy.monitor.add_assertion(
-                    partial(api_call_made, probe.container.name),
-                    name=f"api_call_made({probe.container.name})",
-                )
-            else:
-                assertion = runner.proxy.monitor.add_assertion(
-                    partial(no_api_call_made, probe.container.name),
-                    name=f"no_api_call_made({probe.container.name})",
-                )
-            assert await assertion.wait_for_result()
+        # Give provider agents time to make some API calls.
+        await asyncio.sleep(10)
