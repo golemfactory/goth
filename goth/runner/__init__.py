@@ -21,7 +21,8 @@ from typing import (
 import colors
 import docker
 
-from goth.assertions.monitor import EventMonitor
+from goth.api_monitor.api_events import APIEvent
+from goth.assertions.monitor import Assertion, AssertionFunction, EventMonitor
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
@@ -86,6 +87,8 @@ class Runner:
     _nginx_service_address: Optional[str]
     """The IP address of the nginx service in the Docker network."""
 
+    _pending_api_assertions: List[Assertion[APIEvent]]
+
     _topology: List[YagnaContainerConfig]
     """A list of configuration objects for the containers to be instantiated."""
 
@@ -119,6 +122,7 @@ class Runner:
             docker_client=docker.from_env(),
         )
         self._nginx_service_address = None
+        self._pending_api_assertions = []
         self._web_server = (
             WebServer(web_root_path, web_server_port) if web_root_path else None
         )
@@ -136,6 +140,22 @@ class Runner:
             probes = [p for p in probes if p.name == name]
         probes = [p for p in probes if isinstance(p, probe_type)]
         return cast(List[ProbeType], probes)
+
+    def add_api_assertion(
+        self, func: AssertionFunction, name=None
+    ) -> Assertion[APIEvent]:
+        """Add an assertion for API events to this runner proxy.
+
+        If the proxy is already running, the returned assertion will be started.
+        Otherwise, the returned assertion will be started automatically when
+        the proxy is started by this runner.
+        """
+
+        if self.proxy:
+            return self.proxy.monitor.add_assertion(func, name)
+        assertion = Assertion(func, name)
+        self._pending_api_assertions.append(assertion)
+        return assertion
 
     def check_assertion_errors(self, *extra_monitors: EventMonitor) -> None:
         """If any monitor reports an assertion error, raise the first error."""
@@ -211,7 +231,7 @@ class Runner:
                 container_ports,
             )
 
-        node_names[self.host_address] = "Pytest-Requestor-Agent"
+        node_names[self.host_address] = "docker-host"
 
         # Stopping the proxy triggers evaluation of assertions at "the end of events".
         # Install a callback to to check for assertion failures after the proxy stops.
@@ -219,16 +239,27 @@ class Runner:
 
         # Start the proxy node. The containers should not make API calls
         # up to this point.
+        await self._start_proxy(node_names, ports)
+
+        # Collect all agent enabled probes and start them in parallel
+        awaitables = [probe.start_agents() for probe in self.probes]
+        await asyncio.gather(*awaitables)
+
+    async def _start_proxy(
+        self, node_names: Dict[str, str], ports: Dict[str, dict]
+    ) -> None:
+
         self.proxy = Proxy(
             node_names=node_names,
             ports=ports,
             assertions_module=self.api_assertions_module,
         )
+
         await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
-        # Collect all agent enabled probes and start them in parallel
-        awaitables = [probe.start_agents() for probe in self.probes]
-        await asyncio.gather(*awaitables)
+        for assertion in self._pending_api_assertions:
+            self.proxy.monitor.attach_assertion(assertion)
+        self._pending_api_assertions = []
 
     @property
     def host_address(self) -> str:
