@@ -8,7 +8,7 @@ from collections import OrderedDict
 import importlib
 import logging
 import sys
-from typing import Callable, Generic, List, Optional, Sequence, Set, Union
+from typing import Callable, Generic, List, Optional, Sequence, Set, Union, overload
 
 import colors
 
@@ -104,25 +104,73 @@ class EventMonitor(Generic[E]):
         self._stop_callback = on_stop
         self._worker_task = None
 
+    @overload
     def add_assertion(
         self,
-        assertion_func: AssertionFunction[E],
+        assertion: AssertionFunction[E],
         name: Optional[str] = None,
+        *,
         log_level: LogLevel = logging.INFO,
     ) -> Assertion:
-        """Add an assertion function to this monitor."""
+        """Add a new assertion created from given assertion function to this monitor."""
 
-        assertion = Assertion(self._events, assertion_func, name=name)
-        assertion.start()
-        self._logger.debug("Assertion '%s' started", assertion.name)
-        self.assertions[assertion] = log_level
-        return assertion
+    @overload
+    def add_assertion(
+        self,
+        assertion: Assertion,
+        *,
+        log_level: LogLevel = logging.INFO,
+    ) -> None:
+        """Attach an existing assertion to this monitor and start it."""
 
-    def add_assertions(self, assertion_funcs: List[AssertionFunction[E]]) -> None:
-        """Add a list of assertion functions to this monitor."""
+    def add_assertion(
+        self,
+        assertion: Union[Assertion, AssertionFunction[E]],
+        name: Optional[str] = None,
+        *,
+        log_level: LogLevel = logging.INFO,
+    ) -> Optional[Assertion]:
+        """Add a new or existing assertion to this monitor.
 
-        for func in assertion_funcs:
-            self.add_assertion(func)
+        To create and add a new assertion, pass an assertion function as
+        `assertion` argument, and a optional `name`. These values will be
+        passed intact to `Assertion()`.
+
+        To add an existing assertion, pass it as `assertion` argument.
+
+        The argument `log_level` is the level for the message logged when
+        the assertion succeeds. For assertion failure, `logging.ERROR` is
+        always used.
+        """
+
+        if isinstance(assertion, Assertion) and name:
+            raise TypeError("Invalid arguments to `add_assertion()`")
+
+        if isinstance(assertion, Assertion):
+            assertion_ = assertion
+        else:
+            assertion_ = Assertion(assertion, name)
+
+        assertion_.start(self._events)
+        self._logger.debug("Assertion '%s' started", assertion_.name)
+        self.assertions[assertion_] = log_level
+
+        return assertion_ if not isinstance(assertion, Assertion) else None
+
+    def add_assertions(
+        self,
+        assertions: List[Union[Assertion, AssertionFunction[E]]],
+        *,
+        log_level: LogLevel = logging.INFO,
+    ) -> None:
+        """Add assertions to this monitor.
+
+        The list of `assertions` may include existing assertions as well ass
+        assertion functions from which new assertions will be created.
+        """
+
+        for a in assertions:
+            self.add_assertion(a, log_level=log_level)
 
     def load_assertions(self, module_name: str) -> None:
         """Load assertion functions from a module."""

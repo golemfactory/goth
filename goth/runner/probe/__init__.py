@@ -147,6 +147,11 @@ class Probe(abc.ABC):
         return self.container.name
 
     @property
+    def uses_proxy(self) -> bool:
+        """Return `True` iff this probe is configured to use MITM proxy."""
+        return self._yagna_config.use_proxy
+
+    @property
     def host_rest_port(self) -> int:
         """Host port to which yagna API port on this probe's container is mapped to."""
         return self.container.ports[YAGNA_REST_PORT]
@@ -237,6 +242,7 @@ class Probe(abc.ABC):
             self._docker_client, self.container.name
         )
         nginx_ip_address = self.runner.nginx_container_address
+
         self._logger.info(
             "Yagna API host:port in Docker network: "
             "%s:%s (direct), %s:%s (through proxy)",
@@ -301,11 +307,7 @@ class Probe(abc.ABC):
         """
 
         # Port on the host to which yagna API port in the container is mapped
-        host_port = (
-            self.nginx_rest_port
-            if self._yagna_config.use_proxy
-            else self.host_rest_port
-        )
+        host_port = self.nginx_rest_port if self.uses_proxy else self.host_rest_port
         return YAGNA_REST_URL.substitute(host="127.0.0.1", port=host_port)
 
     def get_agent_env_vars(self, expand_path: bool = True) -> Dict[str, str]:
