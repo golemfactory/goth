@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import AsyncIterator, ClassVar, Dict, List, Optional
 
 from docker import DockerClient
+from docker.models.networks import Network
 import yaml
 
 from goth.runner.container import DockerContainer
@@ -145,11 +146,51 @@ class ComposeNetworkManager:
             await monitor.wait_for_entry(pattern, timeout=CONTAINER_READY_TIMEOUT)
         logger.info("Compose network ready")
 
-    async def stop_network(self):
-        """Stop the running compose network, removing its containers."""
+    def _disconnect_containers(self, excluded_containers: List[str]) -> None:
+        """Disconnect containers from the default Docker compose network.
+
+        This corresponds to executing the command
+        >>> docker network disconnect -f DEFAULT_NETWORK CONTAINER_NAME
+        for each container.
+
+        All containers except those with names in `excluded_containers` are
+        disconnected.
+        """
+        networks = self._docker_client.networks.list(
+            names=[DockerContainer.DEFAULT_NETWORK]
+        )
+        if networks:
+            compose_network: Network = networks[0]
+            compose_network.reload()
+            connected_containers = [
+                c["Name"] for c in compose_network.attrs["Containers"].values()
+            ]
+            yagna_containers = [
+                name for name in connected_containers if name not in excluded_containers
+            ]
+            for container in yagna_containers:
+                logger.info(
+                    "Disconnecting container %s from network %s...",
+                    container,
+                    DockerContainer.DEFAULT_NETWORK,
+                )
+                compose_network.disconnect(container, force=True)
+
+    async def stop_network(self, compose_containers: Optional[List[str]] = None):
+        """Stop the running compose network, removing its containers.
+
+        Before the network is stopped, all yagna containers need to be disconnected,
+        due to https://github.com/golemfactory/goth/issues/539.
+         To avoid explicitly disconnecting some containers -- for example, the ones
+        started by `docker-compose` itself that will be disconnected by
+        `docker-compose down` -- pass their names in `compose_containers`.
+        """
+
         for name, monitor in self._log_monitors.items():
             logger.debug("stopping log monitor. name=%s", name)
             await monitor.stop()
+
+        self._disconnect_containers(compose_containers or [])
 
         await run_command(
             ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"]
@@ -224,12 +265,14 @@ async def run_compose_network(
     Yields information on containers started in the compose network.
     """
 
+    compose_containers = []
     try:
         logger.debug(
             "Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build
         )
         containers = await compose_manager.start_network(log_dir, force_build)
+        compose_containers = list(containers.keys())
         yield containers
     finally:
         logger.debug("Stopping compose network")
-        await compose_manager.stop_network()
+        await compose_manager.stop_network(compose_containers)
