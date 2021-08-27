@@ -180,8 +180,9 @@ class ComposeNetworkManager:
         """Stop the running compose network, removing its containers.
 
         Before the network is stopped, all yagna containers need to be disconnected,
-        due to https://github.com/golemfactory/goth/issues/539.
-         To avoid explicitly disconnecting some containers -- for example, the ones
+        due to https://github.com/moby/moby/issues/23302.
+
+        To avoid explicitly disconnecting some containers -- for example, the ones
         started by `docker-compose` itself that will be disconnected by
         `docker-compose down` -- pass their names in `compose_containers`.
         """
