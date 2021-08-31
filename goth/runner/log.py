@@ -82,10 +82,6 @@ LOGGING_CONFIG = {
             "propagate": False,
         },
         "transitions": {"level": "WARNING"},
-        "root": {
-            "handlers": ["console", "runner_file"],
-            "level": "INFO",
-        },
     },
 }
 

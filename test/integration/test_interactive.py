@@ -10,7 +10,7 @@ from goth.interactive import start_network, env_file
 
 @pytest.mark.asyncio
 async def test_interactive(
-    capsys: pytest.CaptureFixture, default_goth_config: Path, log_dir: Path
+    default_goth_config: Path, log_dir: Path, capsys: pytest.CaptureFixture
 ) -> None:
     """Test if goth interactive mode launches correctly."""
     goth_config = load_yaml(default_goth_config, [])

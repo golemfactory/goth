@@ -18,7 +18,7 @@ async def api_call_made(container_name: str, stream: EventStream[APIEvent]) -> b
     """Assert that an API call to `container_name` is made."""
 
     async for event in stream:
-        if isinstance(event, APIRequest) and event.callee == f"{container_name}:daemon":
+        if isinstance(event, APIRequest) and event.node_name == container_name:
             return True
     raise AssertionError(f"No API call to {container_name} registered by proxy")
 
