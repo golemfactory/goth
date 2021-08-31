@@ -147,9 +147,9 @@ async def test_waitable_monitor():
     events = []
 
     async def wait_for_events():
-        events.append(await monitor.wait_for_event(lambda e: e == 1))
-        events.append(await monitor.wait_for_event(lambda e: e == 2))
-        events.append(await monitor.wait_for_event(lambda e: e == 3))
+        events.append((await monitor.wait_for_event(lambda e: e == 1))[0])
+        events.append((await monitor.wait_for_event(lambda e: e == 2))[0])
+        events.append((await monitor.wait_for_event(lambda e: e == 3))[0])
 
     await monitor.add_event(0)
     await monitor.add_event(1)
