@@ -3,16 +3,19 @@
 import abc
 import json
 import re
-from typing import Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 from mitmproxy.flow import Error
 from mitmproxy.http import HTTPRequest, HTTPResponse
 
-from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
+from goth.api_monitor.router_addon import AGENT_HEADER, NODE_HEADER
 
 
 class APIEvent(abc.ABC):
     """Abstract superclass of API event classes."""
+
+    request: "APIRequest"
+    """The request event associated with this event."""
 
     @property
     @abc.abstractmethod
@@ -36,6 +39,7 @@ class APIRequest(APIEvent):
     http_request: HTTPRequest
 
     def __init__(self, number: int, http_request: HTTPRequest):
+        self.request = self
         self.number = number
         self.http_request = http_request
 
@@ -58,13 +62,23 @@ class APIRequest(APIEvent):
 
     @property
     def caller(self) -> Optional[str]:
-        """Return the caller name."""
-        return self.http_request.headers.get(CALLER_HEADER)
+        """Return the caller name. Deprecated, use `agent_name()` instead."""
+        return self.http_request.headers.get(AGENT_HEADER)
 
     @property
     def callee(self) -> Optional[str]:
-        """Return the callee name."""
-        return self.http_request.headers.get(CALLEE_HEADER)
+        """Return the callee name. Deprecated, use `node_name()` instead."""
+        return self.http_request.headers.get(NODE_HEADER)
+
+    @property
+    def agent_name(self) -> str:
+        """Return the name of the agent from which the request originates."""
+        return self.http_request.headers[AGENT_HEADER]
+
+    @property
+    def node_name(self) -> str:
+        """Return the name of the yagna node to which the request is made."""
+        return self.http_request.headers[NODE_HEADER]
 
     @property
     def content(self) -> str:
@@ -74,7 +88,7 @@ class APIRequest(APIEvent):
     @property
     def header_str(self) -> str:
         """Return the string representation of this request without the body."""
-        return f"{self.caller} -> {self.callee}: {self.method} {self.path}"
+        return f"{self.agent_name} -> {self.node_name}: {self.method} {self.path}"
 
     def __str__(self) -> str:
         return f"[request] {self.header_str}; body: {self.content}"
@@ -83,7 +97,6 @@ class APIRequest(APIEvent):
 class APIResponse(APIEvent):
     """Represents a response to an API request."""
 
-    request: APIRequest
     http_response: HTTPResponse
 
     def __init__(self, request: APIRequest, http_response: HTTPResponse):
@@ -116,7 +129,6 @@ class APIResponse(APIEvent):
 class APIError(APIEvent):
     """Represents an error when making an API request or sending a response."""
 
-    request: APIRequest
     error: Error
     http_response: Optional[HTTPResponse]
 
@@ -144,73 +156,7 @@ class APIError(APIEvent):
         return f"[error] {self.request.header_str}: {self.content}"
 
 
-def _match_event(
-    event: APIEvent,
-    event_class: Type[APIEvent],
-    method: Optional[str] = None,
-    path_regex: Optional[str] = None,
-) -> bool:
-
-    http_request: HTTPRequest
-    if isinstance(event, APIRequest):
-        http_request = event.http_request
-    elif isinstance(event, (APIResponse, APIError)):
-        http_request = event.request.http_request
-    else:
-        return False
-
-    return (
-        isinstance(event, event_class)
-        and (method is None or http_request.method == method)
-        and (path_regex is None or re.search(path_regex, http_request.path) is not None)
-    )
-
-
-def is_create_agreement_request(event: APIEvent) -> bool:
-    """Check if `event` is a request of CreateAgreement operation."""
-
-    return _match_event(event, APIRequest, "POST", "^/market-api/v1/agreements$")
-
-
-def is_collect_demands_request(event: APIEvent, sub_id: str = "") -> bool:
-    """Check if `event` is a request of CollectDemants operation."""
-
-    sub_id_re = sub_id if sub_id else "[^/]+"
-    return _match_event(
-        event, APIRequest, "GET", f"^/market-api/v1/offers/{sub_id_re}/events"
-    )
-
-
-def is_subscribe_offer_request(event: APIEvent) -> bool:
-    """Check if `event` is a request of SubscribeOffer operation."""
-
-    return _match_event(event, APIRequest, "POST", "^/market-api/v1/offers$")
-
-
-def is_unsubscribe_offer_request(event: APIEvent, sub_id: str = "") -> bool:
-    """Check if `event` is a request of UnsubscribeOffer operation."""
-
-    sub_id_re = sub_id if sub_id else "[^/]+"
-    return _match_event(
-        event, APIRequest, "DELETE", f"^/market-api/v1/offers/{sub_id_re}$"
-    )
-
-
-def is_subscribe_offer_response(event: APIEvent) -> bool:
-    """Check if `event` is a response of SubscribeOffer operation."""
-
-    return _match_event(event, APIResponse, "POST", "^/market-api/v1/offers$")
-
-
-def is_invoice_send_response(event: APIEvent) -> bool:
-    """Check if `event` is a response for InvoiceSend operation."""
-
-    return _match_event(
-        event, APIResponse, "POST", "^/payment-api/v1/provider/invoices/.*/send$"
-    )
-
-
-def get_response_json(event: APIEvent):
+def get_response_json(event: APIEvent) -> Any:
     """If `event` is a response then parse and return the included JSON.
 
     Otherwise return `None`.
@@ -222,34 +168,214 @@ def get_response_json(event: APIEvent):
     return None
 
 
-def get_activity_id_from_create_response(event: APIEvent) -> Optional[str]:
-    """Look for the CreateActivity event to return the ActivityID.
+MatchResult = Union[bool, Dict[str, str]]
 
-    If `event` is a response to CreateActivity operation then return the activity ID
-    included in the response. Otherwise return `None`.
+
+def match_event(
+    event: APIEvent,
+    *,
+    event_type: Type[APIEvent],
+    agent_name: Optional[str] = None,
+    node_name: Optional[str] = None,
+    method: Optional[str] = None,
+    path_regex: Optional[str] = None,
+) -> MatchResult:
+    """Check if `event` matches given condition.
+
+    If not all conditions are satifised, returns `False`.
+
+    If all conditions are satisfied, `path_regex` is defined and matching
+    against `path_regex` produces an object `match: re.Match` with nonempty
+    `match.groupdict()` then `mathch.groupdict()` is returned.
+
+    Otherwise, returns `True`.
     """
 
-    if (
-        isinstance(event, APIResponse)
-        and event.request.method == "POST"
-        and event.request.path == "/activity-api/v1/activity"
-    ):
-        return event.http_response.text.strip()[1:-1]
+    http_request = event.request.http_request
 
-    return None
+    if not isinstance(event, event_type):
+        return False
+
+    if agent_name and event.request.agent_name != agent_name:
+        return False
+
+    if node_name and event.request.node_name != node_name:
+        return False
+
+    if method and http_request.method != method:
+        return False
+
+    if not path_regex:
+        return True
+
+    match = re.search(path_regex, http_request.path)
+    if not match:
+        return False
+
+    return match.groupdict() or True
 
 
-def get_activity_id_from_delete_response(event: APIEvent) -> Optional[str]:
-    """If `event` is a response of DeleteActivity then return the included activity ID.
+# Market API
 
-    Otherwise return `None`.
-    """
+PARAM_REGEX = "[^/?]+"
 
-    if (
-        isinstance(event, APIRequest)
-        and event.method == "DELETE"
-        and event.path.startswith("/activity-api/v1/activity/")
-    ):
-        return event.path.rsplit("/", 1)[-1]
 
+def is_agreement_events(
+    event: APIEvent,
+    **kwargs,
+) -> MatchResult:
+    """Check if `event` is associated with AgreementEvents operation."""
+
+    return match_event(
+        event,
+        method="GET",
+        path_regex=r"^/market-api/v1/agreementEvents($|\?)",
+        **kwargs,
+    )
+
+
+def is_approve_agreement(
+    event: APIEvent,
+    *,
+    agr_id: str = PARAM_REGEX,
+    **kwargs,
+) -> MatchResult:
+    """Check if `event` is associated with ApproveAgreement operation."""
+
+    return match_event(
+        event,
+        method="POST",
+        path_regex=fr"^/market-api/v1/agreements/(?P<agr_id>{agr_id})/approve($|\?)",
+        **kwargs,
+    )
+
+
+def is_collect_demands(
+    event: APIEvent,
+    *,
+    sub_id: str = PARAM_REGEX,
+    **kwargs,
+) -> MatchResult:
+    """Check if `event` is associated with CollectDemands operation."""
+
+    return match_event(
+        event,
+        method="GET",
+        path_regex=fr"^/market-api/v1/offers/(?P<sub_id>{sub_id})/events($|\?)",
+        **kwargs,
+    )
+
+
+def is_counter_proposal_offer(
+    event: APIEvent,
+    *,
+    sub_id: str = PARAM_REGEX,
+    prop_id: str = PARAM_REGEX,
+    **kwargs,
+) -> MatchResult:
+    """Check if `event` is associated with CounterProposalOffer operation."""
+
+    return match_event(
+        event,
+        method="POST",
+        path_regex=(
+            fr"^/market-api/v1/offers/(?P<sub_id>{sub_id})"
+            fr"/proposals/(?P<prop_id>{prop_id})($|\?)"
+        ),
+        **kwargs,
+    )
+
+
+def is_create_agreement(event: APIEvent, **kwargs) -> MatchResult:
+    """Check if `event` is associated with a CreateAgreement operation."""
+
+    return match_event(
+        event, method="POST", path_regex=r"^/market-api/v1/agreements($|\?)", **kwargs
+    )
+
+
+def is_subscribe_offer(event: APIEvent, **kwargs) -> MatchResult:
+    """Check if `event` is associated with SubscribeOffer operation."""
+
+    return match_event(
+        event, method="POST", path_regex=r"^/market-api/v1/offers($|\?)", **kwargs
+    )
+
+
+def is_unsubscribe_offer(
+    event: APIEvent, *, sub_id: str = PARAM_REGEX, **kwargs
+) -> MatchResult:
+    """Check if `event` is associated with UnsubscribeOffer operation."""
+
+    return match_event(
+        event,
+        method="DELETE",
+        path_regex=fr"^/market-api/v1/offers/(?P<sub_id>{sub_id})($|\?)",
+        **kwargs,
+    )
+
+
+# Payment API
+
+
+def is_get_invoice_events(event: APIEvent, **kwargs) -> MatchResult:
+    """Check if `event` is associated with GetInvoiceEvents operation."""
+
+    return match_event(
+        event,
+        method="GET",
+        path_regex=r"^/payment-api/v1/invoiceEvents($|\?)",
+        **kwargs,
+    )
+
+
+def is_issue_debit_note(event: APIEvent, **kwargs) -> MatchResult:
+    """Check if `event` is associated with a IssueDebitNote operation."""
+
+    return match_event(
+        event, method="POST", path_regex=r"^/payment-api/v1/debitNotes($|\?)", **kwargs
+    )
+
+
+def is_send_debit_note(
+    event: APIEvent, note_id: str = PARAM_REGEX, **kwargs
+) -> MatchResult:
+    """Check if `event` is associated with a SendDebitNote operation."""
+
+    return match_event(
+        event,
+        method="POST",
+        path_regex=fr"^/payment-api/v1/debitNotes/{note_id}/send($|\?)",
+        **kwargs,
+    )
+
+
+def is_send_invoice(
+    event: APIEvent, *, inv_id: str = PARAM_REGEX, **kwargs
+) -> MatchResult:
+    """Check if `event` is associated with SendInvoice operation."""
+
+    return match_event(
+        event,
+        method="POST",
+        path_regex=fr"^/payment-api/v1/invoices/(?P<inv_id>{inv_id})/send($|\?)",
+        **kwargs,
+    )
+
+
+def contains_agreement_terminated_event(
+    event: APIEvent,
+    *,
+    agr_id: Optional[str] = None,
+    **kwargs,
+) -> Optional[Dict[str, str]]:
+    """Check if `event` is AgreementEvents response with AgreementTerminatedEvent."""
+
+    if is_agreement_events(event, event_type=APIResponse, **kwargs):
+        events = get_response_json(event)
+        for agr_event in events:
+            if agr_event.get("eventtype") == "AgreementTerminatedEvent" and (
+                not agr_id or agr_event.get("agreementId") == agr_id
+            ):
+                return agr_event
     return None
