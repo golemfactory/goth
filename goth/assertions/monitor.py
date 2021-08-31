@@ -8,7 +8,19 @@ from collections import OrderedDict
 import importlib
 import logging
 import sys
-from typing import Callable, Generic, List, Optional, Sequence, Set, Union, overload
+from typing import (
+    Any,
+    Generic,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import colors
 
@@ -37,6 +49,24 @@ class MonitorLoggerAdapter(logging.LoggerAdapter):
 
 
 LogLevel = int
+
+
+A = TypeVar("A", contravariant=True)
+
+
+class EventPredicate(Protocol[A]):
+    """A predicate for events of type `E`.
+
+    The predicate can accept additional positional and keyword arguments,
+    along the event and can return any result.
+
+    The predicate is considered satisfied if its result converted to `bool`
+    is `True`, unsatisfied otherwise.
+    """
+
+    def __call__(self, event: A, *args, **kwargs) -> Any:
+        """Apply predicate to `event`."""
+        ...
 
 
 class EventMonitor(Generic[E]):
@@ -372,8 +402,13 @@ class EventMonitor(Generic[E]):
         return all(a.done for a in self.assertions)
 
     async def wait_for_event(
-        self, predicate: Callable[[E], bool], timeout: Optional[float] = None
-    ) -> E:
+        self,
+        predicate: EventPredicate[E],
+        *args,
+        name: Optional[str] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[E, Any]:
         """Wait for an event that satisfies given `predicate`.
 
         The first call to this method will examine all events gathered since
@@ -383,25 +418,46 @@ class EventMonitor(Generic[E]):
         Subsequent calls will examine all events gathered since the previous call
         returned and then wait for up to `timeout` seconds.
 
-        When `timeout` elapses, `asyncio.TimeourError` will be raised.
+        When `timeout` elapses, `asyncio.TimeoutError` will be raised.
+
+        If `timeout` is less or equal to 0.0, only past events are checked and if
+        none of them satisfies the predicate then `asyncio.TimeoutError` is raised
+        right away.
         """
 
-        # First examine log lines already seen
+        # First examine events already registered with this monitor
+        # starting from the (self._last_checked_event)-th one.
         while self._last_checked_event + 1 < len(self._events):
             self._last_checked_event += 1
             event = self._events[self._last_checked_event]
-            if predicate(event):
-                return event
+            result = predicate(event, *args, **kwargs)
+            if result:
+                self._logger.debug(
+                    "Found past event matching predicate%s",
+                    f" [{name}]" if name else "",
+                )
+                return event, result
+
+        if timeout is not None and timeout <= 0.0:
+            name = f" [{name}]" if name else ""
+            raise asyncio.TimeoutError(f"No event matching predicate{name} occurred")
 
         # Otherwise create an assertion that waits for a matching event...
-        async def wait_for_match(stream) -> E:
-            async for e in stream:
+        async def wait_for_match(stream) -> Tuple[E, Any]:
+            async for event in stream:
                 self._last_checked_event = len(stream.past_events) - 1
-                if predicate(e):
-                    return e
-            raise AssertionError("No matching event occurred")
+                result = predicate(event, *args, **kwargs)
+                if result:
+                    return event, result
+            raise AssertionError(
+                "No event matching predicate%s occurred", f" [{name}]" if name else ""
+            )
 
-        assertion = self.add_assertion(wait_for_match, log_level=logging.DEBUG)
+        assertion = self.add_assertion(
+            wait_for_match,
+            name=f"wait_for [{name}]" if name else None,
+            log_level=logging.DEBUG,
+        )
 
         # ... and wait until the assertion completes
         return await assertion.wait_for_result(timeout=timeout)
