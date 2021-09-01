@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.5] - 2021-09-01
+
+### Other changes
+- update typing_extensions to 3.10.0+ [331fa08](https://github.com/golemfactory/goth/commit/331fa08ef9c0a043ff22141bbcf2dd626a0e11a1)
+
 ## [0.6.4] - 2021-09-01
 
 ### Bugfixes
