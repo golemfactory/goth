@@ -35,6 +35,7 @@ DEB_RELEASE_REPOS = [
     "ya-service-bus",
     "ya-runtime-wasi",
     "ya-runtime-vm",
+    "ya-test-runtime-counters",
 ]
 
 PROXY_IMAGE = "proxy-nginx"
