@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.4] - 2021-09-01
+
+### Bugfixes
+- pin docker to version 5.0.0 [67e09b7](https://github.com/golemfactory/goth/commit/67e09b7570a259f8d579ace379b7ee5a70d9fbd9)
+
 ## [0.6.3] - 2021-08-16
 
 ### Bugfixes
