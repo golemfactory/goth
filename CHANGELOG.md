@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0] - 2021-09-09
+
+### Breaking changes
+- make default presets.json compatible with yagna 0.8+ [080a95f](https://github.com/golemfactory/goth/commit/080a95fd8c5b41b69da216cfdee6f0ac4dbe3acc)
+- update mock zkSync server version [#544](https://github.com/golemfactory/goth/pull/544)
+
+### Features
+- disconnect yagna containers before stopping Docker network [#540](https://github.com/golemfactory/goth/pull/540)
+- enable creating detached API assertions [#538](https://github.com/golemfactory/goth/pull/538)
+- enable MITM proxy for requestor probes [#535](https://github.com/golemfactory/goth/pull/535)
+
+### Other changes
+- update `typing_extensions` to 3.10.0+ [cc956e1](https://github.com/golemfactory/goth/commit/cc956e14447b5d6f382b7f668e385fcee9c209be)
+
 ## [0.6.3] - 2021-08-16
 
 ### Bugfixes
