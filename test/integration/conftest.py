@@ -8,7 +8,7 @@ from goth.project import PROJECT_ROOT
 from goth.runner.log import configure_logging
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def log_dir() -> Path:
     """Return path to dir where goth test session logs should be placed."""
     base_dir = Path("/", "tmp", "goth-tests")
