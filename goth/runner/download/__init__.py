@@ -31,7 +31,7 @@ DEFAULT_CONTENT_TYPE = "application/vnd.debian.binary-package"
 DEFAULT_OWNER = "golemfactory"
 DEFAULT_REPO = "yagna"
 DEFAULT_TOKEN = os.getenv(ENV_API_TOKEN)
-DEFAULT_WORKFLOW = "CI"
+DEFAULT_WORKFLOW = "Build binaries (x86-64)"
 
 
 class AssetNotFound(Exception):
