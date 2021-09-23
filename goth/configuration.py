@@ -222,6 +222,7 @@ class _ConfigurationParser:
         commit_hash = self.get("commit-hash")
         deb_path = self.get_path("deb-path", required=False)
         release_tag = self.get("release-tag")
+        use_prerelease = self.get("use-prerelease", default=True)
         return YagnaBuildEnvironment(
             docker_dir,
             binary_path=binary_path,
@@ -229,6 +230,7 @@ class _ConfigurationParser:
             commit_hash=commit_hash,
             deb_path=deb_path,
             release_tag=release_tag,
+            use_prerelease=use_prerelease,
         )
 
 
