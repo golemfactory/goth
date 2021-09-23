@@ -1,13 +1,21 @@
 # Changelog
 
+## [0.7.1] - 2021-09-23
+
+### Features
+- enable specifying whether GitHub pre-releases should be included when building a `yagna` Docker image [#548](https://github.com/golemfactory/goth/pull/548)
+
+### Other changes
+- update default `goth-config.yml` to not include a custom `yagna` branch for building images [#548](https://github.com/golemfactory/goth/pull/548)
+
 ## [0.7.0] - 2021-09-09
 
 ### Breaking changes
-- make default presets.json compatible with yagna 0.8+ [080a95f](https://github.com/golemfactory/goth/commit/080a95fd8c5b41b69da216cfdee6f0ac4dbe3acc)
+- make default presets.json compatible with `yagna` 0.8+ [080a95f](https://github.com/golemfactory/goth/commit/080a95fd8c5b41b69da216cfdee6f0ac4dbe3acc)
 - update mock zkSync server version [#544](https://github.com/golemfactory/goth/pull/544)
 
 ### Features
-- disconnect yagna containers before stopping Docker network [#540](https://github.com/golemfactory/goth/pull/540)
+- disconnect `yagna` containers before stopping Docker network [#540](https://github.com/golemfactory/goth/pull/540)
 - enable creating detached API assertions [#538](https://github.com/golemfactory/goth/pull/538)
 - enable MITM proxy for requestor probes [#535](https://github.com/golemfactory/goth/pull/535)
 
@@ -63,7 +71,7 @@
 ## [0.4.0] - 2021-06-01
 
 ### Breaking changes
-- changed regex used for waiting on yagna REST API to come online (compatible with `yagna` 0.7+) [#508](https://github.com/golemfactory/goth/pull/508)
+- changed regex used for waiting on `yagna` REST API to come online (compatible with `yagna` 0.7+) [#508](https://github.com/golemfactory/goth/pull/508)
 
 ## [0.3.2] - 2021-05-27
 
