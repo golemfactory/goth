@@ -57,6 +57,8 @@ class YagnaBuildEnvironment:
     """Local path to .deb file or dir with .deb files to be installed in the image."""
     release_tag: Optional[str] = None
     """Release tag substring used to filter the GitHub release to download."""
+    use_prerelease: bool = True
+    """If set to `False` then yagna pre-releases will be ignored."""
 
     @property
     def is_using_deb(self) -> bool:
@@ -130,11 +132,18 @@ def _download_artifact(env: YagnaBuildEnvironment, download_path: Path) -> None:
 
 
 def _download_release(
-    download_path: Path, repo: str, tag_substring: str = "", asset_name: str = ""
+    download_path: Path,
+    repo: str,
+    tag_substring: str = "",
+    asset_name: str = "",
+    use_prerelease: bool = True,
 ) -> None:
     downloader = ReleaseDownloader(repo=repo, token=os.environ.get(ENV_API_TOKEN))
     downloader.download(
-        output=download_path, asset_name=asset_name, tag_substring=tag_substring
+        output=download_path,
+        asset_name=asset_name,
+        tag_substring=tag_substring,
+        use_unstable=use_prerelease,
     )
 
 
@@ -193,7 +202,13 @@ def _setup_build_context(
             shutil.unpack_archive(env.binary_path, extract_dir=str(context_binary_dir))
     else:
         logger.info("Using yagna release. tag_substring=%s", env.release_tag)
-        _download_release(context_deb_dir, "yagna", env.release_tag or "", "provider")
+        _download_release(
+            context_deb_dir,
+            "yagna",
+            env.release_tag or "",
+            "provider",
+            use_prerelease=env.use_prerelease,
+        )
 
     if env.deb_path:
         if env.deb_path.is_dir():

@@ -229,7 +229,7 @@ class ReleaseDownloader(GithubDownloader):
         self,
         tag_substring: str,
         content_type: str,
-        use_unstable: bool = False,
+        use_unstable: bool = True,
     ) -> Optional[dict]:
         """Get the latest version, this includes pre-releases.
 
@@ -285,7 +285,7 @@ class ReleaseDownloader(GithubDownloader):
         content_type: str = DEFAULT_CONTENT_TYPE,
         output: Optional[Path] = None,
         tag_substring: str = "",
-        use_unstable: bool = False,
+        use_unstable: bool = True,
     ) -> Path:
         """Download the latest release (or pre-release) from a given GitHub repo.
 
@@ -296,7 +296,7 @@ class ReleaseDownloader(GithubDownloader):
         :param content_type: content-type string for the asset to download
         :param output: file path to where the asset should be saved
         :param tag_substring: substring the release's tag name must contain
-        :param use_unstable: if True, pre-releases will be included
+        :param use_unstable: if `False`, pre-releases will not be included
         """
         release = self._get_latest_release(tag_substring, content_type, use_unstable)
         if not release:
