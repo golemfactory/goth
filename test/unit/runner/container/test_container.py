@@ -86,8 +86,6 @@ def test_container_stop(docker_container, mock_container):
     mock_container.status = "exited"
 
     mock_container.stop.assert_called_once()
-    with pytest.raises(transitions.MachineError, match=r"Can't trigger event stop.*"):
-        docker_container.stop()
 
 
 def test_container_remove(docker_container, mock_container):

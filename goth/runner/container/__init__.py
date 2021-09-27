@@ -154,7 +154,12 @@ class DockerContainer:
                 },
                 {
                     "trigger": "stop",
-                    "source": [State.running, State.paused, State.restarting],
+                    "source": [
+                        State.exited,
+                        State.running,
+                        State.paused,
+                        State.restarting,
+                    ],
                     "dest": State.exited,
                     "before": self._container.stop,
                 },
