@@ -207,6 +207,7 @@ class Probe(abc.ABC):
             await agent.stop()
         if self.container.logs:
             await self.container.logs.stop()
+        self.container.stop()
 
     def remove(self) -> None:
         """Remove the underlying container."""
