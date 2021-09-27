@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.2] - 2021-09-27
+
+### Bugfixes
+- stop the underlying Docker container when calling Probe.stop [#549](https://github.com/golemfactory/goth/pull/549)
+
 ## [0.7.1] - 2021-09-23
 
 ### Features
