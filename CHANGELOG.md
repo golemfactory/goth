@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.3] - 2021-09-27
+
+### Other changes
+- allow calling `stop` on an already stopped Docker container [#550](https://github.com/golemfactory/goth/pull/550)
+
 ## [0.7.2] - 2021-09-27
 
 ### Bugfixes
