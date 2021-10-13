@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.4] - 2021-10-13
+
+### Other changes
+- reduce timeout to 1 sec on polling API calls [#552](https://github.com/golemfactory/goth/pull/552)
+
 ## [0.7.3] - 2021-09-27
 
 ### Other changes
