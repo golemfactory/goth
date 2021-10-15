@@ -42,7 +42,6 @@ class PaymentDriver(str, Enum):
     """Enum listing the payment drivers that can be used with yagna."""
 
     erc20 = "erc20"
-    zksync = "zksync"
 
 
 @dataclass
@@ -50,8 +49,8 @@ class Account:
     """Data class representing a single yagna payment account."""
 
     address: str
-    driver: PaymentDriver = PaymentDriver.zksync
-    network: str = "rinkeby"
+    driver: PaymentDriver = PaymentDriver.erc20
+    network: str = "goerli"
     token: str = "tGLM"
     receive: bool = True
     send: bool = True
@@ -123,7 +122,7 @@ class PaymentIdPool:
 
     def get_id(
         self,
-        drivers: Sequence[PaymentDriver] = (PaymentDriver.erc20, PaymentDriver.zksync),
+        drivers: Sequence[PaymentDriver] = (PaymentDriver.erc20, PaymentDriver.erc20),
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:

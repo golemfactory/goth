@@ -22,7 +22,7 @@ def test_parse_default_config(test_config_file: Path):
 def test_load_yaml_override_existing(test_config_file: Path):
     """Test overriding an existing field in a YAML config file."""
 
-    test_key = "zksync"
+    test_key = "ethereum"
     test_value = ".*I am overridden!.*"
     overrides = [
         (f"docker-compose.compose-log-patterns.{test_key}", test_value),
