@@ -50,7 +50,7 @@ class Account:
 
     address: str
     driver: PaymentDriver = PaymentDriver.erc20
-    network: str = "goerli"
+    network: str = "mumbai"
     token: str = "tGLM"
     receive: bool = True
     send: bool = True

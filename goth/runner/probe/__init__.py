@@ -446,7 +446,7 @@ class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
         await super()._start_container()
 
         self.cli.payment_fund()
-        self.cli.payment_init(sender_mode=True, network="goerli")
+        self.cli.payment_init(sender_mode=True, network="mumbai")
 
 
 class ProviderProbe(MarketApiMixin, PaymentApiMixin, Probe):
