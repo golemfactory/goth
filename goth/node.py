@@ -22,8 +22,6 @@ def node_environment(
 
     daemon_env = {
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
-        # TODO: Remove after 0.7.x is released, 0.6.x still requires it to be compatible
-        "ERC20_RINKEBY_GETH_ADDR": "http://ethereum:8545",
         "RINKEBY_GETH_ADDR": "http://ethereum:8545",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "IDLE_AGREEMENT_TIMEOUT": "600s",
@@ -37,8 +35,6 @@ def node_environment(
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
         "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
         "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
-        # left for compatibility with yagna prior to commit 800efe13
-        "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",
     }
     if account_list:
         daemon_env["ACCOUNT_LIST"] = account_list
