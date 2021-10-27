@@ -123,7 +123,7 @@ class PaymentIdPool:
 
     def get_id(
         self,
-        drivers: Sequence[PaymentDriver] = (PaymentDriver.erc20, PaymentDriver.zksync),
+        drivers: Sequence[PaymentDriver] = (PaymentDriver.zksync,),
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:

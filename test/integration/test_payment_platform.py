@@ -10,8 +10,8 @@ EXPECTED_PAYMENT_ENV = {
         "POLYGON_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
     },
     'zksync': {
-        "YA_PAYMENT_NETWORK": "mainnet",
-        "ZKSYNC_MAINNET_RPC_ADDRESS": "http://zksync:3030",
+        "YA_PAYMENT_NETWORK": "rinkeby",
+        "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
         "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
     },
     'mainnet': {

@@ -32,9 +32,10 @@ def payments_env(payments: str) -> Dict[str, str]:
             "MAINNET_GLM_CONTRACT_ADDRESS": contract_address,
         },
         'zksync': {
-            "YA_PAYMENT_NETWORK": "mainnet",
-            "ZKSYNC_MAINNET_RPC_ADDRESS": "http://zksync:3030",
+            #   TODO: For some reason, "rinkeby" works and "mainnet" doesn't. Why?
+            "YA_PAYMENT_NETWORK": "rinkeby",
             "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
+            "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
         },
     }
     return payments_env[payments]
