@@ -5,25 +5,20 @@ from goth.configuration import load_yaml
 
 EXPECTED_PAYMENT_ENV = {
     'polygon': {
-        "MUMBAI_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
-        "MUMBAI_GETH_ADDR": "http://ethereum:8545",
-        "YA_PAYMENT_NETWORK": "mumbai",
+        "YA_PAYMENT_NETWORK": "polygon",
+        "POLYGON_GETH_ADDR": "http://ethereum:8545",
+        "POLYGON_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
     },
     'zksync': {
-        #   TODO: leave only variables we need
-
-        # TODO: Remove after 0.7.x is released, 0.6.x still requires it to be compatible
-        "ERC20_RINKEBY_GETH_ADDR": "http://ethereum:8545",
-
-        "RINKEBY_GETH_ADDR": "http://ethereum:8545",
-        "RINKEBY_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
-        "YA_PAYMENT_NETWORK": "rinkeby",
+        "YA_PAYMENT_NETWORK": "mainnet",
+        "ZKSYNC_MAINNET_RPC_ADDRESS": "http://zksync:3030",
         "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
-        "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
-
-        # left for compatibility with yagna prior to commit 800efe13
-        "ZKSYNC_RPC_ADDRESS": "http://zksync:3030",
-    }
+    },
+    'mainnet': {
+        "YA_PAYMENT_NETWORK": "mainnet",
+        "MAINNET_GETH_ADDR": "http://ethereum:8545",
+        "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+    },
 }
 
 
