@@ -23,12 +23,23 @@ EXPECTED_PAYMENT_ENV = {
 
 
 @pytest.mark.asyncio
-async def test_payment_platform(default_goth_config: Path, log_dir: Path) -> None:
+async def test_default_payment_platform(default_goth_config: Path) -> None:
+    goth_config = load_yaml(default_goth_config)
+    for container in goth_config.containers:
+        expected_payment_env = EXPECTED_PAYMENT_ENV["zksync"]
+        env = container.environment
+        for key, val in expected_payment_env.items():
+            assert env[key] == val
+
+
+@pytest.mark.asyncio
+async def test_payment_platform(default_goth_config: Path) -> None:
     overrides = [
         (
             "nodes",
             [
-                {"name": "requestor", "type": "Requestor", "use-proxy": True},
+                {"name": "requestor", "type": "Requestor", "use-proxy": True,
+                    "payments": "mainnet"},
                 {"name": "provider-1", "type": "VM-Wasm-Provider", "use-proxy": True,
                     "payments": "zksync"},
                 {"name": "provider-2", "type": "VM-Wasm-Provider", "use-proxy": True,
@@ -37,11 +48,8 @@ async def test_payment_platform(default_goth_config: Path, log_dir: Path) -> Non
         )
     ]
     goth_config = load_yaml(default_goth_config, overrides)
-    for container in goth_config.containers:
-        if container.name == 'provider-2':
-            payments = 'polygon'
-        else:
-            payments = "zksync"
+    for ix, container in enumerate(goth_config.containers):
+        payments = ["mainnet", "zksync", "polygon"][ix]
 
         expected_payment_env = EXPECTED_PAYMENT_ENV[payments]
         env = container.environment
