@@ -59,6 +59,7 @@ class Configuration:
         name: str,
         use_proxy: bool,
         privileged_mode: bool,
+        payments: str,
         environment: Optional[Dict[str, str]] = None,
         volumes: Optional[Dict[Path, Path]] = None,
         **kwargs,
@@ -67,10 +68,11 @@ class Configuration:
 
         if use_proxy:
             node_env = node_environment(
+                payments,
                 rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST)
             )
         else:
-            node_env = node_environment()
+            node_env = node_environment(payments)
         if environment:
             node_env.update(environment)
 
@@ -292,6 +294,7 @@ def load_yaml(
             name = node["name"]
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
+            payments = node.get("payments", "zksync")
             class_, volumes, privileged_mode, env_dict = node_types[type_name]
             config.add_node(
                 class_,
@@ -300,6 +303,7 @@ def load_yaml(
                 privileged_mode=privileged_mode,
                 environment=env_dict,
                 volumes=volumes,
+                payments=payments,
             )
 
     return config
