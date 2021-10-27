@@ -4,8 +4,8 @@ services:
 
     router:
         image: yagna-goth
-        entrypoint: /usr/bin/ya-sb-router
-        command: ["-l", "tcp://0.0.0.0:7477"]
+        entrypoint: /usr/bin/ya-net-server
+        command: ["-a", "udp://0.0.0.0:7477"]
 
     proxy-nginx:
         # A service that runs `nginx` and routes API calls to

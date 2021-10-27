@@ -32,6 +32,7 @@ EXPECTED_BINARIES = {
 }
 
 DEB_RELEASE_REPOS = [
+    "ya-service-bus",
     "ya-relay",
     "ya-runtime-wasi",
     "ya-runtime-vm",

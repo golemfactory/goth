@@ -66,7 +66,7 @@ _BASE_URL_TEMPLATE = "$protocol://$host:$port"
 PROXY_HOST = "proxy-nginx"
 
 ROUTER_HOST = "router"
-ROUTER_PORT = 7464
+ROUTER_PORT = 7477
 ROUTER_PROTOCOL = "udp"
 ROUTER_BASE_URL = DefaultTemplate(
     _BASE_URL_TEMPLATE,
