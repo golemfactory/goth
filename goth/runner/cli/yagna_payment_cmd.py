@@ -5,10 +5,9 @@ from typing import Dict, Optional
 
 from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
-from goth.runner.container.payment import PaymentDriver
 
 
-DEFAULT_PAYMENT_DRIVER = PaymentDriver.zksync
+DEFAULT_PAYMENT_DRIVER = "zksync"
 
 
 @dataclass(frozen=True)
@@ -73,10 +72,10 @@ class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
     def payment_fund(
-        self: CommandRunner, payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER
+        self: CommandRunner, payment_driver: str = DEFAULT_PAYMENT_DRIVER
     ) -> None:
         """Run `<cmd> payment fund` with optional extra args."""
-        args = make_args("payment", "fund", driver=payment_driver.name)
+        args = make_args("payment", "fund", driver=payment_driver)
         self.run_command(*args)
 
     def payment_init(
@@ -84,7 +83,7 @@ class YagnaPaymentMixin:
         sender_mode: bool = False,
         receiver_mode: bool = False,
         data_dir: str = "",
-        payment_driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
+        payment_driver: str = DEFAULT_PAYMENT_DRIVER,
         address: Optional[str] = None,
         network: Optional[str] = None,
     ) -> None:
@@ -97,7 +96,7 @@ class YagnaPaymentMixin:
             "payment",
             "init",
             data_dir=data_dir,
-            driver=payment_driver.name,
+            driver=payment_driver,
             address=address,
             network=network,
         )
@@ -111,7 +110,7 @@ class YagnaPaymentMixin:
     def payment_status(
         self: CommandRunner,
         data_dir: str = "",
-        driver: PaymentDriver = DEFAULT_PAYMENT_DRIVER,
+        driver: str = DEFAULT_PAYMENT_DRIVER,
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 

@@ -84,7 +84,7 @@ class Configuration:
             privileged_mode=privileged_mode,
             subnet="goth",
             volumes=volumes,
-            payment_id=self._id_pool.get_id(),
+            payment_id=self._id_pool.get_id(payment_config),
             use_proxy=use_proxy,
             **kwargs,
         )
