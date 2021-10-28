@@ -6,36 +6,36 @@ GETH_ADDR = "http://ethereum:8545"
 GLM_CONTRACT_ADDRESS = "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34"
 
 _payment_config = {
-    'zksync': {
-        'env': {
+    "zksync": {
+        "env": {
             "YA_PAYMENT_NETWORK": "rinkeby",
             "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
             "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
         },
-        'driver': 'zksync',
-        'network': 'rinkeby',
-        'token': 'tGLM',
+        "driver": "zksync",
+        "network": "rinkeby",
+        "token": "tGLM",
     },
-    'erc20': {
-        'env': {
+    "erc20": {
+        "env": {
             "YA_PAYMENT_NETWORK": "mainnet",
             "MAINNET_GETH_ADDR": GETH_ADDR,
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
         },
-        'driver': 'erc20',
-        'network': 'mainnet',
-        'token': 'GLM',
+        "driver": "erc20",
+        "network": "mainnet",
+        "token": "GLM",
     },
-    'polygon': {
-        'env': {
+    "polygon": {
+        "env": {
             "YA_PAYMENT_NETWORK": "polygon",
             "POLYGON_GETH_ADDR": GETH_ADDR,
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
         },
-        'driver': 'erc20',
-        'network': 'polygon',
-        'token': 'GLM',
-    }
+        "driver": "erc20",
+        "network": "polygon",
+        "token": "GLM",
+    },
 }
 
 

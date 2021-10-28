@@ -68,9 +68,7 @@ class Driver:
 class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
-    def payment_fund(
-        self: CommandRunner, payment_driver: str
-    ) -> None:
+    def payment_fund(self: CommandRunner, payment_driver: str) -> None:
         """Run `<cmd> payment fund` with optional extra args."""
         args = make_args("payment", "fund", driver=payment_driver)
         self.run_command(*args)

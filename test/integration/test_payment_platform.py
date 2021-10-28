@@ -5,17 +5,17 @@ import pytest
 from goth.configuration import load_yaml
 
 EXPECTED_PAYMENT_ENV = {
-    'polygon': {
+    "polygon": {
         "YA_PAYMENT_NETWORK": "polygon",
         "POLYGON_GETH_ADDR": "http://ethereum:8545",
         "POLYGON_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
     },
-    'zksync': {
+    "zksync": {
         "YA_PAYMENT_NETWORK": "rinkeby",
         "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
         "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
     },
-    'erc20': {
+    "erc20": {
         "YA_PAYMENT_NETWORK": "mainnet",
         "MAINNET_GETH_ADDR": "http://ethereum:8545",
         "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
@@ -34,7 +34,7 @@ async def test_default_payment_platform(default_goth_config: Path) -> None:
             assert env[key] == val
 
 
-@pytest.mark.parametrize('payments_name', ('zksync', 'erc20', 'polygon'))
+@pytest.mark.parametrize("payments_name", ("zksync", "erc20", "polygon"))
 @pytest.mark.asyncio
 async def test_payment_platform_env(default_goth_config: Path, payments_name) -> None:
     """Test if "payments" param in config file works."""
@@ -44,12 +44,7 @@ async def test_payment_platform_env(default_goth_config: Path, payments_name) ->
         "use-proxy": True,
         "payments": payments_name,
     }
-    overrides = [
-        (
-            "nodes",
-            [requestor_node]
-        )
-    ]
+    overrides = [("nodes", [requestor_node])]
     goth_config = load_yaml(default_goth_config, overrides)
     requestor_container = goth_config.containers[0]
 
@@ -69,11 +64,6 @@ async def test_invalid_payments_name(default_goth_config: Path) -> None:
         "use-proxy": True,
         "payments": "OOOOPS_NO_SUCH_CONFIG",
     }
-    overrides = [
-        (
-            "nodes",
-            [requestor_node]
-        )
-    ]
+    overrides = [("nodes", [requestor_node])]
     with pytest.raises(KeyError):
         load_yaml(default_goth_config, overrides)
