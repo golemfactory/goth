@@ -24,7 +24,6 @@ def node_environment(
 
     daemon_env = {
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
-        # TODO: Remove after 0.7.x is released, 0.6.x still requires it to be compatible
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "IDLE_AGREEMENT_TIMEOUT": "600s",
         "MEAN_CYCLIC_BCAST_INTERVAL": "5s",
