@@ -29,8 +29,8 @@ _payment_config = {
     'polygon': {
         'env': {
             "YA_PAYMENT_NETWORK": "polygon",
-            "MAINNET_GETH_ADDR": GETH_ADDR,
-            "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
+            "POLYGON_GETH_ADDR": GETH_ADDR,
+            "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
         },
         'driver': 'erc20',
         'network': 'polygon',
