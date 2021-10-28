@@ -7,9 +7,6 @@ from goth.runner.cli.base import make_args
 from goth.runner.cli.typing import CommandRunner
 
 
-DEFAULT_PAYMENT_DRIVER = "zksync"
-
-
 @dataclass(frozen=True)
 class Payments:
     """Information about payment amounts."""
@@ -72,7 +69,7 @@ class YagnaPaymentMixin:
     """A mixin class that adds support for `<yagna-cmd> payment` commands."""
 
     def payment_fund(
-        self: CommandRunner, payment_driver: str = DEFAULT_PAYMENT_DRIVER
+        self: CommandRunner, payment_driver: str
     ) -> None:
         """Run `<cmd> payment fund` with optional extra args."""
         args = make_args("payment", "fund", driver=payment_driver)
@@ -80,10 +77,10 @@ class YagnaPaymentMixin:
 
     def payment_init(
         self: CommandRunner,
+        payment_driver: str,
         sender_mode: bool = False,
         receiver_mode: bool = False,
         data_dir: str = "",
-        payment_driver: str = DEFAULT_PAYMENT_DRIVER,
         address: Optional[str] = None,
         network: Optional[str] = None,
     ) -> None:
@@ -109,15 +106,15 @@ class YagnaPaymentMixin:
 
     def payment_status(
         self: CommandRunner,
+        driver: str,
         data_dir: str = "",
-        driver: str = DEFAULT_PAYMENT_DRIVER,
     ) -> PaymentStatus:
         """Run `<cmd> payment status` with optional extra args.
 
         Parse the command's output as a `PaymentStatus` and return it.
         """
 
-        args = make_args("payment", "status", driver.name, data_dir=data_dir)
+        args = make_args("payment", "status", driver, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
         return PaymentStatus.from_dict(output)
 

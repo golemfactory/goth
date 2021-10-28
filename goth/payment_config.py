@@ -38,7 +38,17 @@ _payment_config = {
         'driver': 'zksync',
         'network': 'rinkeby',
         'token': 'tGLM',
-    }
+    },
+    'erc20': {
+        'env': {
+            "YA_PAYMENT_NETWORK": "mainnet",
+            "MAINNET_GETH_ADDR": "http://ethereum:8545",
+            "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        },
+        'driver': 'erc20',
+        'network': 'mainnet',
+        'token': 'GLM',
+    },
 }
 
 
