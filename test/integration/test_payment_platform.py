@@ -1,3 +1,4 @@
+"""Test if "payments" in `goth-config.yml` works as expected."""
 from pathlib import Path
 import pytest
 
@@ -24,6 +25,7 @@ EXPECTED_PAYMENT_ENV = {
 
 @pytest.mark.asyncio
 async def test_default_payment_platform(default_goth_config: Path) -> None:
+    """Test if we have "zksync" platform when none is specified."""
     goth_config = load_yaml(default_goth_config)
     for container in goth_config.containers:
         expected_payment_env = EXPECTED_PAYMENT_ENV["zksync"]
@@ -35,6 +37,7 @@ async def test_default_payment_platform(default_goth_config: Path) -> None:
 @pytest.mark.parametrize('payments_name', ('zksync', 'erc20', 'polygon'))
 @pytest.mark.asyncio
 async def test_payment_platform_env(default_goth_config: Path, payments_name) -> None:
+    """Test if "payments" param in config file works."""
     requestor_node = {
         "name": "requestor",
         "type": "Requestor",
@@ -55,3 +58,22 @@ async def test_payment_platform_env(default_goth_config: Path, payments_name) ->
 
     for key, val in expected_payment_env.items():
         assert env[key] == val
+
+
+@pytest.mark.asyncio
+async def test_invalid_payments_name(default_goth_config: Path) -> None:
+    """Test if we get KeyError for invalid payment config name."""
+    requestor_node = {
+        "name": "requestor",
+        "type": "Requestor",
+        "use-proxy": True,
+        "payments": "OOOOPS_NO_SUCH_CONFIG",
+    }
+    overrides = [
+        (
+            "nodes",
+            [requestor_node]
+        )
+    ]
+    with pytest.raises(KeyError):
+        load_yaml(default_goth_config, overrides)
