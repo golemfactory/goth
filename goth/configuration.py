@@ -213,12 +213,12 @@ class _ConfigurationParser:
         if build_env_config:
             build_env_config.ensure_type(dict)
             build_env = build_env_config.read_build_env(docker_dir)
+            compose_file = build_env_config["compose-file"]
         else:
             build_env = YagnaBuildEnvironment(docker_dir)
+            compose_file = DEFAULT_COMPOSE_FILE
 
-        return ComposeConfig(
-            build_env, docker_dir / DEFAULT_COMPOSE_FILE, log_patterns.doc
-        )
+        return ComposeConfig(build_env, docker_dir / compose_file, log_patterns.doc)
 
     def read_build_env(self, docker_dir: Path) -> YagnaBuildEnvironment:
         """Read a `YagnaBuildEnvironment` instance from this parser's document."""

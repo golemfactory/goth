@@ -5,6 +5,7 @@
 
 docker-compose:
 
+  compose-file: "docker-compose.yml"
   docker-dir: "docker/"
 
   build-environment:
