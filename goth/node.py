@@ -1,6 +1,6 @@
 """Helper class for yagna node environment variables and Volumes."""
 
-from typing import Dict
+from typing import Dict, Optional
 
 from goth.address import (
     ACTIVITY_API_URL,
@@ -15,34 +15,10 @@ from goth.address import (
 DEFAULT_SUBNET = "goth"
 
 
-def payments_env(payments: str) -> Dict[str, str]:
-    """Payment-related part of the environment."""
-
-    contract_address = "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34"
-    ethereum_container_url = "http://ethereum:8545"
-    payments_env = {
-        'polygon': {
-            "YA_PAYMENT_NETWORK": "polygon",
-            "POLYGON_GETH_ADDR": ethereum_container_url,
-            "POLYGON_GLM_CONTRACT_ADDRESS": contract_address,
-        },
-        'mainnet': {
-            "YA_PAYMENT_NETWORK": "mainnet",
-            "MAINNET_GETH_ADDR": ethereum_container_url,
-            "MAINNET_GLM_CONTRACT_ADDRESS": contract_address,
-        },
-        'zksync': {
-            #   TODO: For some reason, "rinkeby" works and "mainnet" doesn't. Why?
-            "YA_PAYMENT_NETWORK": "rinkeby",
-            "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
-            "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
-        },
-    }
-    return payments_env[payments]
-
-
 def node_environment(
-    payments: str, rest_api_url_base: str = "", account_list: str = ""
+    rest_api_url_base: str = "",
+    account_list: str = "",
+    payment_env: Optional[Dict[str, str]] = None,
 ) -> Dict[str, str]:
     """Construct an environment for executing commands in a yagna docker container."""
 
@@ -74,6 +50,7 @@ def node_environment(
         }
         node_env.update(agent_env)
 
-    node_env.update(payments_env(payments))
+    if payment_env:
+        node_env.update(payment_env)
 
     return node_env
