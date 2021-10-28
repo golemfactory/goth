@@ -16,7 +16,8 @@ from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
 from goth.payment_config import get_payment_config, PaymentConfig
 
-DEFAULT_PAYMENT_DRIVER = "zksync"
+DEFAULT_PAYMENT_CONFIG_NAME = "zksync"
+"""This PaymentConfig will be used for containers that have no specified "payments" """
 
 Override = Tuple[str, Any]
 """Type representing a single value override in a YAML config file.
@@ -298,7 +299,7 @@ def load_yaml(
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
 
-            payment_config_name = node.get("payments", DEFAULT_PAYMENT_DRIVER)
+            payment_config_name = node.get("payments", DEFAULT_PAYMENT_CONFIG_NAME)
             payment_config = get_payment_config(payment_config_name)
 
             class_, volumes, privileged_mode, env_dict = node_types[type_name]
