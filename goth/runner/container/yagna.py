@@ -30,6 +30,9 @@ class YagnaContainerConfig(DockerContainerConfig):
     probe_type: Type["Probe"]
     """Python type of the probe to be instantiated from this config."""
 
+    payment_config: PaymentConfig
+    """Complete payments configuration (driver, network, etc.)."""
+
     probe_properties: Dict[str, Any]
     """Additional properties to be set on the probe object."""
 
