@@ -49,11 +49,11 @@ class PaymentConfig:
     token: str
 
 
-def get_payment_config(config_payments_name: str) -> PaymentConfig:
-    """Translate "payments" name from goth-config.yml to a PaymentConfig instance."""
+def get_payment_config(payment_config_name: str) -> PaymentConfig:
+    """Translate "payment_config" from goth-config.yml to a PaymentConfig instance."""
     try:
-        payment_config_kwargs = _payment_config[config_payments_name]
+        payment_config_kwargs = _payment_config[payment_config_name]
     except KeyError:
-        raise KeyError(f"Unknown payment config name: {config_payments_name}")
+        raise KeyError(f"Unknown payment config name: {payment_config_name}")
 
     return PaymentConfig(**payment_config_kwargs)
