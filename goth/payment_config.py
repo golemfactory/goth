@@ -50,7 +50,7 @@ class PaymentConfig:
 
 
 def get_payment_config(payment_config_name: str) -> PaymentConfig:
-    """Translate "payment_config" from goth-config.yml to a PaymentConfig instance."""
+    """Translate "payment-config" from goth-config.yml to a PaymentConfig instance."""
     try:
         payment_config_kwargs = _payment_config[payment_config_name]
     except KeyError:

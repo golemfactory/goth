@@ -42,7 +42,7 @@ async def test_payment_platform_env(default_goth_config: Path, payment_config) -
         "name": "requestor",
         "type": "Requestor",
         "use-proxy": True,
-        "payment_config": payment_config,
+        "payment-config": payment_config,
     }
     overrides = [("nodes", [requestor_node])]
     goth_config = load_yaml(default_goth_config, overrides)
@@ -62,7 +62,7 @@ async def test_invalid_payment_config(default_goth_config: Path) -> None:
         "name": "requestor",
         "type": "Requestor",
         "use-proxy": True,
-        "payment_config": "OOOOPS_NO_SUCH_CONFIG",
+        "payment-config": "OOOOPS_NO_SUCH_CONFIG",
     }
     overrides = [("nodes", [requestor_node])]
     with pytest.raises(KeyError):

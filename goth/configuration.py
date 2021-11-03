@@ -18,7 +18,7 @@ from goth.payment_config import get_payment_config, PaymentConfig
 
 DEFAULT_PAYMENT_CONFIG_NAME = "zksync"
 """Determines PaymentConfig object that will be used for containers
-without specified "payment_config" """
+without specified "payment-config" """
 
 Override = Tuple[str, Any]
 """Type representing a single value override in a YAML config file.
@@ -301,7 +301,7 @@ def load_yaml(
             use_proxy = node.get("use-proxy", False)
 
             payment_config_name = node.get(
-                "payment_config", DEFAULT_PAYMENT_CONFIG_NAME
+                "payment-config", DEFAULT_PAYMENT_CONFIG_NAME
             )
             payment_config = get_payment_config(payment_config_name)
 
