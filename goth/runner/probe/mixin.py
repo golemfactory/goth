@@ -181,7 +181,7 @@ class MarketApiMixin:
         """Call wait_for_approval on the market api."""
         await self.api.market.wait_for_approval(agreement_id)
 
-    @step()
+    @step(30.0)
     async def wait_for_proposals(
         self: ProbeProtocol,
         subscription_id: str,
