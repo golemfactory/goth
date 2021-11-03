@@ -194,7 +194,22 @@ class ComposeNetworkManager:
         self._disconnect_containers(compose_containers or [])
 
         await run_command(
-            ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"]
+            [
+                "docker-compose",
+                "-f",
+                str(self.config.file_path),
+                "down",
+                #   This command sometimes fails in CI, with message about network
+                #   still having active endpoints, e.g. here:
+                #   https://github.com/golemfactory/yapapi/runs/3672786561
+                #
+                #   I don't understand why we have any active endpoints (this happens
+                #   only sometimes and I don't know any pattern) - but hope
+                #   --remove-orphans might help.
+                "--remove-orphans",
+                "-t",
+                "0",
+            ]
         )
 
     def _get_compose_services(self) -> dict:
