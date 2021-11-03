@@ -15,6 +15,7 @@ from goth.runner.container.yagna import YagnaContainerConfig
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
 from goth.runner.web_server import WebServer
+from goth.payment_config import get_payment_config
 
 
 TestFailure.__test__ = False
@@ -37,6 +38,7 @@ topology = [
     YagnaContainerConfig(
         name="requestor",
         probe_type=Probe,
+        payment_config=get_payment_config("zksync"),
         volumes={},
         environment={},
         payment_id=mock.MagicMock(),
@@ -44,6 +46,7 @@ topology = [
     YagnaContainerConfig(
         name="provider",
         probe_type=Probe,
+        payment_config=get_payment_config("zksync"),
         volumes={},
         environment={},
         privileged_mode=False,

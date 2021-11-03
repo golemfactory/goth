@@ -1,15 +1,15 @@
 """Module related to handling payment IDs in yagna containers."""
 
 from dataclasses import asdict, dataclass
-from enum import Enum, unique
 import json
 from pathlib import Path
 import shutil
 from tempfile import gettempdir
-from typing import Iterator, List, Optional, Sequence
+from typing import Iterator, List, Optional
 from uuid import uuid4
 
 from goth.project import DEFAULT_ASSETS_DIR
+from goth.payment_config import PaymentConfig
 
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
@@ -36,23 +36,14 @@ class KeyPoolDepletedError(Exception):
         super().__init__("No more pre-funded Ethereum keys available.")
 
 
-@unique
-# https://docs.python.org/3/library/enum.html#restricted-enum-subclassing
-class PaymentDriver(str, Enum):
-    """Enum listing the payment drivers that can be used with yagna."""
-
-    erc20 = "erc20"
-    zksync = "zksync"
-
-
 @dataclass
 class Account:
     """Data class representing a single yagna payment account."""
 
     address: str
-    driver: PaymentDriver = PaymentDriver.zksync
-    network: str = "rinkeby"
-    token: str = "tGLM"
+    driver: str
+    network: str
+    token: str
     receive: bool = True
     send: bool = True
 
@@ -123,7 +114,7 @@ class PaymentIdPool:
 
     def get_id(
         self,
-        drivers: Sequence[PaymentDriver] = (PaymentDriver.erc20, PaymentDriver.zksync),
+        payment_config: PaymentConfig,
         receive: bool = True,
         send: bool = True,
     ) -> PaymentId:
@@ -131,22 +122,21 @@ class PaymentIdPool:
 
         Attempts to obtain a key from the pool and, if available, creates a list of
         payment accounts based on the provided parameters.
-        For each payment driver specified, a separate account is generated.
+        Only a single account is created, for payment_config.driver.
         The parameters `receive` and `send` are shared between the accounts.
         Once the key pool is depleted, attempting to get another account results in
         `KeyPoolDepletedError` being raised.
         """
         key = self._get_key()
-        account_list = [
-            Account(
-                address=f"0x{key.address}",
-                driver=driver,
-                receive=receive,
-                send=send,
-            )
-            for driver in drivers
-        ]
-        return PaymentId(account_list, key)
+        account = Account(
+            address=f"0x{key.address}",
+            driver=payment_config.driver,
+            network=payment_config.network,
+            token=payment_config.token,
+            receive=receive,
+            send=send,
+        )
+        return PaymentId([account], key)
 
     def _get_key(self) -> EthKey:
         try:

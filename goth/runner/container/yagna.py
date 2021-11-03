@@ -13,6 +13,7 @@ from goth.runner.container import DockerContainer, DockerContainerConfig
 import goth.runner.container.payment as payment
 import goth.runner.container.utils as utils
 from goth.runner.log import LogConfig
+from goth.payment_config import PaymentConfig
 
 if TYPE_CHECKING:
     from goth.runner.probe import Probe  # noqa: F401
@@ -28,6 +29,9 @@ class YagnaContainerConfig(DockerContainerConfig):
 
     probe_type: Type["Probe"]
     """Python type of the probe to be instantiated from this config."""
+
+    payment_config: PaymentConfig
+    """Complete payments configuration (driver, network, etc.)."""
 
     probe_properties: Dict[str, Any]
     """Additional properties to be set on the probe object."""
@@ -50,6 +54,7 @@ class YagnaContainerConfig(DockerContainerConfig):
         self,
         name: str,
         probe_type: Type["Probe"],
+        payment_config: PaymentConfig,
         volumes: Optional[Dict[Path, str]] = None,
         log_config: Optional[LogConfig] = None,
         environment: Optional[Dict[str, str]] = None,
@@ -60,6 +65,7 @@ class YagnaContainerConfig(DockerContainerConfig):
     ):
         super().__init__(name, volumes or {}, log_config, privileged_mode)
         self.probe_type = probe_type
+        self.payment_config = payment_config
         self.probe_properties = probe_properties or {}
         self.environment = environment or {}
         self.payment_id = payment_id

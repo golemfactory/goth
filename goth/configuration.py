@@ -14,7 +14,11 @@ from goth.runner.container.compose import (
 from goth.runner.container.payment import PaymentIdPool
 from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
+from goth.payment_config import get_payment_config, PaymentConfig
 
+DEFAULT_PAYMENT_CONFIG_NAME = "zksync"
+"""Determines PaymentConfig object that will be used for containers
+without specified "payment-config" """
 
 Override = Tuple[str, Any]
 """Type representing a single value override in a YAML config file.
@@ -59,6 +63,7 @@ class Configuration:
         name: str,
         use_proxy: bool,
         privileged_mode: bool,
+        payment_config: PaymentConfig,
         environment: Optional[Dict[str, str]] = None,
         volumes: Optional[Dict[Path, Path]] = None,
         **kwargs,
@@ -67,21 +72,23 @@ class Configuration:
 
         if use_proxy:
             node_env = node_environment(
-                rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST)
+                rest_api_url_base=YAGNA_REST_URL.substitute(host=PROXY_HOST),
+                payment_env=payment_config.env,
             )
         else:
-            node_env = node_environment()
+            node_env = node_environment(payment_env=payment_config.env)
         if environment:
             node_env.update(environment)
 
         container_cfg = YagnaContainerConfig(
             name=name,
             probe_type=type,
+            payment_config=payment_config,
             environment=node_env,
             privileged_mode=privileged_mode,
             subnet="goth",
             volumes=volumes,
-            payment_id=self._id_pool.get_id(),
+            payment_id=self._id_pool.get_id(payment_config),
             use_proxy=use_proxy,
             **kwargs,
         )
@@ -292,6 +299,12 @@ def load_yaml(
             name = node["name"]
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
+
+            payment_config_name = node.get(
+                "payment-config", DEFAULT_PAYMENT_CONFIG_NAME
+            )
+            payment_config = get_payment_config(payment_config_name)
+
             class_, volumes, privileged_mode, env_dict = node_types[type_name]
             config.add_node(
                 class_,
@@ -300,6 +313,7 @@ def load_yaml(
                 privileged_mode=privileged_mode,
                 environment=env_dict,
                 volumes=volumes,
+                payment_config=payment_config,
             )
 
     return config
