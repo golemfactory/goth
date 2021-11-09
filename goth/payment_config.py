@@ -18,9 +18,10 @@ _payment_config = {
     },
     "erc20": {
         "env": {
-            "YA_PAYMENT_NETWORK": "mainnet",
+            "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": 0,
             "MAINNET_GETH_ADDR": GETH_ADDR,
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
+            "YA_PAYMENT_NETWORK": "mainnet",
         },
         "driver": "erc20",
         "network": "mainnet",
@@ -28,9 +29,10 @@ _payment_config = {
     },
     "polygon": {
         "env": {
-            "YA_PAYMENT_NETWORK": "polygon",
+            "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": 0,
             "POLYGON_GETH_ADDR": GETH_ADDR,
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
+            "YA_PAYMENT_NETWORK": "polygon",
         },
         "driver": "erc20",
         "network": "polygon",
@@ -47,6 +49,9 @@ class PaymentConfig:
     driver: str
     network: str
     token: str
+
+    def __post_init__(self):
+        self.platform_string = f"{self.driver}-{self.network}-{self.token.lower()}"
 
 
 def get_payment_config(payment_config_name: str) -> PaymentConfig:
