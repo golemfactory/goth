@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0] - 2021-11-09
+
+### Features
+- enable per-node payment platform configuration in `goth-config.yml` [#556](https://github.com/golemfactory/goth/pull/556)
+- expose payment config object in `Probe`s [#564](https://github.com/golemfactory/goth/pull/564)
+
+### Other changes
+- increase proposal collection timeout to 30s [#563](https://github.com/golemfactory/goth/pull/563)
+- decrease yagna broadcast intervals [#558](https://github.com/golemfactory/goth/pull/558)
+
 ## [0.7.4] - 2021-10-13
 
 ### Other changes
