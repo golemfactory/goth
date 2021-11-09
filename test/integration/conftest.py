@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pytest
 
-from goth.project import PROJECT_ROOT
 from goth.runner.log import configure_logging
 
 
@@ -17,9 +16,3 @@ def log_dir() -> Path:
     log_dir.mkdir(parents=True)
     configure_logging(log_dir)
     return log_dir
-
-
-@pytest.fixture
-def default_goth_config() -> Path:
-    """Return path to default `goth-config.yml` file."""
-    return PROJECT_ROOT / "goth" / "default-assets" / "goth-config.yml"
