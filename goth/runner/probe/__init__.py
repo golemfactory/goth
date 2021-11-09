@@ -451,7 +451,7 @@ class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
     async def _start_container(self) -> None:
         await super()._start_container()
 
-        payment_driver = self._yagna_config.payment_config.driver
+        payment_driver = self.payment_config.driver
         self.cli.payment_fund(payment_driver)
         self.cli.payment_init(payment_driver, sender_mode=True)
 
