@@ -19,6 +19,7 @@ from ya_market import AgreementProposal, Demand, DemandOfferBase, Proposal
 from ya_payment import Acceptance, Allocation, Invoice
 
 from goth.node import DEFAULT_SUBNET
+from goth.payment_config import PaymentConfig
 from goth.runner.step import step
 
 if TYPE_CHECKING:
@@ -43,6 +44,9 @@ class ProbeProtocol(Protocol):
 
     name: str
     """Name of the probe container."""
+
+    payment_config: PaymentConfig
+    """Payment configuration used for the probe's yagna node."""
 
 
 class ActivityApiMixin:
@@ -253,6 +257,7 @@ class PaymentApiMixin:
                 remaining_amount=0,
                 make_deposit=True,
                 timestamp=datetime.now(timezone.utc),
+                payment_platform=self.payment_config.platform_string,
             )
             allocation_result = await self.api.payment.create_allocation(allocation)
             logger.debug("Created allocation. id=%s", allocation_result)
