@@ -28,7 +28,6 @@ def node_environment(
         "IDLE_AGREEMENT_TIMEOUT": "600s",
         "MEAN_CYCLIC_BCAST_INTERVAL": "3s",
         "MEAN_CYCLIC_UNSUBSCRIBES_INTERVAL": "3s",
-        "REQUIRED_CONFIRMATIONS": "1",
         "RUST_BACKTRACE": "1",
         "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info",
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),

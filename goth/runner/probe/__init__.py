@@ -30,6 +30,7 @@ from goth.address import (
 
 from goth import gftp
 from goth.node import DEFAULT_SUBNET
+from goth.payment_config import PaymentConfig
 from goth.runner import process
 from goth.runner.cli import Cli, YagnaDockerCli
 from goth.runner.container.utils import get_container_address
@@ -145,6 +146,11 @@ class Probe(abc.ABC):
     def name(self) -> str:
         """Name of the container."""
         return self.container.name
+
+    @property
+    def payment_config(self) -> PaymentConfig:
+        """Payment configuration used for setting up this probe's yagna node."""
+        return self._yagna_config.payment_config
 
     @property
     def uses_proxy(self) -> bool:
@@ -445,7 +451,7 @@ class RequestorProbe(ActivityApiMixin, MarketApiMixin, PaymentApiMixin, Probe):
     async def _start_container(self) -> None:
         await super()._start_container()
 
-        payment_driver = self._yagna_config.payment_config.driver
+        payment_driver = self.payment_config.driver
         self.cli.payment_fund(payment_driver)
         self.cli.payment_init(payment_driver, sender_mode=True)
 
