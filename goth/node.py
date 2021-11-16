@@ -23,7 +23,9 @@ def node_environment(
     """Construct an environment for executing commands in a yagna docker container."""
 
     daemon_env = {
+        # TODO: Remove old net
         "CENTRAL_NET_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
+        "NET_RELAY_HOST": f"{ROUTER_HOST}:{ROUTER_PORT}",
         "GSB_URL": YAGNA_BUS_URL.substitute(host="0.0.0.0"),
         "IDLE_AGREEMENT_TIMEOUT": "600s",
         "MEAN_CYCLIC_BCAST_INTERVAL": "3s",

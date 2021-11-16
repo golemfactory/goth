@@ -1,0 +1,47 @@
+version: "3.3"
+
+services:
+
+    router:
+        image: yagna-goth
+        entrypoint: /usr/bin/ya-relay-server
+        command: ["-a", "udp://0.0.0.0:7477"]
+
+    proxy-nginx:
+        # A service that runs `nginx` and routes API calls to
+        # the `mitmproxy` instance running as part of the test
+        # harness on the host machine
+        image: proxy-nginx
+        ports:
+            # Requests to ports 6001-6100 in proxy-nginx are forwarded
+            # to the MITM proxy started by the test runner, and further
+            # to yagna API port (usually 6000) in yagna containers:
+            # request to port 6001 is forwarded to (yagna API port in)
+            # the first yagna container, request to port 6002 -- to
+            # the second one, and so on.
+            # To make these ports available from Docker host (on some
+            # systems, Docker network may be unreachable from the host)
+            # we map them to ports 16001-16100 on the host.
+            - "16001-16100:6001-6100"
+
+    ethereum:
+        image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:483c6f241edd
+        ports:
+            - "8545:8545"
+
+    zksync:
+        image: docker.pkg.github.com/golemfactory/yagna-zksync/yagna-zksync-mock:fddc527d2bf1
+        ports:
+            - "3030:3030"
+        environment:
+            - WEB3_PROVIDER_URI=http://ethereum:8545
+        depends_on:
+            - ethereum
+
+networks:
+    default:
+        ipam:
+            config:
+                # Fix the IP address range to ensure the host machine
+                # is reachable at the fixed address 172.19.0.1
+                - subnet: 172.19.0.0/16
