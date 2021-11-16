@@ -4,7 +4,7 @@ services:
 
     router:
         image: yagna-goth
-        entrypoint: /usr/bin/ya-net-server
+        entrypoint: /usr/bin/ya-relay-server
         command: ["-a", "udp://0.0.0.0:7477"]
 
     proxy-nginx:
