@@ -67,7 +67,7 @@ PROXY_HOST = "proxy-nginx"
 
 ROUTER_HOST = "router"
 ROUTER_PORT = 7477
-ROUTER_PROTOCOL = "udp"
+ROUTER_PROTOCOL = "tcp"
 ROUTER_BASE_URL = DefaultTemplate(
     _BASE_URL_TEMPLATE,
     {"host": ROUTER_HOST, "port": ROUTER_PORT, "protocol": ROUTER_PROTOCOL},

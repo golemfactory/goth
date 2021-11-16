@@ -5,6 +5,7 @@
 
 docker-compose:
 
+  # Path to compose file to be used, relative to `docker-dir`
   compose-file: "docker-compose.yml"
   docker-dir: "docker/"
 
