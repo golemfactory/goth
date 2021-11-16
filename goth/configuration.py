@@ -16,7 +16,7 @@ from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
 from goth.payment_config import get_payment_config, PaymentConfig
 
-DEFAULT_PAYMENT_CONFIG_NAME = "zksync"
+DEFAULT_PAYMENT_CONFIG_NAME = "erc20"
 """Determines PaymentConfig object that will be used for containers
 without specified "payment-config" """
 
