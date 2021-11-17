@@ -20,7 +20,7 @@ _payment_config = {
         "network": "rinkeby",
         "token": "tGLM",
     },
-    "erc20": {
+    "erc20_mainnet": {
         "env": {
             "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "MAINNET_GETH_ADDR": GETH_ADDR,
@@ -30,6 +30,17 @@ _payment_config = {
         "driver": "erc20",
         "network": "mainnet",
         "token": "GLM",
+    },
+    "erc20": {
+        "env": {
+            "ERC20_RINKEBY_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
+            "RINKEBY_GETH_ADDR": GETH_ADDR,
+            "RINKEBY_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
+            "YA_PAYMENT_NETWORK": "rinkeby",
+        },
+        "driver": "erc20",
+        "network": "rinkeby",
+        "token": "tGLM",
     },
     "polygon": {
         "env": {
