@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.0] - 2021-11-17
+
+### Breaking changes
+- change default payment configuration to erc20 rinkeby [#567](https://github.com/golemfactory/goth/pull/567)
+
+### Other changes
+- add `yagna` hybrid net support [#560](https://github.com/golemfactory/goth/pull/560)
+- allow specifying Docker Compose file in `goth-config.yml` [bb4c732](https://github.com/golemfactory/goth/commit/bb4c73287191efb38568b86f1c1db11fde33ae49)
+
 ## [0.8.0] - 2021-11-09
 
 ### Features
