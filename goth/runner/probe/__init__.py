@@ -8,6 +8,7 @@ import copy
 import logging
 import os
 from pathlib import Path
+import traceback
 from typing import (
     AsyncIterator,
     Dict,
@@ -394,9 +395,10 @@ class Probe(abc.ABC):
                 logger.debug("Command task has finished")
 
         except Exception as e:
-            logger.error(f"Cancelling command on error: {e!r}")
+            logger.error(f"Cancelling command on error: {e!r}, command: `{command}`")
             if cmd_task and not cmd_task.done():
                 cmd_task.cancel()
+            traceback.print_exc()
             raise
 
         finally:
