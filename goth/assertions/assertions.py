@@ -152,7 +152,7 @@ class Assertion(AsyncIterable[E]):
             try:
                 return await self._func(self)
             except asyncio.CancelledError:
-                raise AssertionError("Assertion cancelled")
+                raise AssertionError(f"Assertion cancelled: {self}")
             finally:
                 self._notify_update_events()
 
