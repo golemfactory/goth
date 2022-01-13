@@ -18,6 +18,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from docker import DockerClient
@@ -351,7 +352,13 @@ class Probe(abc.ABC):
         command: str,
         env: Optional[Mapping[str, str]] = None,
         command_timeout: float = 300,
-    ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
+        get_process_monitor: bool = False,
+    ) -> AsyncIterator[
+        Union[
+            Tuple[asyncio.Task, PatternMatchingEventMonitor],
+            Tuple[asyncio.Task, PatternMatchingEventMonitor, process.ProcessMonitor],
+        ]
+    ]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
         The command is run in the environment extending `env` with variables needed
@@ -375,6 +382,8 @@ class Probe(abc.ABC):
         )
         cmd_monitor.start()
 
+        process_monitor = process.ProcessMonitor()
+
         try:
             with monitored_logger(
                 f"goth.{self.name}.command_output", cmd_monitor
@@ -387,9 +396,13 @@ class Probe(abc.ABC):
                         log_level=logging.INFO,
                         cmd_logger=cmd_logger,
                         timeout=command_timeout,
+                        process_monitor=process_monitor,
                     )
                 )
-                yield cmd_task, cmd_monitor
+                yield_content = [cmd_task, cmd_monitor]
+                if get_process_monitor:
+                    yield_content.append(process_monitor)
+                yield yield_content
 
                 await cmd_task
                 logger.debug("Command task has finished")

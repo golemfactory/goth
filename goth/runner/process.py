@@ -13,6 +13,18 @@ RUN_COMMAND_SLEEP_INTERVAL = 0.1  # seconds
 RUN_COMMAND_DEFAULT_TIMEOUT = 900  # seconds
 
 
+class ProcessMonitor:
+    _process: Optional[asyncio.subprocess.Process] = None
+
+    async def get_process(self) -> asyncio.subprocess.Process:
+        while not self._process:
+            await asyncio.sleep(0.1)
+        return self._process
+
+    def set_process(self, process: asyncio.subprocess.Process):
+        self._process = process
+
+
 async def run_command(
     args: Sequence[str],
     env: Optional[dict] = None,
@@ -20,6 +32,7 @@ async def run_command(
     cmd_logger: Optional[logging.Logger] = None,
     log_prefix: Optional[str] = None,
     timeout: float = RUN_COMMAND_DEFAULT_TIMEOUT,
+    process_monitor: Optional[ProcessMonitor] = None,
 ) -> None:
     """Run a command in a subprocess with timeout and logging.
 
@@ -34,6 +47,8 @@ async def run_command(
     :param log_prefix: prefix for log lines with command output; ignored if `cmd_logger`
         is specified. Default: name of the command
     :param timeout: timeout for the command, in seconds. Default: 15 minutes
+    :param process_monitor: and optional `ProcessMonitor` to which the spawned process will be
+        reported, so that it can be communicated with from the calling code
     """
     logger.info("Running local command: %s", " ".join(args))
 
@@ -45,10 +60,12 @@ async def run_command(
             log_prefix = f"[{args[0]}] "
 
     async def _run_command():
-
         proc = await asyncio.subprocess.create_subprocess_exec(
             *args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
+
+        if process_monitor:
+            process_monitor.set_process(proc)
 
         while not proc.stdout.at_eof():
             line = await proc.stdout.readline()
