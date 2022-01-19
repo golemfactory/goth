@@ -24,10 +24,6 @@ class ProcessMonitor:
             await asyncio.sleep(0.1)
         return self._process
 
-    def set_process(self, process: asyncio.subprocess.Process):
-        """Set the process object."""
-        self._process = process
-
 
 async def run_command(
     args: Sequence[str],
@@ -51,7 +47,7 @@ async def run_command(
     :param log_prefix: prefix for log lines with command output; ignored if `cmd_logger`
         is specified. Default: name of the command
     :param timeout: timeout for the command, in seconds. Default: 15 minutes
-    :param process_monitor: and optional `ProcessMonitor` to which the spawned process
+    :param process_monitor: an optional `ProcessMonitor` to which the spawned process
         will be reported, so that it can be communicated with from the calling code
     """
     logger.info("Running local command: %s", " ".join(args))
@@ -69,7 +65,7 @@ async def run_command(
         )
 
         if process_monitor:
-            process_monitor.set_process(proc)
+            process_monitor._process = proc
 
         while not proc.stdout.at_eof():
             line = await proc.stdout.readline()

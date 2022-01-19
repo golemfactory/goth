@@ -54,7 +54,6 @@ async def test_run_command_on_host(monkeypatch):
     async with probe.run_command_on_host(
         "/usr/bin/env",
         env=os.environ,
-        get_process_monitor=True,
     ) as (_task, monitor, process_monitor):
         assertion = monitor.add_assertion(env_lines_to_dict)
         proc: asyncio.subprocess.Process = await process_monitor.get_process()
@@ -74,6 +73,7 @@ async def test_run_command_on_host(monkeypatch):
     async with probe.run_command_on_host("/bin/echo eChO", env=os.environ) as (
         _task,
         monitor,
+        _process_monitor,
     ):
 
         await monitor.wait_for_pattern(".*eChO", timeout=10)
