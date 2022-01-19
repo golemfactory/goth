@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0] - 2022-01-19
+
+### Breaking changes
+- change `Probe#run_command_on_host` to include a process monitor in its return values [#571](https://github.com/golemfactory/goth/pull/571)
+
+### Other changes
+- improve error reporting [#570](https://github.com/golemfactory/goth/pull/570)
+
 ## [0.9.0] - 2021-11-17
 
 ### Breaking changes
