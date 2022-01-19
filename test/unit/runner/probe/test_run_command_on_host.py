@@ -23,6 +23,7 @@ async def env_lines_to_dict(lines):
     return env
 
 
+@pytest.fixture
 def mock_probe(monkeypatch):
     """Get a mocked `RequestorProbe`."""
 
@@ -46,12 +47,10 @@ def mock_probe(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_run_command_on_host(monkeypatch):
+async def test_run_command_on_host(mock_probe):
     """Test if the method `run_command_on_host` works as expected."""
 
-    probe = mock_probe(monkeypatch)
-
-    async with probe.run_command_on_host(
+    async with mock_probe.run_command_on_host(
         "/usr/bin/env",
         env=os.environ,
     ) as (_task, monitor, process_monitor):
@@ -62,7 +61,7 @@ async def test_run_command_on_host(monkeypatch):
 
     result = await assertion.wait_for_result(timeout=1)
 
-    assert result["YAGNA_APPKEY"] == probe.app_key
+    assert result["YAGNA_APPKEY"] == mock_probe.app_key
     assert result["YAGNA_API_URL"] == YAGNA_REST_URL.substitute(
         host="127.0.0.1", port=CONTAINER_REST_PORT
     )
@@ -70,7 +69,7 @@ async def test_run_command_on_host(monkeypatch):
 
     # Let's make sure that another command can be run without problems
     # (see https://github.com/golemfactory/goth/issues/484).
-    async with probe.run_command_on_host("/bin/echo eChO", env=os.environ) as (
+    async with mock_probe.run_command_on_host("/bin/echo eChO", env=os.environ) as (
         _task,
         monitor,
         _process_monitor,
