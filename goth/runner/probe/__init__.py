@@ -351,7 +351,9 @@ class Probe(abc.ABC):
         command: str,
         env: Optional[Mapping[str, str]] = None,
         command_timeout: float = 300,
-    ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor]]:
+    ) -> AsyncIterator[
+        Tuple[asyncio.Task, PatternMatchingEventMonitor, process.ProcessMonitor],
+    ]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
         The command is run in the environment extending `env` with variables needed
@@ -375,6 +377,8 @@ class Probe(abc.ABC):
         )
         cmd_monitor.start()
 
+        process_monitor = process.ProcessMonitor()
+
         try:
             with monitored_logger(
                 f"goth.{self.name}.command_output", cmd_monitor
@@ -387,9 +391,10 @@ class Probe(abc.ABC):
                         log_level=logging.INFO,
                         cmd_logger=cmd_logger,
                         timeout=command_timeout,
+                        process_monitor=process_monitor,
                     )
                 )
-                yield cmd_task, cmd_monitor
+                yield cmd_task, cmd_monitor, process_monitor
 
                 await cmd_task
                 logger.debug("Command task has finished")
