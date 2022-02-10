@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.1] - 2022-02-10
+
+### Other changes
+- update `yagna` env variable name from `NET_RELAY_HOST` to `YA_NET_RELAY_HOST` [#573](https://github.com/golemfactory/goth/pull/573)
+
 ## [0.10.0] - 2022-01-19
 
 ### Breaking changes
