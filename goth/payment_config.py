@@ -42,6 +42,18 @@ _payment_config = {
         "network": "rinkeby",
         "token": "tGLM",
     },
+    "erc20_batching": {
+        "env": {
+            "ERC20_RINKEBY_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
+            "RINKEBY_GETH_ADDR": GETH_ADDR,
+            "RINKEBY_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
+            "YA_PAYMENT_NETWORK": "rinkeby",
+        },
+        "driver": "erc20",
+        "network": "rinkeby",
+        "token": "tGLM",
+        "batch": True,
+    },
     "polygon": {
         "env": {
             "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
@@ -65,6 +77,7 @@ class PaymentConfig:
     network: str
     platform_string: str = field(init=False)
     token: str
+    batch: bool = False
 
     def __post_init__(self):
         self.platform_string = f"{self.driver}-{self.network}-{self.token.lower()}"

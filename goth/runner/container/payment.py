@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import shutil
 from tempfile import gettempdir
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Union
 from uuid import uuid4
 
 from goth.project import DEFAULT_ASSETS_DIR
@@ -45,7 +45,7 @@ class Account:
     network: str
     token: str
     receive: bool = True
-    send: bool = True
+    send: Union[bool, str] = True
 
 
 @dataclass
@@ -128,6 +128,7 @@ class PaymentIdPool:
         `KeyPoolDepletedError` being raised.
         """
         key = self._get_key()
+        send = "auto" if send and payment_config.batch else send
         account = Account(
             address=f"0x{key.address}",
             driver=payment_config.driver,
