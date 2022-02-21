@@ -65,7 +65,6 @@ class YagnaAppKeyMixin:
         """
 
         args = make_args("app-key", "list", id=address, data_dir=data_dir)
-        # TODO: make type List after depricated code is removed from parse_json_table
         output = self.run_json_command(List, *args)
         return [
             AppKeyInfo(

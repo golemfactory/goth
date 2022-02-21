@@ -82,7 +82,6 @@ def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:
 def parse_json_table(output_dict: dict) -> List[Dict[str, str]]:
     """Parse a table in JSON format as returned by some `yagna` subcommands."""
 
-    logger.info("output_dict: '%s'", json.dumps(output_dict))
     if len(output_dict) == 0:
         raise ValueError(json.dumps(output_dict))
 
@@ -103,7 +102,6 @@ def parse_json_table(output_dict: dict) -> List[Dict[str, str]]:
             for i, key in enumerate(headers):
                 row_dict[key] = row[i]
             result.append(row_dict)
-    logger.info("result: '%s'", json.dumps(result))
 
     return result
 

@@ -25,7 +25,7 @@ ENV_YAGNA_BRANCH = "YAGNA_BRANCH"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
 DEFAULT_ARTIFACT = "Yagna Linux"
-DEFAULT_BRANCH = "mwu/pull_1723"
+DEFAULT_BRANCH = "master"
 DEFAULT_COMMIT = os.getenv(ENV_YAGNA_COMMIT)
 DEFAULT_CONTENT_TYPE = "application/vnd.debian.binary-package"
 DEFAULT_OWNER = "golemfactory"
