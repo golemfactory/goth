@@ -84,19 +84,28 @@ def make_args(obj: str, verb: str, *args: str, **opt_args) -> List[str]:
 def parse_json_table(output_dict: dict) -> List[Dict[str, str]]:
     """Parse a table in JSON format as returned by some `yagna` subcommands."""
 
-    headers: Optional[list] = output_dict.get("headers")
-    values: Optional[list] = output_dict.get("values")
-
-    if not headers or values is None:
+    logger.info("output_dict: '%s'", json.dumps(output_dict))
+    if len(output_dict) == 0:
         raise ValueError(json.dumps(output_dict))
 
     result = []
-    row: Tuple[str]
-    for row in values:
-        row_dict = {}
-        for i, key in enumerate(headers):
-            row_dict[key] = row[i]
-        result.append(row_dict)
+    headers: Optional[list] = output_dict.get("headers")
+
+    if not headers:  # Post yagna#1723 format
+        result = output_dict
+    else:  # DEPRECATED, old format, remove 2 releases after yagna#1723 is merged
+        values: Optional[list] = output_dict.get("values")
+
+        if not headers or values is None:
+            raise ValueError(json.dumps(output_dict))
+
+        row: Tuple[str]
+        for row in values:
+            row_dict = {}
+            for i, key in enumerate(headers):
+                row_dict[key] = row[i]
+            result.append(row_dict)
+    logger.info("result: '%s'", json.dumps(result))
 
     return result
 
