@@ -66,6 +66,7 @@ class YagnaAppKeyMixin:
 
         args = make_args("app-key", "list", id=address, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
+        logger.info("output: '%s'", output)
         return [
             AppKeyInfo(
                 name=info["name"],

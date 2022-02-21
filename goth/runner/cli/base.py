@@ -62,7 +62,9 @@ class DockerJSONCommandRunner(DockerCommandRunner):
         if "--json" not in cmd_args:
             cmd_args = *cmd_args, "--json"
         cmd_stdout, _ = self.run_command(*cmd_args)
+        logger.info("cmd_stdout: '%s'", cmd_stdout)
         obj = json.loads(cmd_stdout)
+        logger.info("obj: '%s'", obj)
         if isinstance(obj, result_type):
             return obj
         raise CommandError(
