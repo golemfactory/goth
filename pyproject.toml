@@ -1,6 +1,6 @@
 [tool.black]
 target-version = ['py38']
-exclude= '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|model)/' # Default excludes from black and the generated folder model
+exclude = '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|model)/' # Default excludes from black and the generated folder model
 
 [tool.poetry]
 name = "goth"
@@ -9,14 +9,14 @@ description = "Golem Test Harness - integration testing framework"
 authors = ["Golem Factory <contact@golem.network>"]
 license = "GPL-3.0"
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3.8",
-    "Framework :: AsyncIO",
-    "Framework :: Pytest",
-    "Topic :: Software Development :: Testing"
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.8",
+  "Framework :: AsyncIO",
+  "Framework :: Pytest",
+  "Topic :: Software Development :: Testing",
 ]
 repository = "https://github.com/golemfactory/goth"
 readme = "README.md"
@@ -29,6 +29,7 @@ docker-compose = "^1.29"
 docker = "^5.0"
 dpath = "^2.0"
 func_timeout = "4.3.5"
+markupsafe = "2.0.1"
 mitmproxy = "^5.3"
 pyyaml = "^5.4"
 transitions = "^0.8"
