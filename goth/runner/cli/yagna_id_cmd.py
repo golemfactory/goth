@@ -59,7 +59,8 @@ class YagnaIdMixin:
         """Return the output of `<yagna-cmd> id list`."""
 
         args = make_args("id", "list", data_dir=data_dir)
-        output = self.run_json_command(Dict, *args)
+        # TODO: make type List after depricated code is removed from parse_json_table
+        output = self.run_json_command(Any, *args)
         return [
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"])
             for r in parse_json_table(output)
