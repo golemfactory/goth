@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.2] - 2022-02-21
+
+### Other changes
+- pin `markupsafe` version to `2.0.1` [821f1f3](https://github.com/golemfactory/goth/commit/821f1f3d9cdec6c05d97c18704a3ae7c0d3e4eda)
+
 ## [0.10.1] - 2022-02-10
 
 ### Other changes
