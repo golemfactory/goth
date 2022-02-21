@@ -64,9 +64,7 @@ class DockerJSONCommandRunner(DockerCommandRunner):
         cmd_stdout, _ = self.run_command(*cmd_args)
         obj = json.loads(cmd_stdout)
         if not isinstance(obj, result_type):
-            logger.warn(
-                f"Expected a {result_type.__name__} but command returned: {obj}"
-            )
+            logger.warn(f"Expected a {result_type} but command returned: {obj}")
         return obj
 
 
