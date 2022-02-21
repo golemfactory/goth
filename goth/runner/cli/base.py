@@ -89,11 +89,11 @@ def parse_json_table(output_dict: dict) -> List[Dict[str, str]]:
         raise ValueError(json.dumps(output_dict))
 
     result = []
-    headers: Optional[list] = output_dict.get("headers")
 
-    if not headers:  # Post yagna#1723 format
+    if not 'headers' in output_dict:  # Post yagna#1723 format
         result = output_dict
     else:  # DEPRECATED, old format, remove 2 releases after yagna#1723 is merged
+        headers: Optional[list] = output_dict.get("headers")
         values: Optional[list] = output_dict.get("values")
 
         if not headers or values is None:
