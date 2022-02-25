@@ -127,3 +127,9 @@ class YagnaPaymentMixin:
         args = make_args("payment", "drivers")
         output = self.run_json_command(Dict, *args)
         return {key: Driver.from_dict(val) for key, val in output.items()}
+
+    def payment_release_allocations(self: CommandRunner) -> None:
+        """Run `<cmd> payment release-allocations` without any extra args."""
+
+        args = make_args("payment", "release-allocations")
+        self.run_command(*args)

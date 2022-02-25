@@ -268,3 +268,35 @@ class PaymentApiMixin:
             )
             await self.api.payment.accept_invoice(invoice_event.invoice_id, acceptance)
             logger.debug("Accepted invoice. id=%s", invoice_event.invoice_id)
+
+    @step()
+    async def create_allocation(
+        self: ProbeProtocol, timeout: Optional[datetime] = None
+    ) -> Allocation:
+        """Call create_allocation on the market api."""
+
+        allocation = Allocation(
+            allocation_id="",
+            total_amount=0,
+            spent_amount=0,
+            remaining_amount=0,
+            make_deposit=True,
+            timestamp=datetime.now(timezone.utc),
+            timeout=timeout,
+            payment_platform=self.payment_config.platform_string,
+        )
+
+        allocation_result = await self.api.payment.create_allocation(allocation)
+        logger.debug("Created allocation. id=%s", allocation_result.allocation_id)
+
+        return allocation_result
+
+    @step()
+    async def get_allocation(self: ProbeProtocol, allocation: Allocation) -> Allocation:
+        """Call get_allocation on the market api."""
+
+        allocation_result = await self.api.payment.get_allocation(
+            allocation_id=allocation.allocation_id
+        )
+
+        return allocation_result
