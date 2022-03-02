@@ -1,7 +1,7 @@
 """Implementation of `yagna id` subcommands."""
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, List
 
 from goth.runner.cli.base import make_args, parse_json_table, unwrap_ok_err_json
 from goth.runner.cli.typing import CommandRunner
@@ -59,7 +59,7 @@ class YagnaIdMixin:
         """Return the output of `<yagna-cmd> id list`."""
 
         args = make_args("id", "list", data_dir=data_dir)
-        output = self.run_json_command(Dict, *args)
+        output = self.run_json_command(List, *args)
         return [
             Identity(r["alias"], r["default"] == "X", r["locked"] == "X", r["address"])
             for r in parse_json_table(output)
