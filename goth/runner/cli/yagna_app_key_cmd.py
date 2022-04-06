@@ -1,7 +1,7 @@
 """Implementation of `yagna app-key` subcommands."""
 
 from dataclasses import dataclass
-from typing import Dict, Sequence
+from typing import Sequence, List
 
 from goth.runner.cli.base import make_args, parse_json_table
 from goth.runner.cli.typing import CommandRunner
@@ -65,7 +65,7 @@ class YagnaAppKeyMixin:
         """
 
         args = make_args("app-key", "list", id=address, data_dir=data_dir)
-        output = self.run_json_command(Dict, *args)
+        output = self.run_json_command(List, *args)
         return [
             AppKeyInfo(
                 name=info["name"],

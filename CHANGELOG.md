@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.3] - 2022-03-07
+
+### Bugfixes
+- update start arguments of ya-relay-server [#581](https://github.com/golemfactory/goth/pull/581)
+
+### Other changes
+- add compatibility with changes to yagna JSON CLI introduced in [yagna#1723](https://github.com/golemfactory/yagna/pull/1723)
+
 ## [0.10.2] - 2022-02-21
 
 ### Other changes
