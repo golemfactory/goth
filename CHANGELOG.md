@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.4] - 2022-04-14
+
+### Other changes
+- add test steps related to creating and releasing payment allocations [#580](https://github.com/golemfactory/goth/pull/580)
+
 ## [0.10.3] - 2022-03-07
 
 ### Bugfixes
