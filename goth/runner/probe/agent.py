@@ -86,10 +86,11 @@ class ProviderAgentComponent(AgentComponent):
 
         if self.agent_preset:
             probe.container.exec_run(f"ya-provider preset activate {self.agent_preset}")
-        probe.container.exec_run(f"ya-provider config set --subnet {self.subnet}")
 
         log_stream = probe.container.exec_run(
-            f"ya-provider run" f" --app-key {probe.app_key} --node-name {probe.name}",
+            f"ya-provider run"
+            f" --app-key {probe.app_key} --node-name {probe.name}"
+            f" --subnet {self.subnet}",
             stream=True,
         )
         self.log_monitor.start(log_stream.output)
