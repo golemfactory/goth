@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.11.0] - 2022-03-05
+
+### Breaking changes
+- change provider invocation taking into account that subnet is no longer stored in config [#585](https://github.com/golemfactory/goth/pull/585)
+
 ## [0.10.4] - 2022-04-14
 
 ### Other changes
