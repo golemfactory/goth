@@ -9,11 +9,13 @@ from pathlib import Path
 import sys
 from typing import (
     cast,
+    Any,
     AsyncGenerator,
     Callable,
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     TypeVar,
 )
@@ -22,7 +24,12 @@ import colors
 import docker
 
 from goth.api_monitor.api_events import APIEvent
-from goth.assertions.monitor import Assertion, AssertionFunction, EventMonitor
+from goth.assertions.monitor import (
+    Assertion,
+    AssertionFunction,
+    EventMonitor,
+    EventPredicate,
+)
 from goth.runner.container.compose import (
     ComposeConfig,
     ComposeNetworkManager,
@@ -153,9 +160,32 @@ class Runner:
 
         if self.proxy:
             return self.proxy.monitor.add_assertion(func, name)
-        assertion = Assertion(func, name)
+        assertion: Assertion[APIEvent] = Assertion(func, name)
         self._pending_api_assertions.append(assertion)
         return assertion
+
+    async def wait_for_api_event(
+        self,
+        predicate: EventPredicate[APIEvent],
+        *args,
+        name: Optional[str] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
+    ) -> Tuple[APIEvent, Any]:
+        """Wait on an API event satisfying given `predicate` on the MITM proxy monitor.
+
+        The arguments `name` and `timeout` are passed to `wait_for_event()` call on
+        the proxy monitor; `args` and `kwargs` are passed to `predicate` along with
+        the event.
+        """
+
+        if not self.proxy:
+            raise RuntimeError("MITM proxy not started")
+
+        logger.info("Waiting for API event '%s'", name or "")
+        return await self.proxy.monitor.wait_for_event(
+            predicate, *args, name=name, timeout=timeout, **kwargs
+        )
 
     def check_assertion_errors(self, *extra_monitors: EventMonitor) -> None:
         """If any monitor reports an assertion error, raise the first error."""

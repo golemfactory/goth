@@ -67,14 +67,14 @@ LOGGING_CONFIG = {
         "goth.api_monitor": {
             "handlers": [],
             "propagate": False,
-            # Setting this to "DEBUG" can help in diagnosing issues with routing
-            # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
             "level": "DEBUG",
         },
-        "test.yagna": {
-            "handlers": ["console", "runner_file"],
+        "goth.api_monitor.router_addon": {
+            "handlers": [],
             "propagate": False,
-            "level": "DEBUG",
+            # Setting this to "DEBUG" can help in diagnosing issues with routing
+            # in the proxy. Use "INFO" to avoid verbose logging of requests/responses.
+            "level": "INFO",
         },
         "aiohttp": {
             "handlers": ["console", "runner_file"],

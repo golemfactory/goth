@@ -5,6 +5,8 @@ import logging
 import time
 from typing import Optional, TYPE_CHECKING
 
+import colors
+
 from goth.runner.exceptions import StepTimeoutError
 
 if TYPE_CHECKING:
@@ -19,14 +21,18 @@ def step(default_timeout: float = 10.0):
 
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(self: "Probe", *args, timeout: Optional[float] = None):
+        async def wrapper(
+            self: "Probe", *args, timeout: Optional[float] = None, **kwargs
+        ):
             timeout = timeout if timeout is not None else default_timeout
             step_name = f"{self.name}.{func.__name__}(timeout={timeout})"
             start_time = time.time()
 
             logger.info("Running step '%s'", step_name)
             try:
-                result = await asyncio.wait_for(func(self, *args), timeout=timeout)
+                result = await asyncio.wait_for(
+                    func(self, *args, **kwargs), timeout=timeout
+                )
                 self.runner.check_assertion_errors()
                 step_time = time.time() - start_time
                 logger.debug(
@@ -37,12 +43,16 @@ def step(default_timeout: float = 10.0):
                 )
             except asyncio.TimeoutError:
                 step_time = time.time() - start_time
-                logger.error("Step '%s' timed out after %.1f s", step_name, step_time)
+                logger.error(
+                    colors.red("Step '%s' timed out after %.1f s", style="bold"),
+                    step_name,
+                    step_time,
+                )
                 raise StepTimeoutError(step_name, step_time)
             except Exception as exc:
                 step_time = time.time() - start_time
                 logger.error(
-                    "Step '%s' raised %s in %.1f",
+                    colors.red("Step '%s' raised %s in %.1f", style="bold"),
                     step_name,
                     exc.__class__.__name__,
                     step_time,

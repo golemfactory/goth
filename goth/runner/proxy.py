@@ -109,7 +109,7 @@ class Proxy:
 
 
 @contextlib.asynccontextmanager
-async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
+async def run_proxy(proxy: Proxy) -> AsyncIterator[None]:
     """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
 
     try:

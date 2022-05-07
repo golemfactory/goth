@@ -134,8 +134,10 @@ class PatternMatchingEventMonitor(EventMonitor[E]):
 
         regex = re.compile(pattern)
         try:
-            event = await self.wait_for_event(
-                lambda e: regex.match(self.event_str(e)) is not None, timeout
+            event, _match = await self.wait_for_event(
+                lambda e: regex.match(self.event_str(e)),
+                name=pattern,
+                timeout=timeout,
             )
             return event
         except asyncio.TimeoutError:

@@ -14,8 +14,11 @@ from goth.address import (
 )
 
 
-CALLER_HEADER = "X-Caller"
-CALLEE_HEADER = "X-Callee"
+AGENT_HEADER = "X-Agent"
+"""HTTP header set by RouterAddon to indicate which agent made the request."""
+
+NODE_HEADER = "X-Node"
+"""HTTP header set by RouterAddon to indicate to which node the request was made."""
 
 
 class RouterAddon:
@@ -72,16 +75,17 @@ class RouterAddon:
             server_addr = req.headers["X-Server-Addr"]
             server_port = int(req.headers["X-Server-Port"])
             remote_addr = req.headers["X-Remote-Addr"]
-            agent_node = self._node_names[remote_addr]
+            agent_name = self._node_names[remote_addr]
 
             if server_port == YAGNA_REST_PORT:
                 # This should be a request from an agent running in a yagna container
                 # calling that container's daemon. We route this request to that
                 # container's host-mapped daemon port.
                 req.host = "127.0.0.1"
-                req.port = self._name_to_port[agent_node]
-                req.headers[CALLER_HEADER] = f"{agent_node}:agent"
-                req.headers[CALLEE_HEADER] = f"{agent_node}:daemon"
+                req.port = self._name_to_port[agent_name]
+                req.headers[AGENT_HEADER] = agent_name
+                # Agent and daemon are in the same node
+                req.headers[NODE_HEADER] = agent_name
 
             elif HOST_REST_PORT_START <= server_port <= HOST_REST_PORT_END:
                 # This should be a request from an agent running on the Docker host
@@ -90,9 +94,9 @@ class RouterAddon:
                 # mapped to a port on the host chosen from the specified range.
                 req.host = "127.0.0.1"
                 req.port = server_port
-                req.headers[CALLER_HEADER] = f"{agent_node}:agent"
-                daemon_node = self._port_to_name[server_port]
-                req.headers[CALLEE_HEADER] = f"{daemon_node}:daemon"
+                node_name = self._port_to_name[server_port]
+                req.headers[AGENT_HEADER] = agent_name
+                req.headers[NODE_HEADER] = node_name
 
             else:
                 flow.kill()
@@ -101,13 +105,13 @@ class RouterAddon:
             self._logger.debug(
                 "Request from %s for %s:%d/%s routed to %s at %s:%d",
                 # request caller:
-                req.headers[CALLER_HEADER],
+                req.headers[AGENT_HEADER],
                 # original host, port and path:
                 server_addr,
                 server_port,
                 req.path,
                 # request recipient:
-                req.headers[CALLEE_HEADER],
+                req.headers[NODE_HEADER],
                 # rewritten host and port:
                 req.host,
                 req.port,
