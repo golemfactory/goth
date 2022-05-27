@@ -242,7 +242,7 @@ class Probe(abc.ABC):
         self._logger.info("Waiting for yagna REST API to be listening")
         if self.container.logs:
             await self.container.logs.wait_for_entry(
-                "Starting .*actix-web-service.* service on .*.", timeout=30
+                "Http server thread started on:.*", timeout=30
             )
 
         # Obtain the IP address of the container
