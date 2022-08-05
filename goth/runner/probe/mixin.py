@@ -271,13 +271,13 @@ class PaymentApiMixin:
 
     @step()
     async def create_allocation(
-        self: ProbeProtocol, timeout: Optional[datetime] = None
+        self: ProbeProtocol, timeout: Optional[datetime] = None, total_amount = 0
     ) -> Allocation:
         """Call create_allocation on the market api."""
 
         allocation = Allocation(
             allocation_id="",
-            total_amount=0,
+            total_amount=total_amount,
             spent_amount=0,
             remaining_amount=0,
             make_deposit=True,
