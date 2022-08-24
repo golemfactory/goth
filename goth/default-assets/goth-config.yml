@@ -4,7 +4,6 @@
 # home directory.
 
 docker-compose:
-
   # Path to compose file to be used, relative to `docker-dir`
   compose-file: "docker-compose.yml"
   docker-dir: "docker/"
@@ -26,12 +25,9 @@ docker-compose:
     ethereum: ".*Wallets supplied."
     zksync: ".*Running on http://.*:3030/.*"
 
-
 key-dir: "keys"
 
-
 web-root: "web-root"
-
 
 node-types:
   # Each node type is a collection of attributes common to a group of nodes.
@@ -49,10 +45,11 @@ node-types:
         destination: "/root/.local/share/ya-provider/hardware.json"
       - read-write: "~/.local/share/ya-provider/vm-images"
         destination: "/root/.local/share/ya-provider/exe-unit/cache"
+      - read-write: "provider/cert_dir"
+        destination: "/root/.local/share/ya-provider/cert_dir"
     privileged-mode: True
 
 nodes:
-
   - name: "requestor"
     type: "Requestor"
     use-proxy: True
