@@ -91,7 +91,7 @@ class ProviderAgentComponent(AgentComponent):
             f"ya-provider run"
             f" --app-key {probe.app_key} --node-name {probe.name}"
             f" --subnet {self.subnet}",
-            f" --cert-dir /work/cert-dir",
+            " --cert-dir /work/cert-dir",
             stream=True,
         )
         self.log_monitor.start(log_stream.output)
