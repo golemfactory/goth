@@ -5,7 +5,7 @@
 
 docker-compose:
   # Path to compose file to be used, relative to `docker-dir`
-  compose-file: "docker-compose.yml"
+  compose-file: "docker-compose-hybrid-net.yml"
   docker-dir: "docker/"
 
   build-environment:
@@ -19,7 +19,7 @@ docker-compose:
     # branch: ...
     # commit-hash: ...
     # release-tag: ...
-    use-prerelease: false
+    use-prerelease: true
 
   compose-log-patterns:
     ethereum: ".*Wallets supplied."
