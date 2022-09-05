@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.13.0] - 2022-09-05
+
+### Breaking changes
+- default to the stable version unless specifically instructed not to [#595](https://github.com/golemfactory/goth/pull/595)
+
+### Other changes
+- Install dependencies in docker before installing yagna binaries [#591](https://github.com/golemfactory/goth/pull/591)
+- Outbound net test related changes [#592](https://github.com/golemfactory/goth/pull/592)
+- Allow total amount allocation [#589](https://github.com/golemfactory/goth/pull/589)
+
+## [0.12.0] - 2022-06-23
+
+### Breaking changes
+- Fix awaiting for yagna REST start [#587](https://github.com/golemfactory/goth/pull/587)
+
 ## [0.11.0] - 2022-03-05
 
 ### Breaking changes
