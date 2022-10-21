@@ -322,10 +322,10 @@ def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
     for (dict_path, value) in overrides:
         path_list: List[str] = dict_path.split(".")
 
-        leaf = dpath.util.get(dict_, path_list, default=None)
-        # if the path's last element does not exist, add it as a new dict
-        if not leaf:
-            leaf_name = path_list.pop()
-            value = {leaf_name: value}
+        for i in range(0, len(path_list)):
+            path = path_list[: i + 1]
 
-        dpath.util.new(dict_, path_list, value)
+            if dpath.util.get(dict_, path, default=None) is None:
+                dpath.util.new(dict_, path, {path_list[i - 1]: {}})
+
+        dpath.util.set(dict_, path_list, value)
