@@ -45,8 +45,8 @@ node-types:
         destination: "/root/.local/share/ya-provider/hardware.json"
       - read-write: "~/.local/share/ya-provider/vm-images"
         destination: "/root/.local/share/ya-provider/exe-unit/cache"
-      - read-write: "provider/cert_dir"
-        destination: "/root/.local/share/ya-provider/cert_dir"
+      - read-write: "provider/cert-dir"
+        destination: "/root/.local/share/ya-provider/cert-dir"
     privileged-mode: True
 
 nodes:
