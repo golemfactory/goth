@@ -3,5 +3,8 @@
     "outbound-manifest",
     "unverified-permissions-chain"
   ],
-  "c128af8c": []
+  "c128af8c": [
+    "outbound-manifest",
+    "unverified-permissions-chain"
+  ]
 }
