@@ -8,6 +8,8 @@ import copy
 import logging
 import os
 from pathlib import Path
+import shlex
+import signal
 import traceback
 from typing import (
     AsyncIterator,
@@ -389,7 +391,7 @@ class Probe(abc.ABC):
 
                 cmd_task = asyncio.create_task(
                     process.run_command(
-                        command.split(),
+                        shlex.split(command),
                         cmd_env,
                         log_level=logging.INFO,
                         cmd_logger=cmd_logger,
@@ -411,6 +413,15 @@ class Probe(abc.ABC):
 
         finally:
             await cmd_monitor.stop()
+
+            # ensure the process is killed before we leave
+            proc = await process_monitor.get_process()
+            try:
+                proc.send_signal(signal.SIGKILL)
+                await proc.wait()
+            except ProcessLookupError:
+                pass
+
             for assertion in cmd_monitor.failed:
                 raise TemporalAssertionError(assertion.name)
 

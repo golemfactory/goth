@@ -2,6 +2,7 @@
 import asyncio
 import os
 import pytest
+import signal
 from unittest.mock import MagicMock
 
 from goth.address import YAGNA_BUS_URL, YAGNA_REST_URL, YAGNA_REST_PORT
@@ -76,3 +77,17 @@ async def test_run_command_on_host(mock_probe):
     ):
 
         await monitor.wait_for_pattern(".*eChO", timeout=10)
+
+
+@pytest.mark.asyncio
+async def test_run_command_on_host_exception_leaves_no_process(mock_probe):
+    """Test if the started command doesn't linger on exception."""
+    with pytest.raises(RuntimeError):
+        async with mock_probe.run_command_on_host(
+            'python -c "import time; time.sleep(10)"',
+        ) as (_task, monitor, process_monitor):
+            proc: asyncio.subprocess.Process = await process_monitor.get_process()
+            raise RuntimeError("intentional")
+
+    with pytest.raises(ProcessLookupError):
+        proc.send_signal(signal.SIGKILL)
