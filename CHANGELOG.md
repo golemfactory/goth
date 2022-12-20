@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0] - 2022-12-20
+
+### Breaking changes
+- remove the `non-hybrid-net` goth configuration [#601](https://github.com/golemfactory/goth/pull/601)
+
+### Fixes
+- ensure `run_command_on_host` doesn't leave lingering processes. [#601](https://github.com/golemfactory/goth/pull/601)
+
 ## [0.13.0] - 2022-09-05
 
 ### Breaking changes
