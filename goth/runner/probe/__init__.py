@@ -251,14 +251,11 @@ class Probe(abc.ABC):
             )
 
         # Obtain the IP address of the container
-        self.ip_address = get_container_address(
-            self._docker_client, self.container.name
-        )
+        self.ip_address = get_container_address(self._docker_client, self.container.name)
         nginx_ip_address = self.runner.nginx_container_address
 
         self._logger.info(
-            "Yagna API host:port in Docker network: "
-            "%s:%s (direct), %s:%s (through proxy)",
+            "Yagna API host:port in Docker network: " "%s:%s (direct), %s:%s (through proxy)",
             self.ip_address,
             YAGNA_REST_PORT,
             nginx_ip_address,
@@ -302,9 +299,7 @@ class Probe(abc.ABC):
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
         except KeyAlreadyExistsError:
-            app_key = next(
-                filter(lambda k: k.name == key_name, self.cli.app_key_list())
-            )
+            app_key = next(filter(lambda k: k.name == key_name, self.cli.app_key_list()))
             key = app_key.key
         return key
 
@@ -356,9 +351,7 @@ class Probe(abc.ABC):
         command: str,
         env: Optional[Mapping[str, str]] = None,
         command_timeout: float = 300,
-    ) -> AsyncIterator[
-        Tuple[asyncio.Task, PatternMatchingEventMonitor, process.ProcessMonitor],
-    ]:
+    ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor, process.ProcessMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
         The command is run in the environment extending `env` with variables needed
@@ -385,9 +378,7 @@ class Probe(abc.ABC):
         process_monitor = process.ProcessMonitor()
 
         try:
-            with monitored_logger(
-                f"goth.{self.name}.command_output", cmd_monitor
-            ) as cmd_logger:
+            with monitored_logger(f"goth.{self.name}.command_output", cmd_monitor) as cmd_logger:
 
                 cmd_task = asyncio.create_task(
                     process.run_command(
@@ -437,9 +428,7 @@ def create_probe(
 
     probe: Optional[Probe] = None
     try:
-        logger.debug(
-            "Creating probe. config=%s, probe_type=%s", config, config.probe_type
-        )
+        logger.debug("Creating probe. config=%s, probe_type=%s", config, config.probe_type)
         probe = config.probe_type(runner, docker_client, config, log_config)
         for name, value in config.probe_properties.items():
             probe.__setattr__(name, value)

@@ -73,8 +73,6 @@ async def run_command(
 
         return_code = await proc.wait()
         if return_code:
-            raise CommandError(
-                f"Command exited abnormally. args={args}, return_code={return_code}"
-            )
+            raise CommandError(f"Command exited abnormally. args={args}, return_code={return_code}")
 
     await asyncio.wait_for(_run_command(), timeout=timeout)

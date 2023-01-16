@@ -107,10 +107,7 @@ class APIResponse(APIEvent):
         return self.http_response.content.decode("utf-8")
 
     def __str__(self) -> str:
-        return (
-            f"[response ({self.status_code})] "
-            f"{self.request.header_str}; body: {self.content}"
-        )
+        return f"[response ({self.status_code})] {self.request.header_str}; body: {self.content}"
 
 
 class APIError(APIEvent):
@@ -176,9 +173,7 @@ def is_collect_demands_request(event: APIEvent, sub_id: str = "") -> bool:
     """Check if `event` is a request of CollectDemants operation."""
 
     sub_id_re = sub_id if sub_id else "[^/]+"
-    return _match_event(
-        event, APIRequest, "GET", f"^/market-api/v1/offers/{sub_id_re}/events"
-    )
+    return _match_event(event, APIRequest, "GET", f"^/market-api/v1/offers/{sub_id_re}/events")
 
 
 def is_subscribe_offer_request(event: APIEvent) -> bool:
@@ -191,9 +186,7 @@ def is_unsubscribe_offer_request(event: APIEvent, sub_id: str = "") -> bool:
     """Check if `event` is a request of UnsubscribeOffer operation."""
 
     sub_id_re = sub_id if sub_id else "[^/]+"
-    return _match_event(
-        event, APIRequest, "DELETE", f"^/market-api/v1/offers/{sub_id_re}$"
-    )
+    return _match_event(event, APIRequest, "DELETE", f"^/market-api/v1/offers/{sub_id_re}$")
 
 
 def is_subscribe_offer_response(event: APIEvent) -> bool:
@@ -205,9 +198,7 @@ def is_subscribe_offer_response(event: APIEvent) -> bool:
 def is_invoice_send_response(event: APIEvent) -> bool:
     """Check if `event` is a response for InvoiceSend operation."""
 
-    return _match_event(
-        event, APIResponse, "POST", "^/payment-api/v1/provider/invoices/.*/send$"
-    )
+    return _match_event(event, APIResponse, "POST", "^/payment-api/v1/provider/invoices/.*/send$")
 
 
 def get_response_json(event: APIEvent):

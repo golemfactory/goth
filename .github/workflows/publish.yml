@@ -26,14 +26,11 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Run black formatter in check mode
-        run: poetry run poe codeformat
-      
-      - name: Run flake8 codestyle checker
-        run: poetry run poe codestyle
+      - name: Run formatters in check mode
+        run: poetry run poe checks_codestyle
 
       - name: Run unit tests
-        run: poetry run poe unit_test
+        run: poetry run poe tests_unit
 
   build:
     needs: [test]

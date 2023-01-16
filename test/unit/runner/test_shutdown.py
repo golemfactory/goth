@@ -28,9 +28,7 @@ def apply_global_monkeypatches(monkeypatch):
     monkeypatch.setattr(docker, "from_env", mock.MagicMock())
     monkeypatch.setattr(goth.runner.probe, "get_container_address", mock.MagicMock())
     monkeypatch.setattr(goth.runner.probe.Probe, "name", mock.MagicMock())
-    monkeypatch.setattr(
-        ComposeNetworkManager, "network_gateway_address", mock.MagicMock()
-    )
+    monkeypatch.setattr(ComposeNetworkManager, "network_gateway_address", mock.MagicMock())
     monkeypatch.setattr(Probe, "ip_address", mock.MagicMock())
 
 
@@ -105,9 +103,7 @@ def mock_function(monkeypatch):
 
 
 MOCK_CONTAINER_INFO = {
-    "whatever": ContainerInfo(
-        "doesn't really matter", PROXY_NGINX_SERVICE_NAME, "who cares?"
-    )
+    "whatever": ContainerInfo("doesn't really matter", PROXY_NGINX_SERVICE_NAME, "who cares?")
 }
 
 
@@ -160,9 +156,7 @@ async def test_runner_startup_shutdown(
         manager_start_fails,
         result=MOCK_CONTAINER_INFO,
     )
-    manager_stop_network = mock_function(
-        ComposeNetworkManager, "stop_network", manager_stop_fails
-    )
+    manager_stop_network = mock_function(ComposeNetworkManager, "stop_network", manager_stop_fails)
     web_server_start = mock_function(WebServer, "start", webserver_start_fails)
     web_server_stop = mock_function(WebServer, "stop", webserver_stop_fails)
     probe_init = mock_function(
@@ -173,9 +167,7 @@ async def test_runner_startup_shutdown(
     probe_stop = mock_function(Probe, "stop", probe_stop_fails)
     proxy_start = mock_function(Proxy, "start", proxy_start_fails)
     proxy_stop = mock_function(Proxy, "stop", proxy_stop_fails)
-    runner_check_assertions = mock_function(
-        Runner, "check_assertion_errors", check_assertion_fails
-    )
+    runner_check_assertions = mock_function(Runner, "check_assertion_errors", check_assertion_fails)
 
     runner = mock_runner()
 

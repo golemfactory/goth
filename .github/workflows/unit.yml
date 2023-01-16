@@ -31,4 +31,4 @@ jobs:
         run: poetry install
 
       - name: Run unit tests
-        run: poetry run poe unit_test
+        run: poetry run poe tests_unit

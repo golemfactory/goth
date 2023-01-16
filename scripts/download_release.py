@@ -31,9 +31,7 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument("-t", "--token", default=DEFAULT_TOKEN)
-parser.add_argument(
-    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
-)
+parser.add_argument("-v", "--verbose", help="If set, enables debug logging.", action="store_true")
 parser.add_argument(
     "-T",
     "--tag",
@@ -46,6 +44,4 @@ parser.add_argument("repo", help="Name of the git repository to be used.")
 if __name__ == "__main__":
     args = parser.parse_args()
     downloader = ReleaseDownloader(args.repo, token=args.token, verbose=args.verbose)
-    downloader.download(
-        args.name, args.content_type, args.output, args.tag, args.unstable
-    )
+    downloader.download(args.name, args.content_type, args.output, args.tag, args.unstable)
