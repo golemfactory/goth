@@ -32,8 +32,5 @@ jobs:
         # TODO install dev dependencies only (https://github.com/python-poetry/poetry/issues/2572)
         run: poetry install --no-root
 
-      - name: Run black formatter in check mode
-        run: poetry run poe codeformat
-      
-      - name: Run flake8 codestyle checker
-        run: poetry run poe codestyle
+      - name: Run formatters in check mode
+        run: poetry run poe checks_codestyle

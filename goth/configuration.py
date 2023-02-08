@@ -299,9 +299,7 @@ def load_yaml(
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
 
-            payment_config_name = node.get(
-                "payment-config", DEFAULT_PAYMENT_CONFIG_NAME
-            )
+            payment_config_name = node.get("payment-config", DEFAULT_PAYMENT_CONFIG_NAME)
             payment_config = get_payment_config(payment_config_name)
 
             class_, volumes, privileged_mode, env_dict = node_types[type_name]

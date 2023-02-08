@@ -46,9 +46,7 @@ class RouterAddon:
     `name_to_port` should be injective so the inverse map should be well defined.
     """
 
-    def __init__(
-        self, node_names: Mapping[str, str], ports: Mapping[str, Mapping[int, int]]
-    ):
+    def __init__(self, node_names: Mapping[str, str], ports: Mapping[str, Mapping[int, int]]):
         self._logger = logging.getLogger(__name__)
         self._node_names = node_names
         self._name_to_port = {}

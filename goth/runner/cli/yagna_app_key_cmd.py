@@ -34,9 +34,7 @@ class YagnaAppKeyMixin:
         Return the application key parsed from the command's output.
         """
 
-        args = make_args(
-            "app-key", "create", name, role=role, id=alias_or_addr, data_dir=data_dir
-        )
+        args = make_args("app-key", "create", name, role=role, id=alias_or_addr, data_dir=data_dir)
         try:
             output = self.run_json_command(str, *args)
             return output
@@ -45,9 +43,7 @@ class YagnaAppKeyMixin:
                 raise KeyAlreadyExistsError(name)
             raise ce
 
-    def app_key_drop(
-        self: CommandRunner, name: str, address: str = "", data_dir: str = ""
-    ) -> str:
+    def app_key_drop(self: CommandRunner, name: str, address: str = "", data_dir: str = "") -> str:
         """Run `<cmd> app-key drop <name>` with optional extra args.
 
         Return the command's output.

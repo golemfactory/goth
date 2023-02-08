@@ -113,10 +113,7 @@ class ComposeNetworkManager:
         await build_yagna_image(self.config.build_env)
         await build_proxy_image(self.config.build_env.docker_dir)
 
-        if (
-            force_build
-            or self.config.file_path != ComposeNetworkManager._last_compose_path
-        ):
+        if force_build or self.config.file_path != ComposeNetworkManager._last_compose_path:
             command.append("--build")
 
         await run_command(command, env={**os.environ})
@@ -126,9 +123,7 @@ class ComposeNetworkManager:
         await self._wait_for_containers()
         container_infos = self._get_running_containers()
         for name, info in container_infos.items():
-            logger.info(
-                "[%-25s] IP address: %-15s image: %s", name, info.address, info.image
-            )
+            logger.info("[%-25s] IP address: %-15s image: %s", name, info.address, info.image)
         return container_infos
 
     async def _wait_for_containers(self) -> None:
@@ -156,15 +151,11 @@ class ComposeNetworkManager:
         All containers except those with names in `excluded_containers` are
         disconnected.
         """
-        networks = self._docker_client.networks.list(
-            names=[DockerContainer.DEFAULT_NETWORK]
-        )
+        networks = self._docker_client.networks.list(names=[DockerContainer.DEFAULT_NETWORK])
         if networks:
             compose_network: Network = networks[0]
             compose_network.reload()
-            connected_containers = [
-                c["Name"] for c in compose_network.attrs["Containers"].values()
-            ]
+            connected_containers = [c["Name"] for c in compose_network.attrs["Containers"].values()]
             yagna_containers = [
                 name for name in connected_containers if name not in excluded_containers
             ]
@@ -193,9 +184,7 @@ class ComposeNetworkManager:
 
         self._disconnect_containers(compose_containers or [])
 
-        await run_command(
-            ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"]
-        )
+        await run_command(["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"])
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
@@ -229,9 +218,7 @@ class ComposeNetworkManager:
     def _get_running_containers(self) -> Dict[str, ContainerInfo]:
         info = {}
         for container in self._docker_client.containers.list():
-            address, aliases = get_container_network_info(
-                self._docker_client, container.name
-            )
+            address, aliases = get_container_network_info(self._docker_client, container.name)
             image = container.image.tags[0]
             info[container.name] = ContainerInfo(address, aliases, image)
         return info
@@ -242,17 +229,13 @@ class ComposeNetworkManager:
             log_config.base_dir = log_dir
             monitor = LogEventMonitor(service_name, log_config)
 
-            containers = self._docker_client.containers.list(
-                filters={"name": service_name}
-            )
+            containers = self._docker_client.containers.list(filters={"name": service_name})
             if not containers:
                 raise ContainerNotFoundError(service_name)
             container = containers[0]
 
             monitor.start(
-                container.logs(
-                    follow=True, since=datetime.utcnow(), stream=True, timestamps=True
-                )
+                container.logs(follow=True, since=datetime.utcnow(), stream=True, timestamps=True)
             )
             self._log_monitors[service_name] = monitor
 
@@ -268,9 +251,7 @@ async def run_compose_network(
 
     compose_containers = []
     try:
-        logger.debug(
-            "Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build
-        )
+        logger.debug("Starting compose network. log_dir=%s, force_build=%s", log_dir, force_build)
         containers = await compose_manager.start_network(log_dir, force_build)
         compose_containers = list(containers.keys())
         yield containers

@@ -168,9 +168,7 @@ def _find_expected_binaries(root_path: Path) -> List[Path]:
     return binary_paths
 
 
-def _setup_build_context(
-    context_dir: Path, env: YagnaBuildEnvironment, dockerfile: Path
-) -> None:
+def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment, dockerfile: Path) -> None:
     """Set up the build context for `docker build` command.
 
     This function prepares a directory to be used as build context for
@@ -180,9 +178,7 @@ def _setup_build_context(
     """
     env_dict: dict = asdict(env)
     filtered_env = {k: v for k, v in env_dict.items() if v is not None}
-    logger.info(
-        "Setting up Docker build context. path=%s, env=%s", context_dir, filtered_env
-    )
+    logger.info("Setting up Docker build context. path=%s, env=%s", context_dir, filtered_env)
 
     context_binary_dir: Path = context_dir / "bin"
     context_deb_dir: Path = context_dir / "deb"
@@ -222,7 +218,5 @@ def _setup_build_context(
         for repo in DEB_RELEASE_REPOS:
             _download_release(context_deb_dir, repo)
 
-    logger.debug(
-        "Copying Dockerfile. source=%s, destination=%s", dockerfile, context_dir
-    )
+    logger.debug("Copying Dockerfile. source=%s, destination=%s", dockerfile, context_dir)
     shutil.copy2(dockerfile, context_dir / "Dockerfile")

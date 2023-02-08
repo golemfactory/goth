@@ -272,10 +272,8 @@ async def test_assertion_results_reported(caplog):
     await monitor.stop()
 
     assert any(
-        record.levelname == "ERROR" and "failed" in record.message
-        for record in caplog.records
+        record.levelname == "ERROR" and "failed" in record.message for record in caplog.records
     )
     assert any(
-        record.levelname == "INFO" and "I'm fine!" in record.message
-        for record in caplog.records
+        record.levelname == "INFO" and "I'm fine!" in record.message for record in caplog.records
     )

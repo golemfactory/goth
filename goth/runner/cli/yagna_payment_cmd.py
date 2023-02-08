@@ -31,12 +31,8 @@ class PaymentStatus:
         """Parse a dict into an instance of `PaymentStatus`."""
         return PaymentStatus(
             amount=float(source["amount"]),
-            incoming=Payments(
-                **{key: float(value) for key, value in source["incoming"].items()}
-            ),
-            outgoing=Payments(
-                **{key: float(value) for key, value in source["outgoing"].items()}
-            ),
+            incoming=Payments(**{key: float(value) for key, value in source["incoming"].items()}),
+            outgoing=Payments(**{key: float(value) for key, value in source["outgoing"].items()}),
             reserved=float(source["reserved"]),
         )
 

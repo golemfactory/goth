@@ -122,9 +122,7 @@ class ArtifactDownloader(GithubDownloader):
                 logger.debug("latest_run=%s", json.dumps(obj2dict(latest_run)))
                 return latest_run
             else:
-                logger.debug(
-                    "page.workflow_runs=%s", json.dumps(obj2dict(page.workflow_runs))
-                )
+                logger.debug("page.workflow_runs=%s", json.dumps(obj2dict(page.workflow_runs)))
 
         return None
 
@@ -192,9 +190,7 @@ class ArtifactDownloader(GithubDownloader):
         workflow = self._get_workflow(workflow_name)
         latest_run = self._get_latest_run(workflow, branch, commit)
         if not latest_run:
-            raise RuntimeError(
-                f"Failed to find latest workflow run. workflow_name={workflow_name}"
-            )
+            raise RuntimeError(f"Failed to find latest workflow run. workflow_name={workflow_name}")
         artifact = self._get_artifact(artifact_name, latest_run)
         if not artifact:
             raise AssetNotFound(f"Artifact not found. name={artifact_name}")
@@ -249,9 +245,7 @@ class ReleaseDownloader(GithubDownloader):
             has_matching_tag = tag_substring in release["tag_name"]
             return has_matching_asset and has_matching_tag
 
-        matching_releases = (
-            rel for rel in all_releases if release_filter(rel, tag_substring)
-        )
+        matching_releases = (rel for rel in all_releases if release_filter(rel, tag_substring))
         return next(matching_releases, None)
 
     def _get_asset(
@@ -301,15 +295,13 @@ class ReleaseDownloader(GithubDownloader):
         release = self._get_latest_release(tag_substring, content_type, use_unstable)
         if not release:
             raise AssetNotFound(
-                f"Could not find release. "
-                f"repo={self.repo_name}, tag_substring={tag_substring}"
+                f"Could not find release. repo={self.repo_name}, tag_substring={tag_substring}"
             )
 
         asset = self._get_asset(release, content_type, asset_name)
         if not asset:
             raise AssetNotFound(
-                f"Could not find asset. "
-                f"content_type={content_type}, asset_name={asset_name}"
+                f"Could not find asset. content_type={content_type}, asset_name={asset_name}"
             )
 
         logger.debug("Found matching asset. name=%s", asset["name"])

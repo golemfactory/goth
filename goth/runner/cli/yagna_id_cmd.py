@@ -34,9 +34,7 @@ class YagnaIdMixin:
         )
         output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
-        return Identity(
-            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"]
-        )
+        return Identity(result["alias"], result["isDefault"], result["isLocked"], result["nodeId"])
 
     def id_show(
         self: CommandRunner, data_dir: str = "", alias_or_addr: str = ""
@@ -74,11 +72,7 @@ class YagnaIdMixin:
         """Return the output of `<yagna-cmd> id update`."""
 
         set_default_str = "--set-default" if set_default else None
-        args = make_args(
-            "id", "update", alias_or_addr, set_default_str, data_dir=data_dir
-        )
+        args = make_args("id", "update", alias_or_addr, set_default_str, data_dir=data_dir)
         output = self.run_json_command(Dict, *args)
         result = unwrap_ok_err_json(output)
-        return Identity(
-            result["alias"], result["isDefault"], result["isLocked"], result["nodeId"]
-        )
+        return Identity(result["alias"], result["isDefault"], result["isLocked"], result["nodeId"])

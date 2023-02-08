@@ -29,9 +29,7 @@ class DefaultTemplate(Template):
 
     def substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
         """Replace values in string with `mapping`, merge default and mapping first."""
-        return super(DefaultTemplate, self).substitute(
-            self._with_default(mapping or {}), **kwargs
-        )
+        return super(DefaultTemplate, self).substitute(self._with_default(mapping or {}), **kwargs)
 
     def safe_substitute(self, mapping: Optional[Mapping[str, object]] = None, **kwargs):
         """Replace values in string with `mapping`, merge default and mapping first.

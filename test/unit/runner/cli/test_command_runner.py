@@ -20,9 +20,7 @@ from goth.runner.exceptions import CommandError
         ("echo STDERR >&2", "", "STDERR\n"),
     ],
 )
-def test_output_demultiplexing(
-    yagna_container, command, expected_stdout, expected_stderr
-):
+def test_output_demultiplexing(yagna_container, command, expected_stdout, expected_stderr):
     """Test that stdout/stderr from a command are demultiplexed."""
 
     runner = DockerJSONCommandRunner(yagna_container, "/bin/sh")

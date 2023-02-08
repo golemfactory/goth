@@ -46,9 +46,7 @@ class LogEvent:
             result = match.groupdict()
 
             try:
-                formatted_time = datetime.strptime(
-                    result["datetime"], "%Y-%m-%dT%H:%M:%S.%f%z"
-                )
+                formatted_time = datetime.strptime(result["datetime"], "%Y-%m-%dT%H:%M:%S.%f%z")
             except Exception:
                 pass
             else:
@@ -122,9 +120,7 @@ class PatternMatchingEventMonitor(EventMonitor[E]):
         """Return the string associated with `event` on which to perform matching."""
         return str(event)
 
-    async def wait_for_pattern(
-        self, pattern: str, timeout: Optional[float] = None
-    ) -> E:
+    async def wait_for_pattern(self, pattern: str, timeout: Optional[float] = None) -> E:
         """Wait for an event with string representation matching `pattern`.
 
         The semantics for this method is as for
@@ -140,8 +136,7 @@ class PatternMatchingEventMonitor(EventMonitor[E]):
             return event
         except asyncio.TimeoutError:
             raise goth_exceptions.TimeoutError(
-                f"Log monitor timed out waiting for event. "
-                f"pattern={pattern}, timeout={timeout}"
+                f"Log monitor timed out waiting for event. pattern={pattern}, timeout={timeout}"
             )
 
 
@@ -209,9 +204,7 @@ class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
         except goth_exceptions.StopThreadException:
             return
 
-    async def wait_for_entry(
-        self, pattern: str, timeout: Optional[float] = None
-    ) -> LogEvent:
+    async def wait_for_entry(self, pattern: str, timeout: Optional[float] = None) -> LogEvent:
         """Search log for a log entry with the message matching `pattern`.
 
         The first call to this method will examine all log entries gathered

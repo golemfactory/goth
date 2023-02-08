@@ -51,16 +51,10 @@ parser.add_argument(
             By default, this value is obtained from env variable GITHUB_API_TOKEN.",
 )
 parser.add_argument("-w", "--workflow", default=DEFAULT_WORKFLOW)
-parser.add_argument(
-    "-v", "--verbose", help="If set, enables debug logging.", action="store_true"
-)
+parser.add_argument("-v", "--verbose", help="If set, enables debug logging.", action="store_true")
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    downloader = ArtifactDownloader(
-        repo=args.repo, token=args.token, verbose=args.verbose
-    )
-    downloader.download(
-        args.artifact, args.branch, args.commit, args.output, args.workflow
-    )
+    downloader = ArtifactDownloader(repo=args.repo, token=args.token, verbose=args.verbose)
+    downloader.download(args.artifact, args.branch, args.commit, args.output, args.workflow)

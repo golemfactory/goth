@@ -7,9 +7,7 @@ from goth.runner.cli.yagna_payment_cmd import YagnaPaymentMixin
 from goth.runner.container import DockerContainer
 
 
-class YagnaDockerCli(
-    DockerJSONCommandRunner, YagnaAppKeyMixin, YagnaIdMixin, YagnaPaymentMixin
-):
+class YagnaDockerCli(DockerJSONCommandRunner, YagnaAppKeyMixin, YagnaIdMixin, YagnaPaymentMixin):
     """A class for running the `yagna` command inside a docker container."""
 
     def __init__(self, container: DockerContainer):

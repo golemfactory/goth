@@ -180,20 +180,12 @@ class Assertion(AsyncIterable[E]):
     @property
     def accepted(self) -> bool:
         """Return `True` iff this assertion finished execution successfuly."""
-        return (
-            self._task is not None
-            and self._task.done()
-            and self._task.exception() is None
-        )
+        return self._task is not None and self._task.done() and self._task.exception() is None
 
     @property
     def failed(self) -> bool:
         """Return `True` iff this assertion finished execution by failing."""
-        return (
-            self._task is not None
-            and self._task.done()
-            and self._task.exception() is not None
-        )
+        return self._task is not None and self._task.done() and self._task.exception() is not None
 
     def result(self) -> Any:
         """Return the result of this assertion.
