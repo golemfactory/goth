@@ -61,7 +61,7 @@ def create_gftp_dirs(requestor_container: str) -> Tuple[Path, Path]:
         script_file.writelines(
             [
                 "#!/bin/sh\n",
-                f"python -m goth.gftp {requestor_container} {volume_dir} $*\n",
+                f"{sys.executable} -m goth.gftp {requestor_container} {volume_dir} $*\n",
             ]
         )
     stats = os.stat(script_path)
