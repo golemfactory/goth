@@ -4,6 +4,7 @@ import contextlib
 import logging
 import threading
 from typing import AsyncIterator, Mapping, Optional
+from unittest import mock
 
 from mitmproxy import options
 import mitmproxy.utils.debug
@@ -83,24 +84,19 @@ class Proxy:
                 inner_self.addons.add(RouterAddon(self._node_names, self._ports))
                 inner_self.addons.add(MonitorAddon(self.monitor))
 
-            def start(inner_self):
-                super().start()
+            async def running(inner_self) -> None:
+                await super().running()
                 self._mitmproxy_runner = inner_self
                 self._logger.info("Embedded mitmproxy started")
                 self._server_ready.set()
 
         try:
-            loop = asyncio.new_event_loop()
-            # Monkey patch the loop to set its `add_signal_handler` method to no-op.
-            # The original method would raise error since the loop will run in
-            # a non-main thread and hence cannot have signal handlers installed.
-            loop.add_signal_handler = lambda *args_: None
-            asyncio.set_event_loop(loop)
-
             self._logger.info("Starting embedded mitmproxy...")
 
             args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
-            main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+
+            with mock.patch("mitmproxy.tools.main.signal.signal", mock.Mock()):
+                main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
 
         except Exception:
             self._logger.exception("Exception in mitmproxy thread")

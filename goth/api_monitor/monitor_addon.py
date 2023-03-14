@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Optional
 
-from mitmproxy.http import HTTPFlow, HTTPRequest
+from mitmproxy.http import HTTPFlow, Request
 
 from goth.api_monitor.api_events import (
     APIEvent,
@@ -21,7 +21,7 @@ class MonitorAddon:
     """This add-on keeps track of API requests and responses."""
 
     _monitor: EventMonitor[APIEvent]
-    _pending_requests: Dict[HTTPRequest, APIRequest]
+    _pending_requests: Dict[Request, APIRequest]
     _num_requests: int
     _logger: logging.Logger
 
@@ -36,7 +36,7 @@ class MonitorAddon:
     def _register_event(self, event: APIEvent) -> None:
         """Log an API event and add it to the monitor."""
 
-        self._logger.debug("%s", event)
+        self._logger.info("%s", event)
         self._monitor.add_event_sync(event)
 
     def request(self, flow: HTTPFlow) -> None:

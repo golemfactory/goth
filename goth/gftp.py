@@ -51,6 +51,7 @@ def create_gftp_dirs(requestor_container: str) -> Tuple[Path, Path]:
       running the `gftp` binary at `CONTAINER_MOUNT_POINT`; the wrapper script
       will be set up to read files from, and store them in this directory.
     """
+
     volume_dir = Path(tempfile.mkdtemp())
     (volume_dir / "in").mkdir()
     (volume_dir / "out").mkdir()
@@ -61,7 +62,7 @@ def create_gftp_dirs(requestor_container: str) -> Tuple[Path, Path]:
         script_file.writelines(
             [
                 "#!/bin/sh\n",
-                f"python -m goth.gftp {requestor_container} {volume_dir} $*\n",
+                f"{sys.executable} -m goth.gftp {requestor_container} {volume_dir} $*\n",
             ]
         )
     stats = os.stat(script_path)
