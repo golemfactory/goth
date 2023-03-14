@@ -151,6 +151,8 @@ class Assertion(AsyncIterable[E]):
             """
             try:
                 return await self._func(self)
+            except asyncio.CancelledError:
+                raise AssertionError(f"Assertion cancelled: {self}")
             finally:
                 self._notify_update_events()
 
@@ -176,21 +178,14 @@ class Assertion(AsyncIterable[E]):
         return self.accepted or self.failed
 
     @property
-    def exception(self):
-        try:
-            return self._task.exception()
-        except asyncio.CancelledError:
-            return AssertionError(f"Assertion cancelled: {self.name}")
-
-    @property
     def accepted(self) -> bool:
         """Return `True` iff this assertion finished execution successfuly."""
-        return self._task is not None and self._task.done() and self.exception is None
+        return self._task is not None and self._task.done() and self._task.exception() is None
 
     @property
     def failed(self) -> bool:
         """Return `True` iff this assertion finished execution by failing."""
-        return self._task is not None and self._task.done() and self.exception is not None
+        return self._task is not None and self._task.done() and self._task.exception() is not None
 
     def result(self) -> Any:
         """Return the result of this assertion.
@@ -204,10 +199,6 @@ class Assertion(AsyncIterable[E]):
         """
         if not self._task:
             raise asyncio.InvalidStateError("Assertion not started")
-
-        exc = self.exception
-        if exc:
-            raise exc
 
         return self._task.result()
 
@@ -228,7 +219,7 @@ class Assertion(AsyncIterable[E]):
         finally:
             # This is to retrieve exception from `self._task` so no unretrieved
             # exceptions are reported when the event loop closes.
-            _ = self.exception
+            _ = self._task.exception()
 
     async def update_events(self, events_ended: bool = False) -> None:
         """Notify the assertion that a new event has been added."""
