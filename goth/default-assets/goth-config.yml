@@ -47,6 +47,8 @@ node-types:
         destination: "/root/.local/share/ya-provider/exe-unit/cache"
       - read-write: "provider/cert-dir"
         destination: "/root/.local/share/ya-provider/cert-dir"
+      - read-write: "provider/rules.json"
+        destination: "/root/.local/share/ya-provider/rules.json"
     privileged-mode: True
 
 nodes:
