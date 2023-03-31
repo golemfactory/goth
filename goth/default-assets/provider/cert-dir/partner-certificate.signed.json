@@ -1,0 +1,67 @@
+{
+  "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+  "certificate": {
+    "validityPeriod": {
+      "notBefore": "2023-01-01T00:00:00Z",
+      "notAfter": "2025-01-01T00:00:00Z"
+    },
+    "keyUsage": [
+      "signNode"
+    ],
+    "permissions": {
+      "outbound": "unrestricted"
+    },
+    "subject": {
+      "displayName": "Example partner cert",
+      "contact": {
+        "email": "example@partner.tld"
+      }
+    },
+    "publicKey": {
+      "algorithm": "EdDSA",
+      "key": "1ea5e52503bb6cc26c3e29cadd3a3142a60dfbbc5956b1f15d791cef13abb0ea",
+      "parameters": {
+        "scheme": "Ed25519"
+      }
+    }
+  },
+  "signature": {
+    "algorithm": {
+      "hash": "sha512",
+      "encryption": "EdDSA"
+    },
+    "value": "74122f37e5f17a262afa535df8669e50ac810e49774f13574750ad9c9236da60adf26c81615331c531a9a39336adf7ca62d6909448b133394581bc4e4cefc700",
+    "signer": {
+      "$schema": "https://golem.network/schemas/v1/certificate.schema.json",
+      "certificate": {
+        "validityPeriod": {
+          "notBefore": "2000-01-01T00:00:00Z",
+          "notAfter": "2030-01-01T00:00:00Z"
+        },
+        "keyUsage": "all",
+        "permissions": "all",
+        "subject": {
+          "displayName": "Example root cert",
+          "contact": {
+            "email": "root-example@golem.network"
+          }
+        },
+        "publicKey": {
+          "algorithm": "EdDSA",
+          "key": "1497d5430205a082dc58cf571b3a579d7fe6fbf2ad3edec7cb7fbf5ec4ccba72",
+          "parameters": {
+            "scheme": "Ed25519"
+          }
+        }
+      },
+      "signature": {
+        "algorithm": {
+          "hash": "sha512",
+          "encryption": "EdDSA"
+        },
+        "value": "b9b2d783d4dc7f6b139a74c01ef6340aeed19dc0e3fd117eefe7fe109f8686da9ec2b942cb18c7d3c705c9d28f6e13b579903b6f3c1595dbe5ce24da3501bc0e",
+        "signer": "self"
+      }
+    }
+  }
+}
