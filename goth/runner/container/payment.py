@@ -157,7 +157,7 @@ class PaymentIdPool:
             key = self._key_pool.popitem()[1]
             logger.info("Next key: %s", key)
             return key
-        except StopIteration:
+        except KeyError:
             raise KeyPoolDepletedError()
 
     def _find_key(self, address: str) -> EthKey:
@@ -165,8 +165,8 @@ class PaymentIdPool:
             key = self._key_pool.pop(address)
             logger.info("Found key: %s", key)
             return key
-        except StopIteration:
-            raise KeyPoolDepletedError()
+        except KeyError:
+            raise KeyPoolNotFoundError()
 
     def _key_from_file(self, path: Path) -> EthKey:
         with path.open() as fd:
