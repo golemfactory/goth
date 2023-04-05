@@ -81,7 +81,7 @@ class Configuration:
         if environment:
             node_env.update(environment)
 
-        payment_id=self._id_pool.get_id(payment_config, address=address)
+        payment_id = self._id_pool.get_id(payment_config, address=address)
         container_cfg = YagnaContainerConfig(
             name=name,
             probe_type=type,
@@ -316,7 +316,7 @@ def load_yaml(
                 environment=env_dict,
                 volumes=volumes,
                 payment_config=payment_config,
-                address=address
+                address=address,
             )
 
     return config

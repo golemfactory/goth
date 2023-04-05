@@ -18,6 +18,7 @@ DEFAULT_KEY_DIR = Path(DEFAULT_ASSETS_DIR / "keys")
 
 logger = logging.getLogger(__name__)
 
+
 def get_id_directory() -> Path:
     """Return temporary directory used for storing generated payment IDs."""
     temp_id_dir = Path(gettempdir(), "goth_payment_id")
@@ -37,11 +38,13 @@ class KeyPoolDepletedError(Exception):
     def __init__(self):
         super().__init__("No more pre-funded Ethereum keys available.")
 
+
 class KeyPoolNotFoundError(Exception):
     """Error raised when failed to find available pre-funded Ethereum key."""
 
     def __init__(self):
         super().__init__("Failed to find available pre-funded Ethereum key.")
+
 
 @dataclass
 class Account:
@@ -104,6 +107,7 @@ class PaymentId:
             json.dump(asdict(self.key), fd)
         return key_path
 
+
 class PaymentIdPool:
     """Class used for generating yagna payment IDs based on a pool of Ethereum keys.
 
@@ -155,7 +159,7 @@ class PaymentIdPool:
             return key
         except StopIteration:
             raise KeyPoolDepletedError()
-        
+
     def _find_key(self, address: str) -> EthKey:
         try:
             key = self._key_pool.pop(address)
