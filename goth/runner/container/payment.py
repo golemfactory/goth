@@ -39,7 +39,7 @@ class KeyPoolDepletedError(Exception):
         super().__init__("No more pre-funded Ethereum keys available.")
 
 
-class KeyPoolNotFoundError(Exception):
+class KeyNotFoundError(Exception):
     """Error raised when failed to find available pre-funded Ethereum key."""
 
     def __init__(self):
@@ -166,7 +166,7 @@ class PaymentIdPool:
             logger.info("Found key: %s", key)
             return key
         except KeyError:
-            raise KeyPoolNotFoundError()
+            raise KeyNotFoundError()
 
     def _key_from_file(self, path: Path) -> EthKey:
         with path.open() as fd:
