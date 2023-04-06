@@ -83,9 +83,7 @@ class YagnaContainer(DockerContainer):
     """ Port mapping between the Docker host and the container.
         Keys are container port numbers, values are host port numbers. """
 
-    host_port_range: ClassVar[Iterator[int]] = iter(
-        range(HOST_REST_PORT_START, HOST_REST_PORT_END)
-    )
+    host_port_range: ClassVar[Iterator[int]] = iter(range(HOST_REST_PORT_START, HOST_REST_PORT_END))
     """ Keeps track of assigned ports on the Docker host """
 
     def __init__(

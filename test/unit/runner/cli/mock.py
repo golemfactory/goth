@@ -27,9 +27,7 @@ class MockYagnaCLI:
     id_values: List[Identity]
     key_list = {"headers": ["name", "key", "id", "role", "created"], "values": []}
     key_values: List[AppKeyInfo]
-    payment_status_value = PaymentStatus(
-        0, Payments(0, 0, 0, 0), Payments(0, 0, 0, 0), 0
-    )
+    payment_status_value = PaymentStatus(0, Payments(0, 0, 0, 0), Payments(0, 0, 0, 0), 0)
 
     def __init__(self):
         """Create a MockYagnaCLI."""
@@ -54,9 +52,7 @@ class MockYagnaCLI:
                 "payment": {"init": self.payment_status, "status": self.payment_status},
             },
         }
-        self.id_values = [
-            Identity(alias="", is_default=True, is_locked=False, address="")
-        ]
+        self.id_values = [Identity(alias="", is_default=True, is_locked=False, address="")]
         self.key_values = []
 
     def is_ipv4(self, value):
@@ -116,9 +112,7 @@ class MockYagnaCLI:
     def echo_demux(self, _options, cmd):
         """Mock function of command line interface of yagna docker container."""
         command = re.search(r"\'(.*?)\'", cmd).group(1)
-        proc = subprocess.Popen(
-            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         result = proc.communicate()
         if proc.returncode != 0:
@@ -151,9 +145,7 @@ class MockYagnaCLI:
         alias = None
 
         if self.is_ipv4(key_id):
-            result_alias = [
-                value for value in self.id_values if value.address == key_id
-            ]
+            result_alias = [value for value in self.id_values if value.address == key_id]
             alias = result_alias[0].alias
             alias = alias if alias else key_id
         else:
@@ -164,9 +156,7 @@ class MockYagnaCLI:
             if key_id
             else self.key_values
         )
-        self.key_list["values"] = [
-            list(asdict(value).values()) for value in key_value_list
-        ]
+        self.key_list["values"] = [list(asdict(value).values()) for value in key_value_list]
         return (json.dumps(self.key_list).encode("utf-8"), b"")
 
     def create_id(self, options, cmd):
@@ -202,9 +192,7 @@ class MockYagnaCLI:
             if not self.is_ipv4(alias_or_addr):
                 filter_key = "alias"
             result_list = [
-                value
-                for value in self.id_values
-                if getattr(value, filter_key) == alias_or_addr
+                value for value in self.id_values if getattr(value, filter_key) == alias_or_addr
             ]
         if len(result_list) < 1:
             result = {"Ok": None}

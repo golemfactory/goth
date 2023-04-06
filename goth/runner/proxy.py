@@ -7,7 +7,7 @@ from typing import AsyncIterator, Mapping, Optional
 
 from mitmproxy import options
 import mitmproxy.utils.debug
-from mitmproxy.tools import _main, cmdline, dump
+from mitmproxy.tools import main, cmdline, dump
 
 from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
@@ -100,7 +100,7 @@ class Proxy:
             self._logger.info("Starting embedded mitmproxy...")
 
             args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
-            _main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+            main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
 
         except Exception:
             self._logger.exception("Exception in mitmproxy thread")

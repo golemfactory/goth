@@ -61,7 +61,7 @@ def create_gftp_dirs(requestor_container: str) -> Tuple[Path, Path]:
         script_file.writelines(
             [
                 "#!/bin/sh\n",
-                f"python -m goth.gftp {requestor_container} {volume_dir} $*\n",
+                f"{sys.executable} -m goth.gftp {requestor_container} {volume_dir} $*\n",
             ]
         )
     stats = os.stat(script_path)
@@ -96,9 +96,7 @@ def run_gftp_server(gftp_container: str, gftp_volume: Path):
 
     # Start the command and create a socket
     api_client = docker.APIClient()
-    exec_id = api_client.exec_create(
-        gftp_container, "gftp server", stdin=True, tty=False
-    )
+    exec_id = api_client.exec_create(gftp_container, "gftp server", stdin=True, tty=False)
     socket = api_client.exec_start(exec_id["Id"], socket=True)._sock
 
     def container_path_to_volume_path(container_path: Path) -> Path:
@@ -151,9 +149,7 @@ def run_gftp_server(gftp_container: str, gftp_volume: Path):
                 # it's from the command's stderr
                 logger.debug("stderr: %s", response.strip())
             else:
-                raise ValueError(
-                    f"Unexpected stream type in a frame header: {stream_type}"
-                )
+                raise ValueError(f"Unexpected stream type in a frame header: {stream_type}")
 
     # Reading responses needs to be done in a separate thread, otherwise it'll block
     reader_thread = threading.Thread(target=response_reader, daemon=True)
@@ -168,16 +164,12 @@ def run_gftp_server(gftp_container: str, gftp_volume: Path):
             if method == "publish":
                 files = params["files"]
                 container_files = copy_files_to_volume(files)
-                logger.debug(
-                    "replaced `files`; original: %s, new: %s", files, container_files
-                )
+                logger.debug("replaced `files`; original: %s, new: %s", files, container_files)
                 params["files"] = container_files
                 line = json.dumps(msg) + "\n"
             elif method == "receive":
                 output_file = Path(params["output_file"])
-                container_file = (
-                    Path(CONTAINER_MOUNT_POINT) / "out" / _mangle_path(output_file)
-                )
+                container_file = Path(CONTAINER_MOUNT_POINT) / "out" / _mangle_path(output_file)
                 logger.debug(
                     "replaced `output_file`; original: %s, new: %s",
                     output_file,

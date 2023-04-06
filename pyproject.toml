@@ -1,10 +1,11 @@
 [tool.black]
+line-length = 100
 target-version = ['py38']
 exclude = '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|model)/' # Default excludes from black and the generated folder model
 
 [tool.poetry]
 name = "goth"
-version = "0.13.0"
+version = "0.14.1"
 description = "Golem Test Harness - integration testing framework"
 authors = ["Golem Factory <contact@golem.network>"]
 license = "GPL-3.0"
@@ -40,20 +41,60 @@ ghapi = "^0.1.16"
 
 [tool.poetry.dev-dependencies]
 black = "21.7b0"
-flake8 = "3.9.0"
-flake8-docstrings = "1.6.0"
-mypy = "^0.812"
+flake8 = "^5"
+flake8-docstrings = "^1.6"
+Flake8-pyproject = "^1.2.2"
+mypy = "^0.942"
 poethepoet = "^0.10"
 pytest-asyncio = "0.14"
 pytest = "^6.2"
 
 [tool.poe.tasks]
-codeformat = "black -v --check --diff ."
-codestyle = "flake8"
 interactive = "python -m goth start goth/default-assets/goth-config.yml"
-unit_test = "pytest -svx test/unit"
-integration_test = "pytest -svx test/integration"
+checks_codestyle = { sequence = [
+  "_checks_codestyle_flake8",
+  "_checks_codestyle_black",
+], help = "Run only code style checks" }
+_checks_codestyle_flake8 = "flake8"
+_checks_codestyle_black = "black --check --diff ."
+checks_typing = { cmd = "mypy --install-types --non-interactive --ignore-missing-imports --check-untyped-defs --warn-unused-ignores --show-error-codes .", help = "Run only code typing checks" }
+format = { sequence = ["_format_black"], help = "Run code auto formatting" }
+_format_black = "black ."
+tests = { sequence = [
+  "tests_unit",
+  "tests_integration",
+], help = "Run all available tests" }
+tests_unit = "pytest -svx test/unit"
+tests_integration = "pytest -svx test/integration"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = [
+  "E203", # See https://github.com/PyCQA/pycodestyle/issues/373
+  "E231", # black ignores this rule when formatting
+  "D100", # No docs for public module: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D101", # No docs for public class: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D102", # No docs for public method: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D104", # No docs for public package: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D105", # No docs for magic method: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D107", # No docs for __init__: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D202", # We prefer whitelines after docstrings
+  "D400", # First line should end with a period: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "D403", # First word of the first line should be properly capitalize: to be fixed by https://github.com/golemfactory/goth/issues/606
+  "F405", # Star imports: to be fixed by https://github.com/golemfactory/goth/issues/607
+
+]
+exclude = [
+  ".git",
+  "__pycache__",
+  "docs/source/conf.py",
+  "old",
+  "build",
+  "dist",
+  "model",
+  ".venv",
+]

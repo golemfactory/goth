@@ -50,9 +50,7 @@ def get_container_address(
     return get_container_network_info(client, container_name, network_name)[0]
 
 
-def get_volumes_spec(
-    volumes: Dict[Path, str], writable: bool = True
-) -> Dict[str, dict]:
+def get_volumes_spec(volumes: Dict[Path, str], writable: bool = True) -> Dict[str, dict]:
     """Generate Docker volume specification based on a list of directory mappings.
 
     `volumes` argument contains mappings between directories. Keys are paths on host,

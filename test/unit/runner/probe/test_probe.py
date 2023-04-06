@@ -26,12 +26,8 @@ async def test_get_yagna_api_url(monkeypatch, use_proxy: bool):
     probe.container.ports = {YAGNA_REST_PORT: host_mapped_port}
 
     if use_proxy:
-        expected_url = YAGNA_REST_URL.substitute(
-            host="127.0.0.1", port=host_mapped_nginx_port
-        )
+        expected_url = YAGNA_REST_URL.substitute(host="127.0.0.1", port=host_mapped_nginx_port)
     else:
-        expected_url = YAGNA_REST_URL.substitute(
-            host="127.0.0.1", port=host_mapped_port
-        )
+        expected_url = YAGNA_REST_URL.substitute(host="127.0.0.1", port=host_mapped_port)
 
     assert probe.get_yagna_api_url() == expected_url

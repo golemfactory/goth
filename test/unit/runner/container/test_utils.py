@@ -69,6 +69,4 @@ def test_get_container_address_no_network(mock_docker_client):
     Uses a modified network name, to which the returned container is not connected.
     """
     with pytest.raises(KeyError):
-        get_container_address(
-            mock_docker_client, TEST_CONTAINER_NAME, "missing_network"
-        )
+        get_container_address(mock_docker_client, TEST_CONTAINER_NAME, "missing_network")

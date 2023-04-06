@@ -64,9 +64,7 @@ class ActivityApiMixin:
         """Call call_exec on the activity api."""
 
         script_request = ExeScriptRequest(exe_script)
-        batch_id = await self.api.activity.control.call_exec(
-            activity_id, script_request
-        )
+        batch_id = await self.api.activity.control.call_exec(activity_id, script_request)
         return batch_id
 
     @step()
@@ -131,17 +129,13 @@ class MarketApiMixin:
             proposal.proposal_id,
             valid_to,
         )
-        agreement_proposal = AgreementProposal(
-            proposal_id=proposal.proposal_id, valid_to=valid_to
-        )
+        agreement_proposal = AgreementProposal(proposal_id=proposal.proposal_id, valid_to=valid_to)
 
         agreement_id = await self.api.market.create_agreement(agreement_proposal)
         return agreement_id
 
     @step()
-    async def subscribe_demand(
-        self: ProbeProtocol, demand: Demand
-    ) -> Tuple[str, Demand]:
+    async def subscribe_demand(self: ProbeProtocol, demand: Demand) -> Tuple[str, Demand]:
         """Call subscribe demand on the market api."""
         subscription_id = await self.api.market.subscribe_demand(demand)
         return subscription_id, demand
@@ -167,9 +161,7 @@ class MarketApiMixin:
         return await self.subscribe_demand(demand)  # type: ignore
 
     @step()
-    async def terminate_agreement(
-        self: ProbeProtocol, agreement_id: str, reason: Optional[str]
-    ):
+    async def terminate_agreement(self: ProbeProtocol, agreement_id: str, reason: Optional[str]):
         """Call terminate_agreement on the market api."""
         await self.api.market.terminate_agreement(
             agreement_id, request_body={"message": f"Terminated by {self.name}"}
@@ -201,9 +193,7 @@ class MarketApiMixin:
         provider_ids = {p.address for p in providers}
 
         while len(proposals) < len(provider_ids):
-            collected_offers = await self.api.market.collect_offers(
-                subscription_id, timeout=1
-            )
+            collected_offers = await self.api.market.collect_offers(subscription_id, timeout=1)
             if collected_offers:
                 logger.debug(
                     "collect_offers(%s). collected_offers=%r",
@@ -213,16 +203,11 @@ class MarketApiMixin:
                 collected_proposals = [
                     offer.proposal
                     for offer in collected_offers
-                    if (
-                        offer.proposal.issuer_id in provider_ids
-                        and filter(offer.proposal)
-                    )
+                    if (offer.proposal.issuer_id in provider_ids and filter(offer.proposal))
                 ]
                 proposals.extend(collected_proposals)
             else:
-                logger.debug(
-                    "Waiting for proposals. subscription_id=%s", subscription_id
-                )
+                logger.debug("Waiting for proposals. subscription_id=%s", subscription_id)
 
         return proposals
 
@@ -244,9 +229,7 @@ class PaymentApiMixin:
         return invoices
 
     @step()
-    async def pay_invoices(
-        self: ProbeProtocol, invoice_events: Iterable[Invoice]
-    ) -> None:
+    async def pay_invoices(self: ProbeProtocol, invoice_events: Iterable[Invoice]) -> None:
         """Call accept_invoice on the payment api."""
 
         for invoice_event in invoice_events:
@@ -298,9 +281,7 @@ class PaymentApiMixin:
 
         return allocation_result
 
-    async def _create_allocation(
-        self: ProbeProtocol, allocation: Allocation
-    ) -> Allocation:
+    async def _create_allocation(self: ProbeProtocol, allocation: Allocation) -> Allocation:
 
         allocation_result = await self.api.payment.create_allocation(allocation)
         logger.debug("Created allocation. id=%s", allocation_result.allocation_id)

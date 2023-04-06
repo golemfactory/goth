@@ -305,9 +305,7 @@ class EventMonitor(Generic[E]):
         """
 
         event_descr = (
-            f"#{len(self._events)} ({self._events[-1]})"
-            if not events_ended
-            else "EndOfEvents"
+            f"#{len(self._events)} ({self._events[-1]})" if not events_ended else "EndOfEvents"
         )
 
         # Notify all active (not done) assertions about the new event.
@@ -323,9 +321,7 @@ class EventMonitor(Generic[E]):
                 continue
 
             self._reported.add(a)
-            self._logger.debug(
-                "Assertion '%s' finished after event %s", a.name, event_descr
-            )
+            self._logger.debug("Assertion '%s' finished after event %s", a.name, event_descr)
             if a.accepted:
                 result = a.result()
                 msg = colors.green("Assertion '%s' succeeded; result: %s", style="bold")

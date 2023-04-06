@@ -123,13 +123,9 @@ class Runner:
         )
         self._nginx_service_address = None
         self._pending_api_assertions = []
-        self._web_server = (
-            WebServer(web_root_path, web_server_port) if web_root_path else None
-        )
+        self._web_server = WebServer(web_root_path, web_server_port) if web_root_path else None
 
-    def get_probes(
-        self, probe_type: Type[ProbeType], name: str = ""
-    ) -> List[ProbeType]:
+    def get_probes(self, probe_type: Type[ProbeType], name: str = "") -> List[ProbeType]:
         """Get probes by name or type.
 
         `probe_type` can be a type directly inheriting from `Probe`, as well as a
@@ -141,9 +137,7 @@ class Runner:
         probes = [p for p in probes if isinstance(p, probe_type)]
         return cast(List[ProbeType], probes)
 
-    def add_api_assertion(
-        self, func: AssertionFunction, name=None
-    ) -> Assertion[APIEvent]:
+    def add_api_assertion(self, func: AssertionFunction, name=None) -> Assertion[APIEvent]:
         """Add an assertion for API events to this runner proxy.
 
         If the proxy is already running, the returned assertion will be started.
@@ -170,9 +164,7 @@ class Runner:
                 extra_monitors,
             )
         )
-        failed = chain.from_iterable(
-            monitor.failed for monitor in monitors if monitor is not None
-        )
+        failed = chain.from_iterable(monitor.failed for monitor in monitors if monitor is not None)
         for assertion in failed:
             # We assume all failed assertions were already reported
             # in their corresponding log files. Now we only need to raise
@@ -245,9 +237,7 @@ class Runner:
         awaitables = [probe.start_agents() for probe in self.probes]
         await asyncio.gather(*awaitables)
 
-    async def _start_proxy(
-        self, node_names: Dict[str, str], ports: Dict[str, dict]
-    ) -> None:
+    async def _start_proxy(self, node_names: Dict[str, str], ports: Dict[str, dict]) -> None:
 
         self.proxy = Proxy(
             node_names=node_names,

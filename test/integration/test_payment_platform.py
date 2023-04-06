@@ -41,9 +41,7 @@ async def test_default_payment_platform(default_goth_config: Path) -> None:
             assert env[key] == val
 
 
-@pytest.mark.parametrize(
-    "payment_config", ("zksync", "erc20_mainnet", "erc20", "polygon")
-)
+@pytest.mark.parametrize("payment_config", ("zksync", "erc20_mainnet", "erc20", "polygon"))
 @pytest.mark.asyncio
 async def test_payment_platform_env(default_goth_config: Path, payment_config) -> None:
     """Test if "payment_config" param in config file works."""
