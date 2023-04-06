@@ -92,7 +92,7 @@ def test_key_pool_depleted(payment_id_pool):
 
 
 def test_key_not_found(payment_id_pool):
-    """Test if the proper exception is raised when there is no pre-funded key with specific address."""
+    """Test if the proper exception is raised when no pre-funded key with given address."""
 
     any_payment_config = get_payment_config("zksync")
     address_not_in_pool = "0000000000000000000000000000000000000000"
