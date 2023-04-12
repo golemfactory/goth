@@ -1,6 +1,7 @@
 """Coroutine-based implementation of temporal assertions."""
 
 import asyncio
+import contextlib
 from functools import partial
 
 from typing import (
@@ -277,7 +278,8 @@ class Assertion(AsyncIterable[E]):
         while True:
             # Wait for `update_events()` to signal that new event is available
             # or that the events ended.
-            await self._ready.wait()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._ready.wait()
             if self.events_ended:
                 return
 
