@@ -66,6 +66,7 @@ class Configuration:
         payment_config: PaymentConfig,
         environment: Optional[Dict[str, str]] = None,
         volumes: Optional[Dict[Path, Path]] = None,
+        address: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Add configuration of a new requestor or provider node."""
@@ -80,6 +81,7 @@ class Configuration:
         if environment:
             node_env.update(environment)
 
+        payment_id = self._id_pool.get_id(payment_config, address=address)
         container_cfg = YagnaContainerConfig(
             name=name,
             probe_type=type,
@@ -88,7 +90,7 @@ class Configuration:
             privileged_mode=privileged_mode,
             subnet="goth",
             volumes=volumes,
-            payment_id=self._id_pool.get_id(payment_config),
+            payment_id=payment_id,
             use_proxy=use_proxy,
             **kwargs,
         )
@@ -298,6 +300,7 @@ def load_yaml(
             name = node["name"]
             type_name = node["type"]
             use_proxy = node.get("use-proxy", False)
+            address = node.get("address", None)
 
             payment_config_name = node.get("payment-config", DEFAULT_PAYMENT_CONFIG_NAME)
             payment_config = get_payment_config(payment_config_name)
@@ -311,6 +314,7 @@ def load_yaml(
                 environment=env_dict,
                 volumes=volumes,
                 payment_config=payment_config,
+                address=address,
             )
 
     return config

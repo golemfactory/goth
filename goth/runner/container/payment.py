@@ -2,10 +2,11 @@
 
 from dataclasses import asdict, dataclass
 import json
+import logging
 from pathlib import Path
 import shutil
 from tempfile import gettempdir
-from typing import Iterator, List, Optional
+from typing import List, Dict, Optional
 from uuid import uuid4
 
 from goth.project import DEFAULT_ASSETS_DIR
@@ -14,6 +15,8 @@ from goth.payment_config import PaymentConfig
 ENV_ACCOUNT_LIST = "ACCOUNT_LIST"
 
 DEFAULT_KEY_DIR = Path(DEFAULT_ASSETS_DIR / "keys")
+
+logger = logging.getLogger(__name__)
 
 
 def get_id_directory() -> Path:
@@ -34,6 +37,13 @@ class KeyPoolDepletedError(Exception):
 
     def __init__(self):
         super().__init__("No more pre-funded Ethereum keys available.")
+
+
+class KeyNotFoundError(Exception):
+    """Error raised when failed to find available pre-funded Ethereum key."""
+
+    def __init__(self):
+        super().__init__("Failed to find available pre-funded Ethereum key.")
 
 
 @dataclass
@@ -105,18 +115,22 @@ class PaymentIdPool:
     (`DEFAULT_KEY_DIR` by default).
     """
 
-    _key_pool: Iterator[EthKey]
-    """Iterator yielding pre-funded Ethereum keys loaded from a directory."""
+    _key_pool: Dict[str, EthKey]
+    """Dict yielding pre-funded Ethereum keys loaded from a directory."""
 
     def __init__(self, key_dir: Optional[Path] = None):
         key_dir = key_dir or DEFAULT_KEY_DIR
-        self._key_pool = (self._key_from_file(f) for f in key_dir.iterdir())
+        self._key_pool = {}
+        for f in key_dir.iterdir():
+            key = self._key_from_file(f)
+            self._key_pool[key.address] = key
 
     def get_id(
         self,
         payment_config: PaymentConfig,
         receive: bool = True,
         send: bool = True,
+        address: Optional[str] = None,
     ) -> PaymentId:
         """Generate payment accounts with a common, pre-funded Ethereum key.
 
@@ -127,7 +141,7 @@ class PaymentIdPool:
         Once the key pool is depleted, attempting to get another account results in
         `KeyPoolDepletedError` being raised.
         """
-        key = self._get_key()
+        key = self._next_key() if address is None else self._find_key(address)
         account = Account(
             address=f"0x{key.address}",
             driver=payment_config.driver,
@@ -138,11 +152,21 @@ class PaymentIdPool:
         )
         return PaymentId([account], key)
 
-    def _get_key(self) -> EthKey:
+    def _next_key(self) -> EthKey:
         try:
-            return next(self._key_pool)
-        except StopIteration:
+            key = self._key_pool.popitem()[1]
+            logger.info("Next key: %s", key)
+            return key
+        except KeyError:
             raise KeyPoolDepletedError()
+
+    def _find_key(self, address: str) -> EthKey:
+        try:
+            key = self._key_pool.pop(address)
+            logger.info("Found key: %s", key)
+            return key
+        except KeyError:
+            raise KeyNotFoundError()
 
     def _key_from_file(self, path: Path) -> EthKey:
         with path.open() as fd:

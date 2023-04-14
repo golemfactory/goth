@@ -1,10 +1,8 @@
 {
-  "4e0df976": [
-    "outbound-manifest",
-    "unverified-permissions-chain"
-  ],
-  "c128af8c": [
-    "outbound-manifest",
-    "unverified-permissions-chain"
+  "a42d186acc0d9865c59c47bac5cd24386d4b1d000cda594fc845cb7c7e7cb50050b8ffba16196a35596c092e64c5c10735b24e23221e6f5927216bed37720f00": [],
+  "fe4f04e2517488ba32acd4354fca66fd67b4078722fcd1a17a1487b7723477b62af2f17fa35c9b329b52658ccfbbe663c64c3fdf4378519d9279c13e88f7bb99": [],
+  "1e99aa3ba9feaa822dce81c2a417d3165d63fb70f6709b91ac6fb0345bbbbe196503f9c23b1856cfec3d36534279b7ad42fe3916ef34d3a12d768c06cdcd515b": [],
+  "55e451bd1a2f43570a25052b863af1d527fe6fd4bfd1482fdb241596432477f20eb2b2f3801fb5c6cd785f1a03c43ccf71fd8cdf0a974d1296be2326b0824673": [
+    "all"
   ]
 }
