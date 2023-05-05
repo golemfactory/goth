@@ -6,7 +6,7 @@ import re
 from typing import Optional, Type
 
 from mitmproxy.flow import Error
-from mitmproxy.http import HTTPRequest, HTTPResponse
+from mitmproxy.http import Request as HTTPRequest, Response as HTTPResponse
 
 from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
 

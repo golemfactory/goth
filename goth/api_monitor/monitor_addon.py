@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Optional
 
-from mitmproxy.http import HTTPFlow, HTTPRequest
+from mitmproxy.http import HTTPFlow, Request as HTTPRequest
 
 from goth.api_monitor.api_events import (
     APIEvent,
