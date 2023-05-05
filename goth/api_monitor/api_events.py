@@ -147,7 +147,6 @@ def _match_event(
     method: Optional[str] = None,
     path_regex: Optional[str] = None,
 ) -> bool:
-
     http_request: HTTPRequest
     if isinstance(event, APIRequest):
         http_request = event.http_request

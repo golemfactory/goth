@@ -238,7 +238,6 @@ class Runner:
         await asyncio.gather(*awaitables)
 
     async def _start_proxy(self, node_names: Dict[str, str], ports: Dict[str, dict]) -> None:
-
         self.proxy = Proxy(
             node_names=node_names,
             ports=ports,

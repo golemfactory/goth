@@ -188,7 +188,6 @@ def run_gftp_server(gftp_container: str, gftp_volume: Path):
 
 
 if __name__ == "__main__":
-
     container_name = sys.argv[1]
     volume_dir = sys.argv[2]
     command = sys.argv[3]

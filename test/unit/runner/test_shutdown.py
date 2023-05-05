@@ -73,7 +73,6 @@ def mock_function(monkeypatch):
     """Return a function that performs monkey-patching of functions or coroutines."""
 
     def _mock_function(class_, method, fails=0, result=None):
-
         call = f"{class_.__name__}.{method}()"
         mock_ = mock.MagicMock()
         mock_.name = call

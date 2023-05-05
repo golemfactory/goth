@@ -277,7 +277,6 @@ class EventMonitor(Generic[E]):
         return True
 
     def __del__(self) -> None:
-
         if self.is_running():
             raise RuntimeError("Monitor is still running")
 
@@ -316,7 +315,6 @@ class EventMonitor(Generic[E]):
         # Report acceptance/failure for all assertions that completed
         # since last check.
         for a, level in list(self.assertions.items()):
-
             if not a.done or a in self._reported:
                 continue
 

@@ -282,7 +282,6 @@ class PaymentApiMixin:
         return allocation_result
 
     async def _create_allocation(self: ProbeProtocol, allocation: Allocation) -> Allocation:
-
         allocation_result = await self.api.payment.create_allocation(allocation)
         logger.debug("Created allocation. id=%s", allocation_result.allocation_id)
 
