@@ -3,9 +3,17 @@
     "enabled": true,
     "everyone": "none",
     "audited-payload": {
-      "default": {
+      "cb16a2ed213c1cf7e14faa7cf05743bc145b8555ec2eedb6b12ba0d31d17846d2ed4341b048f2e43b1ca5195a347bfeb0cd663c9e6002a4adb7cc7385112d3cc": {
         "mode": "all",
-        "description": "Default setting"
+        "description": ""
+      },
+      "80c84b2701126669966f46c1159cae89c58fb088e8bf94b318358fa4ca33ee56d8948511a397e5aba6aa5b88fff36f2541a91b133cde0fb816e8592b695c04c3": {
+        "mode": "all",
+        "description": ""
+      },
+      "55e451bd1a2f43570a25052b863af1d527fe6fd4bfd1482fdb241596432477f20eb2b2f3801fb5c6cd785f1a03c43ccf71fd8cdf0a974d1296be2326b0824673": {
+        "mode": "all",
+        "description": "Foo intermediate allowed all"
       }
     },
     "partner": {
