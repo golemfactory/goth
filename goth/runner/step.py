@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def step(default_timeout: float = 10.0):
+def step(default_timeout: float = 60.0):
     """Wrap a step function to implement timeout and log progress."""
 
     def decorator(func):
