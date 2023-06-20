@@ -19,7 +19,7 @@ jobs:
           python-version: '3.8'
 
       - name: Configure poetry
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@v8
         with:
           poetry-version: 1.2.2
 
@@ -47,7 +47,7 @@ jobs:
           python-version: '3.8'
 
       - name: Configure poetry
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@v8
         with:
           poetry-version: 1.2.2
 
@@ -90,7 +90,7 @@ jobs:
           python-version: '3.8'
 
       - name: Configure poetry
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@v8
         with:
           poetry-version: 1.2.2
 
@@ -120,7 +120,7 @@ jobs:
           python-version: '3.8'
 
       - name: Configure poetry
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@v8
         with:
           poetry-version: 1.2.2
 
