@@ -1,5 +1,23 @@
 # Changelog
 
+# [0.15.0] - 2023-06-28
+
+- Fix schema IDs
+- Allow fetching container info from the runner and outbound-test container (#625)
+- Default assets: update rules.json with audited payload for foo intermediate cert.
+- Default assets: update rules.json corresponding to the new audited-payload structure
+- Getting payment id using optional address param. Provider Golem cert. (#617)
+- switch back to python 3.8.0 in integration test flows
+- update poetry.lock
+
+## [0.14.1] - 2023-03-10
+
+- fix the `goth.gftp` invocation so that it uses _the_ Python executable that goth is running on
+- fix the integration test python version
+- fix assertions processing on Python >= 3.9
+- update poetry.lock
+- Move flake8 configuration to toml, increase line length to 100
+
 ## [0.14.0] - 2022-12-20
 
 ### Breaking changes
