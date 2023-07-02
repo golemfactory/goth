@@ -6,6 +6,8 @@ services:
         image: yagna-goth
         entrypoint: /usr/bin/ya-relay-server
         command: ["-a", "udp://0.0.0.0:7477", "--ip-checker-port" , "7476"]
+        networks:
+            - goth
 
     proxy-nginx:
         # A service that runs `nginx` and routes API calls to
@@ -23,11 +25,15 @@ services:
             # systems, Docker network may be unreachable from the host)
             # we map them to ports 16001-16100 on the host.
             - "16001-16100:6001-6100"
+        networks:
+            - goth
 
     ethereum:
         image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:483c6f241edd
         ports:
             - "8545:8545"
+        networks:
+            - goth
 
     zksync:
         image: docker.pkg.github.com/golemfactory/yagna-zksync/yagna-zksync-mock:fddc527d2bf1
@@ -37,7 +43,9 @@ services:
             - WEB3_PROVIDER_URI=http://ethereum:8545
         depends_on:
             - ethereum
-    
+        networks:
+            - goth
+
     outbound-test:
         # A service running a TCP sink, echo and iperf3 servers
         image: outbound-test
@@ -46,9 +54,14 @@ services:
             dockerfile: ./outbound-test.Dockerfile
         ports:
             - "22235-22238:22235-22238"
+        networks:
+            - goth
 
 networks:
-    default:
+    goth:
+        name: goth
+        driver: bridge
+        enable_ipv6: false
         ipam:
             config:
                 # Fix the IP address range to ensure the host machine

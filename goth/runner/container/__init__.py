@@ -54,7 +54,7 @@ class DockerContainer:
     lifecycle.
     """
 
-    DEFAULT_NETWORK = "docker_default"
+    DEFAULT_NETWORK = "goth"
 
     command: List[str]
     """Arguments passed to this container's `command`."""
