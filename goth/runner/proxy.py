@@ -9,7 +9,7 @@ from mitmproxy import options
 import mitmproxy.utils.debug
 from mitmproxy.tools import main, cmdline, dump
 
-from goth.address import MITM_PROXY_PORT
+from goth.address import MITM_PROXY_PORT, MITM_PROXY_HOST
 from goth.assertions.monitor import EventMonitor
 from goth.api_monitor.api_events import APIEvent
 from goth.api_monitor.router_addon import RouterAddon
@@ -99,7 +99,7 @@ class Proxy:
 
             self._logger.info("Starting embedded mitmproxy...")
 
-            args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
+            args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT} --listen-host {MITM_PROXY_HOST}"
             main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
 
         except Exception:

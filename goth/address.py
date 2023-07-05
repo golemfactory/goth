@@ -120,6 +120,9 @@ HOST_NGINX_PORT_OFFSET = 10000
 # Port used by the mitmproxy instance
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
 MITM_PROXY_PORT = 9000
+# Host used by the mitmproxy instance
+# NOTE: This variable is used in `nginx.conf` file in the proxy container:
+MITM_PROXY_HOST = "172.19.0.1"
 
 # Port range used by the internal web server spawned by goth for each test
 # Ports are rotated and re-used in a circular fashion
