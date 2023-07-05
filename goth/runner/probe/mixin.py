@@ -138,7 +138,7 @@ class MarketApiMixin:
     async def subscribe_demand(self: ProbeProtocol, demand: Demand) -> Tuple[str, Demand]:
         """Call subscribe demand on the market api."""
         subscription_id = await self.api.market.subscribe_demand(demand)
-        logger.debug("Subscribe demand.")
+        logger.debug("Subscribe demand: %s.", demand)
         return subscription_id, demand
 
     @step()
