@@ -65,6 +65,7 @@ class RouterAddon:
     # pylint: disable = no-self-use
     def request(self, flow: HTTPFlow) -> None:
         """Route the request and set `X-Caller` and `X-Callee` headers."""
+        self._logger.debug("RouterAddon.request called.")
 
         req = flow.request
         self._logger.debug("incoming request %s, headers: %s", req, req.headers)
