@@ -154,6 +154,7 @@ class MarketApiMixin:
                 ),
                 "golem.srv.comp.task_package": task_package,
                 "golem.node.debug.subnet": DEFAULT_SUBNET,
+                "golem.com.payment.chosen-platform": self.payment_config.platform_string,
             },
             constraints=constraints,
         )
