@@ -36,10 +36,10 @@ _payment_config = {
             "ERC20_RINKEBY_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "RINKEBY_GETH_ADDR": GETH_ADDR,
             "RINKEBY_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
-            "YA_PAYMENT_NETWORK": "rinkeby",
+            "YA_PAYMENT_NETWORK": "goerli",
         },
         "driver": "erc20",
-        "network": "rinkeby",
+        "network": "goerl",
         "token": "tGLM",
     },
     "polygon": {
