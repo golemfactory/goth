@@ -122,7 +122,6 @@ This path will depend either on the shell environment or the operating system on
     │   ├── requestor.log
     │   ├── router.log
     │   ├── test.log                    # debug console logs from this test case only, duplicated in `runner.log`
-    │   └── zksync.log
     └── test_e2e_wasi
         └── ...
 ```

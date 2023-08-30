@@ -23,7 +23,6 @@ docker-compose:
 
   compose-log-patterns:
     ethereum: ".*Wallets supplied."
-    zksync: ".*Running on http://.*:3030/.*"
 
 key-dir: "keys"
 

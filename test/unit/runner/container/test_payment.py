@@ -16,7 +16,7 @@ def payment_id_pool() -> PaymentIdPool:
     return PaymentIdPool()
 
 
-@pytest.mark.parametrize("payment_config_name", ("erc20", "zksync"))
+@pytest.mark.parametrize("payment_config_name", ("erc20",))
 def test_get_id(payment_id_pool, payment_config_name):
     """Test if pre-funded payment accounts are generated correctly."""
     receive = False
@@ -36,7 +36,7 @@ def test_get_id(payment_id_pool, payment_config_name):
     assert account.send == send
 
 
-@pytest.mark.parametrize("payment_config_name", ("erc20", "zksync"))
+@pytest.mark.parametrize("payment_config_name", ("erc20",))
 def test_get_id_with_address(payment_id_pool, payment_config_name):
     """Test if pre-funded payment accounts can be found by address."""
     receive = False
@@ -62,7 +62,7 @@ def test_get_id_with_address(payment_id_pool, payment_config_name):
     assert account.send == send
 
 
-@pytest.mark.parametrize("payment_config_name", ("erc20", "zksync"))
+@pytest.mark.parametrize("payment_config_name", ("erc20",))
 def test_get_id_with_address_removes_from_pool(payment_id_pool, payment_config_name):
     """Test if found pre-funded payment accounts is removed from pool."""
 
@@ -85,7 +85,7 @@ def test_get_id_with_address_removes_from_pool(payment_id_pool, payment_config_n
 def test_key_pool_depleted(payment_id_pool):
     """Test if the proper exception is raised when we run out of pre-funded keys."""
 
-    any_payment_config = get_payment_config("zksync")
+    any_payment_config = get_payment_config("erc20")
     with pytest.raises(KeyPoolDepletedError):
         while True:
             payment_id_pool.get_id(any_payment_config)
@@ -94,7 +94,7 @@ def test_key_pool_depleted(payment_id_pool):
 def test_key_not_found(payment_id_pool):
     """Test if the proper exception is raised when no pre-funded key with given address."""
 
-    any_payment_config = get_payment_config("zksync")
+    any_payment_config = get_payment_config("erc20")
     address_not_in_pool = "0000000000000000000000000000000000000000"
     with pytest.raises(KeyNotFoundError):
         payment_id_pool.get_id(
