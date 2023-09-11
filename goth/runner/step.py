@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT_LEFT_WARNING_THRESHOLD = 5
+TIMEOUT_LEFT_WARNING_THRESHOLD = 5.0
 
 
-def check_timeout_and_warn(step_name, step_time, timeout):
+def check_timeout_and_warn(step_name: str, step_time: float, timeout: float):
     if timeout - step_time < TIMEOUT_LEFT_WARNING_THRESHOLD:
         logger.warning(
             "Step '%s' was very close to being timed out: %.1f s."
