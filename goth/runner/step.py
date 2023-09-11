@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT_LEFT_WARNING_THRESHOLD = 10
+TIMEOUT_LEFT_WARNING_THRESHOLD = 5
 
 
 def step(default_timeout: float = 10.0):
