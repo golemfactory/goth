@@ -15,6 +15,16 @@ logger = logging.getLogger(__name__)
 TIMEOUT_LEFT_WARNING_THRESHOLD = 5
 
 
+def check_timeout_and_warn(step_name, step_time, timeout)
+    if timeout - step_time < TIMEOUT_LEFT_WARNING_THRESHOLD:
+        logger.warning(
+            "Step '%s' was very close to being timed out: %.1f s."
+            "Consider increasing time limit for this step.",
+            step_name,
+            timeout - step_time,
+        )
+
+
 def step(default_timeout: float = 10.0):
     """Wrap a step function to implement timeout and log progress."""
 
@@ -49,23 +59,11 @@ def step(default_timeout: float = 10.0):
                     step_time,
                     timeout,
                 )
-                if timeout - step_time < TIMEOUT_LEFT_WARNING_THRESHOLD:
-                    logger.warning(
-                        "Step '%s' was very close to being timed out: %.1f s."
-                        "Consider increasing time limit for this step.",
-                        step_name,
-                        timeout - step_time,
-                    )
+                check_timeout_and_warn(step_name, step_time, timeout)
                 raise
             step_time = time.time() - start_time
             logger.info("Step '%s' finished: %.1f/%.1f s", step_name, step_time, timeout)
-            if timeout - step_time < TIMEOUT_LEFT_WARNING_THRESHOLD:
-                logger.warning(
-                    "Step '%s' was very close to being timed out: %.1f s."
-                    "Consider increasing time limit for this step.",
-                    step_name,
-                    timeout - step_time,
-                )
+            check_timeout_and_warn(step_name, step_time, timeout)
             return result
 
         return wrapper
