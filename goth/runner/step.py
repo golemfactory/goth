@@ -55,7 +55,7 @@ def step(default_timeout: float = 10.0):
                         "Consider increasing time limit for this step.",
                         step_name,
                         timeout - step_time,
-                        )
+                    )
                 raise
             step_time = time.time() - start_time
             logger.info("Step '%s' finished: %.1f/%.1f s", step_name, step_time, timeout)
