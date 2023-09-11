@@ -10,7 +10,6 @@ from goth.runner.exceptions import StepTimeoutError
 if TYPE_CHECKING:
     from goth.runner.probe import Probe
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +47,14 @@ def step(default_timeout: float = 10.0):
                     step_time,
                 )
                 raise
+            step_time = time.time() - start_time
+            logger.info("Step '%s' finished: %.1f/%.1f s", step_name, step_time, timeout)
+            if timeout - step_time < 5:
+                logger.warning(
+                    "Step '%s' was very close to being timed out: %.1f s. Consider increasing time limit for this step.",
+                    step_name,
+                    timeout - step_time,
+                )
             return result
 
         return wrapper
