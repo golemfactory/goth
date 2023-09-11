@@ -51,7 +51,8 @@ def step(default_timeout: float = 10.0):
             logger.info("Step '%s' finished: %.1f/%.1f s", step_name, step_time, timeout)
             if timeout - step_time < 5:
                 logger.warning(
-                    "Step '%s' was very close to being timed out: %.1f s. Consider increasing time limit for this step.",
+                    "Step '%s' was very close to being timed out: %.1f s."
+                    "Consider increasing time limit for this step.",
                     step_name,
                     timeout - step_time,
                 )
