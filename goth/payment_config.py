@@ -24,6 +24,8 @@ _payment_config = {
         "env": {
             "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "MAINNET_GETH_ADDR": GETH_ADDR,
+            "MAINNET_MAX_FEE_PER_GAS": "1.0",
+            "MAINNET_PRIORITY_FEE": "1.0",
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "mainnet",
         },
@@ -35,6 +37,8 @@ _payment_config = {
         "env": {
             "ERC20_RINKEBY_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "RINKEBY_GETH_ADDR": GETH_ADDR,
+            "RINKEBY_MAX_FEE_PER_GAS": "1.0",
+            "RINKEBY_PRIORITY_FEE": "1.0",
             "RINKEBY_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "rinkeby",
         },
@@ -46,6 +50,8 @@ _payment_config = {
         "env": {
             "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "POLYGON_GETH_ADDR": GETH_ADDR,
+            "POLYGON_MAX_FEE_PER_GAS": "30.0",
+            "POLYGON_PRIORITY_FEE": "30.0",
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "polygon",
         },
