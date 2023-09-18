@@ -26,22 +26,16 @@ services:
 
     ethereum-mainnet:
         image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
-        ports:
-            - "8546:8545"
         environment:
             - GANACHE_CHAIN_ID=1
 
     ethereum-goerli:
         image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
-        ports:
-            - "8547:8545"
         environment:
             - GANACHE_CHAIN_ID=5
 
     ethereum-polygon:
         image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
-        ports:
-            - "8548:8545"
         environment:
             - GANACHE_CHAIN_ID=137
     

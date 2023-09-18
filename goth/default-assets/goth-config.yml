@@ -22,7 +22,9 @@ docker-compose:
     use-prerelease: false
 
   compose-log-patterns:
-    ethereum: ".*Wallets supplied."
+    ethereum-mainnet: ".*Wallets supplied."
+    ethereum-goerli: ".*Wallets supplied."
+    ethereum-polygon: ".*Wallets supplied."
 
 key-dir: "keys"
 
