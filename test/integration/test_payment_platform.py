@@ -7,18 +7,18 @@ from goth.configuration import load_yaml
 EXPECTED_PAYMENT_ENV = {
     "polygon": {
         "YA_PAYMENT_NETWORK": "polygon",
-        "POLYGON_GETH_ADDR": "http://ethereum:8545",
+        "POLYGON_GETH_ADDR": "http://ethereum-polygon:8548",
         "POLYGON_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
     },
     "erc20_mainnet": {
         "YA_PAYMENT_NETWORK": "mainnet",
-        "MAINNET_GETH_ADDR": "http://ethereum:8545",
+        "MAINNET_GETH_ADDR": "http://ethereum-mainnet:8546",
         "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
         "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": 0,
     },
     "erc20": {
         "YA_PAYMENT_NETWORK": "goerli",
-        "GOERLI_GETH_ADDR": "http://ethereum:8545",
+        "GOERLI_GETH_ADDR": "http://ethereum-goerli:8547",
         "GOERLI_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
         "ERC20_GOERLI_REQUIRED_CONFIRMATIONS": 0,
     },
