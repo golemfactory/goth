@@ -10,6 +10,7 @@ from goth.runner.container.compose import (
     ComposeConfig,
     DEFAULT_COMPOSE_FILE,
     YagnaBuildEnvironment,
+    ArtifactEnvironment,
 )
 from goth.runner.container.payment import PaymentIdPool
 from goth.node import node_environment
@@ -231,6 +232,7 @@ class _ConfigurationParser:
         deb_path = self.get_path("deb-path", required=False)
         release_tag = self.get("release-tag")
         use_prerelease = self.get("use-prerelease", default=True)
+        artifacts = self.read_artifacts_env()
         return YagnaBuildEnvironment(
             docker_dir,
             binary_path=binary_path,
@@ -239,7 +241,19 @@ class _ConfigurationParser:
             deb_path=deb_path,
             release_tag=release_tag,
             use_prerelease=use_prerelease,
+            artifacts=artifacts,
         )
+
+    def read_artifacts_env(self) -> Dict[str, ArtifactEnvironment]:
+        self.ensure_type(dict)
+
+        result = dict()
+        for artifact in self.get("artifacts"):
+            result[artifact["name"]] = ArtifactEnvironment(
+                artifact.get("use-prerelease", default=False),
+                release_tag=artifact.get("release-tag"),
+            )
+        return result
 
 
 def load_yaml(

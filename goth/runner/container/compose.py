@@ -16,6 +16,7 @@ from goth.runner.container.build import (
     build_proxy_image,
     build_yagna_image,
     YagnaBuildEnvironment,
+    ArtifactEnvironment,
 )
 from goth.runner.container.utils import get_container_network_info
 from goth.runner.exceptions import ContainerNotFoundError

@@ -1,0 +1,35 @@
+# Note: values of keys denoting paths are resolved relative to the directory
+# in which this file is located.
+# The tokens `~` and `~user` are also replaced by the corresponding users's
+# home directory.
+
+docker-compose:
+
+  # Path to compose file to be used, relative to `docker-dir`
+  compose-file: "docker-compose.yml"
+  docker-dir: "docker/"
+
+  build-environment:
+    artifacts:
+      - name: "ya-runtime-vm"
+        use-prerelease: true
+        release-tag: "v0.3..*"
+      - name: "ya-runtime-wasi"
+        release-tag: "v0.2..*"
+      - name: "ya-relay-server"
+        use-prerelease: false
+
+  compose-log-patterns:
+    ethereum: ".*Wallets supplied."
+    zksync: ".*Running on http://.*:3030/.*"
+
+key-dir: "keys"
+web-root: "web-root"
+
+node-types:
+  - name: "EnvVarTest"
+    class: "goth.runner.probe.RequestorProbe"
+
+nodes:
+  - name: "env-var-test"
+    type: "EnvVarTest"
