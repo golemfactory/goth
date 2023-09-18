@@ -2,7 +2,6 @@
 from dataclasses import dataclass, field
 from typing import Dict
 
-GETH_ADDR = "http://ethereum:8545"
 GLM_CONTRACT_ADDRESS = "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34"
 # Sets how many blocks need to be mined on the blockchain in order for a transaction
 # to be considered confirmed. This is currently disabled due to ganache server not
@@ -13,7 +12,7 @@ _payment_config = {
     "erc20_mainnet": {
         "env": {
             "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "MAINNET_GETH_ADDR": GETH_ADDR,
+            "MAINNET_GETH_ADDR": "http://ethereum:8546",
             "MAINNET_MAX_FEE_PER_GAS": "1.0",
             "MAINNET_PRIORITY_FEE": "1.0",
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
@@ -26,7 +25,7 @@ _payment_config = {
     "erc20": {
         "env": {
             "ERC20_GOERLI_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "GOERLI_GETH_ADDR": GETH_ADDR,
+            "GOERLI_GETH_ADDR": "http://ethereum:8547",
             "GOERLI_MAX_FEE_PER_GAS": "1.0",
             "GOERLI_PRIORITY_FEE": "1.0",
             "GOERLI_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
@@ -39,7 +38,7 @@ _payment_config = {
     "polygon": {
         "env": {
             "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "POLYGON_GETH_ADDR": GETH_ADDR,
+            "POLYGON_GETH_ADDR": "http://ethereum:8548",
             "POLYGON_MAX_FEE_PER_GAS": "30.0",
             "POLYGON_PRIORITY_FEE": "30.0",
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
