@@ -12,7 +12,7 @@ _payment_config = {
     "erc20_mainnet": {
         "env": {
             "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "MAINNET_GETH_ADDR": "http://ethereum:8546",
+            "MAINNET_GETH_ADDR": "http://ethereum-mainnet:8546",
             "MAINNET_MAX_FEE_PER_GAS": "1.0",
             "MAINNET_PRIORITY_FEE": "1.0",
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
@@ -25,7 +25,7 @@ _payment_config = {
     "erc20": {
         "env": {
             "ERC20_GOERLI_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "GOERLI_GETH_ADDR": "http://ethereum:8547",
+            "GOERLI_GETH_ADDR": "http://ethereum-goerli:8547",
             "GOERLI_MAX_FEE_PER_GAS": "1.0",
             "GOERLI_PRIORITY_FEE": "1.0",
             "GOERLI_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
@@ -38,7 +38,7 @@ _payment_config = {
     "polygon": {
         "env": {
             "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
-            "POLYGON_GETH_ADDR": "http://ethereum:8548",
+            "POLYGON_GETH_ADDR": "http://ethereum-polygon:8548",
             "POLYGON_MAX_FEE_PER_GAS": "30.0",
             "POLYGON_PRIORITY_FEE": "30.0",
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
