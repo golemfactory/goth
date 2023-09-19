@@ -36,6 +36,7 @@ from goth.node import DEFAULT_SUBNET
 from goth.payment_config import PaymentConfig
 from goth.runner import process
 from goth.runner.cli import Cli, YagnaDockerCli
+from goth.runner.container import State as ContainerState
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
     YagnaContainer,
@@ -305,7 +306,7 @@ class Probe(abc.ABC):
             # restart container to allow faster discovery of new identity in the network
             self.container.stop()
             self._logger.info("Restarting container after identity set")
-            while self.container.status != "Exited":
+            while self.container.state() != ContainerState.Exited:
                 self._logger.info("Waiting for container to stop")
                 await asyncio.sleep(1)
             self.container.start()
