@@ -224,6 +224,23 @@ class Probe(abc.ABC):
             self.container.remove(force=True)
             self._logger.debug("Container removed")
 
+    async def _wait_for_yagna_router(self, timeout: float = 30) -> None:
+        self._logger.info("Waiting for connection to ya-sb-router")
+        if self.container.logs:
+            await self.container.logs.wait_for_entry(
+                ".*connected with server: ya-sb-router.*", timeout=timeout
+            )
+
+    async def _wait_for_yagna_http(self, timeout: float = 30) -> None:
+        self._logger.info("Waiting for yagna REST API to be listening")
+        if self.container.logs:
+            await self.container.logs.wait_for_entry(
+                "Starting .*actix-web-service.* service on .*."
+                "|"
+                "Http server thread started on:.*",
+                timeout=timeout,
+            )
+
     async def _start_container(self) -> None:
         """
         Start the probe's Docker container.
@@ -234,21 +251,12 @@ class Probe(abc.ABC):
         self.container.start()
 
         # Wait until the daemon is ready to create an app key.
-        self._logger.info("Waiting for connection to ya-sb-router")
-        if self.container.logs:
-            await self.container.logs.wait_for_entry(
-                ".*connected with server: ya-sb-router.*", timeout=30
-            )
+        await self._wait_for_yagna_router(30)
+
         await self.create_app_key()
 
-        self._logger.info("Waiting for yagna REST API to be listening")
-        if self.container.logs:
-            await self.container.logs.wait_for_entry(
-                "Starting .*actix-web-service.* service on .*."
-                "|"
-                "Http server thread started on:.*",
-                timeout=30,
-            )
+        await self._wait_for_yagna_http(30)
+
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
@@ -293,8 +301,15 @@ class Probe(abc.ABC):
                 raise
             db_id = self.cli.id_update(address, set_default=True)
             self._logger.debug("update_id. result=%r", db_id)
-            # self.container.restart()
-            # await asyncio.sleep(5)
+
+            # restart container to allow faster discovery of new identity in the network
+            self.container.stop()
+            self._logger.info("Restarting container after identity set")
+            while self.container.status != "Exited":
+                self._logger.info("Waiting for container to stop")
+                await asyncio.sleep(1)
+            self.container.start()
+            await self._wait_for_yagna_router(30)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
