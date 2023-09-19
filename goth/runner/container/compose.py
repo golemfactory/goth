@@ -5,6 +5,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+import time
 from typing import AsyncIterator, ClassVar, Dict, List, Optional
 
 from docker import DockerClient
@@ -18,7 +19,7 @@ from goth.runner.container.build import (
     YagnaBuildEnvironment,
 )
 from goth.runner.container.utils import get_container_network_info
-from goth.runner.exceptions import ContainerNotFoundError
+from goth.runner.exceptions import ContainerNotFoundError, CommandError
 from goth.runner.log import LogConfig
 from goth.runner.log_monitor import LogEventMonitor
 from goth.runner.process import run_command
@@ -184,7 +185,14 @@ class ComposeNetworkManager:
 
         self._disconnect_containers(compose_containers or [])
 
-        await run_command(["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0"])
+        compose_down_cmd = ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0", "--remove-orphans"]
+        try:
+            await run_command(compose_down_cmd)
+        except CommandError as e:
+            logger.warn("docker-compose down error: {e}, retrying in 300s")
+            time.sleep(300)
+            await run_command(compose_down_cmd)
+
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
