@@ -290,6 +290,9 @@ class Probe(abc.ABC):
         await self._wait_for_yagna_start(60)
         await self._wait_for_yagna_router(60)
         await self._wait_for_yagna_http(60)
+        await self._wait_for_yagna_start(60)
+        await self._wait_for_yagna_router(60)
+        await self._wait_for_yagna_http(60)
         print("Finished waiting for container to start {}".format(datetime.now()))
 
         # Obtain the IP address of the container
