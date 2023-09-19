@@ -397,6 +397,7 @@ class EventMonitor(Generic[E]):
             async for e in stream:
                 self._last_checked_event = len(stream.past_events) - 1
                 if predicate(e):
+                    print("found event in new events {}".format(self._last_checked_event))
                     return e
             raise AssertionError("No matching event occurred")
 
