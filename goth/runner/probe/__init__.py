@@ -233,6 +233,14 @@ class Probe(abc.ABC):
                 ".*connected with server: ya-sb-router.*", timeout=timeout
             )
 
+    async def _wait_for_yagna_start(self, timeout: float = 30) -> None:
+        self._logger.info("Waiting for yagna REST API to be listening")
+        if self.container.logs:
+            await self.container.logs.wait_for_entry(
+                "Starting yagna service!",
+                timeout=timeout,
+            )
+
     async def _wait_for_yagna_http(self, timeout: float = 30) -> None:
         self._logger.info("Waiting for yagna REST API to be listening")
         if self.container.logs:
@@ -276,10 +284,10 @@ class Probe(abc.ABC):
             self._logger.info("Waiting for container to stop")
             await asyncio.sleep(1)
 
-        await self._reset_logs_matcher()
         self.container.start()
 
         print("Waiting for container to start {}".format(datetime.now()))
+        await self._wait_for_yagna_start(60)
         await self._wait_for_yagna_http(60)
         print("Finished waiting for container to start {}".format(datetime.now()))
 
