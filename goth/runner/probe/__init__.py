@@ -276,7 +276,7 @@ class Probe(abc.ABC):
             self._logger.info("Waiting for container to stop")
             await asyncio.sleep(1)
 
-        self._reset_logs_matcher()
+        await self._reset_logs_matcher()
         self.container.start()
 
         print("Waiting for container to start {}".format(datetime.now()))
