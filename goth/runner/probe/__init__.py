@@ -306,7 +306,7 @@ class Probe(abc.ABC):
             # restart container to allow faster discovery of new identity in the network
             self.container.stop()
             self._logger.info("Restarting container after identity set")
-            while self.container.state != ContainerState.Exited:
+            while self.container.state != ContainerState.exited:
                 self._logger.info("Waiting for container to stop")
                 await asyncio.sleep(1)
             self.container.start()
