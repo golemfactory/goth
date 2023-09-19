@@ -288,6 +288,7 @@ class Probe(abc.ABC):
 
         print("Waiting for container to start {}".format(datetime.now()))
         await self._wait_for_yagna_start(60)
+        await self._wait_for_yagna_router(60)
         await self._wait_for_yagna_http(60)
         print("Finished waiting for container to start {}".format(datetime.now()))
 
