@@ -7,6 +7,7 @@ import contextlib
 import copy
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 import shlex
 import signal
@@ -257,9 +258,16 @@ class Probe(abc.ABC):
         await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
-        self.container.restart()
+        self.container.stop()
         self._logger.info("Restarting container after identity set")
-        await asyncio.sleep(20)
+        while self.container.state != ContainerState.exited:
+            self._logger.info("Waiting for container to stop")
+            await asyncio.sleep(1)
+        self.container.start()
+
+        print("Waiting for container to start {}".format(datetime.now()))
+        self._wait_for_yagna_http(60)
+        print("Finished waiting for container to start {}".format(datetime.now()))
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
