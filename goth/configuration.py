@@ -10,8 +10,8 @@ from goth.runner.container.compose import (
     ComposeConfig,
     DEFAULT_COMPOSE_FILE,
     YagnaBuildEnvironment,
-    ArtifactEnvironment,
 )
+from goth.runner.container.build import ArtifactEnvironment
 from goth.runner.container.payment import PaymentIdPool
 from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
