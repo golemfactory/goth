@@ -256,6 +256,15 @@ class Probe(abc.ABC):
 
         await self.create_app_key()
 
+        # restart container to allow faster discovery of new identity in the network
+        self.container.stop()
+        self._logger.info("Restarting container after identity set")
+        while self.container.state != ContainerState.exited:
+            self._logger.info("Waiting for container to stop")
+            await asyncio.sleep(1)
+        self.container.start()
+        await self._wait_for_yagna_http(60)
+
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
         nginx_ip_address = self.runner.nginx_container_address
@@ -299,15 +308,6 @@ class Probe(abc.ABC):
                 raise
             db_id = self.cli.id_update(address, set_default=True)
             self._logger.debug("update_id. result=%r", db_id)
-
-            # restart container to allow faster discovery of new identity in the network
-            self.container.stop()
-            self._logger.info("Restarting container after identity set")
-            while self.container.state != ContainerState.exited:
-                self._logger.info("Waiting for container to stop")
-                await asyncio.sleep(1)
-            self.container.start()
-            await self._wait_for_yagna_http(60)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
