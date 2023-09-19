@@ -388,6 +388,7 @@ class EventMonitor(Generic[E]):
             self._last_checked_event += 1
             event = self._events[self._last_checked_event]
             if predicate(event):
+                print("found event in history {}".format(self._last_checked_event))
                 return event
 
         print("wait_for_event2 {}".format(self._last_checked_event))
