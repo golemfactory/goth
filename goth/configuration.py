@@ -248,7 +248,7 @@ class _ConfigurationParser:
         self.ensure_type(dict)
 
         result = dict()
-        for artifact in self.get("artifacts"):
+        for artifact in self.get("artifacts", default={}):
             result[artifact["name"]] = ArtifactEnvironment(
                 artifact.get("use-prerelease", default=False),
                 release_tag=artifact.get("release-tag"),
