@@ -258,6 +258,7 @@ class Probe(abc.ABC):
 
         # restart container to allow faster discovery of new identity in the network
         self.container.restart()
+        self.cli = Cli(self.container).yagna
         self._logger.info("Restarting container after identity set")
         await self._wait_for_yagna_http(60)
 
