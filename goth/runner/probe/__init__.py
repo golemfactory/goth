@@ -286,14 +286,15 @@ class Probe(abc.ABC):
 
         self.container.start()
 
-        print("Waiting for container to start {}".format(datetime.now()))
+        # TODO: fix that shit by proper checking if yagna started
+        self._logger.info("Waiting for container to start {}".format(datetime.now()))
         await self._wait_for_yagna_start(60)
         await self._wait_for_yagna_router(60)
         await self._wait_for_yagna_http(60)
         await self._wait_for_yagna_start(60)
         await self._wait_for_yagna_router(60)
         await self._wait_for_yagna_http(60)
-        print("Finished waiting for container to start {}".format(datetime.now()))
+        self._logger.info("Finished waiting for container to start {}".format(datetime.now()))
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
