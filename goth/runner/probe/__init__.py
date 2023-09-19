@@ -243,6 +243,18 @@ class Probe(abc.ABC):
                 timeout=timeout,
             )
 
+    async def _reset_logs_matcher(self):
+        self._logger.info("Reset log matcher")
+        if self.container.logs:
+            try:
+                await self.container.logs.wait_for_entry(
+                    "103857828075DZ38WmnAKeMdOu5eYC",
+                    timeout=0,
+                )
+            except Exception as ex:
+                # ignore exception deliberately
+                pass
+
     async def _start_container(self) -> None:
         """
         Start the probe's Docker container.
@@ -263,6 +275,8 @@ class Probe(abc.ABC):
         while self.container.state != ContainerState.exited:
             self._logger.info("Waiting for container to stop")
             await asyncio.sleep(1)
+
+        self._reset_logs_matcher()
         self.container.start()
 
         print("Waiting for container to start {}".format(datetime.now()))
