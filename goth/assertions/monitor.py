@@ -382,6 +382,7 @@ class EventMonitor(Generic[E]):
         When `timeout` elapses, `asyncio.TimeoutError` will be raised.
         """
 
+        print("wait_for_event {}".format(self._last_checked_event))
         # First examine log lines already seen
         while self._last_checked_event + 1 < len(self._events):
             self._last_checked_event += 1
@@ -389,6 +390,7 @@ class EventMonitor(Generic[E]):
             if predicate(event):
                 return event
 
+        print("wait_for_event2 {}".format(self._last_checked_event))
         # Otherwise create an assertion that waits for a matching event...
         async def wait_for_match(stream) -> E:
             async for e in stream:
