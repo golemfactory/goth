@@ -257,12 +257,8 @@ class Probe(abc.ABC):
         await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
-        self.container.stop()
+        self.container.restart()
         self._logger.info("Restarting container after identity set")
-        while self.container.state != ContainerState.exited:
-            self._logger.info("Waiting for container to stop")
-            await asyncio.sleep(1)
-        self.container.start()
         await self._wait_for_yagna_http(60)
 
         # Obtain the IP address of the container
