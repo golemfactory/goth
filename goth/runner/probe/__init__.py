@@ -229,7 +229,9 @@ class Probe(abc.ABC):
     async def _wait_for_yagna_start(self, timeout: float = 30) -> None:
         host_yagna_addr = f"http://127.0.0.1:{self.container.ports[YAGNA_REST_PORT]}"
         self._logger.info(f"Waiting for yagna REST API: {host_yagna_addr}")
-        self._logger.info(f"Waiting for yagna http endpoint: {host_yagna_addr}, timeout: {timeout:.1f}")
+        self._logger.info(
+            f"Waiting for yagna http endpoint: {host_yagna_addr}, timeout: {timeout:.1f}"
+        )
         start_time = perf_counter()
         async with aiohttp.ClientSession() as session:
             while True:
@@ -238,11 +240,15 @@ class Probe(abc.ABC):
                         yagna_status_obj = await resp.json()
                         yagna_version = yagna_status_obj["current"]["version"]
                         elapsed = perf_counter() - start_time
-                        self._logger.info(f"Yagna responded with version: {yagna_version}"
-                                          f" after {elapsed:.1f}/{timeout:.1f} seconds")
+                        self._logger.info(
+                            f"Yagna responded with version: {yagna_version}"
+                            f" after {elapsed:.1f}/{timeout:.1f} seconds"
+                        )
                         if timeout - elapsed < 5:
-                            self._logger.warning(f"Only {timeout - elapsed:.1f} seconds left to timeout. "
-                                                 "Consider using a higher timeout.")
+                            self._logger.warning(
+                                f"Only {timeout - elapsed:.1f} seconds left to timeout. "
+                                "Consider using a higher timeout."
+                            )
                         return yagna_version
                 except aiohttp.ClientConnectionError as ex:
                     self._logger.debug(f"Failed to connect to yagna - trying again: {ex}")
@@ -250,7 +256,9 @@ class Probe(abc.ABC):
 
                 elapsed = perf_counter() - start_time
                 if elapsed > timeout:
-                    raise Exception(f"Timeout {timeout} exceeded: Failed to get data from endpoint: {host_yagna_addr}")
+                    raise Exception(
+                        f"Timeout {timeout} exceeded: Failed to get data from endpoint: {host_yagna_addr}"
+                    )
 
                 await asyncio.sleep(0.5)
 
