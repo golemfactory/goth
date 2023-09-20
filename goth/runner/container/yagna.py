@@ -110,11 +110,6 @@ class YagnaContainer(DockerContainer):
         )
 
     @classmethod
-    def reset_host_port_range(cls):
-        """Reset the port range iterator to its initial state."""
-        cls.host_port_range = iter(range(HOST_REST_PORT_START, HOST_REST_PORT_END))
-
-    @classmethod
     def host_rest_port(cls):
         """Return the next host port that can be used for port mapping.
 

@@ -149,6 +149,7 @@ async def test_runner_startup_shutdown(
     manager_stop_fails,
 ):
     """Test if runner components are started and shut down correctly."""
+
     manager_start_network = mock_function(
         ComposeNetworkManager,
         "start_network",
