@@ -240,7 +240,8 @@ class Probe(abc.ABC):
                         yagna_status_obj = await resp.json()
                         yagna_version = yagna_status_obj["current"]["version"]
                         elapsed = perf_counter() - start_time
-                        self._logger.info(f"Yagna responded with version: {yagna_version} after {elapsed:.1f} seconds")
+                        self._logger.info(f"Yagna responded with version: {yagna_version}"
+                                          f" after {elapsed:.1f}/{timeout:.1f} seconds")
                         if timeout - elapsed < 5:
                             self._logger.warning(f"Only {timeout - elapsed:.1f} seconds left to timeout. "
                                                  "Consider using a higher timeout.")
