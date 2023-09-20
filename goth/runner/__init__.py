@@ -30,7 +30,7 @@ from goth.runner.container.compose import (
     ComposeNetworkManager,
     run_compose_network,
 )
-from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.container.yagna import YagnaContainerConfig, YagnaContainer
 import goth.runner.container.payment as payment
 from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import configure_logging_for_test, LogConfig
@@ -349,6 +349,7 @@ class Runner:
 
     async def _exit(self):
         logger.info(colors.yellow("Test finished: %s"), self.test_name)
+        YagnaContainer.host_rest_port()
         await self._exit_stack.aclose()
         payment.clean_up()
 
