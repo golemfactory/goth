@@ -8,7 +8,7 @@ def test_payment_init(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    yagna.payment_init("zksync")
+    yagna.payment_init("erc20")
 
 
 def test_payment_init_provider_mode(yagna_container):
@@ -16,7 +16,7 @@ def test_payment_init_provider_mode(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    yagna.payment_init("zksync", receiver_mode=True)
+    yagna.payment_init("erc20", receiver_mode=True)
 
 
 def test_payment_init_requestor_mode(yagna_container):
@@ -24,7 +24,7 @@ def test_payment_init_requestor_mode(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    yagna.payment_init("zksync", sender_mode=True)
+    yagna.payment_init("erc20", sender_mode=True)
 
 
 def test_payment_status(yagna_container):
@@ -32,7 +32,7 @@ def test_payment_status(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    status = yagna.payment_status("zksync")
+    status = yagna.payment_status("erc20")
     assert status
 
 
@@ -41,5 +41,5 @@ def test_payment_status_with_address(yagna_container):
 
     yagna = Cli(yagna_container).yagna
 
-    status = yagna.payment_status("zksync")
+    status = yagna.payment_status("erc20")
     assert status

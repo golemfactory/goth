@@ -36,7 +36,7 @@ topology = [
     YagnaContainerConfig(
         name="requestor",
         probe_type=Probe,
-        payment_config=get_payment_config("zksync"),
+        payment_config=get_payment_config("erc20"),
         volumes={},
         environment={},
         payment_id=mock.MagicMock(),
@@ -44,7 +44,7 @@ topology = [
     YagnaContainerConfig(
         name="provider",
         probe_type=Probe,
-        payment_config=get_payment_config("zksync"),
+        payment_config=get_payment_config("erc20"),
         volumes={},
         environment={},
         privileged_mode=False,

@@ -2,7 +2,7 @@
 """
 Script to convert raw hex private keys to keystore files.
 
-- `raw hex private keys` are found in the ganache logs ( ethereum.log )
+- `raw hex private keys` are found in the ganache logs ( ethereum-*.log )
 - `keystore files` are used to import identities into yagna
 """
 
