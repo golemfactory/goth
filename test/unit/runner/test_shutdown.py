@@ -11,7 +11,7 @@ import pytest
 from goth.runner import TestFailure, Runner, PROXY_NGINX_SERVICE_NAME
 from goth.runner.container.compose import ComposeNetworkManager, ContainerInfo
 import goth.runner.container.utils
-from goth.runner.container.yagna import YagnaContainerConfig
+from goth.runner.container.yagna import YagnaContainerConfig, YagnaContainer
 from goth.runner.probe import Probe
 from goth.runner.proxy import Proxy
 from goth.runner.web_server import WebServer
@@ -149,7 +149,7 @@ async def test_runner_startup_shutdown(
     manager_stop_fails,
 ):
     """Test if runner components are started and shut down correctly."""
-
+    YagnaContainer.reset_host_port_range()
     manager_start_network = mock_function(
         ComposeNetworkManager,
         "start_network",
