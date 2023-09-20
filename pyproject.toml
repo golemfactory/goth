@@ -72,7 +72,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.flake8]
-max-line-length = 100
+max-line-length = 120
 extend-ignore = [
   "E203", # See https://github.com/PyCQA/pycodestyle/issues/373
   "E231", # black ignores this rule when formatting
