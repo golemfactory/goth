@@ -257,7 +257,8 @@ class Probe(abc.ABC):
                 elapsed = perf_counter() - start_time
                 if elapsed > timeout:
                     raise Exception(
-                        f"Timeout {timeout} exceeded: Failed to get data from endpoint: {host_yagna_addr}"
+                        f"Timeout {timeout} exceeded: "
+                        f"Failed to get data from endpoint: {host_yagna_addr}"
                     )
 
                 await asyncio.sleep(0.5)
