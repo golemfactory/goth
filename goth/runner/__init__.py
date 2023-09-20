@@ -349,7 +349,7 @@ class Runner:
 
     async def _exit(self):
         logger.info(colors.yellow("Test finished: %s"), self.test_name)
-        YagnaContainer.host_rest_port()
+        YagnaContainer.reset_host_port_range()
         await self._exit_stack.aclose()
         payment.clean_up()
 
