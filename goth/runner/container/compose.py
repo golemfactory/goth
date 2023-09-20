@@ -185,14 +185,21 @@ class ComposeNetworkManager:
 
         self._disconnect_containers(compose_containers or [])
 
-        compose_down_cmd = ["docker-compose", "-f", str(self.config.file_path), "down", "-t", "0", "--remove-orphans"]
+        compose_down_cmd = [
+            "docker-compose",
+            "-f",
+            str(self.config.file_path),
+            "down",
+            "-t",
+            "0",
+            "--remove-orphans",
+        ]
         try:
             await run_command(compose_down_cmd)
         except CommandError as e:
-            logger.warn("docker-compose down error: {e}, retrying in 300s")
+            logger.warn(f"docker-compose down error: {e}, retrying in 300s")
             time.sleep(300)
             await run_command(compose_down_cmd)
-
 
     def _get_compose_services(self) -> dict:
         """Return services defined in docker-compose.yml."""
