@@ -12,6 +12,7 @@ from pathlib import Path
 import shlex
 import signal
 import traceback
+from time import perf_counter
 from typing import (
     AsyncIterator,
     Dict,
@@ -23,6 +24,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import aiohttp
 from docker import DockerClient
 
 from goth.address import (
@@ -226,42 +228,31 @@ class Probe(abc.ABC):
             self.container.remove(force=True)
             self._logger.debug("Container removed")
 
-    async def _wait_for_yagna_router(self, timeout: float = 30) -> None:
-        self._logger.info("Waiting for connection to ya-sb-router")
-        if self.container.logs:
-            await self.container.logs.wait_for_entry(
-                ".*connected with server: ya-sb-router.*", timeout=timeout
-            )
-
     async def _wait_for_yagna_start(self, timeout: float = 30) -> None:
-        self._logger.info("Waiting for yagna REST API to be listening")
-        if self.container.logs:
-            await self.container.logs.wait_for_entry(
-                "Starting yagna service!",
-                timeout=timeout,
-            )
+        host_yagna_addr = f"http://127.0.0.1:{self.container.ports[YAGNA_REST_PORT]}"
+        self._logger.info(f"Waiting for yagna REST API: {host_yagna_addr}")
+        self._logger.info(f"Waiting for yagna http endpoint: {host_yagna_addr}, timeout: {timeout:.1f}")
+        start_time = perf_counter()
+        async with aiohttp.ClientSession() as session:
+            while True:
+                try:
+                    async with session.get(f"{host_yagna_addr}/version/get") as resp:
+                        yagna_status_obj = await resp.json()
+                        yagna_version = yagna_status_obj["current"]["version"]
+                        elapsed = perf_counter() - start_time
+                        self._logger.info(f"Yagna responded with version: {yagna_version} after {elapsed:.1f} seconds")
+                        if timeout - elapsed < 5:
+                            self._logger.warning(f"Only {timeout - elapsed:.1f} seconds left to timeout. "
+                                                 "Consider using a higher timeout.")
+                        return yagna_version
+                except aiohttp.ClientConnectionError as _ex:
+                    pass
 
-    async def _wait_for_yagna_http(self, timeout: float = 30) -> None:
-        self._logger.info("Waiting for yagna REST API to be listening")
-        if self.container.logs:
-            await self.container.logs.wait_for_entry(
-                "Starting .*actix-web-service.* service on .*."
-                "|"
-                "Http server thread started on:.*",
-                timeout=timeout,
-            )
+                elapsed = perf_counter() - start_time
+                if elapsed > timeout:
+                    raise Exception(f"Timeout {timeout} exceeded: Failed to get data from endpoint: {host_yagna_addr}")
 
-    async def _reset_logs_matcher(self):
-        self._logger.info("Reset log matcher")
-        if self.container.logs:
-            try:
-                await self.container.logs.wait_for_entry(
-                    "103857828075DZ38WmnAKeMdOu5eYC",
-                    timeout=0,
-                )
-            except Exception as ex:
-                # ignore exception deliberately
-                pass
+                await asyncio.sleep(0.5)
 
     async def _start_container(self) -> None:
         """
@@ -272,29 +263,14 @@ class Probe(abc.ABC):
         """
         self.container.start()
 
-        # Wait until the daemon is ready to create an app key.
-        await self._wait_for_yagna_http(60)
+        await self._wait_for_yagna_start(60)
 
         await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
-        self.container.stop()
         self._logger.info("Restarting container after identity set")
-        while self.container.state != ContainerState.exited:
-            self._logger.info("Waiting for container to stop")
-            await asyncio.sleep(1)
-
-        self.container.start()
-
-        # TODO: fix that shit by proper checking if yagna started
-        self._logger.info("Waiting for container to start {}".format(datetime.now()))
+        self.container.restart()
         await self._wait_for_yagna_start(60)
-        await self._wait_for_yagna_router(60)
-        await self._wait_for_yagna_http(60)
-        await self._wait_for_yagna_start(60)
-        await self._wait_for_yagna_router(60)
-        await self._wait_for_yagna_http(60)
-        self._logger.info("Finished waiting for container to start {}".format(datetime.now()))
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
