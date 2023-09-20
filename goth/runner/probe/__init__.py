@@ -7,7 +7,6 @@ import contextlib
 import copy
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 import shlex
 import signal
@@ -39,7 +38,6 @@ from goth.node import DEFAULT_SUBNET
 from goth.payment_config import PaymentConfig
 from goth.runner import process
 from goth.runner.cli import Cli, YagnaDockerCli
-from goth.runner.container import State as ContainerState
 from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
     YagnaContainer,
@@ -246,7 +244,8 @@ class Probe(abc.ABC):
                             self._logger.warning(f"Only {timeout - elapsed:.1f} seconds left to timeout. "
                                                  "Consider using a higher timeout.")
                         return yagna_version
-                except aiohttp.ClientConnectionError as _ex:
+                except aiohttp.ClientConnectionError as ex:
+                    self._logger.debug(f"Failed to connect to yagna - trying again: {ex}")
                     pass
 
                 elapsed = perf_counter() - start_time
