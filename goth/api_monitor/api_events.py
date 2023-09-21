@@ -6,7 +6,7 @@ import re
 from typing import Optional, Type
 
 from mitmproxy.flow import Error
-from mitmproxy.http import HTTPRequest, HTTPResponse
+from mitmproxy.http import Request, Response
 
 from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
 
@@ -33,9 +33,9 @@ class APIRequest(APIEvent):
     """Represents an API request."""
 
     number: int
-    http_request: HTTPRequest
+    http_request: Request
 
-    def __init__(self, number: int, http_request: HTTPRequest):
+    def __init__(self, number: int, http_request: Request):
         self.number = number
         self.http_request = http_request
 
@@ -84,9 +84,9 @@ class APIResponse(APIEvent):
     """Represents a response to an API request."""
 
     request: APIRequest
-    http_response: HTTPResponse
+    http_response: Response
 
-    def __init__(self, request: APIRequest, http_response: HTTPResponse):
+    def __init__(self, request: APIRequest, http_response: Response):
         self.request = request
         self.http_response = http_response
 
@@ -115,13 +115,13 @@ class APIError(APIEvent):
 
     request: APIRequest
     error: Error
-    http_response: Optional[HTTPResponse]
+    http_response: Optional[Response]
 
     def __init__(
         self,
         request: APIRequest,
         error: Error,
-        http_response: Optional[HTTPResponse] = None,
+        http_response: Optional[Response] = None,
     ):
         self.request = request
         self.error = error
@@ -147,7 +147,7 @@ def _match_event(
     method: Optional[str] = None,
     path_regex: Optional[str] = None,
 ) -> bool:
-    http_request: HTTPRequest
+    http_request: Request
     if isinstance(event, APIRequest):
         http_request = event.http_request
     elif isinstance(event, (APIResponse, APIError)):
