@@ -379,7 +379,7 @@ class EventMonitor(Generic[E]):
         Subsequent calls will examine all events gathered since the previous call
         returned and then wait for up to `timeout` seconds.
 
-        When `timeout` elapses, `asyncio.TimeourError` will be raised.
+        When `timeout` elapses, `asyncio.TimeoutError` will be raised.
         """
 
         # First examine log lines already seen
