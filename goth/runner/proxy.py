@@ -48,7 +48,9 @@ class Proxy:
         self._node_names = node_names
         self._ports = ports
         self._logger = logging.getLogger(__name__)
-        self._proxy_thread = asyncio.create_task(self._run_mitmproxy())
+        self._proxy_thread = threading.Thread(
+            target=self._run_mitmproxy, name="ProxyThread", daemon=True
+        )
         self._server_ready = threading.Event()
         self._mitmproxy_runner = None
 
@@ -70,7 +72,7 @@ class Proxy:
         self._logger.info("The mitmproxy thread has finished")
         await self.monitor.stop()
 
-    async def _run_mitmproxy(self):
+    def _run_mitmproxy(self):
         """Run by `self.proxy_thread`."""
 
         # This class is nested since it needs to refer to the `monitor` attribute
@@ -88,10 +90,17 @@ class Proxy:
                 self._server_ready.set()
 
         try:
+            loop = asyncio.new_event_loop()
+            # Monkey patch the loop to set its `add_signal_handler` method to no-op.
+            # The original method would raise error since the loop will run in
+            # a non-main thread and hence cannot have signal handlers installed.
+            loop.add_signal_handler = lambda *args_: None
+            asyncio.set_event_loop(loop)
+
             self._logger.info("Starting embedded mitmproxy...")
 
             args = f"-q --mode reverse:http://127.0.0.1 --listen-port {MITM_PROXY_PORT}"
-            await main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
+            main.run(MITMProxyRunner, cmdline.mitmdump, args.split())
 
         except Exception:
             self._logger.exception("Exception in mitmproxy thread")
