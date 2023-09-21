@@ -23,6 +23,5 @@ if TYPE_CHECKING:
         def run_json_command(self, ty: Type[V], *cmd_args: str) -> V:
             """Run the command with `--json` flag."""
 
-
 else:
     CommandRunner = object
