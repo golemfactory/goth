@@ -408,7 +408,6 @@ class Probe(abc.ABC):
 
         try:
             with monitored_logger(f"goth.{self.name}.command_output", cmd_monitor) as cmd_logger:
-
                 cmd_task = asyncio.create_task(
                     process.run_command(
                         shlex.split(command),

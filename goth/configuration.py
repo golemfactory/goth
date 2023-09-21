@@ -340,7 +340,7 @@ def load_yaml(
 
 
 def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
-    for (dict_path, value) in overrides:
+    for dict_path, value in overrides:
         path_list: List[str] = dict_path.split(".")
 
         leaf = dpath.util.get(dict_, path_list, default=None)

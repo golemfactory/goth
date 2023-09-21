@@ -17,7 +17,6 @@ APIEvents = EventStream[APIEvent]
 async def assert_no_api_errors(stream: APIEvents) -> bool:
     """Assert that no instance of `APIError` event ever occurs."""
     async for e in stream:
-
         if isinstance(e, APIError):
             raise AssertionError(f"API error occurred: {e}")
 
@@ -33,7 +32,6 @@ async def assert_every_request_gets_response(stream: APIEvents) -> bool:
     requests_in_progress: Set[APIRequest] = set()
 
     async for e in stream:
-
         if isinstance(e, APIRequest):
             requests_in_progress.add(e)
         elif isinstance(e, APIResponse):

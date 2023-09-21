@@ -212,7 +212,6 @@ async def test_events_ended_set():
     events = [1]
 
     async def func(stream):
-
         assert not stream.events_ended
 
         async for _ in stream:
@@ -235,7 +234,6 @@ async def test_events_ended_not_set():
     events = [1]
 
     async def func(stream):
-
         assert not stream.events_ended
 
         async for _ in stream:
@@ -257,7 +255,6 @@ async def test_past_events():
     events = []
 
     async def func(stream):
-
         _events = []
 
         async for e in stream:

@@ -58,7 +58,6 @@ def create_config(args):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(prog="goth")
     parser.add_argument(
         "--log-level",
