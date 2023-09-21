@@ -1,12 +1,12 @@
 """Module responsible for building the yagna Docker image for testing."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import logging
 import os
 from pathlib import Path
 import shutil
 from tempfile import TemporaryDirectory
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Dict
 
 from goth.project import PROJECT_ROOT
 from goth.runner.container.yagna import YagnaContainer
@@ -42,6 +42,19 @@ DEB_RELEASE_REPOS = [
 PROXY_IMAGE = "proxy-nginx"
 
 
+class ArtifactEnvironment:
+    """Configuration for downloading secondary artifacts."""
+
+    release_tag: Optional[str] = None
+    """Release tag substring used to filter the GitHub release to download."""
+    use_prerelease: bool = False
+    """If set to `False` then yagna pre-releases will be ignored."""
+
+    def __init__(self, use_prerelease: bool = False, release_tag: Optional[str] = None):
+        self.release_tag = release_tag
+        self.use_prerelease = use_prerelease
+
+
 @dataclass(frozen=True)
 class YagnaBuildEnvironment:
     """Configuration for the Docker build process of a yagna image."""
@@ -60,6 +73,8 @@ class YagnaBuildEnvironment:
     """Release tag substring used to filter the GitHub release to download."""
     use_prerelease: bool = True
     """If set to `False` then yagna pre-releases will be ignored."""
+    artifacts: Dict[str, ArtifactEnvironment] = field(default_factory=dict)
+    """Overrides standard artifacts download options."""
 
     @property
     def is_using_deb(self) -> bool:
@@ -216,7 +231,13 @@ def _setup_build_context(context_dir: Path, env: YagnaBuildEnvironment, dockerfi
             shutil.copy2(env.deb_path, context_deb_dir)
     else:
         for repo in DEB_RELEASE_REPOS:
-            _download_release(context_deb_dir, repo)
+            config = env.artifacts.get(repo, ArtifactEnvironment())
+            _download_release(
+                context_deb_dir,
+                repo,
+                tag_substring=config.release_tag or "",
+                use_prerelease=config.use_prerelease,
+            )
 
     logger.debug("Copying Dockerfile. source=%s, destination=%s", dockerfile, context_dir)
     shutil.copy2(dockerfile, context_dir / "Dockerfile")
