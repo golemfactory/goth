@@ -32,6 +32,7 @@ if TYPE_CHECKING:
         events_ended: bool
         """`True` iff there will be no more events."""
 
+
 else:
     EventStream = AsyncIterable
 
