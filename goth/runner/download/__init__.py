@@ -246,7 +246,15 @@ class ReleaseDownloader(GithubDownloader):
             return has_matching_asset and has_matching_tag
 
         matching_releases = (rel for rel in all_releases if release_filter(rel, tag_substring))
-        return next(matching_releases, None)
+
+        matching_release = next(matching_releases, None)
+        logger.debug(
+            "Filtering releases by tag: %s, unstable: %s, matching releases: %s",
+            tag_substring,
+            use_unstable,
+            json.dumps(obj2dict(matching_release)),
+        )
+        return matching_release
 
     def _get_asset(
         self, release: dict, content_type: str, asset_name: Optional[str] = None
