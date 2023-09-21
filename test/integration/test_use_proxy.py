@@ -59,7 +59,6 @@ async def test_use_proxy(default_goth_config: Path, log_dir: Path) -> None:
     runner.add_api_assertion(partial(no_api_call_made, "provider-2"))
 
     async with runner(goth_config.containers):
-
         # Ceck it `use-proxy` flags in the config are correctly interpreted
         for probe in runner.probes:
             assert probe.uses_proxy == (probe.name != "provider-2")
