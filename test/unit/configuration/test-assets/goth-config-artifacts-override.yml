@@ -8,6 +8,10 @@ docker-compose:
   # Path to compose file to be used, relative to `docker-dir`
   compose-file: "docker-compose.yml"
   docker-dir: "docker/"
+  compose-log-patterns:
+    ethereum-mainnet: ".*Wallets supplied."
+    ethereum-goerli: ".*Wallets supplied."
+    ethereum-polygon: ".*Wallets supplied."
 
   build-environment:
     artifacts:
@@ -18,6 +22,7 @@ docker-compose:
         release-tag: "v0.2..*"
       - name: "ya-relay"
         use-prerelease: false
+
 
 key-dir: "keys"
 web-root: "web-root"
