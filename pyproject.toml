@@ -31,6 +31,12 @@ docker = "^6.0"
 dpath = "^2.0"
 func_timeout = "4.3.5"
 markupsafe = "2.0.1"
+# This piece of software is dodgy as hell.
+# There is some weird stuff wrapped over it and the version cannot be bumped without
+# breaking the whole thing.
+# All calls are proxied to emit events?
+# We should get rid of the proxy monitoring layer, because it adds a lot of complexity
+# Also it prevents library from working on Windows as I understand
 mitmproxy = "^5.3"
 pyyaml = "5.3.1"
 transitions = "^0.8"
