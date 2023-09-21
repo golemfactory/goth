@@ -16,7 +16,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
@@ -44,7 +44,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
@@ -87,7 +87,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
@@ -117,7 +117,7 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
