@@ -16,12 +16,8 @@ docker-compose:
         release-tag: "v0.3..*"
       - name: "ya-runtime-wasi"
         release-tag: "v0.2..*"
-      - name: "ya-relay-server"
+      - name: "ya-relay"
         use-prerelease: false
-
-  compose-log-patterns:
-    ethereum: ".*Wallets supplied."
-    zksync: ".*Running on http://.*:3030/.*"
 
 key-dir: "keys"
 web-root: "web-root"

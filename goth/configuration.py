@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import dpath.util
 import yaml
+import logging
 
 from goth.address import YAGNA_REST_URL, PROXY_HOST
 from goth.runner.container.compose import (
@@ -27,6 +28,8 @@ Override = Tuple[str, Any]
 First element is a path within the file, e.g.: `"docker-compose.build-environment"`.
 Second element is the value to be inserted under the given path.
 """
+
+logger = logging.getLogger(__name__)
 
 
 class Configuration:
@@ -273,6 +276,8 @@ def load_yaml(
     import importlib
 
     with open(str(yaml_path)) as f:
+        logger.info("Loading goth config from file: %s", yaml_path)
+
         dict_: Dict[str, Any] = yaml.load(f, yaml.FullLoader)
         if overrides:
             _apply_overrides(dict_, overrides)

@@ -88,5 +88,5 @@ def test_load_yaml_override_artifacts():
     assert config.compose_config.build_env.artifacts["ya-runtime-wasi"].use_prerelease is False
     assert config.compose_config.build_env.artifacts["ya-runtime-wasi"].release_tag == "v0.2..*"
 
-    assert config.compose_config.build_env.artifacts["ya-relay-server"].use_prerelease is False
-    assert config.compose_config.build_env.artifacts["ya-relay-server"].release_tag is None
+    assert config.compose_config.build_env.artifacts["ya-relay"].use_prerelease is False
+    assert config.compose_config.build_env.artifacts["ya-relay"].release_tag is None
