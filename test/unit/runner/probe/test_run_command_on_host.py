@@ -75,6 +75,7 @@ async def test_run_command_on_host(mock_probe):
         monitor,
         _process_monitor,
     ):
+
         await monitor.wait_for_pattern(".*eChO", timeout=10)
 
 
