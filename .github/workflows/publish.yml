@@ -16,12 +16,12 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
         with:
-          poetry-version: 1.2.2
+          poetry-version: 1.6.1
 
       - name: Install dependencies
         run: poetry install
@@ -44,12 +44,12 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
         with:
-          poetry-version: 1.2.2
+          poetry-version: 1.6.1
 
       - name: Get git release tag
         run: echo "::set-output name=git-release-tag::goth $(git describe --tags)"
@@ -87,12 +87,12 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
         with:
-          poetry-version: 1.2.2
+          poetry-version: 1.6.1
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v2
@@ -117,12 +117,12 @@ jobs:
       - name: Configure python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.11'
 
       - name: Configure poetry
         uses: Gr1N/setup-poetry@v8
         with:
-          poetry-version: 1.2.2
+          poetry-version: 1.6.1
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v2
