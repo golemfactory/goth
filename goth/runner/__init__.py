@@ -2,6 +2,7 @@
 
 import asyncio
 from contextlib import asynccontextmanager, AsyncExitStack
+from datetime import datetime, timezone
 from itertools import chain
 import logging
 import os
@@ -25,6 +26,7 @@ from goth.api_monitor.api_events import APIEvent
 from goth.assertions.monitor import Assertion, AssertionFunction, EventMonitor
 from goth.runner.container.compose import (
     ComposeConfig,
+    ContainerInfo,
     ComposeNetworkManager,
     run_compose_network,
 )
@@ -69,6 +71,9 @@ class Runner:
     proxy: Optional[Proxy]
     """An embedded instance of mitmproxy."""
 
+    _container_info: Dict[str, ContainerInfo]
+    """Info about connected containers"""
+
     _test_failure_callback: Callable[[TestFailure], None]
     """A function to be called when `TestFailure` is caught during a test run."""
 
@@ -108,12 +113,14 @@ class Runner:
     ):
         # Set up the logging directory for this runner
         self.test_name = test_name or self._current_pytest_test_name() or ""
-        self.log_dir = base_log_dir / self.test_name
+        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
+        self.log_dir = base_log_dir / self.test_name / date_str
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         self.api_assertions_module = api_assertions_module
         self.probes = []
         self.proxy = None
+        self._container_info = {}
         self._exit_stack = AsyncExitStack()
         self._cancellation_callback = cancellation_callback
         self._test_failure_callback = test_failure_callback
@@ -170,6 +177,9 @@ class Runner:
             # in their corresponding log files. Now we only need to raise
             # one of them to break the execution.
             raise TemporalAssertionError(assertion.name)
+
+    def get_container_info(self) -> Dict[str, ContainerInfo]:
+        return self._container_info
 
     def _create_probes(self, scenario_dir: Path) -> None:
         docker_client = docker.from_env()
@@ -315,10 +325,10 @@ class Runner:
         self._exit_stack.enter_context(configure_logging_for_test(self.log_dir))
         logger.info(colors.yellow("Running test: %s"), self.test_name)
 
-        container_info = await self._exit_stack.enter_async_context(
+        self._container_info = await self._exit_stack.enter_async_context(
             run_compose_network(self._compose_manager, self.log_dir)
         )
-        for info in container_info.values():
+        for info in self._container_info.values():
             if PROXY_NGINX_SERVICE_NAME in info.aliases:
                 self._nginx_service_address = info.address
                 break

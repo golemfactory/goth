@@ -7,25 +7,20 @@ from goth.configuration import load_yaml
 EXPECTED_PAYMENT_ENV = {
     "polygon": {
         "YA_PAYMENT_NETWORK": "polygon",
-        "POLYGON_GETH_ADDR": "http://ethereum:8545",
+        "POLYGON_GETH_ADDR": "http://ethereum-polygon:8545",
         "POLYGON_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
-    },
-    "zksync": {
-        "YA_PAYMENT_NETWORK": "rinkeby",
-        "ZKSYNC_RINKEBY_RPC_ADDRESS": "http://zksync:3030",
-        "ZKSYNC_FAUCET_ADDR": "http://zksync:3030/zk/donatex",
     },
     "erc20_mainnet": {
         "YA_PAYMENT_NETWORK": "mainnet",
-        "MAINNET_GETH_ADDR": "http://ethereum:8545",
+        "MAINNET_GETH_ADDR": "http://ethereum-mainnet:8545",
         "MAINNET_GLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
         "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": 0,
     },
     "erc20": {
-        "YA_PAYMENT_NETWORK": "rinkeby",
-        "RINKEBY_GETH_ADDR": "http://ethereum:8545",
-        "RINKEBY_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
-        "ERC20_RINKEBY_REQUIRED_CONFIRMATIONS": 0,
+        "YA_PAYMENT_NETWORK": "goerli",
+        "GOERLI_GETH_ADDR": "http://ethereum-goerli:8545",
+        "GOERLI_TGLM_CONTRACT_ADDRESS": "0xFDFEF9D10d929cB3905C71400ce6be1990EA0F34",
+        "ERC20_GOERLI_REQUIRED_CONFIRMATIONS": 0,
     },
 }
 
@@ -41,7 +36,7 @@ async def test_default_payment_platform(default_goth_config: Path) -> None:
             assert env[key] == val
 
 
-@pytest.mark.parametrize("payment_config", ("zksync", "erc20_mainnet", "erc20", "polygon"))
+@pytest.mark.parametrize("payment_config", ("erc20_mainnet", "erc20", "polygon"))
 @pytest.mark.asyncio
 async def test_payment_platform_env(default_goth_config: Path, payment_config) -> None:
     """Test if "payment_config" param in config file works."""
