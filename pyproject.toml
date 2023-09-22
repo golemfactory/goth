@@ -23,31 +23,37 @@ repository = "https://github.com/golemfactory/goth"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-aiohttp = "3.7.4"
+python = "^3.10.1"
+aiohttp = "^3.8.5"
 ansicolors = "^1.1.0"
 docker-compose = "^1.29"
-docker = "^5.0"
+docker = "^6.0"
 dpath = "^2.0"
 func_timeout = "4.3.5"
 markupsafe = "2.0.1"
+# This piece of software is dodgy as hell.
+# There is some weird stuff wrapped over it and the version cannot be bumped without
+# breaking the whole thing.
+# All calls are proxied to emit events?
+# We should get rid of the proxy monitoring layer, because it adds a lot of complexity
+# Also it prevents library from working on Windows as I understand
 mitmproxy = "^5.3"
 pyyaml = "5.3.1"
 transitions = "^0.8"
-typing_extensions = "^3.10.0"
+typing_extensions = "^4.5"
 urllib3 = "^1.26"
 ya-aioclient = "^0.6"
 ghapi = "^0.1.16"
 
 [tool.poetry.dev-dependencies]
 black = "21.7b0"
-flake8 = "^5"
-flake8-docstrings = "^1.6"
+flake8 = "^6.1"
+flake8-docstrings = "^1.7"
 Flake8-pyproject = "^1.2.2"
-mypy = "^0.942"
-poethepoet = "^0.10"
-pytest-asyncio = "0.14"
-pytest = "^6.2"
+mypy = "^1.5"
+poethepoet = "^0.22"
+pytest-asyncio = "0.21"
+pytest = "^7.4"
 
 [tool.poe.tasks]
 interactive = "python -m goth start goth/default-assets/goth-config.yml"

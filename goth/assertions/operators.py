@@ -7,7 +7,6 @@ from goth.assertions import EventStream
 
 
 if TYPE_CHECKING:
-
     from typing_extensions import Protocol
 
     class HasTimestamp(Protocol):
@@ -20,7 +19,6 @@ if TYPE_CHECKING:
     E = TypeVar("E", bound=HasTimestamp)
 
 else:
-
     E = TypeVar("E")
 
 

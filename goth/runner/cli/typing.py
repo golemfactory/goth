@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-
     from typing import Tuple, Type, TypeVar
 
     from typing_extensions import Protocol

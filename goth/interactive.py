@@ -37,7 +37,6 @@ async def start_network(
     )
 
     async with runner(configuration.containers):
-
         providers = runner.get_probes(probe_type=ProviderProbe)
         requestor = runner.get_probes(probe_type=RequestorProbe)[0]
 
