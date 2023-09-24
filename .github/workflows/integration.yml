@@ -11,7 +11,7 @@ on:
 jobs:
   integration-test:
     name: Run integration tests
-    runs-on: [goth2, ubuntu-22.04]
+    runs-on: [ubuntu-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,14 +29,6 @@ jobs:
 
       - name: Install dependencies
         run: poetry install
-
-      - name: Disconnect Docker containers from default network
-        continue-on-error: true
-        # related to this issue: https://github.com/moby/moby/issues/23302
-        run: |
-          docker network inspect docker_default
-          sudo apt-get install -y jq
-          docker network inspect docker_default | jq ".[0].Containers | map(.Name)[]" | tee /dev/stderr | xargs --max-args 1 -- docker network disconnect -f docker_default
 
       - name: Remove Docker containers
         continue-on-error: true
