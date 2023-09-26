@@ -1,6 +1,7 @@
 """Defines a class representing `goth` configuration."""
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from dpath import MergeType
 
 import dpath.util
 import yaml
@@ -281,7 +282,6 @@ def load_yaml(
         dict_: Dict[str, Any] = yaml.load(f, yaml.FullLoader)
         if overrides:
             _apply_overrides(dict_, overrides)
-
         network = _ConfigurationParser(dict_, Path(yaml_path))
 
         key_dir = network.get_path("key-dir")
@@ -340,13 +340,13 @@ def load_yaml(
 
 
 def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
-    for dict_path, value in overrides:
-        path_list: List[str] = dict_path.split(".")
-
-        leaf = dpath.util.get(dict_, path_list, default=None)
-        # if the path's last element does not exist, add it as a new dict
-        if not leaf:
-            leaf_name = path_list.pop()
-            value = {leaf_name: value}
-
-        dpath.util.new(dict_, path_list, value)
+    overrides_merged = {}
+    for path_str, override in overrides:
+        logger.debug(f"Override field: '{path_str}', value: {override}")
+        path: List[str] = path_str.split('.')
+        path.reverse()
+        for path_part in path:
+            override  = {path_part: override }
+        dpath.util.merge(overrides_merged, override, flags=MergeType.ADDITIVE)
+    logger.debug(f"Merged overrides: {overrides_merged}")
+    dpath.util.merge(dict_, overrides_merged, ".", flags=MergeType.REPLACE)
