@@ -343,10 +343,10 @@ def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
     overrides_merged = {}
     for path_str, override in overrides:
         logger.debug(f"Override field: '{path_str}', value: {override}")
-        path: List[str] = path_str.split('.')
+        path: List[str] = path_str.split(".")
         path.reverse()
         for path_part in path:
-            override  = {path_part: override }
+            override = {path_part: override}
         dpath.util.merge(overrides_merged, override, flags=MergeType.ADDITIVE)
     logger.debug(f"Merged overrides: {overrides_merged}")
     dpath.util.merge(dict_, overrides_merged, ".", flags=MergeType.REPLACE)
