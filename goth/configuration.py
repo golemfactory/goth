@@ -349,4 +349,5 @@ def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
             override = {path_part: override}
         dpath.util.merge(overrides_merged, override, flags=MergeType.ADDITIVE)
     logger.debug(f"Merged overrides: {overrides_merged}")
-    dpath.util.merge(dict_, overrides_merged, ".", flags=MergeType.REPLACE)
+    dpath.util.merge(dict_, overrides_merged, flags=MergeType.REPLACE)
+    logger.info(f"Config with overrides: {dict_}")
