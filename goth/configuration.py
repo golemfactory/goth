@@ -341,12 +341,15 @@ def load_yaml(
 
 def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
     for dict_path, value in overrides:
-        path_list: List[str] = dict_path.split(".")
+        # If any element on the path is None, then dpath library will crash:
+        # https://github.com/dpath-maintainers/dpath-python/issues/92
+        # We need to replace `None` with empty dict `{}`.
+        if not dpath.util.get(dict_, dict_path, separator=".", default={}):
+            path_list: List[str] = dict_path.split(".")
+            for i in range(1, len(path_list)):
+                sub_list = path_list[0:i]
+                if not dpath.util.get(dict_, sub_list, default={}):
+                    dpath.util.set(dict_, sub_list, {})
+                    break
 
-        leaf = dpath.util.get(dict_, path_list, default=None)
-        # if the path's last element does not exist, add it as a new dict
-        if not leaf:
-            leaf_name = path_list.pop()
-            value = {leaf_name: value}
-
-        dpath.util.new(dict_, path_list, value)
+        dpath.util.new(dict_, dict_path, value, separator=".")

@@ -76,7 +76,7 @@ def test_load_yaml_environment(test_config_file: Path):
     assert node.environment[new_var_name] == new_var_value
 
 
-def test_load_yaml_override_artifacts():
+def test_load_yaml_artifacts():
     """Test overriding download configuration for additional artifacts (for example: runtimes)"""
 
     test_config_file = Path(__file__).parent / "test-assets" / "goth-config-artifacts-override.yml"
@@ -90,3 +90,16 @@ def test_load_yaml_override_artifacts():
 
     assert config.compose_config.build_env.artifacts["ya-relay"].use_prerelease is False
     assert config.compose_config.build_env.artifacts["ya-relay"].release_tag is None
+
+
+def test_load_yaml_artifacts_and_override():
+    """Test overriding download configuration for additional artifacts (for example: runtimes)"""
+
+    test_config_file = Path(__file__).parent / "test-assets" / "goth-config-artifacts-override.yml"
+    overrides = [
+        ("docker-compose.build-environment.binary-path", "/tmp/build"),
+    ]
+    config = load_yaml(test_config_file, overrides)
+
+    assert config.compose_config.build_env.artifacts["ya-runtime-vm"].use_prerelease is True
+    assert config.compose_config.build_env.artifacts["ya-runtime-vm"].release_tag == "v0.3..*"
