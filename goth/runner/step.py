@@ -69,3 +69,22 @@ def step(default_timeout: float = 10.0):
         return wrapper
 
     return decorator
+
+def retry_on(exception, retry_timeout: float = 10.0):
+    """Wrap a function to retry on exception"""
+
+    # Func below is the real decorator and will receive the test function as param
+    def decorator_func(f):
+        @functools.wraps(f)
+        async def wrapper(self: "Probe", *args):
+            try:
+                # Try to run the test
+                return await asyncio.wait_for(f(self, *args), timeout=None)
+            except exception:
+                logger.warning(f"Api call failed with {exception}, retrying in {retry_timeout}")
+                await asyncio.sleep(retry_timeout)
+                return await asyncio.wait_for(f(self, *args), timeout=None)
+
+        return wrapper
+
+    return decorator_func
