@@ -350,3 +350,4 @@ def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
             value = {leaf_name: value}
 
         dpath.util.new(dict_, path_list, value)
+		logger.info(f"Config with overrides: {dict_}")
