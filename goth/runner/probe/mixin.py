@@ -52,7 +52,7 @@ class ProbeProtocol(Protocol):
 class ActivityApiMixin:
     """Probe mixin providing high-level test steps which use yagna activity API."""
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def create_activity(self: ProbeProtocol, agreement_id: str) -> str:
         """Call create_activity on the activity api."""
@@ -60,7 +60,7 @@ class ActivityApiMixin:
         activity_id = await self.api.activity.control.create_activity(agreement_id)
         return activity_id
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def call_exec(self: ProbeProtocol, activity_id: str, exe_script: str) -> str:
         """Call call_exec on the activity api."""
@@ -69,7 +69,7 @@ class ActivityApiMixin:
         batch_id = await self.api.activity.control.call_exec(activity_id, script_request)
         return batch_id
 
-    @step()
+    @step(120.0)
     @retry_on(ApiException, 60.0)
     async def collect_results(
         self: ProbeProtocol, activity_id: str, batch_id: str, num_results: int
@@ -85,7 +85,7 @@ class ActivityApiMixin:
             await asyncio.sleep(1.0)
         return results
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def destroy_activity(self: ProbeProtocol, activity_id: str) -> None:
         """Call destroy_activity on the activity api."""
@@ -96,13 +96,13 @@ class ActivityApiMixin:
 class MarketApiMixin:
     """Probe mixin providing high-level test steps which use yagna market API."""
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def confirm_agreement(self: ProbeProtocol, agreement_id: str) -> None:
         """Call confirm_agreement on the market api."""
         await self.api.market.confirm_agreement(agreement_id)
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def counter_proposal(
         self: ProbeProtocol,
@@ -125,7 +125,7 @@ class MarketApiMixin:
 
         return counter_proposal
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def create_agreement(self: ProbeProtocol, proposal: Proposal) -> str:
         """Call create_agreement on the market api."""
@@ -141,14 +141,14 @@ class MarketApiMixin:
         agreement_id = await self.api.market.create_agreement(agreement_proposal)
         return agreement_id
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def subscribe_demand(self: ProbeProtocol, demand: Demand) -> Tuple[str, Demand]:
         """Call subscribe demand on the market api."""
         subscription_id = await self.api.market.subscribe_demand(demand)
         return subscription_id, demand
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def subscribe_template_demand(
         self: ProbeProtocol, task_package: str, constraints: str
@@ -170,7 +170,7 @@ class MarketApiMixin:
 
         return await self.subscribe_demand(demand)  # type: ignore
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def terminate_agreement(self: ProbeProtocol, agreement_id: str, reason: Optional[str]):
         """Call terminate_agreement on the market api."""
@@ -178,19 +178,19 @@ class MarketApiMixin:
             agreement_id, request_body={"message": f"Terminated by {self.name}"}
         )
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def unsubscribe_demand(self: ProbeProtocol, subscription_id: str) -> None:
         """Call unsubscribe demand on the market api."""
         await self.api.market.unsubscribe_demand(subscription_id)
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def wait_for_approval(self: ProbeProtocol, agreement_id: str) -> None:
         """Call wait_for_approval on the market api."""
         await self.api.market.wait_for_approval(agreement_id)
 
-    @step(30.0)
+    @step(90.0)
     @retry_on(ApiException, 60.0)
     async def wait_for_proposals(
         self: ProbeProtocol,
@@ -229,7 +229,7 @@ class MarketApiMixin:
 class PaymentApiMixin:
     """Probe mixin providing high-level test steps which use yagna payment API."""
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def gather_invoices(self: ProbeProtocol, agreement_id: str) -> List[Invoice]:
         """Call gather_invoice on the payment api."""
@@ -243,7 +243,7 @@ class PaymentApiMixin:
 
         return invoices
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def pay_invoices(self: ProbeProtocol, invoice_events: Iterable[Invoice]) -> None:
         """Call accept_invoice on the payment api."""
@@ -268,7 +268,7 @@ class PaymentApiMixin:
             await self.api.payment.accept_invoice(invoice_event.invoice_id, acceptance)
             logger.debug("Accepted invoice. id=%s", invoice_event.invoice_id)
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def create_allocation(
         self: ProbeProtocol, timeout: Optional[datetime] = None, total_amount=0
@@ -290,7 +290,7 @@ class PaymentApiMixin:
 
         return allocation_result
 
-    @step()
+    @step(70.0)
     @retry_on(ApiException, 60.0)
     async def get_allocation(self: ProbeProtocol, allocation_id: str) -> Allocation:
         """Call get_allocation on the market api."""
