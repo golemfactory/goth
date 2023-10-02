@@ -70,6 +70,7 @@ def step(default_timeout: float = 10.0):
 
     return decorator
 
+
 def retry_on(exception, retry_timeout: float = 10.0):
     """Wrap a function to retry on exception"""
 
