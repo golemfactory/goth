@@ -14,13 +14,13 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from ya_activity import ExeScriptCommandResult, ExeScriptRequest
+from ya_activity import ExeScriptCommandResult, ExeScriptRequest, ApiException
 from ya_market import AgreementProposal, Demand, DemandOfferBase, Proposal
 from ya_payment import Acceptance, Allocation, Invoice
 
 from goth.node import DEFAULT_SUBNET
 from goth.payment_config import PaymentConfig
-from goth.runner.step import step
+from goth.runner.step import retry_on, step
 
 if TYPE_CHECKING:
     from goth.runner.probe import Probe
