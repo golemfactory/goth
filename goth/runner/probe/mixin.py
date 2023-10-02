@@ -52,8 +52,8 @@ class ProbeProtocol(Protocol):
 class ActivityApiMixin:
     """Probe mixin providing high-level test steps which use yagna activity API."""
 
-    @step()
-    @retry_on(ApiException, 60.0)
+    @step(20.0)
+    @retry_on(ApiException, 10.0)
     async def create_activity(self: ProbeProtocol, agreement_id: str) -> str:
         """Call create_activity on the activity api."""
 
