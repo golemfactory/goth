@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from goth.configuration import load_yaml
+from goth.configuration import load_yaml, _apply_overrides
 
 
 @pytest.fixture()
@@ -74,3 +74,54 @@ def test_load_yaml_environment(test_config_file: Path):
     node = [c for c in config.containers if c.name == node_name][0]
     assert node.environment[existing_var_name] == existing_var_value
     assert node.environment[new_var_name] == new_var_value
+
+
+def test_load_yaml_override_artifacts():
+    """Test overriding download configuration for additional artifacts (for example: runtimes)"""
+
+    test_config_file = Path(__file__).parent / "test-assets" / "goth-config-artifacts-override.yml"
+    config = load_yaml(test_config_file)
+
+    assert config.compose_config.build_env.artifacts["ya-runtime-vm"].use_prerelease is True
+    assert config.compose_config.build_env.artifacts["ya-runtime-vm"].release_tag == "v0.3..*"
+
+    assert config.compose_config.build_env.artifacts["ya-runtime-wasi"].use_prerelease is False
+    assert config.compose_config.build_env.artifacts["ya-runtime-wasi"].release_tag == "v0.2..*"
+
+    assert config.compose_config.build_env.artifacts["ya-relay"].use_prerelease is False
+    assert config.compose_config.build_env.artifacts["ya-relay"].release_tag is None
+
+
+def test_apply_overrides():
+    """Applied overrides should be merged and then used to override original config values"""
+
+    config = {"a": {"b": "c"}}
+    config_overrides = [("a.b", "x")]
+    _apply_overrides(config, config_overrides)
+    assert config["a"]["b"] == "x"
+
+    config = {"a": {"b": "c"}}
+    config_overrides = [("a", "x")]
+    _apply_overrides(config, config_overrides)
+    assert config["a"] == "x"
+
+    config = {}
+    config_overrides = [("a", "x")]
+    _apply_overrides(config, config_overrides)
+    assert config["a"] == "x"
+
+    config = {"a": "b"}
+    config_overrides = []
+    _apply_overrides(config, config_overrides)
+    assert config["a"] == "b"
+
+    config = {"a": ["b"]}
+    config_overrides = [("a", ["x"])]
+    _apply_overrides(config, config_overrides)
+    assert config["a"] == ["x"]
+
+    config = {"a": ["b"]}
+    config_overrides = [("a", ["x"]), ("a", ["y"])]
+    _apply_overrides(config, config_overrides)
+    # Overrides values are first merged and then used to override original values.
+    assert config["a"] == ["x", "y"]

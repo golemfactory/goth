@@ -21,7 +21,6 @@ E = TypeVar("E")
 
 
 if TYPE_CHECKING:
-
     from typing_extensions import Protocol
 
     class EventStream(Protocol, AsyncIterable[E]):
@@ -35,7 +34,6 @@ if TYPE_CHECKING:
 
 
 else:
-
     EventStream = AsyncIterable
 
 

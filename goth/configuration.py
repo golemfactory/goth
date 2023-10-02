@@ -1,9 +1,11 @@
 """Defines a class representing `goth` configuration."""
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from dpath import MergeType
 
 import dpath.util
 import yaml
+import logging
 
 from goth.address import YAGNA_REST_URL, PROXY_HOST
 from goth.runner.container.compose import (
@@ -11,6 +13,7 @@ from goth.runner.container.compose import (
     DEFAULT_COMPOSE_FILE,
     YagnaBuildEnvironment,
 )
+from goth.runner.container.build import ArtifactEnvironment
 from goth.runner.container.payment import PaymentIdPool
 from goth.node import node_environment
 from goth.runner.probe import Probe, YagnaContainerConfig
@@ -26,6 +29,8 @@ Override = Tuple[str, Any]
 First element is a path within the file, e.g.: `"docker-compose.build-environment"`.
 Second element is the value to be inserted under the given path.
 """
+
+logger = logging.getLogger(__name__)
 
 
 class Configuration:
@@ -231,6 +236,7 @@ class _ConfigurationParser:
         deb_path = self.get_path("deb-path", required=False)
         release_tag = self.get("release-tag")
         use_prerelease = self.get("use-prerelease", default=True)
+        artifacts = self.read_artifacts_env()
         return YagnaBuildEnvironment(
             docker_dir,
             binary_path=binary_path,
@@ -239,7 +245,19 @@ class _ConfigurationParser:
             deb_path=deb_path,
             release_tag=release_tag,
             use_prerelease=use_prerelease,
+            artifacts=artifacts,
         )
+
+    def read_artifacts_env(self) -> Dict[str, ArtifactEnvironment]:
+        self.ensure_type(dict)
+
+        result = dict()
+        for artifact in self.get("artifacts", default={}):
+            result[artifact["name"]] = ArtifactEnvironment(
+                artifact.get("use-prerelease", default=False),
+                release_tag=artifact.get("release-tag"),
+            )
+        return result
 
 
 def load_yaml(
@@ -259,10 +277,11 @@ def load_yaml(
     import importlib
 
     with open(str(yaml_path)) as f:
+        logger.info("Loading goth config from file: %s", yaml_path)
+
         dict_: Dict[str, Any] = yaml.load(f, yaml.FullLoader)
         if overrides:
             _apply_overrides(dict_, overrides)
-
         network = _ConfigurationParser(dict_, Path(yaml_path))
 
         key_dir = network.get_path("key-dir")
@@ -321,13 +340,14 @@ def load_yaml(
 
 
 def _apply_overrides(dict_: Dict[str, Any], overrides: List[Override]):
-    for (dict_path, value) in overrides:
-        path_list: List[str] = dict_path.split(".")
-
-        leaf = dpath.util.get(dict_, path_list, default=None)
-        # if the path's last element does not exist, add it as a new dict
-        if not leaf:
-            leaf_name = path_list.pop()
-            value = {leaf_name: value}
-
-        dpath.util.new(dict_, path_list, value)
+    overrides_merged = {}
+    for path_str, override in overrides:
+        logger.debug(f"Override field: '{path_str}', value: {override}")
+        path: List[str] = path_str.split(".")
+        path.reverse()
+        for path_part in path:
+            override = {path_part: override}
+        dpath.util.merge(overrides_merged, override, flags=MergeType.ADDITIVE)
+    logger.debug(f"Merged overrides: {overrides_merged}")
+    dpath.util.merge(dict_, overrides_merged, flags=MergeType.REPLACE)
+    logger.info(f"Config with overrides: {dict_}")
