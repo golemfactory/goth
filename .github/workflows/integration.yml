@@ -39,7 +39,10 @@ jobs:
           docker system prune -af
 
       - name: Log in to GitHub Docker repository
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{github.actor}} --password-stdin
+
+      - name: Check login
+        run: docker pull ghcr.io/golemfactory/goth/yagna-goth:0.4.0-alpha.1-da1d9a9
 
       - name: Run integration tests
         env:

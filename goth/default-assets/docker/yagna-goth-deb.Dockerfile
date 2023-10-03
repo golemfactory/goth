@@ -1,4 +1,4 @@
-FROM docker.pkg.github.com/golemfactory/goth/yagna-goth-base:1.0.0
+FROM ghcr.io/golemfactory/goth/yagna-goth-base:1.0.0
 
 RUN update-ca-certificates
 
