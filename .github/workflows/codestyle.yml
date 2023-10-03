@@ -27,8 +27,7 @@ jobs:
         run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Install dependencies
-        # TODO install dev dependencies only (https://github.com/python-poetry/poetry/issues/2572)
-        run: poetry install --no-root
+        run: poetry install --dev-only
 
       - name: Run formatters in check mode
         run: poetry run poe checks_codestyle
