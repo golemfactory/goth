@@ -42,7 +42,7 @@ jobs:
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{github.actor}} --password-stdin
 
       - name: Check login
-        run: docker pull ghcr.io/golemfactory/goth/yagna-goth:0.4.0-alpha.1-da1d9a9
+        run: docker pull ghcr.io/golemfactory/goth/yagna-goth-base:1.0.0
 
       - name: Run integration tests
         env:
