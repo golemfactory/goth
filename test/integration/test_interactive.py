@@ -25,7 +25,7 @@ async def test_interactive(
             await asyncio.sleep(0.1)
 
     try:
-        await asyncio.wait_for(_scan_stdout(), timeout=300)
+        await asyncio.wait_for(_scan_stdout(), timeout=90)
         assert env_file.exists()
     except asyncio.TimeoutError:
         pytest.fail("Timeout while waiting for interactive mode to start")
