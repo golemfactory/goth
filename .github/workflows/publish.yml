@@ -46,10 +46,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Get git release tag
         run: echo "::set-output name=git-release-tag::goth $(git describe --tags)"
@@ -82,17 +80,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v2
@@ -119,10 +115,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v2
