@@ -11,12 +11,13 @@ on:
 jobs:
   integration-test:
     name: Run integration tests
-    runs-on: [goth2, ubuntu-22.04]
+    runs-on: [goth2, ubuntu-22.10]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
+        continue-on-error: true
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
@@ -24,30 +25,21 @@ jobs:
       - name: Install gcc
         run: sudo apt-get install -y gcc g++ make
 
-      - name: Install and configure Poetry
-        run: python -m pip install poetry==1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Install dependencies
         run: poetry install
 
-      - name: Disconnect Docker containers from default network
-        continue-on-error: true
-        # related to this issue: https://github.com/moby/moby/issues/23302
+      # Only relevant for self-hosted runners
+      - name: Cleanup Docker
+        if: always()
         run: |
-          docker network inspect docker_default
-          sudo apt-get install -y jq
-          docker network inspect docker_default | jq ".[0].Containers | map(.Name)[]" | tee /dev/stderr | xargs --max-args 1 -- docker network disconnect -f docker_default
-
-      - name: Remove Docker containers
-        continue-on-error: true
-        run: docker rm -f $(docker ps -a -q)
-
-      - name: Restart Docker daemon
-        # related to this issue: https://github.com/moby/moby/issues/23302
-        run: sudo systemctl restart docker
+          c=$(docker ps -q) && [[ $c ]] && docker kill $c
+          docker system prune -af
 
       - name: Log in to GitHub Docker repository
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{github.actor}} --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{github.actor}} --password-stdin
 
       - name: Run integration tests
         env:
@@ -69,8 +61,11 @@ jobs:
       # Only relevant for self-hosted runners
       - name: Remove poetry virtual env
         if: always()
-        # Python version below should agree with the version set up by this job.
-        # In future we'll be able to use the `--all` flag here to remove envs for
-        # all Python versions (https://github.com/python-poetry/poetry/issues/3208).
         run: poetry env remove --all
 
+      # Only relevant for self-hosted runners
+      - name: Cleanup Docker
+        if: always()
+        run: |
+          c=$(docker ps -q) && [[ $c ]] && docker kill $c
+          docker system prune -af

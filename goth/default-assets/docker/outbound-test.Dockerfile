@@ -1,9 +1,6 @@
-FROM ubuntu:22.04
+FROM ghcr.io/golemfactory/goth/yagna-outbound-base:1.0.0
 
-RUN apt update \
-    && apt install -y libssl-dev ca-certificates \
-    && update-ca-certificates \
-    && apt install -y ncat iperf3
+RUN update-ca-certificates
 
 RUN printf '#!/bin/bash \n\
 ncat -e /bin/cat -k -l 22235 & \n\
