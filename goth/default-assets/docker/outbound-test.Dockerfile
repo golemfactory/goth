@@ -1,4 +1,4 @@
-FROM ghcr.io/golemfactory/goth/yagna-outbound-base:1.0.0
+FROM docker.pkg.github.com/golemfactory/goth/yagna-outbound-base:1.0.0
 
 RUN update-ca-certificates
 

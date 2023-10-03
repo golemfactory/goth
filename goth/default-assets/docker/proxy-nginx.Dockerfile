@@ -1,4 +1,4 @@
-FROM ghcr.io/golemfactory/goth/nginx:1.19
+FROM docker.pkg.github.com/olemfactory/goth/nginx:1.19
 
 COPY goth/api_monitor/nginx.conf /etc/nginx/nginx.conf
 
