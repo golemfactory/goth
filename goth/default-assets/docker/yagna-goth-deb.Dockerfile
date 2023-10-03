@@ -1,4 +1,4 @@
-FROM scx1332/goth_base:latest
+FROM ghcr.io/golemfactory/goth/yagna-goth-base:1.0.0
 
 RUN update-ca-certificates
 
