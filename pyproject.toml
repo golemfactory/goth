@@ -70,7 +70,7 @@ tests = { sequence = [
   "tests_unit",
   "tests_integration",
 ], help = "Run all available tests" }
-tests_unit = "pytest -svx test/unit"
+tests_unit = "pytest -W ignore::DeprecationWarning -svx test/unit"
 tests_integration = "pytest -W ignore::DeprecationWarning -svx test/integration"
 
 [build-system]
