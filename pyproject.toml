@@ -71,7 +71,7 @@ tests = { sequence = [
   "tests_integration",
 ], help = "Run all available tests" }
 tests_unit = "pytest -svx test/unit"
-tests_integration = "pytest -svx test/integration"
+tests_integration = "pytest -W ignore::DeprecationWarning -svx test/integration"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
