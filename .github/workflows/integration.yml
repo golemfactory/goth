@@ -11,7 +11,7 @@ on:
 jobs:
   integration-test:
     name: Run integration tests
-    runs-on: [goth2, ubuntu-22.10]
+    runs-on: [goth2]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
         run: poetry run poe tests_integration
 
       - name: Upload test logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: goth-logs
