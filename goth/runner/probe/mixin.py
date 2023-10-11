@@ -207,7 +207,7 @@ class MarketApiMixin:
         provider_ids = {p.address for p in providers}
 
         while len(proposals) < len(provider_ids):
-            collected_offers = await self.api.market.collect_offers(subscription_id, timeout=1)
+            collected_offers = await self.api.market.collect_offers(subscription_id, timeout=3)
             if collected_offers:
                 logger.debug(
                     "collect_offers(%s). collected_offers=%r",
