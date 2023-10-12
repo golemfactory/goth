@@ -69,7 +69,7 @@ class ActivityApiMixin:
         batch_id = await self.api.activity.control.call_exec(activity_id, script_request)
         return batch_id
 
-    @step(120.0)
+    @step(130.0)
     @retry_on(ApiException, 60.0)
     async def collect_results(
         self: ProbeProtocol, activity_id: str, batch_id: str, num_results: int
@@ -80,7 +80,7 @@ class ActivityApiMixin:
 
         while len(results) < num_results:
             results = await self.api.activity.control.get_exec_batch_results(
-                activity_id, batch_id, timeout=1
+                activity_id, batch_id, timeout=3
             )
             await asyncio.sleep(1.0)
         return results
