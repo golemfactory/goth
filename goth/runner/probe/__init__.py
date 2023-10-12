@@ -272,6 +272,10 @@ class Probe(abc.ABC):
         """
         self.container.start()
 
+        self._logger.error("Key name: {}", self._yagna_config.payment_id.key_file.name)
+        self._logger.error("Key file: {}", self._yagna_config.payment_id.key_file)
+        self._logger.error("Payment id: {}", self._yagna_config.payment_id)
+
         await self._wait_for_yagna_start(60)
 
         await self.create_app_key()
