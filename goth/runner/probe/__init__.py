@@ -329,20 +329,20 @@ class Probe(abc.ABC):
         - sets this new ID as default
         - restarts the container ( https://github.com/golemfactory/yagna/issues/458 )
         """
-        address = None
-        if self._yagna_config.payment_id:
-            key_name = self._yagna_config.payment_id.key_file.name
-            key_file: str = str(PAYMENT_MOUNT_PATH / key_name)
-            self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
-            try:
-                db_id = self.cli.id_create(alias=key_name, key_file=key_file)
-                address = db_id.address
-                self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
-            except KeyAlreadyExistsError as e:
-                logger.critical("Id already exists : (%r)", e)
-                raise
-            db_id = self.cli.id_update(address, set_default=True)
-            self._logger.debug("update_id. result=%r", db_id)
+        # address = None
+        # if self._yagna_config.payment_id:
+        #    key_name = self._yagna_config.payment_id.key_file.name
+        #    key_file: str = str(PAYMENT_MOUNT_PATH / key_name)
+        #    self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
+        #    try:
+        #        db_id = self.cli.id_create(alias=key_name, key_file=key_file)
+        #        address = db_id.address
+        #        self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
+        #    except KeyAlreadyExistsError as e:
+        #       logger.critical("Id already exists : (%r)", e)
+        #        raise
+        #    db_id = self.cli.id_update(address, set_default=True)
+        #    self._logger.debug("update_id. result=%r", db_id)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
