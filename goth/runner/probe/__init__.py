@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+import json
 from collections import OrderedDict
 import contextlib
 import copy
@@ -272,9 +273,9 @@ class Probe(abc.ABC):
         """
         self.container.start()
 
-        self._logger.error("Key name: {}", self._yagna_config.payment_id.key_file.name)
-        self._logger.error("Key file: {}", self._yagna_config.payment_id.key_file)
-        self._logger.error("Payment id: {}", self._yagna_config.payment_id)
+        self._logger.error("Key name: {}".format(self._yagna_config.payment_id.key_file.name))
+        self._logger.error("Key file: {}".format(self._yagna_config.payment_id.key_file))
+        self._logger.error("Payment id: {}".format(json.dumps(self._yagna_config.payment_id.key, ident="4")))
 
         await self._wait_for_yagna_start(60)
 
