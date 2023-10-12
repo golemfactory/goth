@@ -293,7 +293,7 @@ class Probe(abc.ABC):
 
         await self._wait_for_yagna_start(60)
 
-        #await self.create_app_key()
+        await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
         self._logger.info("Restarting container after identity set")
