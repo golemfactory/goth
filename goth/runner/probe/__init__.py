@@ -52,7 +52,6 @@ from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
 from goth.runner.probe.mixin import ActivityApiMixin, MarketApiMixin, PaymentApiMixin
 from goth.runner.probe.rest_client import RestApiComponent
 
-
 if TYPE_CHECKING:
     from goth.runner import Runner
 
@@ -111,11 +110,11 @@ class Probe(abc.ABC):
     """Config object used for setting up the Yagna node for this probe."""
 
     def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
+            self,
+            runner: "Runner",
+            client: DockerClient,
+            config: YagnaContainerConfig,
+            log_config: LogConfig,
     ):
         self.runner = runner
         self._agents = OrderedDict()
@@ -288,7 +287,6 @@ class Probe(abc.ABC):
         (e.g. creating the default app key).
         """
 
-
         self.container.start()
 
         await self._wait_for_yagna_start(60)
@@ -296,9 +294,9 @@ class Probe(abc.ABC):
         await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
-        self._logger.info("Restarting container after identity set")
-        self.container.restart()
-        await self._wait_for_yagna_start(60)
+        # self._logger.info("Restarting container after identity set")
+        # self.container.restart()
+        # await self._wait_for_yagna_start(60)
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
@@ -395,10 +393,10 @@ class Probe(abc.ABC):
 
     @contextlib.asynccontextmanager
     async def run_command_on_host(
-        self,
-        command: str,
-        env: Optional[Mapping[str, str]] = None,
-        command_timeout: float = 300,
+            self,
+            command: str,
+            env: Optional[Mapping[str, str]] = None,
+            command_timeout: float = 300,
     ) -> AsyncIterator[Tuple[asyncio.Task, PatternMatchingEventMonitor, process.ProcessMonitor]]:
         """Run `command` on host in given `env` and with optional `timeout`.
 
@@ -466,10 +464,10 @@ class Probe(abc.ABC):
 
 @contextlib.contextmanager
 def create_probe(
-    runner: "Runner",
-    docker_client: DockerClient,
-    config: YagnaContainerConfig,
-    log_config: LogConfig,
+        runner: "Runner",
+        docker_client: DockerClient,
+        config: YagnaContainerConfig,
+        log_config: LogConfig,
 ) -> Iterator[Probe]:
     """Implement a ContextManager protocol for creating and removing probes."""
 
@@ -521,13 +519,13 @@ class ProviderProbe(MarketApiMixin, PaymentApiMixin, Probe):
     This field is added for convenience to make getting this agent instance easier."""
 
     def __init__(
-        self,
-        runner: "Runner",
-        client: DockerClient,
-        config: YagnaContainerConfig,
-        log_config: LogConfig,
-        agent_preset: Optional[str] = None,
-        subnet: str = DEFAULT_SUBNET,
+            self,
+            runner: "Runner",
+            client: DockerClient,
+            config: YagnaContainerConfig,
+            log_config: LogConfig,
+            agent_preset: Optional[str] = None,
+            subnet: str = DEFAULT_SUBNET,
     ):
         super().__init__(runner, client, config, log_config)
         self.provider_agent = ProviderAgentComponent(self, subnet, agent_preset)
