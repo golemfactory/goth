@@ -2,6 +2,7 @@
 
 import abc
 import asyncio
+import json
 from collections import OrderedDict
 import contextlib
 import copy
@@ -50,7 +51,6 @@ from goth.runner.log_monitor import PatternMatchingEventMonitor
 from goth.runner.probe.agent import AgentComponent, ProviderAgentComponent
 from goth.runner.probe.mixin import ActivityApiMixin, MarketApiMixin, PaymentApiMixin
 from goth.runner.probe.rest_client import RestApiComponent
-
 
 if TYPE_CHECKING:
     from goth.runner import Runner
@@ -123,6 +123,22 @@ class Probe(abc.ABC):
             logger, {ProbeLoggingAdapter.EXTRA_PROBE_NAME: config.name}
         )
         config = self._setup_gftp_proxy(config)
+        private_key = None
+
+        if config.payment_id:
+            if config.payment_id.key.address == "63fc2ad3d021a4d7e64323529a55a9442c444da0":
+                self._logger.info("Setting private key 1...")
+                private_key = "5c8b9227cd5065c7e3f6b73826b8b42e198c4497f6688e3085d5ab3a6d520e74"
+            if config.payment_id.key.address == "17ec8597ff92c3f44523bdc65bf0f1be632917ff":
+                self._logger.info("Setting private key 2...")
+                private_key = "29f3edee0ad3abf8e2699402e0e28cd6492c9be7eaab00d732a791c33552f797"
+            if config.payment_id.key.address == "d1d84f0e28d6fedf03c73151f98df95139700aa7":
+                self._logger.info("Setting private key 3...")
+                private_key = "50c8b3fc81e908501c8cd0a60911633acaca1a567d1be8e769c5ae7007b34b23"
+
+        if private_key:
+            config.environment["YAGNA_AUTOCONF_ID_SECRET"] = private_key
+
         self.container = YagnaContainer(client, config, log_config)
         self.cli = Cli(self.container).yagna
         self._yagna_config = config
@@ -270,6 +286,7 @@ class Probe(abc.ABC):
         Performs all necessary steps to make the daemon ready for testing
         (e.g. creating the default app key).
         """
+
         self.container.start()
 
         await self._wait_for_yagna_start(60)
@@ -277,9 +294,9 @@ class Probe(abc.ABC):
         await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
-        self._logger.info("Restarting container after identity set")
-        self.container.restart()
-        await self._wait_for_yagna_start(60)
+        # self._logger.info("Restarting container after identity set")
+        # self.container.restart()
+        # await self._wait_for_yagna_start(60)
 
         # Obtain the IP address of the container
         self.ip_address = get_container_address(self._docker_client, self.container.name)
@@ -310,20 +327,20 @@ class Probe(abc.ABC):
         - sets this new ID as default
         - restarts the container ( https://github.com/golemfactory/yagna/issues/458 )
         """
-        address = None
-        if self._yagna_config.payment_id:
-            key_name = self._yagna_config.payment_id.key_file.name
-            key_file: str = str(PAYMENT_MOUNT_PATH / key_name)
-            self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
-            try:
-                db_id = self.cli.id_create(alias=key_name, key_file=key_file)
-                address = db_id.address
-                self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
-            except KeyAlreadyExistsError as e:
-                logger.critical("Id already exists : (%r)", e)
-                raise
-            db_id = self.cli.id_update(address, set_default=True)
-            self._logger.debug("update_id. result=%r", db_id)
+        # address = None
+        # if self._yagna_config.payment_id:
+        #    key_name = self._yagna_config.payment_id.key_file.name
+        #    key_file: str = str(PAYMENT_MOUNT_PATH / key_name)
+        #    self._logger.debug("create_id(alias=%s, key_file=%s", key_name, key_file)
+        #    try:
+        #        db_id = self.cli.id_create(alias=key_name, key_file=key_file)
+        #        address = db_id.address
+        #        self._logger.debug("create_id. alias=%s, address=%s", db_id, address)
+        #    except KeyAlreadyExistsError as e:
+        #       logger.critical("Id already exists : (%r)", e)
+        #        raise
+        #    db_id = self.cli.id_update(address, set_default=True)
+        #    self._logger.debug("update_id. result=%r", db_id)
         try:
             key = self.cli.app_key_create(key_name)
             self._logger.debug("create_app_key. key_name=%s, key=%s", key_name, key)
