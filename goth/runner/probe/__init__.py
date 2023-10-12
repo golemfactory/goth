@@ -126,14 +126,14 @@ class Probe(abc.ABC):
         config = self._setup_gftp_proxy(config)
         private_key = None
 
-        if self._yagna_config.payment_id:
-            if self._yagna_config.payment_id.key.address == "63fc2ad3d021a4d7e64323529a55a9442c444da0":
+        if config.payment_id:
+            if config.payment_id.key.address == "63fc2ad3d021a4d7e64323529a55a9442c444da0":
                 self._logger.info("Setting private key 1...")
                 private_key = "5c8b9227cd5065c7e3f6b73826b8b42e198c4497f6688e3085d5ab3a6d520e74"
-            if self._yagna_config.payment_id.key.address == "17ec8597ff92c3f44523bdc65bf0f1be632917ff":
+            if config.payment_id.key.address == "17ec8597ff92c3f44523bdc65bf0f1be632917ff":
                 self._logger.info("Setting private key 2...")
                 private_key = "29f3edee0ad3abf8e2699402e0e28cd6492c9be7eaab00d732a791c33552f797"
-            if self._yagna_config.payment_id.key.address == "d1d84f0e28d6fedf03c73151f98df95139700aa7":
+            if config.payment_id.key.address == "d1d84f0e28d6fedf03c73151f98df95139700aa7":
                 self._logger.info("Setting private key 3...")
                 private_key = "50c8b3fc81e908501c8cd0a60911633acaca1a567d1be8e769c5ae7007b34b23"
 
@@ -293,7 +293,7 @@ class Probe(abc.ABC):
 
         await self._wait_for_yagna_start(60)
 
-        await self.create_app_key()
+        #await self.create_app_key()
 
         # restart container to allow faster discovery of new identity in the network
         self._logger.info("Restarting container after identity set")
