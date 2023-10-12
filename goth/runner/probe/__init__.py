@@ -275,7 +275,7 @@ class Probe(abc.ABC):
 
         self._logger.error("Key name: {}".format(self._yagna_config.payment_id.key_file.name))
         self._logger.error("Key file: {}".format(self._yagna_config.payment_id.key_file))
-        self._logger.error("Payment id: {}".format(json.dumps(self._yagna_config.payment_id.key, ident="4")))
+        self._logger.error("Payment id: {}".format(json.dumps(self._yagna_config.payment_id.key, indent=4)))
 
         await self._wait_for_yagna_start(60)
 
