@@ -2,7 +2,6 @@
 
 import abc
 import asyncio
-import json
 from collections import OrderedDict
 import contextlib
 import copy
@@ -43,7 +42,6 @@ from goth.runner.container.utils import get_container_address
 from goth.runner.container.yagna import (
     YagnaContainer,
     YagnaContainerConfig,
-    PAYMENT_MOUNT_PATH,
 )
 from goth.runner.exceptions import KeyAlreadyExistsError, TemporalAssertionError
 from goth.runner.log import LogConfig, monitored_logger
@@ -138,7 +136,8 @@ class Probe(abc.ABC):
                 self._logger.info("Setting private key 3...")
                 private_key = "50c8b3fc81e908501c8cd0a60911633acaca1a567d1be8e769c5ae7007b34b23"
             else:
-                self._logger.error("Private key not found for address: {}".format(config.payment_id.key.address))
+                self._logger.error("Private key not found for address: {}"
+                                   .format(config.payment_id.key.address))
 
         if private_key:
             config.environment["YAGNA_AUTOCONF_ID_SECRET"] = private_key
