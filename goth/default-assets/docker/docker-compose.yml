@@ -23,19 +23,21 @@ services:
             # systems, Docker network may be unreachable from the host)
             # we map them to ports 16001-16100 on the host.
             - "16001-16100:6001-6100"
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
 
     ethereum-mainnet:
-        image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
         environment:
             - GANACHE_CHAIN_ID=1
 
     ethereum-goerli:
-        image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
         environment:
             - GANACHE_CHAIN_ID=5
 
     ethereum-polygon:
-        image: docker.pkg.github.com/golemfactory/gnt2/gnt2-docker-yagna:a93c126e8255
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
         environment:
             - GANACHE_CHAIN_ID=137
     

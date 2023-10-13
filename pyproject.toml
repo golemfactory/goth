@@ -5,7 +5,7 @@ exclude = '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build
 
 [tool.poetry]
 name = "goth"
-version = "0.15.4"
+version = "0.15.9"
 description = "Golem Test Harness - integration testing framework"
 authors = ["Golem Factory <contact@golem.network>"]
 license = "GPL-3.0"
@@ -70,8 +70,8 @@ tests = { sequence = [
   "tests_unit",
   "tests_integration",
 ], help = "Run all available tests" }
-tests_unit = "pytest -svx test/unit"
-tests_integration = "pytest -svx test/integration"
+tests_unit = "pytest -W ignore::DeprecationWarning -svx test/unit"
+tests_integration = "pytest -W ignore::DeprecationWarning -svx test/integration"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

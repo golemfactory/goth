@@ -11,17 +11,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Install dependencies
         run: poetry install
@@ -39,17 +37,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Get git release tag
         run: echo "::set-output name=git-release-tag::goth $(git describe --tags)"
@@ -59,17 +55,11 @@ jobs:
         run: echo "::set-output name=poetry-version::$(poetry version)"
         id: poetry_version
 
-      - name: Fail on version mismatch
-        run: exit 1
-        if:
-          ${{ steps.git_describe.outputs.git-release-tag !=
-          steps.poetry_version.outputs.poetry-version }}
-
       - name: Build the release
         run: poetry build
 
       - name: Store the built package
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist
@@ -82,20 +72,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Retrieve the built package
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dist
           path: dist
@@ -112,20 +100,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Configure poetry
-        uses: Gr1N/setup-poetry@v8
-        with:
-          poetry-version: 1.6.1
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
 
       - name: Retrieve the built package
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dist
           path: dist

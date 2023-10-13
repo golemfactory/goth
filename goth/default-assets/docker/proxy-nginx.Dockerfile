@@ -1,4 +1,4 @@
-FROM nginx:1.19
+FROM ghcr.io/golemfactory/goth/nginx:1.19
 
 COPY goth/api_monitor/nginx.conf /etc/nginx/nginx.conf
 
@@ -32,6 +32,6 @@ RUN  grep -P '^([A-Z_]*_PORT[A-Z_]*)\s*=\s*([0-9]){4,5}$' /root/address.py \
 # On the other hand, on Mac and Windows, this bridge is not available but at the same
 # time, Docker provides a special address along with a respective DNS record to allow same.
 
-RUN a=$(getent hosts host.docker.internal | awk '{ print $1 }') \
-    && [[ -n "$a" ]] && HOST_ADDR=$a || HOST_ADDR="172.19.0.1" \
-    && sed -i "s/{HOST_ADDR}/$HOST_ADDR/" /etc/nginx/nginx.conf
+#RUN a=$(getent hosts host.docker.internal | awk '{ print $1 }') \
+#    && [[ -n "$a" ]] && HOST_ADDR=$a || HOST_ADDR="172.19.0.1" \
+#    && sed -i "s/{HOST_ADDR}/$HOST_ADDR/" /etc/nginx/nginx.conf
