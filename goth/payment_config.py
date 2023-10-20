@@ -11,7 +11,7 @@ REQUIRED_CONFIRMATIONS_COUNT = 0
 _payment_config = {
     "erc20_mainnet": {
         "env": {
-            "ERC20_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
+            "ERC20NEXT_MAINNET_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "MAINNET_GETH_ADDR": "http://ethereum-mainnet:8545",
             "MAINNET_MAX_FEE_PER_GAS": "1.0",
             "MAINNET_MULTI_PAYMENT_CONTRACT_ADDRESS": "0xFf807885934003A35b1284d7445fc83Fd23417e5",
@@ -19,13 +19,13 @@ _payment_config = {
             "MAINNET_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "mainnet",
         },
-        "driver": "erc20",
+        "driver": "erc20next",
         "network": "mainnet",
         "token": "GLM",
     },
     "erc20": {
         "env": {
-            "ERC20_GOERLI_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
+            "ERC20NEXT_GOERLI_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "GOERLI_GETH_ADDR": "http://ethereum-goerli:8545",
             "GOERLI_MAX_FEE_PER_GAS": "1.0",
             "GOERLI_MULTI_PAYMENT_CONTRACT_ADDRESS": "0xFf807885934003A35b1284d7445fc83Fd23417e5",
@@ -33,13 +33,13 @@ _payment_config = {
             "GOERLI_TGLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "goerli",
         },
-        "driver": "erc20",
+        "driver": "erc20next",
         "network": "goerli",
         "token": "tGLM",
     },
     "polygon": {
         "env": {
-            "ERC20_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
+            "ERC20NEXT_POLYGON_REQUIRED_CONFIRMATIONS": REQUIRED_CONFIRMATIONS_COUNT,
             "POLYGON_GETH_ADDR": "http://ethereum-polygon:8545",
             "POLYGON_MAX_FEE_PER_GAS": "30.0",
             "POLYGON_MULTI_PAYMENT_CONTRACT_ADDRESS": "0xFf807885934003A35b1284d7445fc83Fd23417e5",
@@ -47,7 +47,7 @@ _payment_config = {
             "POLYGON_GLM_CONTRACT_ADDRESS": GLM_CONTRACT_ADDRESS,
             "YA_PAYMENT_NETWORK": "polygon",
         },
-        "driver": "erc20",
+        "driver": "erc20next",
         "network": "polygon",
         "token": "GLM",
     },
