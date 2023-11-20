@@ -232,7 +232,7 @@ class ReleaseDownloader(GithubDownloader):
         Only the versions with `tag_name` that contains `self.tag_substring`
         as a substring are considered.
         """
-        all_releases = self.gh_api.repos.list_releases()
+        all_releases = self.gh_api.repos.list_releases(per_page=100)
         logger.debug("releases=%s", json.dumps(obj2dict(all_releases)))
 
         def release_filter(release: dict, tag_substring: str) -> bool:
