@@ -113,7 +113,7 @@ This path will depend either on the shell environment or the operating system on
     ├── runner.log                      # debug console logs from the entire test session
     ├── test_e2e_vm                     # directory with logs from a single test
     │   ├── ethereum-mainnet.log
-    │   ├── ethereum-goerli.log
+    │   ├── ethereum-holesky.log
     │   ├── ethereum-polygon.log
     │   ├── provider_1.log              # debug logs from a single yagna node
     │   ├── provider_1_ya-provider.log  # debug logs from an agent running in a yagna node
@@ -147,7 +147,7 @@ docker-compose:
 
   compose-log-patterns:                         # Log message patterns used for container ready checks
     ethereum-mainnet: ".*Wallets supplied."
-    ethereum-goerli: ".*Wallets supplied."
+    ethereum-holesky: ".*Wallets supplied."
     ethereum-polygon: ".*Wallets supplied."
     ...
 
