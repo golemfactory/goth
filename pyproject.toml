@@ -5,7 +5,7 @@ exclude = '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build
 
 [tool.poetry]
 name = "goth"
-version = "0.15.11"
+version = "0.15.12"
 description = "Golem Test Harness - integration testing framework"
 authors = ["Golem Factory <contact@golem.network>"]
 license = "GPL-3.0"
