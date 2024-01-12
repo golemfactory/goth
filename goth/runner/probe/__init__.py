@@ -498,6 +498,13 @@ class ProviderProbe(MarketApiMixin, PaymentApiMixin, Probe):
     """The agent component running `ya-provider` for this probe.
     This field is added for convenience to make getting this agent instance easier."""
 
+    async def _start_container(self) -> None:
+        await super()._start_container()
+
+        payment_driver = self.payment_config.driver
+        self.cli.payment_fund(payment_driver)
+        self.cli.payment_init(payment_driver, receiver_mode=True)
+
     def __init__(
         self,
         runner: "Runner",
