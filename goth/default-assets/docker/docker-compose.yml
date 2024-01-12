@@ -30,10 +30,10 @@ services:
         environment:
             - GANACHE_CHAIN_ID=1
 
-    ethereum-goerli:
+    ethereum-holesky:
         image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
         environment:
-            - GANACHE_CHAIN_ID=5
+            - GANACHE_CHAIN_ID=17000
 
     ethereum-polygon:
         image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
