@@ -23,7 +23,7 @@ docker-compose:
 
   compose-log-patterns:
     ethereum-mainnet: ".*Wallets supplied."
-    ethereum-goerli: ".*Wallets supplied."
+    ethereum-holesky: ".*Wallets supplied."
     ethereum-polygon: ".*Wallets supplied."
 
 
