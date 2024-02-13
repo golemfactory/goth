@@ -19,7 +19,8 @@ docker-compose:
     # branch: ...
     # commit-hash: ...
     # release-tag: ...
-    use-prerelease: false
+    commit-hash: "b4802e44f5baedce75047c67b720264aaef41734"
+    use-prerelease: true
 
   compose-log-patterns:
     ethereum-mainnet: ".*Wallets supplied."
