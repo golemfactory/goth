@@ -100,7 +100,7 @@ class ArtifactDownloader(GithubDownloader):
                 break
             except Exception as e:
                 if "API rate limit exceeded" in str(e):
-                    print("API rate limit exceeded, sleeping 60 seconds")
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
                     time.sleep(60)
                 else:
                     raise e
@@ -131,7 +131,7 @@ class ArtifactDownloader(GithubDownloader):
                 break
             except Exception as e:
                 if "API rate limit exceeded" in str(e):
-                    print("API rate limit exceeded, sleeping 60 seconds")
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
                     time.sleep(60)
                 else:
                     raise e
@@ -273,7 +273,7 @@ class ReleaseDownloader(GithubDownloader):
                 break
             except Exception as e:
                 if "API rate limit exceeded" in str(e):
-                    print("API rate limit exceeded, sleeping 60 seconds")
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
                     time.sleep(60)
                 else:
                     raise e
