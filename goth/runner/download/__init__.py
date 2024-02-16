@@ -1,5 +1,5 @@
 """Package related to downloading assets necessary for building yagna images."""
-
+import time
 from abc import ABC
 import logging
 import os
@@ -90,7 +90,22 @@ class ArtifactDownloader(GithubDownloader):
     def _get_workflow(self, workflow_name: str) -> dict:
         """Query the workflow on GitHub Actions."""
         logger.debug("Fetching workflows. name=%s", workflow_name)
-        workflows = self.gh_api.actions.list_repo_workflows().workflows
+        try_no = 0
+        while True:
+            if try_no > 10:
+                raise Exception("Too many API rate limit exceeded errors")
+            try:
+                # Get the latest release
+                workflows = self.gh_api.actions.list_repo_workflows().workflows
+                break
+            except Exception as e:
+                if "API rate limit exceeded" in str(e):
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
+                    time.sleep(60)
+                else:
+                    raise e
+            try_no += 1
+
         workflow = next(filter(lambda w: w["name"] == workflow_name, workflows))
         logger.debug("workflow=%s", json.dumps(obj2dict(workflow)))
 
@@ -106,8 +121,24 @@ class ArtifactDownloader(GithubDownloader):
         branch_query = lambda run: run["head_branch"] == branch  # noqa: E731
         commit_query = lambda run: run["head_sha"].startswith(commit)  # noqa: E731
 
+        try_no = 0
+        while True:
+            if try_no > 10:
+                raise Exception("Too many API rate limit exceeded errors")
+            try:
+                # Get the latest release
+                workflow_runs = self.gh_api.actions.list_workflow_runs
+                break
+            except Exception as e:
+                if "API rate limit exceeded" in str(e):
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
+                    time.sleep(60)
+                else:
+                    raise e
+            try_no += 1
+
         paged_workflow_runs = paged(
-            self.gh_api.actions.list_workflow_runs,
+            workflow_runs,
             workflow_id,
             conclusion="success",
         )
@@ -232,7 +263,22 @@ class ReleaseDownloader(GithubDownloader):
         Only the versions with `tag_name` that contains `self.tag_substring`
         as a substring are considered.
         """
-        all_releases = self.gh_api.repos.list_releases(per_page=100)
+        try_no = 0
+        while True:
+            if try_no > 10:
+                raise Exception("Too many API rate limit exceeded errors")
+            try:
+                # Get the latest release
+                all_releases = self.gh_api.repos.list_releases(per_page=100)
+                break
+            except Exception as e:
+                if "API rate limit exceeded" in str(e):
+                    logger.warning("API rate limit exceeded, sleeping 60 seconds")
+                    time.sleep(60)
+                else:
+                    raise e
+            try_no += 1
+
         logger.debug("releases=%s", json.dumps(obj2dict(all_releases)))
 
         def release_filter(release: dict, tag_substring: str) -> bool:
