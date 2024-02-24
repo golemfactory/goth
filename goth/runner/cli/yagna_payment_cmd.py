@@ -120,7 +120,7 @@ class YagnaPaymentMixin:
         Parse the command's output as a `Dict[str, Driver]` and return it.
         """
 
-        args = make_args("payment", "drivers")
+        args = make_args("payment", "driver", "list")
         output = self.run_json_command(Dict, *args)
         return {key: Driver.from_dict(val) for key, val in output.items()}
 
