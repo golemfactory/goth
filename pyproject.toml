@@ -42,7 +42,7 @@ pyyaml = "5.3.1"
 transitions = "^0.8"
 typing_extensions = "^4.5"
 urllib3 = "^1.26"
-ya-aioclient = { git = "https://github.com/golemfactory/ya_tmp_pyapi.git", rev = "3229c289ca327505f4b9d1174283a58dd798cba8" }
+ya-aioclient = { git = "https://github.com/golemfactory/ya_tmp_pyapi.git", rev = "f3a5ce8fbbb2bb795119daa87f246051a9990be6" }
 ghapi = "^0.1.16"
 
 [tool.poetry.dev-dependencies]
