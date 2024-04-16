@@ -303,7 +303,7 @@ class Runner:
         """
         self._topology = topology
         # check if Windows
-        if sys.platform != "win32":
+        if "win32" not in sys.platform:
             _install_sigint_handler()
         try:
             try:
