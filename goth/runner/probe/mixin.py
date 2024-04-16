@@ -284,7 +284,6 @@ class PaymentApiMixin:
             timestamp=datetime.now(timezone.utc),
             timeout=timeout,
             payment_platform=self.payment_config.platform_string,
-
         )
 
         allocation_result = await self._create_allocation(allocation)
