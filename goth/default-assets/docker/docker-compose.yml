@@ -26,17 +26,17 @@ services:
             - "host.docker.internal:host-gateway"
 
     ethereum-mainnet:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:fa689277c157
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:9881b1e0609a
         environment:
             - GANACHE_CHAIN_ID=1
 
     ethereum-holesky:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:fa689277c157
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:9881b1e0609a
         environment:
             - GANACHE_CHAIN_ID=17000
 
     ethereum-polygon:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:fa689277c157
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:9881b1e0609a
         environment:
             - GANACHE_CHAIN_ID=137
     
