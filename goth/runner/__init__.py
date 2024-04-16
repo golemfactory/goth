@@ -302,7 +302,9 @@ class Runner:
         This is an async context manager, yielding its `Runner` instance.
         """
         self._topology = topology
-        _install_sigint_handler()
+        # check if Windows
+        if sys.platform != "win32":
+            _install_sigint_handler()
         try:
             try:
                 await self._enter()
