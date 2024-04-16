@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 ASSET_CACHE_DIR = Path(tempfile.gettempdir()) / "goth_asset_cache"
 
-ENV_API_TOKEN = "GITHUB_API_TOKEN"
+ENV_API_TOKEN = "GITHUB_TOKEN"
 ENV_YAGNA_BRANCH = "YAGNA_BRANCH"
 ENV_YAGNA_COMMIT = "YAGNA_COMMIT_HASH"
 
