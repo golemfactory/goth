@@ -38,6 +38,7 @@ markupsafe = "2.0.1"
 # We should get rid of the proxy monitoring layer, because it adds a lot of complexity
 # Also it prevents library from working on Windows as I understand
 mitmproxy = "^5.3"
+pylproxy = "0.1.0"
 pyyaml = "5.3.1"
 transitions = "^0.8"
 typing_extensions = "^4.5"

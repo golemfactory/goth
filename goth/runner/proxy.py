@@ -5,6 +5,7 @@ import logging
 import threading
 from typing import AsyncIterator, Mapping, Optional
 
+from pylproxy import PylProxy
 from mitmproxy import options
 import mitmproxy.utils.debug
 from mitmproxy.tools import main, cmdline, dump
