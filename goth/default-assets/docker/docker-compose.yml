@@ -11,8 +11,8 @@ services:
         # the `mitmproxy` instance running as part of the test
         # harness on the host machine
         image: proxy-nginx
-        # ports:
-            # Requests to ports 6001-6100 in proxy-nginx are forwarded
+        ports:
+            # Requests to ports 6001-6010 in proxy-nginx are forwarded
             # to the MITM proxy started by the test runner, and further
             # to yagna API port (usually 6000) in yagna containers:
             # request to port 6001 is forwarded to (yagna API port in)
@@ -22,8 +22,7 @@ services:
             # systems, Docker network may be unreachable from the host)
             # we map them to ports 16001-16100 on the host.
 
-            # scx - I have suspicion that it is not needed!
-            # - "16001-16100:6001-6100"
+            - "16001-16010:6001-6010"
         extra_hosts:
             - "host.docker.internal:host-gateway"
 
