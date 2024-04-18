@@ -4,6 +4,7 @@ Also, adds caller and callee information to request headers.
 """
 
 import logging
+import sys
 from typing import Dict, Mapping
 
 from mitmproxy.http import HTTPFlow
@@ -12,7 +13,6 @@ from goth.address import (
     HOST_REST_PORT_START,
     YAGNA_REST_PORT,
 )
-
 
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
@@ -51,6 +51,7 @@ class RouterAddon:
         self._node_names = node_names
         self._name_to_port = {}
         self._port_to_name = {}
+        print(f"RouterAddon: {node_names}, {ports}", file=sys.stderr)
         for node, port_mapping in ports.items():
             if YAGNA_REST_PORT in port_mapping:
                 host_port = port_mapping[YAGNA_REST_PORT]
