@@ -4,7 +4,6 @@ Also, adds caller and callee information to request headers.
 """
 
 import logging
-import sys
 from typing import Dict, Mapping
 
 from mitmproxy.http import HTTPFlow
