@@ -51,7 +51,7 @@ class RouterAddon:
         self._node_names = node_names
         self._name_to_port = {}
         self._port_to_name = {}
-        print(f"RouterAddon: {node_names}, {ports}", file=sys.stderr)
+        self._logger.debug(f"RouterAddon: {node_names}, {ports}")
         for node, port_mapping in ports.items():
             if YAGNA_REST_PORT in port_mapping:
                 host_port = port_mapping[YAGNA_REST_PORT]
