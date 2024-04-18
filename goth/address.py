@@ -100,7 +100,7 @@ YAGNA_REST_URL = DefaultTemplate(
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
 HOST_REST_PORT_START = 6001
 # NOTE: This variable is used in `nginx.conf` file in the proxy container:
-HOST_REST_PORT_END = 6100
+HOST_REST_PORT_END = 6010
 
 # Ports in the range $HOST_REST_PORT_START .. $HOST_REST_PORT_END are also used
 # by the nginx-proxy container. A request made to port $HOST_REST_PORT_START + (N-1)

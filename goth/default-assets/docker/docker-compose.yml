@@ -20,7 +20,7 @@ services:
             # the second one, and so on.
             # To make these ports available from Docker host (on some
             # systems, Docker network may be unreachable from the host)
-            # we map them to ports 16001-16100 on the host.
+            # we map them to ports 16001-16010 on the host.
 
             - "16001-16010:6001-6010"
         extra_hosts:
