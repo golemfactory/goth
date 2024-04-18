@@ -72,12 +72,12 @@ class YagnaContainerConfig(DockerContainerConfig):
         self.use_proxy = use_proxy
 
 
-# reuse port range after it runs out. You can use HOST_REST_PORT_END - HOST_REST_PORT_START at once
+# reuse port range after it runs out. You can use 9 ports at once with current settings
+# 6001-6002-6003-6004-6005-6006-6007-6008-6009-6001-6002-6003...
 def _long_circular_port_iterator():
-    ports = []
-    for i in range(100):
-        ports += range(HOST_REST_PORT_START, HOST_REST_PORT_END)
-    return iter(ports)
+    while True:
+        for port in range(HOST_REST_PORT_START, HOST_REST_PORT_END):
+            yield port
 
 
 class YagnaContainer(DockerContainer):
