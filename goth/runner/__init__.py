@@ -255,9 +255,6 @@ class Runner:
             assertions_module=self.api_assertions_module,
         )
 
-        self.pylproxy = PylProxy()
-        logger.debug(f"Pyl proxy created: {self.pylproxy}")
-
         await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
         for assertion in self._pending_api_assertions:
