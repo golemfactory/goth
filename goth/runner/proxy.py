@@ -63,7 +63,7 @@ class Proxy:
         """Start the proxy thread."""
         self.monitor.start()
         self._pyl_proxy = PylProxy(self._node_names, self._ports)
-        await self._pyl_proxy.start()
+        await self._pyl_proxy.start("0.0.0.0", 9990)
         # self._proxy_thread.start()
         # self._server_ready.wait()
 
