@@ -12,7 +12,7 @@ from mitmproxy.tools import main, cmdline, dump
 
 from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
-from goth.api_monitor.api_events import APIEvent
+from goth.api_monitor.api_events import APIEvent, APIRequest, APIResponse
 from goth.api_monitor.router_addon import RouterAddon
 from goth.api_monitor.monitor_addon import MonitorAddon
 
@@ -63,7 +63,9 @@ class Proxy:
         """Start the proxy thread."""
         self.monitor.start()
         self._pyl_proxy = PylProxy(self._node_names, self._ports)
-        await self._pyl_proxy.start("0.0.0.0", MITM_PROXY_PORT)
+        await self._pyl_proxy.start("0.0.0.0", MITM_PROXY_PORT,
+                                    lambda request_no, request: self.monitor.add_event_sync(APIRequest(request_no, request)),
+                                    lambda request_no, response: self.monitor.add_event_sync(APIResponse(request_no, response)))
         # self._proxy_thread.start()
         # self._server_ready.wait()
 
