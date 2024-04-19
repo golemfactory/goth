@@ -72,7 +72,7 @@ class Proxy:
         #if self._mitmproxy_runner:
         #    self._mitmproxy_runner.shutdown()
         #self._proxy_thread.join()
-        self._pyl_proxy.stop()
+        await self._pyl_proxy.stop()
         self._logger.info("The mitmproxy thread has finished")
         await self.monitor.stop()
 
