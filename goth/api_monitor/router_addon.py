@@ -13,7 +13,6 @@ from goth.address import (
     YAGNA_REST_PORT,
 )
 
-
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
 
@@ -51,6 +50,7 @@ class RouterAddon:
         self._node_names = node_names
         self._name_to_port = {}
         self._port_to_name = {}
+        self._logger.info(f"RouterAddon created: {node_names}, {ports}")
         for node, port_mapping in ports.items():
             if YAGNA_REST_PORT in port_mapping:
                 host_port = port_mapping[YAGNA_REST_PORT]

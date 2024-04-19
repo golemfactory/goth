@@ -48,7 +48,7 @@ parser.add_argument(
     "--token",
     default=DEFAULT_TOKEN,
     help="Access token to be used in GitHub API calls.\
-            By default, this value is obtained from env variable GITHUB_API_TOKEN.",
+            By default, this value is obtained from env variable GITHUB_TOKEN.",
 )
 parser.add_argument("-w", "--workflow", default=DEFAULT_WORKFLOW)
 parser.add_argument("-v", "--verbose", help="If set, enables debug logging.", action="store_true")

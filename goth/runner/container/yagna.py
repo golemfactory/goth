@@ -72,6 +72,14 @@ class YagnaContainerConfig(DockerContainerConfig):
         self.use_proxy = use_proxy
 
 
+# reuse port range after it runs out. You can use 9 ports at once with current settings
+# 6001-6002-6003-6004-6005-6006-6007-6008-6009-6001-6002-6003...
+def _long_circular_port_iterator():
+    while True:
+        for port in range(HOST_REST_PORT_START, HOST_REST_PORT_END):
+            yield port
+
+
 class YagnaContainer(DockerContainer):
     """Extension of DockerContainer to be configured for yagna daemons."""
 
@@ -83,7 +91,7 @@ class YagnaContainer(DockerContainer):
     """ Port mapping between the Docker host and the container.
         Keys are container port numbers, values are host port numbers. """
 
-    host_port_range: ClassVar[Iterator[int]] = iter(range(HOST_REST_PORT_START, HOST_REST_PORT_END))
+    host_port_range: ClassVar[Iterator[int]] = _long_circular_port_iterator()
     """ Keeps track of assigned ports on the Docker host """
 
     def __init__(

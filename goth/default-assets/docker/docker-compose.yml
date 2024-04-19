@@ -12,7 +12,7 @@ services:
         # harness on the host machine
         image: proxy-nginx
         ports:
-            # Requests to ports 6001-6100 in proxy-nginx are forwarded
+            # Requests to ports 6001-6010 in proxy-nginx are forwarded
             # to the MITM proxy started by the test runner, and further
             # to yagna API port (usually 6000) in yagna containers:
             # request to port 6001 is forwarded to (yagna API port in)
@@ -20,23 +20,24 @@ services:
             # the second one, and so on.
             # To make these ports available from Docker host (on some
             # systems, Docker network may be unreachable from the host)
-            # we map them to ports 16001-16100 on the host.
-            - "16001-16100:6001-6100"
+            # we map them to ports 16001-16010 on the host.
+
+            - "16001-16010:6001-6010"
         extra_hosts:
             - "host.docker.internal:host-gateway"
 
     ethereum-mainnet:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:405222602027
         environment:
             - GANACHE_CHAIN_ID=1
 
     ethereum-holesky:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:405222602027
         environment:
             - GANACHE_CHAIN_ID=17000
 
     ethereum-polygon:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:eecb4791c0c6
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:405222602027
         environment:
             - GANACHE_CHAIN_ID=137
     

@@ -38,11 +38,12 @@ markupsafe = "2.0.1"
 # We should get rid of the proxy monitoring layer, because it adds a lot of complexity
 # Also it prevents library from working on Windows as I understand
 mitmproxy = "^5.3"
+pylproxy = "0.1.0"
 pyyaml = "5.3.1"
 transitions = "^0.8"
 typing_extensions = "^4.5"
 urllib3 = "^1.26"
-ya-aioclient = "^0.6"
+ya-aioclient = { git = "https://github.com/golemfactory/ya_tmp_pyapi.git", rev = "b249e035c94681e5144a9f092aa55d7bf50c86c8" }
 ghapi = "^0.1.16"
 
 [tool.poetry.dev-dependencies]

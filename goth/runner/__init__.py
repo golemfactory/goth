@@ -38,6 +38,7 @@ from goth.runner.probe import Probe, create_probe, run_probe
 from goth.runner.proxy import Proxy, run_proxy
 from goth.runner.step import step  # noqa: F401
 from goth.runner.web_server import WebServer, run_web_server
+from pylproxy import PylProxy
 
 
 logger = logging.getLogger(__name__)
@@ -254,6 +255,9 @@ class Runner:
             assertions_module=self.api_assertions_module,
         )
 
+        self.pylproxy = PylProxy()
+        logger.debug(f"Pyl proxy created: {self.pylproxy}")
+
         await self._exit_stack.enter_async_context(run_proxy(self.proxy))
 
         for assertion in self._pending_api_assertions:
@@ -302,7 +306,9 @@ class Runner:
         This is an async context manager, yielding its `Runner` instance.
         """
         self._topology = topology
-        _install_sigint_handler()
+        # check if Windows
+        if "win32" not in sys.platform:
+            _install_sigint_handler()
         try:
             try:
                 await self._enter()

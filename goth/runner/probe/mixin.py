@@ -257,6 +257,7 @@ class PaymentApiMixin:
                 make_deposit=True,
                 timestamp=datetime.now(timezone.utc),
                 payment_platform=self.payment_config.platform_string,
+                deposit=None,
             )
 
             allocation_result = await self._create_allocation(allocation)
@@ -284,6 +285,7 @@ class PaymentApiMixin:
             timestamp=datetime.now(timezone.utc),
             timeout=timeout,
             payment_platform=self.payment_config.platform_string,
+            deposit=None,
         )
 
         allocation_result = await self._create_allocation(allocation)
