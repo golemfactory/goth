@@ -38,7 +38,7 @@ markupsafe = "2.0.1"
 # We should get rid of the proxy monitoring layer, because it adds a lot of complexity
 # Also it prevents library from working on Windows as I understand
 mitmproxy = "^5.3"
-pylproxy = { git = "https://github.com/golemfactory/pylproxy.git", rev = "7c111d7ed92511b8715731fd755afec570572de0" }
+pylproxy = { git = "https://github.com/golemfactory/pylproxy.git", rev = "fe5c2aba7726849cb4d8ebbf36de279d91d662cd" }
 pyyaml = "5.3.1"
 transitions = "^0.8"
 typing_extensions = "^4.5"
