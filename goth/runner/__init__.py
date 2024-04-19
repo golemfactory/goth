@@ -255,7 +255,7 @@ class Runner:
             assertions_module=self.api_assertions_module,
         )
 
-        await self._exit_stack.enter_async_context(run_proxy(self.proxy))
+        await self.proxy.start()
 
         for assertion in self._pending_api_assertions:
             self.proxy.monitor.add_assertion(assertion)

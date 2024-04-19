@@ -63,7 +63,7 @@ class Proxy:
         """Start the proxy thread."""
         self.monitor.start()
         self._pyl_proxy = PylProxy(self._node_names, self._ports)
-        self._pyl_proxy.start()
+        await self._pyl_proxy.start()
         # self._proxy_thread.start()
         # self._server_ready.wait()
 
@@ -99,14 +99,3 @@ class Proxy:
         self._logger.info("Embedded mitmproxy exited")
 
 
-@contextlib.asynccontextmanager
-async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
-    """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
-
-    try:
-        logger.debug("Starting mitmproxy")
-        await proxy.start()
-        yield
-    finally:
-        logger.debug("Stopping mitmproxy")
-        await proxy.stop()
