@@ -1637,8 +1637,8 @@ aiohttp = "^3.9"
 [package.source]
 type = "git"
 url = "https://github.com/golemfactory/pylproxy.git"
-reference = "bbf250c4d67faeff1df49ec7fe0796f39d84b370"
-resolved_reference = "bbf250c4d67faeff1df49ec7fe0796f39d84b370"
+reference = "7c111d7ed92511b8715731fd755afec570572de0"
+resolved_reference = "7c111d7ed92511b8715731fd755afec570572de0"
 
 [[package]]
 name = "pynacl"
@@ -2379,4 +2379,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.1, <3.11"
-content-hash = "e8b82797c3e0486bceadb7364ddbf4b9c1ac779a6a3eccea6bcd951f9cfabc6b"
+content-hash = "f8df0a84426215ae95d0361711a520f1a92c223e63cf6941dfd01eafe7d09520"
