@@ -35,7 +35,7 @@ import goth.runner.container.payment as payment
 from goth.runner.exceptions import TestFailure, TemporalAssertionError
 from goth.runner.log import configure_logging_for_test, LogConfig
 from goth.runner.probe import Probe, create_probe, run_probe
-from goth.runner.proxy import Proxy, run_proxy
+from goth.runner.proxy import Proxy
 from goth.runner.step import step  # noqa: F401
 from goth.runner.web_server import WebServer, run_web_server
 from pylproxy import PylProxy
