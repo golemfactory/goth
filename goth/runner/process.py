@@ -4,7 +4,6 @@ import asyncio
 import logging
 import subprocess
 import sys
-import threading
 from typing import Optional, Sequence
 
 from goth.runner.exceptions import CommandError
@@ -76,7 +75,9 @@ async def run_command(
 
             return_code = await proc.wait()
             if return_code:
-                raise CommandError(f"Command exited abnormally. args={args}, return_code={return_code}")
+                raise CommandError(
+                    f"Command exited abnormally. args={args}, return_code={return_code}"
+                )
         else:
             # windows does not support asyncio subprocesses in async pytest
             logger.info(f"Running command (blocking): {args}")
@@ -84,6 +85,8 @@ async def run_command(
 
             out, err = p.communicate()
             if p.returncode != 0:
-                raise CommandError(f"Command exited abnormally. args={args}, return_code={p.returncode}")
+                raise CommandError(
+                    f"Command exited abnormally. args={args}, return_code={p.returncode}"
+                )
 
     await asyncio.wait_for(_run_command(), timeout=timeout)

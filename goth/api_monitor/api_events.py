@@ -8,6 +8,7 @@ from typing import Optional, Type
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
 
+
 class APIEvent(abc.ABC):
     """Abstract superclass of API event classes."""
 
@@ -117,7 +118,7 @@ class APIError(APIEvent):
         self,
         request: APIRequest,
         error,
-        http_response = None,
+        http_response=None,
     ):
         self.request = request
         self.error = error
@@ -143,8 +144,6 @@ def _match_event(
     method: Optional[str] = None,
     path_regex: Optional[str] = None,
 ) -> bool:
-
-    http_request: HTTPRequest
     if isinstance(event, APIRequest):
         http_request = event.http_request
     elif isinstance(event, (APIResponse, APIError)):
