@@ -5,11 +5,8 @@ import json
 import re
 from typing import Optional, Type
 
-from mitmproxy.flow import Error
-from mitmproxy.http import HTTPRequest, HTTPResponse
-
-from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
-
+CALLER_HEADER = "X-Caller"
+CALLEE_HEADER = "X-Callee"
 
 class APIEvent(abc.ABC):
     """Abstract superclass of API event classes."""
@@ -33,9 +30,8 @@ class APIRequest(APIEvent):
     """Represents an API request."""
 
     number: int
-    http_request: HTTPRequest
 
-    def __init__(self, number: int, http_request: HTTPRequest):
+    def __init__(self, number: int, http_request):
         self.number = number
         self.http_request = http_request
 
@@ -85,9 +81,8 @@ class APIResponse(APIEvent):
     """Represents a response to an API request."""
 
     request: APIRequest
-    http_response: HTTPResponse
 
-    def __init__(self, request_no, request: APIRequest, http_response: HTTPResponse):
+    def __init__(self, request_no, request: APIRequest, http_response):
         self.request_no = request_no
         self.request = request
         self.http_response = http_response
@@ -117,14 +112,12 @@ class APIError(APIEvent):
     """Represents an error when making an API request or sending a response."""
 
     request: APIRequest
-    error: Error
-    http_response: Optional[HTTPResponse]
 
     def __init__(
         self,
         request: APIRequest,
-        error: Error,
-        http_response: Optional[HTTPResponse] = None,
+        error,
+        http_response = None,
     ):
         self.request = request
         self.error = error
