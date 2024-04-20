@@ -42,34 +42,35 @@ class APIRequest(APIEvent):
     @property
     def timestamp(self) -> float:
         """Start time op the `http_request`."""
-        return self.http_request.timestamp_start
+        return self.http_request["timestamp_start"]
 
     @property
     def method(self) -> str:
         """Return the method of the underlying HTTP request."""
 
-        return self.http_request.method
+        return self.http_request["method"]
 
     @property
     def path(self) -> str:
-        """Return the method of the underlying HTTP request."""
+        """Return the path of the underlying HTTP request."""
 
-        return self.http_request.path
+        return self.http_request["path"]
 
     @property
     def caller(self) -> Optional[str]:
         """Return the caller name."""
-        return self.http_request.headers.get(CALLER_HEADER)
+        return self.http_request["headers"][CALLER_HEADER]
 
     @property
     def callee(self) -> Optional[str]:
         """Return the callee name."""
-        return self.http_request.headers.get(CALLEE_HEADER)
+        return self.http_request["headers"][CALLEE_HEADER]
 
     @property
     def content(self) -> str:
         """Return the request body."""
-        return self.http_request.content.decode("utf-8")
+        content = self.http_request["content"] or b""
+        return content.decode("utf-8")
 
     @property
     def header_str(self) -> str:
@@ -86,25 +87,27 @@ class APIResponse(APIEvent):
     request: APIRequest
     http_response: HTTPResponse
 
-    def __init__(self, request: APIRequest, http_response: HTTPResponse):
+    def __init__(self, request_no, request: APIRequest, http_response: HTTPResponse):
+        self.request_no = request_no
         self.request = request
         self.http_response = http_response
 
     @property
     def timestamp(self) -> float:
         """Start time op the `http_response`."""
-        return self.http_response.timestamp_start
+        return self.http_response["timestamp_start"]
 
     @property
     def status_code(self) -> int:
         """Return the HTTP status code."""
 
-        return self.http_response.status_code
+        return self.http_response["status_code"]
 
     @property
     def content(self) -> str:
         """Return the response body."""
-        return self.http_response.content.decode("utf-8")
+        content = self.http_response["content"] or b""
+        return content.decode("utf-8")
 
     def __str__(self) -> str:
         return f"[response ({self.status_code})] {self.request.header_str}; body: {self.content}"
