@@ -10,6 +10,7 @@ import time
 from typing import Iterator, Optional, Union
 
 import colors
+import pylproxy
 
 import goth
 import goth.api_monitor
@@ -124,7 +125,7 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
     """
 
     goth_logger = logging.getLogger(goth.__name__)
-    api_monitor_logger = logging.getLogger(goth.api_monitor.__name__)
+    pyl_proxy_logger = logging.getLogger(pylproxy.__name__)
 
     runner_handler = None
     proxy_handler = None
@@ -144,15 +145,15 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
         proxy_handler = logging.FileHandler(str(test_log_dir / "proxy.log"))
         proxy_handler.setLevel(logging.DEBUG)
         proxy_handler.setFormatter(formatter)
-        api_monitor_logger.addHandler(proxy_handler)
+        pyl_proxy_logger.addHandler(proxy_handler)
 
         yield
 
     finally:
         if runner_handler in goth_logger.handlers:
             goth_logger.handlers.remove(runner_handler)
-        if proxy_handler in api_monitor_logger.handlers:
-            api_monitor_logger.handlers.remove(proxy_handler)
+        if proxy_handler in pyl_proxy_logger.handlers:
+            pyl_proxy_logger.handlers.remove(proxy_handler)
 
 
 class MonitoringFilter(logging.Filter):
