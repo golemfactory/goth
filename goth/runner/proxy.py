@@ -1,5 +1,4 @@
 """A class for starting an embedded instance of mitmproxy."""
-import asyncio
 import contextlib
 import logging
 from typing import AsyncIterator, Mapping, Optional
@@ -57,7 +56,7 @@ class Proxy:
     async def stop(self):
         if self._pyl_proxy:
             await self._pyl_proxy.stop()
-            self._logger.info("The mitmproxy thread has finished")
+            self._logger.info("The pyl proxy stopped")
             await self.monitor.stop()
 
 
@@ -66,9 +65,9 @@ async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
     """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
 
     try:
-        logger.debug("Starting mitmproxy")
+        logger.debug("Starting pylproxy")
         await proxy.start()
         yield
     finally:
-        logger.debug("Stopping mitmproxy")
+        logger.debug("Stopping pylproxy")
         await proxy.stop()
