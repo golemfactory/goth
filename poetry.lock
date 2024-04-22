@@ -1222,13 +1222,13 @@ files = [
 
 [[package]]
 name = "pylproxy"
-version = "0.2.0"
-description = ""
+version = "0.2.1"
+description = "Proxy for use in Goth instead of mitmproxy"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pylproxy-0.2.0-py3-none-any.whl", hash = "sha256:5cc08cdd7194703dba9cdd8e903de9858938aad9d304209898e38a8d6ce3109f"},
-    {file = "pylproxy-0.2.0.tar.gz", hash = "sha256:8b8d62bba028aed3a88000dd6e91931b53add9f68cc29efa74689dfa537c3e3f"},
+    {file = "pylproxy-0.2.1-py3-none-any.whl", hash = "sha256:b33036693667575ba89ca43ea05512c6dee26e44ee993a3faa7660de450f6436"},
+    {file = "pylproxy-0.2.1.tar.gz", hash = "sha256:1182a9583f82ae33060711f1787877453e7a8f93ce9479defdc3ab00f7c79bde"},
 ]
 
 [package.dependencies]
@@ -1680,4 +1680,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.1, <3.11"
-content-hash = "77d5e3d6b4c0116ffa7d346aebe6dad8f54d7f32d2d5890817edb0047ed67bbe"
+content-hash = "9a407fd69c609d9a4e2bcc0fcd89161448d49699222a99ac34593c608fa52ccf"
