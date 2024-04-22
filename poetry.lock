@@ -1139,13 +1139,13 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-
 
 [[package]]
 name = "pluggy"
-version = "1.4.0"
+version = "1.5.0"
 description = "plugin and hook calling mechanisms for python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pluggy-1.4.0-py3-none-any.whl", hash = "sha256:7db9f7b503d67d1c5b95f59773ebb58a8c1c288129a88665838012cfb07b8981"},
-    {file = "pluggy-1.4.0.tar.gz", hash = "sha256:8c85c2876142a764e5b7548e7d9a0e0ddb46f5185161049a79b7e974454223be"},
+    {file = "pluggy-1.5.0-py3-none-any.whl", hash = "sha256:44e1ad92c8ca002de6377e165f3e0f1be63266ab4d554740532335b9d75ea669"},
+    {file = "pluggy-1.5.0.tar.gz", hash = "sha256:2cffa88e94fdc978c4c574f15f9e59b7f4201d439195c3715ca9e2486f1d0cf1"},
 ]
 
 [package.extras]
@@ -1222,21 +1222,17 @@ files = [
 
 [[package]]
 name = "pylproxy"
-version = "0.1.1"
+version = "0.2.0"
 description = ""
 optional = false
-python-versions = "^3.10"
-files = []
-develop = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "pylproxy-0.2.0-py3-none-any.whl", hash = "sha256:5cc08cdd7194703dba9cdd8e903de9858938aad9d304209898e38a8d6ce3109f"},
+    {file = "pylproxy-0.2.0.tar.gz", hash = "sha256:8b8d62bba028aed3a88000dd6e91931b53add9f68cc29efa74689dfa537c3e3f"},
+]
 
 [package.dependencies]
-aiohttp = "^3.9"
-
-[package.source]
-type = "git"
-url = "https://github.com/golemfactory/pylproxy.git"
-reference = "2274e475085fe4ff28d00ad1435cd87bf94a754f"
-resolved_reference = "2274e475085fe4ff28d00ad1435cd87bf94a754f"
+aiohttp = ">=3.9,<4.0"
 
 [[package]]
 name = "pynacl"
@@ -1684,4 +1680,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.1, <3.11"
-content-hash = "2c4e9595529cc3445441bc35e4be46ffae24ce325d64885602b808c1446c9a46"
+content-hash = "77d5e3d6b4c0116ffa7d346aebe6dad8f54d7f32d2d5890817edb0047ed67bbe"

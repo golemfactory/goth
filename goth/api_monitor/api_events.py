@@ -5,6 +5,8 @@ import json
 import re
 from typing import Optional, Type
 
+from pylproxy import RequestCallbackObj, ResponseCallbackObj
+
 CALLER_HEADER = "X-Caller"
 CALLEE_HEADER = "X-Callee"
 
@@ -31,8 +33,9 @@ class APIRequest(APIEvent):
     """Represents an API request."""
 
     number: int
+    http_request: RequestCallbackObj
 
-    def __init__(self, number: int, http_request):
+    def __init__(self, number: int, http_request: RequestCallbackObj):
         self.number = number
         self.http_request = http_request
 
@@ -82,8 +85,9 @@ class APIResponse(APIEvent):
     """Represents a response to an API request."""
 
     request: APIRequest
+    http_response: ResponseCallbackObj
 
-    def __init__(self, request_no, request: APIRequest, http_response):
+    def __init__(self, request_no, request: APIRequest, http_response: ResponseCallbackObj):
         self.request_no = request_no
         self.request = request
         self.http_response = http_response
@@ -91,7 +95,7 @@ class APIResponse(APIEvent):
     @property
     def timestamp(self) -> float:
         """Start time op the `http_response`."""
-        return self.http_response["timestamp_start"]
+        return self.http_response["timestamp_end"]
 
     @property
     def status_code(self) -> int:

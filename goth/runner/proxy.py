@@ -1,4 +1,5 @@
 """A class for starting an embedded instance of mitmproxy."""
+import asyncio
 import contextlib
 import logging
 from typing import AsyncIterator, Mapping, Optional
@@ -8,8 +9,6 @@ from pylproxy import PylProxy
 from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
 from goth.api_monitor.api_events import APIEvent, APIRequest, APIResponse
-
-logger = logging.getLogger(__name__)
 
 
 class Proxy:
@@ -63,11 +62,13 @@ class Proxy:
 @contextlib.asynccontextmanager
 async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
     """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
+    logger = logging.getLogger(__name__)
 
     try:
-        logger.debug("Starting mitmproxy")
+        logger.info("Starting proxy context manager")
         await proxy.start()
         yield
     finally:
-        logger.debug("Stopping mitmproxy")
+        await asyncio.sleep(2.0)
+        logger.info("Stopping proxy context manager")
         await proxy.stop()

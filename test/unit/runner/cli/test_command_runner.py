@@ -5,6 +5,7 @@ Containing:
 - `runner.cli.base.DockerJSONCommandRunner`
 """
 import shlex
+import sys
 
 import pytest
 
@@ -23,20 +24,22 @@ from goth.runner.exceptions import CommandError
 def test_output_demultiplexing(yagna_container, command, expected_stdout, expected_stderr):
     """Test that stdout/stderr from a command are demultiplexed."""
 
-    runner = DockerJSONCommandRunner(yagna_container, "/bin/sh")
+    if sys.platform != "win32":
+        runner = DockerJSONCommandRunner(yagna_container, "/bin/sh")
 
-    stdout, stderr = runner.run_command("-c", shlex.quote(command))
-    assert stdout == expected_stdout
-    assert stderr == expected_stderr
+        stdout, stderr = runner.run_command("-c", shlex.quote(command))
+        assert stdout == expected_stdout
+        assert stderr == expected_stderr
 
 
 def test_error_output_demultiplexing(yagna_container):
     """Test that stdout/stderr from a command are demultiplexed."""
 
-    runner = DockerJSONCommandRunner(yagna_container, "/bin/sh")
+    if sys.platform != "win32":
+        runner = DockerJSONCommandRunner(yagna_container, "/bin/sh")
 
-    with pytest.raises(CommandError) as ce:
-        runner.run_command("-c", "'echo STDOUT; no-such-command'")
+        with pytest.raises(CommandError) as ce:
+            runner.run_command("-c", "'echo STDOUT; no-such-command'")
 
-    assert "STDOUT" not in str(ce)
-    assert "no-such-command" in str(ce)
+        assert "STDOUT" not in str(ce)
+        assert "no-such-command" in str(ce)

@@ -83,6 +83,9 @@ async def run_command(
             logger.info(f"Running command (blocking): {args}")
             p = subprocess.Popen(args, env=env)
 
+            while p.poll() is None:
+                await asyncio.sleep(1.0)
+
             out, err = p.communicate()
             if p.returncode != 0:
                 raise CommandError(
