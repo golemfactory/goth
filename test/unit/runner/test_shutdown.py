@@ -201,9 +201,8 @@ async def test_runner_startup_shutdown(
         or probe_init.failed
         or probe_start.failed
     )
-    # todo! what is this for?
-    # if proxy_start.failed:
-    #     assert "Starting probes failed: MockError" in caplog.text
+    if proxy_start.failed:
+        assert "Starting probes failed: MockError" in caplog.text
 
 
 _FUNCTIONS_TO_MOCK = (
