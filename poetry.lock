@@ -1222,21 +1222,17 @@ files = [
 
 [[package]]
 name = "pylproxy"
-version = "0.2.1"
+version = "0.2.2"
 description = "Proxy for use in Goth instead of mitmproxy"
 optional = false
-python-versions = "^3.10"
-files = []
-develop = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "pylproxy-0.2.2-py3-none-any.whl", hash = "sha256:d5a9ffce289bffb529709d5da4c2155dcff4d925a0e4fc95c302a1abc5522102"},
+    {file = "pylproxy-0.2.2.tar.gz", hash = "sha256:d73769aedac822836953614c9e7a4289afb00aac280d1f5f8dd7f871bdea01b0"},
+]
 
 [package.dependencies]
-aiohttp = "^3.9"
-
-[package.source]
-type = "git"
-url = "https://github.com/golemfactory/pylproxy.git"
-reference = "ed0a98cfc44e9ab35062f2feff60b6523afb485a"
-resolved_reference = "ed0a98cfc44e9ab35062f2feff60b6523afb485a"
+aiohttp = ">=3.9,<4.0"
 
 [[package]]
 name = "pynacl"
@@ -1684,4 +1680,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.1, <3.11"
-content-hash = "f7ec5caa80bed5056ec092d19f584ac5c589ad5665e5ad0efb0e5597d5af27d9"
+content-hash = "1a5edc205905842de2a1a16317896e52f33e281cc68271074e4667937241f50a"
