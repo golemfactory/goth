@@ -10,6 +10,8 @@ from goth.address import MITM_PROXY_PORT
 from goth.assertions.monitor import EventMonitor
 from goth.api_monitor.api_events import APIEvent, APIRequest, APIResponse
 
+logger = logging.getLogger(__name__)
+
 
 class Proxy:
     """Proxy using pylproxy to generate events out of http calls."""
@@ -62,13 +64,11 @@ class Proxy:
 @contextlib.asynccontextmanager
 async def run_proxy(proxy: Proxy) -> AsyncIterator[Proxy]:
     """Implement AsyncContextManager protocol for starting and stopping a Proxy."""
-    logger = logging.getLogger(__name__)
 
     try:
-        logger.info("Starting proxy context manager")
+        logger.debug("Starting mitmproxy")
         await proxy.start()
         yield
     finally:
-        await asyncio.sleep(2.0)
-        logger.info("Stopping proxy context manager")
+        logger.debug("Stopping mitmproxy")
         await proxy.stop()
