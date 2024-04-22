@@ -225,7 +225,6 @@ class EventMonitor(Generic[E]):
         This function can be called from a thread different from the one
         that started this monitor.
         """
-        self._logger.debug(f"Adding event {event}")
 
         if not self.is_running():
             raise RuntimeError(f"Monitor {self.name or ''} is not running")
