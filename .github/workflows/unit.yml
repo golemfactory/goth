@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         pyver: [ "3.10", "3.11", "3.12" ]
-        fail-fast: false
+      fail-fast: false
 
     steps:
       - name: Checkout
