@@ -31,7 +31,7 @@ def mock_probe(monkeypatch):
 
     runner = MagicMock()
     docker_client = MagicMock()
-    container_config = MagicMock(payment_id=None)
+    container_config = MagicMock(use_proxy=False, payment_id=None)
     log_config = MagicMock()
 
     monkeypatch.setattr(goth.runner.probe, "YagnaContainer", MagicMock(spec="ports"))
