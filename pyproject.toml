@@ -31,7 +31,7 @@ docker = "^6.0"
 dpath = "^2.0"
 func_timeout = "4.3.5"
 markupsafe = "2.0.1"
-pylproxy = "0.2.2"
+pylproxy = "0.2.3"
 #pylproxy = { git = "https://github.com/golemfactory/pylproxy.git", rev = "ed0a98cfc44e9ab35062f2feff60b6523afb485a" }
 pyyaml = "5.3.1"
 transitions = "^0.8"
