@@ -20,7 +20,7 @@ async def test_get_yagna_api_url(monkeypatch, use_proxy: bool):
     probe = Probe(
         runner=MagicMock(),
         client=MagicMock(),
-        config=MagicMock(use_proxy=use_proxy),
+        config=MagicMock(use_proxy=use_proxy, payment_id=None),
         log_config=MagicMock(),
     )
     probe.container.ports = {YAGNA_REST_PORT: host_mapped_port}
