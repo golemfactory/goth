@@ -1,6 +1,8 @@
 """Log utilities for the runner."""
 
 import contextlib
+import datetime
+import os
 from dataclasses import dataclass
 import logging
 import logging.config
@@ -17,7 +19,7 @@ import goth.api_monitor
 from goth.assertions.monitor import EventMonitor
 
 
-DEFAULT_LOG_DIR = Path(tempfile.gettempdir()) / "goth-tests"
+DEFAULT_LOG_DIR = os.getenv("GOTH_LOG_DIR", Path(tempfile.gettempdir()) / "goth-tests")
 FORMATTER_NONE = logging.Formatter("%(message)s")
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,7 @@ logger = logging.getLogger(__name__)
 class CustomFileLogFormatter(logging.Formatter):
     """`Formatter` that uses `time.gmtime` for time and strips ANSI color codes."""
 
-    converter = time.gmtime
+    converter = time.localtime
 
     def format(self, record: logging.LogRecord) -> str:
         """Format the message and remove ANSI color codes from it."""
@@ -83,6 +85,11 @@ LOGGING_CONFIG = {
             "propagate": False,
         },
         "transitions": {"level": "WARNING"},
+        "pylproxy": {
+            "handlers": [],
+            "propagate": False,
+            "level": "DEBUG",
+        }
     },
 }
 
@@ -146,7 +153,7 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
         proxy_handler.setLevel(logging.DEBUG)
         proxy_handler.setFormatter(formatter)
         pyl_proxy_logger.addHandler(proxy_handler)
-
+        pyl_proxy_logger.info("Proxy log started: {}".format(datetime.datetime.utcnow().isoformat()))
         yield
 
     finally:
