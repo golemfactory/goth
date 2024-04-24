@@ -11,7 +11,7 @@ on:
 jobs:
   integration-test:
     name: Run integration tests
-    runs-on: [goth-22.04]
+    runs-on: [ubuntu-latest]
 
     strategy:
       matrix:
