@@ -10,7 +10,7 @@ services:
         # A service that runs `nginx` and routes API calls to
         # the `mitmproxy` instance running as part of the test
         # harness on the host machine
-        image: proxy-nginx
+        image: scx1332/goth
         ports:
             # Requests to ports 6001-6010 in proxy-nginx are forwarded
             # to the MITM proxy started by the test runner, and further
