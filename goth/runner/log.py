@@ -89,7 +89,7 @@ LOGGING_CONFIG = {
             "handlers": [],
             "propagate": False,
             "level": "DEBUG",
-        }
+        },
     },
 }
 
@@ -153,7 +153,9 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
         proxy_handler.setLevel(logging.DEBUG)
         proxy_handler.setFormatter(formatter)
         pyl_proxy_logger.addHandler(proxy_handler)
-        pyl_proxy_logger.info("Proxy log started: {}".format(datetime.datetime.utcnow().isoformat()))
+        pyl_proxy_logger.info(
+            "Proxy log started: {}".format(datetime.datetime.utcnow().isoformat())
+        )
         yield
 
     finally:
