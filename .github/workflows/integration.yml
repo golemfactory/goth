@@ -27,24 +27,11 @@ jobs:
         with:
           python-version: ${{ matrix.pyver }}
 
-      - name: Install gcc
-        run: sudo apt-get install -y gcc g++ make
-
       - name: Install Poetry
         run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Install dependencies
         run: poetry install
-
-      # Only relevant for self-hosted runners
-      - name: Cleanup Docker
-        if: always()
-        run: |
-          c=$(docker ps -q) && [[ $c ]] && docker kill $c
-          docker system prune -af
-
-      - name: Log in to GitHub Docker repository
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{github.actor}} --password-stdin
 
       - name: Run integration tests
         env:
@@ -53,24 +40,7 @@ jobs:
 
       - name: Upload test logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ matrix.pyver == '3.12' }}
         with:
           name: goth-logs
           path: /tmp/goth-tests
-
-      # Only relevant for self-hosted runners
-      - name: Remove test logs
-        if: always()
-        run: rm -rf /tmp/goth-tests
-
-      # Only relevant for self-hosted runners
-      - name: Remove poetry virtual env
-        if: always()
-        run: poetry env remove --all
-
-      # Only relevant for self-hosted runners
-      - name: Cleanup Docker
-        if: always()
-        run: |
-          c=$(docker ps -q) && [[ $c ]] && docker kill $c
-          docker system prune -af
