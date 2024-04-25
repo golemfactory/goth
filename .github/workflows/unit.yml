@@ -28,7 +28,7 @@ jobs:
           python-version: ${{ matrix.pyver }}
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
+        run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Install dependencies
         run: poetry install

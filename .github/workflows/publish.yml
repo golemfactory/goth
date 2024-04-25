@@ -19,7 +19,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
+        run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Install dependencies
         run: poetry install
@@ -45,7 +45,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
+        run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Get git release tag
         run: echo "::set-output name=git-release-tag::goth $(git describe --tags)"
@@ -80,7 +80,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
+        run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v3
@@ -108,7 +108,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.6.1
+        run: python3 .github/scripts/poetry_install.py --version 1.8.2
 
       - name: Retrieve the built package
         uses: actions/download-artifact@v3
