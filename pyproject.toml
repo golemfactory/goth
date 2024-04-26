@@ -23,38 +23,30 @@ repository = "https://github.com/golemfactory/goth"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10.1, <3.11"
-aiohttp = "^3.8.5"
-ansicolors = "^1.1.0"
-docker-compose = "^1.29"
-docker = "^6.0"
-dpath = "^2.0"
-func_timeout = "4.3.5"
-markupsafe = "2.0.1"
-# This piece of software is dodgy as hell.
-# There is some weird stuff wrapped over it and the version cannot be bumped without
-# breaking the whole thing.
-# All calls are proxied to emit events?
-# We should get rid of the proxy monitoring layer, because it adds a lot of complexity
-# Also it prevents library from working on Windows as I understand
-mitmproxy = "^5.3"
-pylproxy = "0.1.0"
-pyyaml = "5.3.1"
-transitions = "^0.8"
+python = "^3.10.1"
+aiohttp = "^3.9.5"
+ansicolors = "^1.1.8"
+docker = "^7.0"
+dpath = "^2.1"
+func_timeout = "^4.3"
+markupsafe = "^2.1"
+pylproxy = "=0.2.3"
+#pylproxy ={ git = "https://github.com/golemfactory/pylproxy.git", rev = "ed0a98cfc44e9ab35062f2feff60b6523afb485a" }
+pyyaml = "^6.0"
+transitions = "^0.9.0"
 typing_extensions = "^4.5"
-urllib3 = "^1.26"
 ya-aioclient = { git = "https://github.com/golemfactory/ya_tmp_pyapi.git", rev = "b249e035c94681e5144a9f092aa55d7bf50c86c8" }
-ghapi = "^0.1.16"
+ghapi = "^1.0"
 
 [tool.poetry.dev-dependencies]
-black = "21.7b0"
-flake8 = "^6.1"
+black = "^22.1"
+flake8 = "^7.0"
 flake8-docstrings = "^1.7"
-Flake8-pyproject = "^1.2.2"
-mypy = "^1.5"
-poethepoet = "^0.22"
-pytest-asyncio = "0.21"
-pytest = "^7.4"
+flake8-pyproject = "^1.2"
+mypy = "^1.9"
+poethepoet = "^0.25"
+pytest-asyncio = "^0.23.6"
+pytest = "^8.1"
 
 [tool.poe.tasks]
 interactive = "python -m goth start goth/default-assets/goth-config.yml"

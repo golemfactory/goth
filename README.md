@@ -7,6 +7,12 @@
 
 `goth` is an integration testing framework intended to aid the development process of [`yagna`](https://github.com/golemfactory/yagna) itself, as well as apps built on top of it.
 
+
+## Dependencies on other Golem projects
+
+- [golemfactory/gnt2](https://github.com/golemfactory/gnt2) - Dockerized environment with Ganache and contracts
+- [golemfactory/pylproxy](https://github.com/golemfactory/pylproxy) - [![PyPI version](https://badge.fury.io/py/pylproxy.svg)](https://badge.fury.io/py/pylproxy) Python proxy for catching http calls between actors (replacement for mitmproxy used previously)
+
 ## How it works
 
 Key features:

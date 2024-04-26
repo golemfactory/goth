@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import subprocess
+import sys
 from typing import Optional, Sequence
 
 from goth.runner.exceptions import CommandError
@@ -60,19 +61,35 @@ async def run_command(
             log_prefix = f"[{args[0]}] "
 
     async def _run_command():
-        proc = await asyncio.subprocess.create_subprocess_exec(
-            *args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
+        if sys.platform != "win32":
+            proc = await asyncio.subprocess.create_subprocess_exec(
+                *args, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
 
-        if process_monitor:
-            process_monitor._process = proc
+            if process_monitor:
+                process_monitor._process = proc
 
-        while not proc.stdout.at_eof():
-            line = await proc.stdout.readline()
-            cmd_logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
+            while not proc.stdout.at_eof():
+                line = await proc.stdout.readline()
+                cmd_logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
 
-        return_code = await proc.wait()
-        if return_code:
-            raise CommandError(f"Command exited abnormally. args={args}, return_code={return_code}")
+            return_code = await proc.wait()
+            if return_code:
+                raise CommandError(
+                    f"Command exited abnormally. args={args}, return_code={return_code}"
+                )
+        else:
+            # windows does not support asyncio subprocesses in async pytest
+            logger.info(f"Running command (blocking): {args}")
+            p = subprocess.Popen(args, env=env)
+
+            while p.poll() is None:
+                await asyncio.sleep(1.0)
+
+            out, err = p.communicate()
+            if p.returncode != 0:
+                raise CommandError(
+                    f"Command exited abnormally. args={args}, return_code={p.returncode}"
+                )
 
     await asyncio.wait_for(_run_command(), timeout=timeout)

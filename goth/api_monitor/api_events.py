@@ -5,10 +5,10 @@ import json
 import re
 from typing import Optional, Type
 
-from mitmproxy.flow import Error
-from mitmproxy.http import HTTPRequest, HTTPResponse
+from pylproxy import RequestCallbackObj, ResponseCallbackObj
 
-from goth.api_monitor.router_addon import CALLER_HEADER, CALLEE_HEADER
+CALLER_HEADER = "X-Caller"
+CALLEE_HEADER = "X-Callee"
 
 
 class APIEvent(abc.ABC):
@@ -33,43 +33,44 @@ class APIRequest(APIEvent):
     """Represents an API request."""
 
     number: int
-    http_request: HTTPRequest
+    http_request: RequestCallbackObj
 
-    def __init__(self, number: int, http_request: HTTPRequest):
+    def __init__(self, number: int, http_request: RequestCallbackObj):
         self.number = number
         self.http_request = http_request
 
     @property
     def timestamp(self) -> float:
         """Start time op the `http_request`."""
-        return self.http_request.timestamp_start
+        return self.http_request["timestamp_start"]
 
     @property
     def method(self) -> str:
         """Return the method of the underlying HTTP request."""
 
-        return self.http_request.method
+        return self.http_request["method"]
 
     @property
     def path(self) -> str:
-        """Return the method of the underlying HTTP request."""
+        """Return the path of the underlying HTTP request."""
 
-        return self.http_request.path
+        return self.http_request["path"]
 
     @property
     def caller(self) -> Optional[str]:
         """Return the caller name."""
-        return self.http_request.headers.get(CALLER_HEADER)
+        return self.http_request["headers"][CALLER_HEADER]
 
     @property
     def callee(self) -> Optional[str]:
         """Return the callee name."""
-        return self.http_request.headers.get(CALLEE_HEADER)
+        return self.http_request["headers"][CALLEE_HEADER]
 
     @property
     def content(self) -> str:
         """Return the request body."""
-        return self.http_request.content.decode("utf-8")
+        content = self.http_request["content"] or b""
+        return content.decode("utf-8")
 
     @property
     def header_str(self) -> str:
@@ -84,27 +85,29 @@ class APIResponse(APIEvent):
     """Represents a response to an API request."""
 
     request: APIRequest
-    http_response: HTTPResponse
+    http_response: ResponseCallbackObj
 
-    def __init__(self, request: APIRequest, http_response: HTTPResponse):
+    def __init__(self, request_no, request: APIRequest, http_response: ResponseCallbackObj):
+        self.request_no = request_no
         self.request = request
         self.http_response = http_response
 
     @property
     def timestamp(self) -> float:
         """Start time op the `http_response`."""
-        return self.http_response.timestamp_start
+        return self.http_response["timestamp_end"]
 
     @property
     def status_code(self) -> int:
         """Return the HTTP status code."""
 
-        return self.http_response.status_code
+        return self.http_response["status_code"]
 
     @property
     def content(self) -> str:
         """Return the response body."""
-        return self.http_response.content.decode("utf-8")
+        content = self.http_response["content"] or b""
+        return content.decode("utf-8")
 
     def __str__(self) -> str:
         return f"[response ({self.status_code})] {self.request.header_str}; body: {self.content}"
@@ -114,14 +117,12 @@ class APIError(APIEvent):
     """Represents an error when making an API request or sending a response."""
 
     request: APIRequest
-    error: Error
-    http_response: Optional[HTTPResponse]
 
     def __init__(
         self,
         request: APIRequest,
-        error: Error,
-        http_response: Optional[HTTPResponse] = None,
+        error,
+        http_response=None,
     ):
         self.request = request
         self.error = error
@@ -147,8 +148,6 @@ def _match_event(
     method: Optional[str] = None,
     path_regex: Optional[str] = None,
 ) -> bool:
-
-    http_request: HTTPRequest
     if isinstance(event, APIRequest):
         http_request = event.http_request
     elif isinstance(event, (APIResponse, APIError)):
