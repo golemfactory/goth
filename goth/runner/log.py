@@ -44,7 +44,7 @@ LOGGING_CONFIG = {
         "file": {
             "()": CustomFileLogFormatter,
             "format": "%(asctime)s %(levelname)-8s %(name)-30s %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S%z",
+            "datefmt": "%Y-%m-%d %H:%M:%S.%f%z",
         },
     },
     "handlers": {
