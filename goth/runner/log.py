@@ -43,7 +43,7 @@ LOGGING_CONFIG = {
         "console": {"format": "%(levelname)-8s [%(name)-30s] %(message)s"},
         "file": {
             "()": CustomFileLogFormatter,
-            "format": "[%(asctime)s %(levelname)-8s %(name)-30s] %(message)s",
+            "format": "[%(asctime)s %(levelname)s %(name)s] %(message)s",
             "datefmt": "%Y-%m-%dT%H:%M:%S.uuuuuu",
         },
     },
