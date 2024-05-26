@@ -43,8 +43,8 @@ LOGGING_CONFIG = {
         "console": {"format": "%(levelname)-8s [%(name)-30s] %(message)s"},
         "file": {
             "()": CustomFileLogFormatter,
-            "format": "[%(asctime)s %(levelname)s %(name)s] %(message)s",
-            "datefmt": "%Y-%m-%dT%H:%M:%S.uuu",
+            "format": "[%(asctime)s.%(msecs)d %(levelname)s %(name)s] %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S",
         },
     },
     "handlers": {
@@ -139,7 +139,8 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
 
     try:
         formatter = CustomFileLogFormatter(
-            fmt=LOGGING_CONFIG["formatters"]["file"]["format"]
+            fmt=LOGGING_CONFIG["formatters"]["file"]["format"],
+            datefmt=LOGGING_CONFIG["formatters"]["file"]["datefmt"],
         )
 
         # TODO: ensure the new files created here do not conflict with probe logs
