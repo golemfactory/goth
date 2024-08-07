@@ -109,7 +109,7 @@ class ComposeNetworkManager:
         # Stop the network in case it's already running (e.g. from a previous test)
         await self.stop_network()
 
-        command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
+        command = ["docker", "compose", "-f", str(self.config.file_path), "up", "-d"]
 
         await build_yagna_image(self.config.build_env)
         await build_proxy_image(self.config.build_env.docker_dir)
@@ -186,7 +186,8 @@ class ComposeNetworkManager:
         self._disconnect_containers(compose_containers or [])
 
         compose_down_cmd = [
-            "docker-compose",
+            "docker",
+            "compose",
             "-f",
             str(self.config.file_path),
             "down",
