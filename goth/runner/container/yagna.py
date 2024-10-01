@@ -142,4 +142,10 @@ class YagnaContainer(DockerContainer):
             accounts_file_name = config.payment_id.accounts_file.name
             mount_path = str(PAYMENT_MOUNT_PATH / accounts_file_name)
             env[payment.ENV_ACCOUNT_LIST] = mount_path
+        # Set consents to allow by default, you can override them in the config
+        if "YA_CONSENT_INTERNAL" not in env:
+            env["YA_CONSENT_INTERNAL"] = "allow"
+        if "YA_CONSENT_EXTERNAL" not in env:
+            env["YA_CONSENT_EXTERNAL"] = "allow"
+
         return env
