@@ -69,27 +69,35 @@ async def run_command(
             if process_monitor:
                 process_monitor._process = proc
 
-            while not proc.stdout.at_eof():
-                line = await proc.stdout.readline()
-                cmd_logger.log(log_level, "%s%s", log_prefix, line.decode("utf-8").rstrip())
-
-            return_code = await proc.wait()
-            if return_code:
-                raise CommandError(
-                    f"Command exited abnormally. args={args}, return_code={return_code}"
-                )
+            out, err = await proc.communicate()
+            
+            if proc.returncode:
+                error_msg = f"Command failed (exit code {proc.returncode}): {' '.join(args)}"
+                if out:
+                    error_msg += f"\nOUTPUT: {out.decode('utf-8').strip()}"
+                raise CommandError(error_msg)
         else:
             # windows does not support asyncio subprocesses in async pytest
             logger.info(f"Running command (blocking): {args}")
-            p = subprocess.Popen(args, env=env)
+            p = subprocess.Popen(
+                args, 
+                env=env, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
+                text=True
+            )
 
             while p.poll() is None:
                 await asyncio.sleep(1.0)
 
             out, err = p.communicate()
+            
             if p.returncode != 0:
-                raise CommandError(
-                    f"Command exited abnormally. args={args}, return_code={p.returncode}"
-                )
+                error_msg = f"Command failed (exit code {p.returncode}): {' '.join(args)}"
+                if out:
+                    error_msg += f"\nSTDOUT: {out.strip()}"
+                if err:
+                    error_msg += f"\nSTDERR: {err.strip()}"
+                raise CommandError(error_msg)
 
     await asyncio.wait_for(_run_command(), timeout=timeout)
