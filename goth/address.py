@@ -71,6 +71,10 @@ ROUTER_BASE_URL = DefaultTemplate(
     {"host": ROUTER_HOST, "port": ROUTER_PORT, "protocol": ROUTER_PROTOCOL},
 )
 
+GOLEM_BASE_RPC_URL = "http://golem-base:8545"
+GOLEM_BASE_WS_URL = "ws://golem-base:8545"
+
+
 ACTIVITY_API_URL = Template("$base/activity-api/v1/")
 MARKET_API_URL = Template("$base/market-api/v1/")
 PAYMENT_API_URL = Template("$base/payment-api/v1/")
