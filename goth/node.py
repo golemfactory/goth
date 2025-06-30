@@ -38,7 +38,7 @@ def node_environment(
         "GOLEM_BASE_NETWORK": "Custom",
         "GOLEM_BASE_CUSTOM_RPC_URL": GOLEM_BASE_RPC_URL,
         "GOLEM_BASE_CUSTOM_WS_URL": GOLEM_BASE_WS_URL,
-        "GOLEM_BASE_CUSTOM_FUND_PREALLOCATED": True,
+        "GOLEM_BASE_CUSTOM_FUND_PREALLOCATED": "true",
     }
     if account_list:
         daemon_env["ACCOUNT_LIST"] = account_list
