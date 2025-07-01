@@ -71,6 +71,11 @@ async def run_command(
 
             out, err = await proc.communicate()
             
+            # Always log output regardless of success/failure
+            if out:
+                output_text = out.decode('utf-8').strip()
+                cmd_logger.log(log_level, f"{log_prefix}{output_text}")
+            
             if proc.returncode:
                 error_msg = f"Command failed (exit code {proc.returncode}): {' '.join(args)}"
                 if out:
@@ -91,6 +96,12 @@ async def run_command(
                 await asyncio.sleep(1.0)
 
             out, err = p.communicate()
+            
+            # Always log output regardless of success/failure
+            if out:
+                cmd_logger.log(log_level, f"{log_prefix}{out.strip()}")
+            if err:
+                cmd_logger.log(log_level, f"{log_prefix}STDERR: {err.strip()}")
             
             if p.returncode != 0:
                 error_msg = f"Command failed (exit code {p.returncode}): {' '.join(args)}"
