@@ -82,6 +82,8 @@ class ActivityApiMixin:
             results = await self.api.activity.control.get_exec_batch_results(
                 activity_id, batch_id, timeout=1
             )
+            if results:
+                logger.debug("Received new results: %r", results)
             await asyncio.sleep(1.0)
         return results
 
