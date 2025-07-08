@@ -94,10 +94,10 @@ class ActivityApiMixin:
                     if result.message:
                         logger.debug("Result message: %s", result.message)
                     
-                    # Return early on error
                     if result.result == "Error":
-                        logger.error("Execution failed with error: %s", result.message or "Unknown error")
-                        return current_results
+                        error_msg = result.message or "Unknown error"
+                        logger.error("Execution failed with error: %s", error_msg)
+                        raise RuntimeError(f"Activity execution failed: {error_msg}")
             
             results = current_results
             await asyncio.sleep(1.0)
