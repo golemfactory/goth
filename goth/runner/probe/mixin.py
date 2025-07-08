@@ -77,13 +77,29 @@ class ActivityApiMixin:
         """Call collect_results on the activity api."""
 
         results: List[ExeScriptCommandResult] = []
+        last_index = -1
 
         while len(results) < num_results:
-            results = await self.api.activity.control.get_exec_batch_results(
+            current_results = await self.api.activity.control.get_exec_batch_results(
                 activity_id, batch_id, timeout=1
             )
-            if results:
-                logger.debug("Received new results: %r", results)
+            
+            # Check for new results
+            for result in current_results:
+                if result.index > last_index:
+                    last_index = result.index
+                    logger.debug("New result received: index=%d, result=%s", result.index, result.result)
+                    
+                    # Log message if present
+                    if result.message:
+                        logger.debug("Result message: %s", result.message)
+                    
+                    # Return early on error
+                    if result.result == "Error":
+                        logger.error("Execution failed with error: %s", result.message or "Unknown error")
+                        return current_results
+            
+            results = current_results
             await asyncio.sleep(1.0)
         return results
 
