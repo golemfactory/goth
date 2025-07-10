@@ -83,22 +83,24 @@ class ActivityApiMixin:
             current_results = await self.api.activity.control.get_exec_batch_results(
                 activity_id, batch_id, timeout=1
             )
-            
+
             # Check for new results
             for result in current_results:
                 if result.index > last_index:
                     last_index = result.index
-                    logger.debug("New result received: index=%d, result=%s", result.index, result.result)
-                    
+                    logger.debug(
+                        "New result received: index=%d, result=%s", result.index, result.result
+                    )
+
                     # Log message if present
                     if result.message:
                         logger.debug("Result message: %s", result.message)
-                    
+
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
-            
+
             results = current_results
             await asyncio.sleep(1.0)
         return results

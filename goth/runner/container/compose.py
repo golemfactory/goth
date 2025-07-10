@@ -112,7 +112,7 @@ class ComposeNetworkManager:
         # Log the docker compose file content
         logger.info("Using docker compose file: %s", self.config.file_path)
         try:
-            with open(self.config.file_path, 'r') as f:
+            with open(self.config.file_path, "r") as f:
                 compose_content = f.read()
                 logger.debug("Docker compose file content:\n%s", compose_content)
         except Exception as e:
