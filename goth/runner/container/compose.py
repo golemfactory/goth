@@ -114,7 +114,7 @@ class ComposeNetworkManager:
         try:
             with open(self.config.file_path, 'r') as f:
                 compose_content = f.read()
-                logger.info("Docker compose file content:\n%s", compose_content)
+                logger.debug("Docker compose file content:\n%s", compose_content)
         except Exception as e:
             logger.warning("Failed to read docker compose file: %s", e)
 
