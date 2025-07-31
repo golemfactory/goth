@@ -26,7 +26,7 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
-CONTAINER_READY_TIMEOUT = 60  # in seconds
+CONTAINER_READY_TIMEOUT = 360  # in seconds
 DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 
@@ -108,6 +108,15 @@ class ComposeNetworkManager:
         """
         # Stop the network in case it's already running (e.g. from a previous test)
         await self.stop_network()
+
+        # Log the docker compose file content
+        logger.info("Using docker compose file: %s", self.config.file_path)
+        try:
+            with open(self.config.file_path, "r") as f:
+                compose_content = f.read()
+                logger.debug("Docker compose file content:\n%s", compose_content)
+        except Exception as e:
+            logger.warning("Failed to read docker compose file: %s", e)
 
         command = ["docker", "compose", "-f", str(self.config.file_path), "up", "-d"]
 
