@@ -40,7 +40,7 @@ services:
         environment:
             - GANACHE_CHAIN_ID=1
 
-    ethereum-holesky:
+    ethereum-hoodi:
         image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:4c020aca5a0d
         environment:
             - GANACHE_CHAIN_ID=17000
