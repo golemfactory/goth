@@ -4,7 +4,8 @@ services:
 
     router:
         image: yagna-goth
-        entrypoint: /usr/bin/ya-relay-server
+        entrypoint: /usr/bin/ya-sb-router
+        command: ["-l", "tcp://0.0.0.0:7477"]
 
     golem-base:
         image: quay.io/golemnetwork/gb-op-geth:latest
