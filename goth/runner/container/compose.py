@@ -26,7 +26,7 @@ from goth.runner.process import run_command
 
 logger = logging.getLogger(__name__)
 
-CONTAINER_READY_TIMEOUT = 60  # in seconds
+CONTAINER_READY_TIMEOUT = 360  # in seconds
 DEFAULT_COMPOSE_FILE = "docker-compose.yml"
 
 
@@ -109,7 +109,16 @@ class ComposeNetworkManager:
         # Stop the network in case it's already running (e.g. from a previous test)
         await self.stop_network()
 
-        command = ["docker-compose", "-f", str(self.config.file_path), "up", "-d"]
+        # Log the docker compose file content
+        logger.info("Using docker compose file: %s", self.config.file_path)
+        try:
+            with open(self.config.file_path, "r") as f:
+                compose_content = f.read()
+                logger.debug("Docker compose file content:\n%s", compose_content)
+        except Exception as e:
+            logger.warning("Failed to read docker compose file: %s", e)
+
+        command = ["docker", "compose", "-f", str(self.config.file_path), "up", "-d"]
 
         await build_yagna_image(self.config.build_env)
         await build_proxy_image(self.config.build_env.docker_dir)
@@ -186,7 +195,8 @@ class ComposeNetworkManager:
         self._disconnect_containers(compose_containers or [])
 
         compose_down_cmd = [
-            "docker-compose",
+            "docker",
+            "compose",
             "-f",
             str(self.config.file_path),
             "down",

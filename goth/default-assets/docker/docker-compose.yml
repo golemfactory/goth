@@ -6,6 +6,15 @@ services:
         image: yagna-goth
         entrypoint: /usr/bin/ya-relay-server
 
+    golem-base:
+        image: quay.io/golemnetwork/gb-op-geth:latest
+        ports:
+            - "8545:8545"
+        environment:
+            - GITHUB_ACTIONS=true
+            - CI=true
+        command: --dev --http --http.api 'eth,web3,net,debug,golembase' --verbosity 3 --http.addr '0.0.0.0' --http.port 8545 --http.corsdomain '*' --http.vhosts '*' --ws --ws.addr '0.0.0.0' --ws.port 8545
+
     proxy-nginx:
         # A service that runs `nginx` and routes API calls to
         # the `mitmproxy` instance running as part of the test
@@ -27,17 +36,17 @@ services:
             - "host.docker.internal:host-gateway"
 
     ethereum-mainnet:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:b628fa5bfe0d
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:4c020aca5a0d
         environment:
             - GANACHE_CHAIN_ID=1
 
-    ethereum-holesky:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:b628fa5bfe0d
+    ethereum-hoodi:
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:4c020aca5a0d
         environment:
-            - GANACHE_CHAIN_ID=17000
+            - GANACHE_CHAIN_ID=560048
 
     ethereum-polygon:
-        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:b628fa5bfe0d
+        image: ghcr.io/golemfactory/gnt2/gnt2-docker-yagna:4c020aca5a0d
         environment:
             - GANACHE_CHAIN_ID=137
     
