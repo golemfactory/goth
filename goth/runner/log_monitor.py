@@ -196,10 +196,13 @@ class LogEventMonitor(PatternMatchingEventMonitor[LogEvent]):
             for chunk in self._in_stream:
                 chunk = chunk.decode()
                 for line in chunk.splitlines():
-                    self._file_logger.info(line)
+                    try:
+                        self._file_logger.info(line)
 
-                    event = LogEvent(line)
-                    self.add_event_sync(event)
+                        event = LogEvent(line)
+                        self.add_event_sync(event)
+                    except Exception:
+                        self._logger.warning("Error processing log line.")
 
         except goth_exceptions.StopThreadException:
             return
