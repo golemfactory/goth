@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        pyver: [ "3.10", "3.11", "3.12" ]
+        pyver: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
       fail-fast: false
 
     steps:
@@ -28,7 +28,7 @@ jobs:
           python-version: ${{ matrix.pyver }}
 
       - name: Install Poetry
-        run: python3 .github/scripts/poetry_install.py --version 1.8.2
+        run: python3 .github/scripts/poetry_install.py --version 2.2.1
 
       - name: Install dependencies
         run: poetry install

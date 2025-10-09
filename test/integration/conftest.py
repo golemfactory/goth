@@ -12,7 +12,7 @@ from goth.runner.log import configure_logging
 def log_dir() -> Path:
     """Return path to dir where goth test session logs should be placed."""
     base_dir = Path("/", "tmp", "goth-tests")
-    date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S%z")
+    date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     log_dir = base_dir / f"goth_{date_str}"
     log_dir.mkdir(parents=True)
     configure_logging(log_dir)
