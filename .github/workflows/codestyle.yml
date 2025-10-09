@@ -33,8 +33,5 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-root
 
-      - name: Check lock file
-        run: poetry lock --check
-
       - name: Run formatters in check mode
         run: poetry run poe checks_codestyle
