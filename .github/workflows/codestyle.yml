@@ -28,7 +28,7 @@ jobs:
           python-version: ${{ matrix.pyver }}
 
       - name: Install Poetry
-        run: python3 .github/scripts/poetry_install.py --version 1.8.2
+        run: python3 .github/scripts/poetry_install.py --version 2.2.1
 
       - name: Install dependencies
         run: poetry install --no-root
