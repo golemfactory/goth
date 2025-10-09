@@ -109,4 +109,3 @@ async def run_command(
                 raise CommandError(error_msg)
 
     await asyncio.wait_for(_run_command(), timeout=timeout)
-

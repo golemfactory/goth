@@ -111,7 +111,6 @@ async def build_proxy_image(docker_dir: Path) -> None:
     proxy_dockerfile = docker_dir / f"{PROXY_IMAGE}.Dockerfile"
 
     def _setup_context(build_dir: Path) -> None:
-        nonlocal proxy_dockerfile
         for path in required_files:
             (build_dir / path.parent).mkdir(parents=True, exist_ok=True)
             shutil.copy2(PROJECT_ROOT / path, build_dir / path)
