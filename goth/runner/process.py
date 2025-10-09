@@ -71,6 +71,7 @@ async def run_command(
 
             out, err = await proc.communicate()
 
+            logger.info(f"Command finished with return code: {proc.returncode}")
             # Always log output regardless of success/failure
             if out:
                 output_text = out.decode("utf-8").strip()
@@ -108,3 +109,4 @@ async def run_command(
                 raise CommandError(error_msg)
 
     await asyncio.wait_for(_run_command(), timeout=timeout)
+
