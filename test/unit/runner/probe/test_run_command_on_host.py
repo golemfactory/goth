@@ -6,7 +6,7 @@ import pytest
 import signal
 from unittest.mock import MagicMock
 
-from goth.address import YAGNA_BUS_URL, YAGNA_REST_URL, YAGNA_REST_PORT
+from goth.address import YAGNA_REST_PORT
 import goth.runner.container.yagna
 from goth.runner.probe import RequestorProbe
 
@@ -62,7 +62,7 @@ async def test_run_command_on_host(mock_probe):
 
         assert await proc.wait() == 0
 
-        result = await assertion.wait_for_result(timeout=1)
+        await assertion.wait_for_result(timeout=1)
 
         # assert result["YAGNA_APPKEY"] == mock_probe.app_key
         # assert result["YAGNA_API_URL"] == YAGNA_REST_URL.substitute(
