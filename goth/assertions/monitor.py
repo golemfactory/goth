@@ -227,7 +227,8 @@ class EventMonitor(Generic[E]):
         """
 
         if not self.is_running():
-            raise RuntimeError(f"Monitor {self.name or ''} is not running")
+            self._logger.warning(f"Monitor {self.name or ''} is not running")
+            return
 
         self._event_loop.call_soon_threadsafe(self._incoming.put_nowait, event)
 
