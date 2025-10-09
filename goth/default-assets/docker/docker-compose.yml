@@ -1,4 +1,4 @@
-version: "3.3"
+# A docker-compose file defining services used in the test harness
 
 services:
 
