@@ -175,7 +175,7 @@ class ComposeNetworkManager:
                     container,
                     DockerContainer.DEFAULT_NETWORK,
                 )
-                # compose_network.disconnect(container, force=True)
+                compose_network.disconnect(container, force=True)
 
     async def stop_network(self, compose_containers: Optional[List[str]] = None):
         """Stop the running compose network, removing its containers.
