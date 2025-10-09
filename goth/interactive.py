@@ -42,7 +42,7 @@ async def start_network(
 
         # Some test steps may be included in the interactive test as well
         for provider in providers:
-            await provider.provider_agent.wait_for_log("Subscribed offer")
+            await provider.provider_agent.wait_for_log("Subscribed offer", timeout=460)
 
         requestor_env = requestor.get_agent_env_vars(expand_path=False)
         subnet = providers[0].provider_agent.subnet
