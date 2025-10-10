@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def make_logs_dir(base_dir: Path) -> Path:
     """Create a unique subdirectory for this test run."""
 
-    date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+    date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     log_dir = base_dir / f"goth_{date_str}"
     log_dir.mkdir(parents=True)
 
