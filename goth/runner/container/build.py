@@ -5,7 +5,6 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from tempfile import TemporaryDirectory
 from typing import Callable, List, Optional, Dict
 
 from goth.project import PROJECT_ROOT

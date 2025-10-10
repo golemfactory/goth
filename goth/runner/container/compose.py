@@ -1,7 +1,7 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
 import contextlib
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import os
 from pathlib import Path
@@ -260,7 +260,12 @@ class ComposeNetworkManager:
             container = containers[0]
 
             monitor.start(
-                container.logs(follow=True, since=datetime.utcnow(), stream=True, timestamps=True)
+                container.logs(
+                    follow=True,
+                    since=datetime.now(timezone.utc),
+                    stream=True,
+                    timestamps=True,
+                )
             )
             self._log_monitors[service_name] = monitor
 

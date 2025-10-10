@@ -1,7 +1,7 @@
 """Classes and utilties to manage docker Containers."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -205,7 +205,7 @@ class DockerContainer:
             # using naive datetime object as `since` argument deliberately
             # see: https://github.com/docker/docker-py/issues/2712
             self.logs.update_stream(
-                self._container.logs(stream=True, follow=True, since=datetime.utcnow())
+                self._container.logs(stream=True, follow=True, since=datetime.now(timezone.utc))
             )
 
     def _update_state(self, *_args, **_kwargs):

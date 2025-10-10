@@ -150,7 +150,7 @@ class MarketApiMixin:
     async def create_agreement(self: ProbeProtocol, proposal: Proposal) -> str:
         """Call create_agreement on the market api."""
 
-        valid_to = str(datetime.utcnow() + timedelta(days=1)) + "Z"
+        valid_to = str(datetime.now(datetime.timezone.utc)() + timedelta(days=1)) + "Z"
         logger.debug(
             "Creating agreement, proposal_id=%s, valid_to=%s",
             proposal.proposal_id,

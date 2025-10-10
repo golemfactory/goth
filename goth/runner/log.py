@@ -1,11 +1,11 @@
 """Log utilities for the runner."""
 
 import contextlib
-import datetime
 import os
 from dataclasses import dataclass
 import logging
 import logging.config
+from datetime import datetime, timezone
 from pathlib import Path
 import tempfile
 import time
@@ -154,7 +154,7 @@ def configure_logging_for_test(test_log_dir: Path) -> None:
         proxy_handler.setFormatter(formatter)
         pyl_proxy_logger.addHandler(proxy_handler)
         pyl_proxy_logger.info(
-            "Proxy log started: {}".format(datetime.datetime.utcnow().isoformat())
+            "Proxy log started: {}".format(datetime.now(timezone.utc).isoformat())
         )
         yield
 
