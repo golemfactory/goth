@@ -1,4 +1,5 @@
 """Test if "payment_config" in `goth-config.yml` works as expected."""
+
 from pathlib import Path
 import pytest
 

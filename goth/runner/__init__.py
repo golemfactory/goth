@@ -2,7 +2,6 @@
 
 import asyncio
 from contextlib import asynccontextmanager, AsyncExitStack
-from datetime import datetime, timezone
 from itertools import chain
 import logging
 import os
@@ -113,8 +112,7 @@ class Runner:
     ):
         # Set up the logging directory for this runner
         self.test_name = test_name or self._current_pytest_test_name() or ""
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        self.log_dir = base_log_dir / self.test_name / date_str
+        self.log_dir = base_log_dir / self.test_name
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         self.api_assertions_module = api_assertions_module

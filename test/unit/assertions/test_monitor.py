@@ -1,4 +1,5 @@
 """Test the `assertions.monitor`."""
+
 import asyncio
 
 import pytest

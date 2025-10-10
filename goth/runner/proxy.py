@@ -1,4 +1,5 @@
 """A class for starting an embedded instance of mitmproxy."""
+
 import contextlib
 import logging
 from typing import AsyncIterator, Mapping, Optional

@@ -1,4 +1,5 @@
 """Unit tests for the goth.runner.probe.Probe class."""
+
 import pytest
 from unittest.mock import MagicMock
 

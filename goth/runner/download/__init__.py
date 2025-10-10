@@ -1,4 +1,5 @@
 """Package related to downloading assets necessary for building yagna images."""
+
 import time
 from abc import ABC
 import logging
@@ -18,7 +19,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ASSET_CACHE_DIR = Path(tempfile.gettempdir()) / "goth_asset_cache"
+ASSET_CACHE_DIR = Path("cache")
 
 ENV_API_TOKEN = "GITHUB_TOKEN"
 ENV_YAGNA_BRANCH = "YAGNA_BRANCH"

@@ -1,4 +1,5 @@
 """Integration test for agent-daemon communication through MITM proxy."""
+
 import asyncio
 from functools import partial
 from pathlib import Path
