@@ -1,4 +1,5 @@
 """Module responsible for parsing the docker-compose.yml used in the tests."""
+
 import contextlib
 from dataclasses import dataclass
 from datetime import datetime, timezone

@@ -1,4 +1,5 @@
 """Common assertions related to API calls."""
+
 from typing import Set
 
 from goth.api_monitor.api_events import (

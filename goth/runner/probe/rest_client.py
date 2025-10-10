@@ -1,4 +1,5 @@
 """Module containing classes related to the yagna REST API client."""
+
 import dataclasses
 import logging
 from typing import TypeVar, TYPE_CHECKING

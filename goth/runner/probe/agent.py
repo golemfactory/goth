@@ -1,4 +1,5 @@
 """Module for agent components to be used with `Probe` objects."""
+
 import abc
 import logging
 from typing import Optional, TYPE_CHECKING

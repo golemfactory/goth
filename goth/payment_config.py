@@ -1,4 +1,5 @@
 """All possible payment-related configuration, in one place."""
+
 from dataclasses import dataclass, field
 from typing import Dict
 

@@ -1,4 +1,5 @@
 """Interactive runner for `goth` network."""
+
 import asyncio
 import logging
 from pathlib import Path

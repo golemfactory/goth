@@ -1,4 +1,5 @@
 """Defines a class representing `goth` configuration."""
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from dpath import MergeType

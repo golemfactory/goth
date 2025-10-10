@@ -1,4 +1,5 @@
 """Unit tests for `goth.configuration` module."""
+
 from pathlib import Path
 
 import pytest

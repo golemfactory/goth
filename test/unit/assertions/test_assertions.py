@@ -529,17 +529,14 @@ async def toplevel(_stream):
 async def test_assertion_names():
     """Test if assertion names are constructed correctly."""
 
-    async def inner(_stream):
-        ...
+    async def inner(_stream): ...
 
     def make_assertion(_arg):
-        async def innermost(_stream):
-            ...
+        async def innermost(_stream): ...
 
         return innermost
 
-    async def parametrized(x, y, _stream):
-        ...
+    async def parametrized(x, y, _stream): ...
 
     a1 = Assertion(toplevel)
     assert a1.name == f"{__name__}.toplevel"

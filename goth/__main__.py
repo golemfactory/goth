@@ -1,4 +1,5 @@
 """Main entry point to `goth`."""
+
 import argparse
 import asyncio
 from datetime import datetime, timezone

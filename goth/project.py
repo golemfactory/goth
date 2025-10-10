@@ -1,4 +1,5 @@
 """Module with information on the project itself, e.g. project root directory."""
+
 from pathlib import Path
 
 import goth

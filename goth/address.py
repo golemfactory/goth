@@ -7,6 +7,7 @@ Note: the variables defining ports are also used in the `nginx.conf` file
 in the proxy container. If you rename any of them here then make sure to also
 apply the same renaming in `nginx.conf`.
 """
+
 from string import Template
 from typing import Dict, Mapping, Optional
 

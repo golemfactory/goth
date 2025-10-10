@@ -1,4 +1,5 @@
 """Tests for the method Probe.run_command_on_host."""
+
 import asyncio
 import os
 import sys
