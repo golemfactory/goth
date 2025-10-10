@@ -13,7 +13,7 @@ from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
     ReleaseDownloader,
-    ENV_API_TOKEN,
+    ENV_API_TOKEN, ASSET_CACHE_DIR,
 )
 from goth.runner.process import run_command
 
@@ -87,18 +87,20 @@ async def _build_docker_image(
 ) -> None:
     """Set up a temporary build directory and issue `docker build` command there."""
 
-    with TemporaryDirectory() as temp_path:
-        build_dir = Path(temp_path)
-        setup_context(build_dir)
+    rnd_str = os.urandom(4).hex()
+    build_dir = ASSET_CACHE_DIR / "docker_build" / rnd_str
+    build_dir.mkdir(parents=True)
 
-        logger.info(
-            "Building %s Docker image. dockerfile=%s, build dir=%s",
-            image_name,
-            dockerfile,
-            build_dir,
-        )
-        command = ["docker", "build", "-t", image_name, str(build_dir)]
-        await run_command(command)
+    setup_context(build_dir)
+
+    logger.info(
+        "Building %s Docker image. dockerfile=%s, build dir=%s",
+        image_name,
+        dockerfile,
+        build_dir,
+    )
+    command = ["docker", "build", "-t", image_name, str(build_dir)]
+    await run_command(command)
 
 
 async def build_proxy_image(docker_dir: Path) -> None:
