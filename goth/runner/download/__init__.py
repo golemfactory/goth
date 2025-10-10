@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ASSET_CACHE_DIR = Path("asset_cache")
+ASSET_CACHE_DIR = Path("cache")
 
 ENV_API_TOKEN = "GITHUB_TOKEN"
 ENV_YAGNA_BRANCH = "YAGNA_BRANCH"
@@ -48,12 +48,12 @@ class GithubDownloader(ABC):
     """Session object for making HTTP requests."""
 
     def __init__(
-            self,
-            owner: str = DEFAULT_OWNER,
-            purge_cache: bool = False,
-            repo: str = DEFAULT_REPO,
-            token: Optional[str] = DEFAULT_TOKEN,
-            verbose: bool = False,
+        self,
+        owner: str = DEFAULT_OWNER,
+        purge_cache: bool = False,
+        repo: str = DEFAULT_REPO,
+        token: Optional[str] = DEFAULT_TOKEN,
+        verbose: bool = False,
     ):
         if not token:
             raise ValueError("GitHub token was not provided.")
@@ -112,7 +112,7 @@ class ArtifactDownloader(GithubDownloader):
         return workflow
 
     def _get_latest_run(
-            self, workflow: dict, branch: str, commit: Optional[str] = None
+        self, workflow: dict, branch: str, commit: Optional[str] = None
     ) -> Optional[dict]:
         """Filter out the latest successful workflow run."""
         workflow_id = workflow["id"]
@@ -191,12 +191,12 @@ class ArtifactDownloader(GithubDownloader):
         return cache_dir
 
     def download(
-            self,
-            artifact_name: str = DEFAULT_ARTIFACT,
-            branch: str = DEFAULT_BRANCH,
-            commit: Optional[str] = DEFAULT_COMMIT,
-            output: Optional[Path] = None,
-            workflow_name: str = DEFAULT_WORKFLOW,
+        self,
+        artifact_name: str = DEFAULT_ARTIFACT,
+        branch: str = DEFAULT_BRANCH,
+        commit: Optional[str] = DEFAULT_COMMIT,
+        output: Optional[Path] = None,
+        workflow_name: str = DEFAULT_WORKFLOW,
     ) -> Path:
         """Download an artifact being the result of a given GitHub Actions workflow.
 
@@ -253,10 +253,10 @@ class ReleaseDownloader(GithubDownloader):
         self.repo_name = repo
 
     def _get_latest_release(
-            self,
-            tag_substring: str,
-            content_type: str,
-            use_unstable: bool = True,
+        self,
+        tag_substring: str,
+        content_type: str,
+        use_unstable: bool = True,
     ) -> Optional[dict]:
         """Get the latest version, this includes pre-releases.
 
@@ -303,7 +303,7 @@ class ReleaseDownloader(GithubDownloader):
         return matching_release
 
     def _get_asset(
-            self, release: dict, content_type: str, asset_name: Optional[str] = None
+        self, release: dict, content_type: str, asset_name: Optional[str] = None
     ) -> Optional[dict]:
         assets = release["assets"]
         logger.debug("assets=%s", json.dumps(obj2dict(assets)))
@@ -328,12 +328,12 @@ class ReleaseDownloader(GithubDownloader):
         return cache_file
 
     def download(
-            self,
-            asset_name: str = "",
-            content_type: str = DEFAULT_CONTENT_TYPE,
-            output: Optional[Path] = None,
-            tag_substring: str = "",
-            use_unstable: bool = True,
+        self,
+        asset_name: str = "",
+        content_type: str = DEFAULT_CONTENT_TYPE,
+        output: Optional[Path] = None,
+        tag_substring: str = "",
+        use_unstable: bool = True,
     ) -> Path:
         """Download the latest release (or pre-release) from a given GitHub repo.
 

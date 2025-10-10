@@ -13,7 +13,8 @@ from goth.runner.container.yagna import YagnaContainer
 from goth.runner.download import (
     ArtifactDownloader,
     ReleaseDownloader,
-    ENV_API_TOKEN, ASSET_CACHE_DIR,
+    ENV_API_TOKEN,
+    ASSET_CACHE_DIR,
 )
 from goth.runner.process import run_command
 

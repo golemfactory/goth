@@ -2,20 +2,20 @@
 import asyncio
 import logging
 from pathlib import Path
-import tempfile
 from typing import Dict, Optional
 
 from goth.configuration import Configuration
 from goth.runner import Runner
+from goth.runner.download import ASSET_CACHE_DIR
 from goth.runner.probe import ProviderProbe, RequestorProbe
-
 
 logger = logging.getLogger(__name__)
 
-env_file: Path = Path(tempfile.gettempdir()) / "goth_interactive.env"
+env_file: Path = ASSET_CACHE_DIR / "goth_interactive.env"
 
 
 def _write_env_file(env: Dict[str, str]) -> None:
+    ASSET_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     with env_file.open("w") as f:
         for key, val in env.items():
             f.write(f"export {key}={val}\n")
