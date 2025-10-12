@@ -80,7 +80,9 @@ class ActivityApiMixin:
         last_index = -1
 
         while len(results) < num_results:
-            current_results = await self.api.activity.control.get_exec_batch_results(
+            current_results: List[
+                ExeScriptCommandResult
+            ] = await self.api.activity.control.get_exec_batch_results(
                 activity_id, batch_id, timeout=1
             )
 
@@ -99,6 +101,8 @@ class ActivityApiMixin:
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
+                        logger.info("Full stdout of failed command:", result.stdout)
+                        logger.info("Full stderr of failed command:", result.stderr)
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
 
             results = current_results
