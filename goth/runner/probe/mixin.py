@@ -52,13 +52,18 @@ class ProbeProtocol(Protocol):
 def safe_decode(output):
     if output is None:
         return ""
+
     if isinstance(output, bytes):
         try:
             return output.decode("utf-8", errors="replace")
         except Exception:
             # fallback in case of unexpected encoding
             return str(output)
-    return str(output)
+
+    if isinstance(output, str):
+        return output
+
+    return "Cannot decode"
 
 class ActivityApiMixin:
     """Probe mixin providing high-level test steps which use yagna activity API."""
@@ -112,8 +117,8 @@ class ActivityApiMixin:
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
-                        logger.info("Full stdout of failed command:", safe_decode(result.stdout))
-                        logger.info("Full stderr of failed command:", safe_decode(result.stderr))
+                        logger.info("Full stdout of failed command: %s", safe_decode(result.stdout))
+                        logger.info("Full stderr of failed command: %s", safe_decode(result.stderr))
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
 
             results = current_results
