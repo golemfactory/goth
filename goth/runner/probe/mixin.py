@@ -1,6 +1,7 @@
 """Probe mixins containing high-level steps."""
-
+import ast
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 import logging
 from typing import (
@@ -48,10 +49,25 @@ class ProbeProtocol(Protocol):
     payment_config: PaymentConfig
     """Payment configuration used for the probe's yagna node."""
 
-
-def safe_decode(output):
+""" Decode output of the exe_script stdout/stderr safely. """
+def stdout_safe_decode(output):
     if output is None:
         return ""
+
+    if isinstance(output, str):
+        if output.startswith("[") and output.endswith("]"):
+            # bytes encoded as list of integers
+            try:
+                vec = ast.literal_eval(output)
+                if isinstance(vec, list) and all(isinstance(x, int) and 0 <= x <= 255 for x in vec):
+                    b = bytes(vec)
+                    output = b
+                else:
+                    print("Error: String must represent a list of integers 0–255")
+            except (ValueError, SyntaxError):
+                print("Error: Invalid string format")
+        else:
+            return output
 
     if isinstance(output, bytes):
         try:
@@ -60,10 +76,8 @@ def safe_decode(output):
             # fallback in case of unexpected encoding
             return str(output)
 
-    if isinstance(output, str):
-        return output
-
     return "Cannot decode"
+
 
 class ActivityApiMixin:
     """Probe mixin providing high-level test steps which use yagna activity API."""
@@ -117,8 +131,8 @@ class ActivityApiMixin:
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
-                        logger.info("Full stdout of failed command: %s", safe_decode(result.stdout))
-                        logger.info("Full stderr of failed command: %s", safe_decode(result.stderr))
+                        logger.info("Full stdout of failed command: %s", stdout_safe_decode(result.stdout))
+                        logger.info("Full stderr of failed command: %s", stdout_safe_decode(result.stderr))
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
 
             results = current_results
