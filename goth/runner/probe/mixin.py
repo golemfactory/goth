@@ -1,4 +1,5 @@
 """Probe mixins containing high-level steps."""
+
 import ast
 import asyncio
 from datetime import datetime, timedelta, timezone
@@ -114,10 +115,10 @@ class ActivityApiMixin:
         last_index = -1
 
         while len(results) < num_results:
-            current_results: List[
-                ExeScriptCommandResult
-            ] = await self.api.activity.control.get_exec_batch_results(
-                activity_id, batch_id, timeout=1
+            current_results: List[ExeScriptCommandResult] = (
+                await self.api.activity.control.get_exec_batch_results(
+                    activity_id, batch_id, timeout=1
+                )
             )
 
             # Check for new results
