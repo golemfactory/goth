@@ -65,7 +65,8 @@ def stdout_safe_decode(output):
                 else:
                     print("Error: String must represent a list of integers 0–255")
             except (ValueError, SyntaxError):
-                print("Error: Invalid string format")
+                print("Error: Invalid string format, returning original string")
+                return output
         else:
             return output
 
