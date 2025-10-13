@@ -71,14 +71,14 @@ async def run_command(
 
             out, err = await proc.communicate()
 
-            logger.info(f"Command finished with return code: {proc.returncode}")
+            logger.info(f"Local command finished with return code: {proc.returncode}")
             # Always log output regardless of success/failure
             if out:
                 output_text = out.decode("utf-8").strip()
                 cmd_logger.log(log_level, f"{log_prefix}{output_text}")
 
             if proc.returncode:
-                error_msg = f"Command failed (exit code {proc.returncode}): {' '.join(args)}"
+                error_msg = f"Local command failed (exit code {proc.returncode}): {' '.join(args)}"
                 if out:
                     error_msg += f"\nOUTPUT: {out.decode('utf-8').strip()}"
                 raise CommandError(error_msg)
