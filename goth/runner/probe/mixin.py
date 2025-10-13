@@ -1,7 +1,6 @@
 """Probe mixins containing high-level steps."""
 import ast
 import asyncio
-import json
 from datetime import datetime, timedelta, timezone
 import logging
 from typing import (
@@ -49,8 +48,12 @@ class ProbeProtocol(Protocol):
     payment_config: PaymentConfig
     """Payment configuration used for the probe's yagna node."""
 
-""" Decode output of the exe_script stdout/stderr safely. """
+
 def stdout_safe_decode(output):
+    """Decode output of the exe_script stdout/stderr safely.
+
+    Decodes bytes, list of integers (0-255) or returns the string as is.
+    """
     if output is None:
         return ""
 
@@ -132,8 +135,12 @@ class ActivityApiMixin:
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
-                        logger.info("Full stdout of failed command: %s", stdout_safe_decode(result.stdout))
-                        logger.info("Full stderr of failed command: %s", stdout_safe_decode(result.stderr))
+                        logger.info(
+                            "Full stdout of failed command: %s", stdout_safe_decode(result.stdout)
+                        )
+                        logger.info(
+                            "Full stderr of failed command: %s", stdout_safe_decode(result.stderr)
+                        )
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
 
             results = current_results
