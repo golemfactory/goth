@@ -1,5 +1,6 @@
 """Probe mixins containing high-level steps."""
 
+import ast
 import asyncio
 from datetime import datetime, timedelta, timezone
 import logging
@@ -49,6 +50,40 @@ class ProbeProtocol(Protocol):
     """Payment configuration used for the probe's yagna node."""
 
 
+def stdout_safe_decode(output):
+    """Decode output of the exe_script stdout/stderr safely.
+
+    Decodes bytes, list of integers (0-255) or returns the string as is.
+    """
+    if output is None:
+        return ""
+
+    if isinstance(output, str):
+        if output.startswith("[") and output.endswith("]"):
+            # bytes encoded as list of integers
+            try:
+                vec = ast.literal_eval(output)
+                if isinstance(vec, list) and all(isinstance(x, int) and 0 <= x <= 255 for x in vec):
+                    b = bytes(vec)
+                    output = b
+                else:
+                    print("Error: String must represent a list of integers 0–255")
+            except (ValueError, SyntaxError):
+                print("Error: Invalid string format, returning original string")
+                return output
+        else:
+            return output
+
+    if isinstance(output, bytes):
+        try:
+            return output.decode("utf-8", errors="replace")
+        except Exception:
+            # fallback in case of unexpected encoding
+            return str(output)
+
+    return "Cannot decode"
+
+
 class ActivityApiMixin:
     """Probe mixin providing high-level test steps which use yagna activity API."""
 
@@ -80,8 +115,10 @@ class ActivityApiMixin:
         last_index = -1
 
         while len(results) < num_results:
-            current_results = await self.api.activity.control.get_exec_batch_results(
-                activity_id, batch_id, timeout=1
+            current_results: List[ExeScriptCommandResult] = (
+                await self.api.activity.control.get_exec_batch_results(
+                    activity_id, batch_id, timeout=1
+                )
             )
 
             # Check for new results
@@ -99,6 +136,12 @@ class ActivityApiMixin:
                     if result.result == "Error":
                         error_msg = result.message or "Unknown error"
                         logger.error("Execution failed with error: %s", error_msg)
+                        logger.info(
+                            "Full stdout of failed command: %s", stdout_safe_decode(result.stdout)
+                        )
+                        logger.info(
+                            "Full stderr of failed command: %s", stdout_safe_decode(result.stderr)
+                        )
                         raise RuntimeError(f"Activity execution failed: {error_msg}")
 
             results = current_results
