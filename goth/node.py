@@ -4,8 +4,8 @@ from typing import Dict, Optional
 
 from goth.address import (
     ACTIVITY_API_URL,
-    GOLEM_BASE_RPC_URL,
-    GOLEM_BASE_WS_URL,
+    ARKIV_RPC_URL,
+    ARKIV_WS_URL,
     MARKET_API_URL,
     PAYMENT_API_URL,
     ROUTER_HOST,
@@ -35,10 +35,10 @@ def node_environment(
         "RUST_BACKTRACE": "1",
         "RUST_LOG": "debug,tokio_core=info,tokio_reactor=info,hyper=info",
         "YAGNA_API_URL": YAGNA_REST_URL.substitute(host="0.0.0.0"),
-        "GOLEM_BASE_NETWORK": "Custom",
-        "GOLEM_BASE_CUSTOM_RPC_URL": GOLEM_BASE_RPC_URL,
-        "GOLEM_BASE_CUSTOM_WS_URL": GOLEM_BASE_WS_URL,
-        "GOLEM_BASE_CUSTOM_FUND_PREALLOCATED": "true",
+        "ARKIV_NETWORK": "Custom",
+        "ARKIV_CUSTOM_RPC_URL": ARKIV_RPC_URL,
+        "ARKIV_CUSTOM_WS_URL": ARKIV_WS_URL,
+        "ARKIV_CUSTOM_FUND_PREALLOCATED": "true",
     }
     if account_list:
         daemon_env["ACCOUNT_LIST"] = account_list
