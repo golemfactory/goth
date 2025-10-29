@@ -6,7 +6,7 @@ services:
         image: yagna-goth
         entrypoint: /usr/bin/ya-relay-server
 
-    golem-base:
+    arkiv:
         image: quay.io/golemnetwork/gb-op-geth:latest
         ports:
             - "8545:8545"
